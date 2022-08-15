@@ -16,7 +16,6 @@ var opts option.Option
 
 // TODO: EXITまわり統一（異常と正常でどうするか）
 // TODO: mainを小さくする
-// TODO: cmd/delstackに移す
 func main() {
 	_, err := flags.Parse(&opts)
 	if err != nil {
