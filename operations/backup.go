@@ -6,5 +6,6 @@ import (
 )
 
 func DeleteBackups(config aws.Config, resources []types.StackResourceSummary) error {
+	// TODO: Concurrency Delete
 	return nil
 }
