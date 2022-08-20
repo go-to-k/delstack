@@ -21,10 +21,10 @@ type FailedDeletedResource struct {
 }
 
 func DeleteStacks(config aws.Config, resources []types.StackResourceSummary) error {
+	// TODO: Concurrency DeleteStack
+	re := regexp.MustCompile(`^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`)
 	for _, stack := range resources {
-		re := regexp.MustCompile(`^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`)
 		stackName := re.ReplaceAllString(*stack.PhysicalResourceId, `$1`)
-
 		if err := DeleteStackResources(config, stackName); err != nil {
 			return err
 		}
