@@ -20,6 +20,31 @@ type FailedDeletedResource struct {
 	CustomArray []types.StackResourceSummary
 }
 
+func DeleteFailedDeletedResource(config aws.Config, failedDeletedResource FailedDeletedResource) error {
+	// TODO: Concurrency deletion of failed resources
+
+	if err := DeleteStacks(config, failedDeletedResource.StackArray); err != nil {
+		return err
+	}
+	if err := DeleteBuckets(config, failedDeletedResource.BucketArray); err != nil {
+		return err
+	}
+	if err := DeleteRoles(config, failedDeletedResource.RoleArray); err != nil {
+		return err
+	}
+	if err := DeleteECRs(config, failedDeletedResource.ECRArray); err != nil {
+		return err
+	}
+	if err := DeleteBackups(config, failedDeletedResource.ECRArray); err != nil {
+		return err
+	}
+	if err := DeleteCustoms(config, failedDeletedResource.CustomArray); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func DeleteStacks(config aws.Config, resources []types.StackResourceSummary) error {
 	// TODO: Concurrency DeleteStack
 	re := regexp.MustCompile(`^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`)
@@ -134,31 +159,6 @@ func DeleteStackResources(config aws.Config, stackName string) error {
 	}
 
 	if err := DeleteFailedDeletedResource(config, failedDeletedResource); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func DeleteFailedDeletedResource(config aws.Config, failedDeletedResource FailedDeletedResource) error {
-	// TODO: Concurrency deletion of failed resources
-
-	if err := DeleteStacks(config, failedDeletedResource.StackArray); err != nil {
-		return err
-	}
-	if err := DeleteBuckets(config, failedDeletedResource.BucketArray); err != nil {
-		return err
-	}
-	if err := DeleteRoles(config, failedDeletedResource.RoleArray); err != nil {
-		return err
-	}
-	if err := DeleteECRs(config, failedDeletedResource.ECRArray); err != nil {
-		return err
-	}
-	if err := DeleteBackups(config, failedDeletedResource.ECRArray); err != nil {
-		return err
-	}
-	if err := DeleteCustoms(config, failedDeletedResource.CustomArray); err != nil {
 		return err
 	}
 
