@@ -6,5 +6,6 @@ import (
 )
 
 func DeleteRoles(config aws.Config, resources []types.StackResourceSummary) error {
+	// TODO: Concurrency Delete
 	return nil
 }
