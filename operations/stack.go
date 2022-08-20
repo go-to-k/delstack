@@ -7,11 +7,11 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/resources"
+	"github.com/go-to-k/delstack/client"
 )
 
 func DeleteStackResources(config aws.Config, stackName string) error {
-	cfnClient := resources.NewCloudFormation(config)
+	cfnClient := client.NewCloudFormation(config)
 
 	stackOutputBeforeDelete, isExistBeforeDelete, err := cfnClient.DescribeStacks(&stackName)
 	if err != nil {
