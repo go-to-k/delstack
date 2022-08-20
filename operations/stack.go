@@ -3,6 +3,7 @@ package operations
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -20,6 +21,14 @@ type FailedDeletedResource struct {
 }
 
 func DeleteStacks(config aws.Config, resources []types.StackResourceSummary) error {
+	for _, stack := range resources {
+		re := regexp.MustCompile(`^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`)
+		stackName := re.ReplaceAllString(*stack.PhysicalResourceId, `$1`)
+
+		if err := DeleteStackResources(config, stackName); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
