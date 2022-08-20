@@ -14,8 +14,8 @@ type CloudFormation struct {
 	waiter *cloudformation.StackDeleteCompleteWaiter
 }
 
-func NewCloudFormation(cfg aws.Config) *CloudFormation {
-	client := cloudformation.NewFromConfig(cfg)
+func NewCloudFormation(config aws.Config) *CloudFormation {
+	client := cloudformation.NewFromConfig(config)
 	waiter := cloudformation.NewStackDeleteCompleteWaiter(client)
 	return &CloudFormation{
 		client,

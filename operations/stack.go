@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
@@ -62,69 +61,17 @@ func DeleteStackResources(config aws.Config, stackName string) error {
 		return err
 	}
 
-	var logicalResourceIdsForRetainResources []string
-	var (
-		stackArray  []types.StackResourceSummary
-		bucketArray []types.StackResourceSummary
-		roleArray   []types.StackResourceSummary
-		ecrArray    []types.StackResourceSummary
-		backupArray []types.StackResourceSummary
-		customArray []types.StackResourceSummary
-	)
+	collection := NewResourceCollection(config, stackName, stackResources.StackResourceSummaries)
 
-	for _, v := range stackResources.StackResourceSummaries {
-		if v.ResourceStatus == "DELETE_FAILED" {
-			logicalResourceIdsForRetainResources = append(logicalResourceIdsForRetainResources, *v.LogicalResourceId)
-
-			switch *v.ResourceType {
-			case "AWS::CloudFormation::Stack":
-				stackArray = append(stackArray, v)
-			case "AWS::S3::Bucket":
-				bucketArray = append(bucketArray, v)
-			case "AWS::IAM::Role":
-				roleArray = append(roleArray, v)
-			case "AWS::ECR::Repository":
-				ecrArray = append(ecrArray, v)
-			case "AWS::Backup::BackupVault":
-				backupArray = append(backupArray, v)
-			default:
-				if strings.Contains(*v.ResourceType, "Custom::") {
-					customArray = append(customArray, v)
-				}
-			}
-		}
-	}
-
-	if len(logicalResourceIdsForRetainResources) != len(stackArray)+len(bucketArray)+len(roleArray)+len(ecrArray)+len(ecrArray)+len(backupArray)+len(customArray) {
-		fmt.Println("===========================================================")
-		fmt.Printf("%v is FAILED !!!", stackName)
-		fmt.Println("")
-		fmt.Println("The deletion seems to be failing for some other reason.")
-		fmt.Println("This function supports force deletion of ")
-		fmt.Println("<S3 buckets> that are Non-empty or Versioning enabled")
-		fmt.Println("and <IAM roles> with policies attached from outside the stack,")
-		fmt.Println("and <ECR> still contains images,")
-		fmt.Println("and <BackupVault> contains recovery points,")
-		fmt.Println("and <Nested Child Stack>.")
-		fmt.Println("<Custom Resources> was also forced to delete.")
-		fmt.Println("===========================================================")
-		fmt.Println("")
-	}
-
-	if err := cfnClient.DeleteStack(&stackName, logicalResourceIdsForRetainResources); err != nil {
+	if err := collection.CheckResourceCounts(); err != nil {
 		return err
 	}
 
-	failedDeletedResource := FailedDeletedResource{
-		StackArray:  stackArray,
-		BucketArray: bucketArray,
-		RoleArray:   roleArray,
-		ECRArray:    ecrArray,
-		BackupArray: backupArray,
-		CustomArray: customArray,
+	if err := cfnClient.DeleteStack(&stackName, collection.LogicalResourceIds); err != nil {
+		return err
 	}
 
-	if err := DeleteFailedDeletedResource(config, failedDeletedResource); err != nil {
+	if err := collection.DeleteResourceCollection(); err != nil {
 		return err
 	}
 
