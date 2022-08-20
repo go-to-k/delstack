@@ -1,4 +1,4 @@
-package shared
+package resources
 
 import (
 	"context"
@@ -23,9 +23,10 @@ func NewCloudFormation(cfg aws.Config) *CloudFormation {
 	}
 }
 
-func (cfn *CloudFormation) DeleteStack(stackName *string) error {
+func (cfn *CloudFormation) DeleteStack(stackName *string, retainResources []string) error {
 	input := &cloudformation.DeleteStackInput{
-		StackName: stackName,
+		StackName:       stackName,
+		RetainResources: retainResources,
 	}
 
 	_, err := cfn.client.DeleteStack(context.TODO(), input)
