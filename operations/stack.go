@@ -10,6 +10,19 @@ import (
 	"github.com/go-to-k/delstack/client"
 )
 
+type FailedDeletedResource struct {
+	StackArray  []types.StackResourceSummary
+	BucketArray []types.StackResourceSummary
+	RoleArray   []types.StackResourceSummary
+	ECRArray    []types.StackResourceSummary
+	BackupArray []types.StackResourceSummary
+	CustomArray []types.StackResourceSummary
+}
+
+func DeleteStacks(config aws.Config, resources []types.StackResourceSummary) error {
+	return nil
+}
+
 func DeleteStackResources(config aws.Config, stackName string) error {
 	cfnClient := client.NewCloudFormation(config)
 
@@ -98,16 +111,45 @@ func DeleteStackResources(config aws.Config, stackName string) error {
 		fmt.Println("")
 	}
 
-	// TODO: remove
-	fmt.Printf("%v", len(logicalResourceIdsForRetainResources))
-	fmt.Printf("%v", len(stackArray))
-	fmt.Printf("%v", len(bucketArray))
-	fmt.Printf("%v", len(roleArray))
-	fmt.Printf("%v", len(ecrArray))
-	fmt.Printf("%v", len(backupArray))
-	fmt.Printf("%v", len(customArray))
-
 	if err := cfnClient.DeleteStack(&stackName, logicalResourceIdsForRetainResources); err != nil {
+		return err
+	}
+
+	failedDeletedResource := FailedDeletedResource{
+		StackArray:  stackArray,
+		BucketArray: bucketArray,
+		RoleArray:   roleArray,
+		ECRArray:    ecrArray,
+		BackupArray: backupArray,
+		CustomArray: customArray,
+	}
+
+	if err := DeleteFailedDeletedResource(config, failedDeletedResource); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteFailedDeletedResource(config aws.Config, failedDeletedResource FailedDeletedResource) error {
+	// TODO: Concurrency deletion of failed resources
+
+	if err := DeleteStacks(config, failedDeletedResource.StackArray); err != nil {
+		return err
+	}
+	if err := DeleteBuckets(config, failedDeletedResource.BucketArray); err != nil {
+		return err
+	}
+	if err := DeleteRoles(config, failedDeletedResource.RoleArray); err != nil {
+		return err
+	}
+	if err := DeleteECRs(config, failedDeletedResource.ECRArray); err != nil {
+		return err
+	}
+	if err := DeleteBackups(config, failedDeletedResource.ECRArray); err != nil {
+		return err
+	}
+	if err := DeleteCustoms(config, failedDeletedResource.CustomArray); err != nil {
 		return err
 	}
 
