@@ -60,8 +60,9 @@ func (s3Bucket *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 	return output.Errors, nil
 }
 
-func (s3Bucket *S3) ListObjects(bucketName *string) ([]types.ObjectIdentifier, error) {
-	objects := []types.ObjectIdentifier{}
+// TODO: ListObjectVersionsで賄えるなら消す
+func (s3Bucket *S3) ListObjects(bucketName *string) ([]types.Object, error) {
+	objects := []types.Object{}
 	nextContinuationToken := ""
 	isTruncated := true
 
@@ -71,11 +72,7 @@ func (s3Bucket *S3) ListObjects(bucketName *string) ([]types.ObjectIdentifier, e
 			return nil, err
 		}
 
-		for _, v := range output.Contents {
-			objects = append(objects, types.ObjectIdentifier{
-				Key: v.Key,
-			})
-		}
+		objects = append(objects, output.Contents...)
 
 		isTruncated = output.IsTruncated
 		nextContinuationToken = *output.ContinuationToken
@@ -84,6 +81,7 @@ func (s3Bucket *S3) ListObjects(bucketName *string) ([]types.ObjectIdentifier, e
 	return objects, nil
 }
 
+// TODO: ListObjectVersionsで賄えるなら消す
 func (s3Bucket *S3) iterateListObjects(bucketName *string, nextContinuationToken *string) (*s3.ListObjectsV2Output, error) {
 	input := &s3.ListObjectsV2Input{
 		Bucket:            bucketName,
@@ -100,24 +98,46 @@ func (s3Bucket *S3) iterateListObjects(bucketName *string, nextContinuationToken
 }
 
 func (s3Bucket *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
-	versions := []types.ObjectIdentifier{}
-	input := &s3.ListObjectVersionsInput{
-		Bucket: bucketName,
+	var keyMarker *string
+	var versionIdMarker *string
+	objectIdentifiers := []types.ObjectIdentifier{}
+
+	for {
+		input := &s3.ListObjectVersionsInput{
+			Bucket:          bucketName,
+			KeyMarker:       keyMarker,
+			VersionIdMarker: versionIdMarker,
+		}
+
+		output, err := s3Bucket.client.ListObjectVersions(context.TODO(), input)
+		if err != nil {
+			log.Fatalf("failed list object versions, %v", err)
+			return nil, err
+		}
+
+		for _, version := range output.Versions {
+			objectIdentifier := types.ObjectIdentifier{
+				Key:       version.Key,
+				VersionId: version.VersionId,
+			}
+			objectIdentifiers = append(objectIdentifiers, objectIdentifier)
+		}
+
+		for _, deleteMarker := range output.DeleteMarkers {
+			objectIdentifier := types.ObjectIdentifier{
+				Key:       deleteMarker.Key,
+				VersionId: deleteMarker.VersionId,
+			}
+			objectIdentifiers = append(objectIdentifiers, objectIdentifier)
+		}
+
+		keyMarker = output.NextKeyMarker
+		versionIdMarker = output.NextVersionIdMarker
+
+		if keyMarker == nil && versionIdMarker == nil {
+			break
+		}
 	}
 
-	output, err := s3Bucket.client.ListObjectVersions(context.TODO(), input)
-	if err != nil {
-		log.Fatalf("failed list object versions, %v", err)
-		return nil, err
-	}
-
-	// TODO: Next〜の必要あるならiterateListObjectsと合わせる
-	for _, v := range output.Versions {
-		versions = append(versions, types.ObjectIdentifier{
-			Key:       v.Key,
-			VersionId: v.VersionId,
-		})
-	}
-
-	return versions, nil
+	return objectIdentifiers, nil
 }
