@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -36,28 +35,43 @@ func (s3Bucket *S3) DeleteBucket(bucketName *string) error {
 }
 
 func (s3Bucket *S3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error) {
-	// TODO: 1000以上はループさせてエラーにしない
-	if len(objects) > 1000 {
-		err := fmt.Errorf("over 1000 objects error")
-		log.Fatalf("failed delete objects, %v", err)
-		return nil, err
+	errors := []types.Error{}
+	nextObjects := make([]types.ObjectIdentifier, len(objects))
+	copy(nextObjects, objects)
+
+	for {
+		inputObjects := []types.ObjectIdentifier{}
+
+		if len(nextObjects) > 1000 {
+			inputObjects = append(inputObjects, nextObjects[:1000]...)
+			nextObjects = nextObjects[1000:]
+		} else {
+			inputObjects = append(inputObjects, nextObjects...)
+			nextObjects = nil
+		}
+
+		input := &s3.DeleteObjectsInput{
+			Bucket: bucketName,
+			Delete: &types.Delete{
+				Objects: inputObjects,
+				Quiet:   *aws.Bool(true),
+			},
+		}
+
+		output, err := s3Bucket.client.DeleteObjects(context.TODO(), input)
+		if err != nil {
+			log.Fatalf("failed delete objects, %v", err)
+			return nil, err
+		}
+
+		errors = append(errors, output.Errors...)
+
+		if len(nextObjects) == 0 {
+			break
+		}
 	}
 
-	input := &s3.DeleteObjectsInput{
-		Bucket: bucketName,
-		Delete: &types.Delete{
-			Objects: objects,
-			Quiet:   *aws.Bool(true),
-		},
-	}
-
-	output, err := s3Bucket.client.DeleteObjects(context.TODO(), input)
-	if err != nil {
-		log.Fatalf("failed delete objects, %v", err)
-		return nil, err
-	}
-
-	return output.Errors, nil
+	return errors, nil
 }
 
 // TODO: ListObjectVersionsで賄えるなら消す
