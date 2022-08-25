@@ -10,24 +10,22 @@ import (
 )
 
 type CloudFormation struct {
-	client    *cloudformation.Client
-	waiter    *cloudformation.StackDeleteCompleteWaiter
-	stackName *string
+	client *cloudformation.Client
+	waiter *cloudformation.StackDeleteCompleteWaiter
 }
 
-func NewCloudFormation(config aws.Config, stackName *string) *CloudFormation {
+func NewCloudFormation(config aws.Config) *CloudFormation {
 	client := cloudformation.NewFromConfig(config)
 	waiter := cloudformation.NewStackDeleteCompleteWaiter(client)
 	return &CloudFormation{
 		client,
 		waiter,
-		stackName,
 	}
 }
 
-func (cfn *CloudFormation) DeleteStack(retainResources []string) error {
+func (cfn *CloudFormation) DeleteStack(stackName *string, retainResources []string) error {
 	input := &cloudformation.DeleteStackInput{
-		StackName:       cfn.stackName,
+		StackName:       stackName,
 		RetainResources: retainResources,
 	}
 
@@ -37,16 +35,16 @@ func (cfn *CloudFormation) DeleteStack(retainResources []string) error {
 		return err
 	}
 
-	if err := cfn.waitDeleteStack(); err != nil {
+	if err := cfn.waitDeleteStack(stackName); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (cfn *CloudFormation) DescribeStacks() (*cloudformation.DescribeStacksOutput, bool, error) {
+func (cfn *CloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
 	input := &cloudformation.DescribeStacksInput{
-		StackName: cfn.stackName,
+		StackName: stackName,
 	}
 
 	output, err := cfn.client.DescribeStacks(context.TODO(), input)
@@ -60,9 +58,9 @@ func (cfn *CloudFormation) DescribeStacks() (*cloudformation.DescribeStacksOutpu
 	return output, true, nil
 }
 
-func (cfn *CloudFormation) waitDeleteStack() error {
+func (cfn *CloudFormation) waitDeleteStack(stackName *string) error {
 	input := &cloudformation.DescribeStacksInput{
-		StackName: cfn.stackName,
+		StackName: stackName,
 	}
 
 	err := cfn.waiter.Wait(context.TODO(), input, 3600000000000)
@@ -74,9 +72,9 @@ func (cfn *CloudFormation) waitDeleteStack() error {
 	return nil
 }
 
-func (cfn *CloudFormation) ListStackResources() (*cloudformation.ListStackResourcesOutput, error) {
+func (cfn *CloudFormation) ListStackResources(stackName *string) (*cloudformation.ListStackResourcesOutput, error) {
 	input := &cloudformation.ListStackResourcesInput{
-		StackName: cfn.stackName,
+		StackName: stackName,
 	}
 
 	output, err := cfn.client.ListStackResources(context.TODO(), input)
