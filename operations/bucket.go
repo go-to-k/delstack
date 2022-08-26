@@ -24,12 +24,12 @@ func DeleteBuckets(config aws.Config, resources []cfnTypes.StackResourceSummary)
 }
 
 func DeleteBucketResources(s3Client *client.S3, bucketName string) ([]s3Types.Error, error) {
-	version, err := s3Client.ListObjectVersions(&bucketName)
+	versions, err := s3Client.ListObjectVersions(&bucketName)
 	if err != nil {
 		return nil, err
 	}
 
-	errors, err := s3Client.DeleteObjects(&bucketName, version)
+	errors, err := s3Client.DeleteObjects(&bucketName, versions)
 	if err != nil {
 		return nil, err
 	}
