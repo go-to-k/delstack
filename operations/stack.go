@@ -56,13 +56,12 @@ func DeleteStackResources(config aws.Config, stackName string) error {
 		return err
 	}
 
-	stackResources, err := cfnClient.ListStackResources(&stackName)
+	stackResourceSummaries, err := cfnClient.ListStackResources(&stackName)
 	if err != nil {
 		return err
 	}
 
-	collection := NewResourceCollection(config, stackName, stackResources.StackResourceSummaries)
-
+	collection := NewResourceCollection(config, stackName, stackResourceSummaries)
 	if err := collection.CheckResourceCounts(); err != nil {
 		return err
 	}
