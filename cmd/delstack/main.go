@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/go-to-k/delstack/operations"
@@ -10,6 +11,7 @@ import (
 
 /*
 	TODO: add logger
+	TODO: message handler or high usability messages
 */
 
 func main() {
@@ -17,15 +19,18 @@ func main() {
 	_, err := flags.Parse(&opts)
 	if err != nil {
 		// os.Exit(1)
+		// TODO: show help message
 		return
 	}
 
 	config, err := operations.LoadAwsConfig(opts.Profile, opts.Region)
 	if err != nil {
+		log.Fatalf("Error: %s", err.Error())
 		os.Exit(1)
 	}
 
 	if err := operations.DeleteStackResources(config, opts.StackName); err != nil {
+		log.Fatalf("Error: %s", err.Error())
 		os.Exit(1)
 	}
 }
