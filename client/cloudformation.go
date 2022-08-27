@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 )
 
 type CloudFormation struct {
@@ -72,16 +73,29 @@ func (cfn *CloudFormation) waitDeleteStack(stackName *string) error {
 	return nil
 }
 
-func (cfn *CloudFormation) ListStackResources(stackName *string) (*cloudformation.ListStackResourcesOutput, error) {
-	input := &cloudformation.ListStackResourcesInput{
-		StackName: stackName,
+func (cfn *CloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
+	var nextToken *string
+	StackResourceSummaries := []types.StackResourceSummary{}
+
+	for {
+		input := &cloudformation.ListStackResourcesInput{
+			StackName: stackName,
+			NextToken: nextToken,
+		}
+
+		output, err := cfn.client.ListStackResources(context.TODO(), input)
+		if err != nil {
+			log.Fatalf("failed list the cloudformation stack resources, %v", err)
+			return StackResourceSummaries, err
+		}
+
+		StackResourceSummaries = append(StackResourceSummaries, output.StackResourceSummaries...)
+		nextToken = output.NextToken
+
+		if nextToken == nil {
+			break
+		}
 	}
 
-	output, err := cfn.client.ListStackResources(context.TODO(), input)
-	if err != nil {
-		log.Fatalf("failed list the cloudformation stack resources, %v", err)
-		return output, err
-	}
-
-	return output, nil
+	return StackResourceSummaries, nil
 }
