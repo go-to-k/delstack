@@ -30,8 +30,8 @@ func DeleteBucket(s3Client *client.S3, bucketName string) error {
 	if err != nil {
 		return err
 	}
-	if errors != nil {
-		return fmt.Errorf("%v", errors)
+	if len(errors) > 0 {
+		return fmt.Errorf("DeleteObjects Error: %v", errors)
 	}
 
 	if err := s3Client.DeleteBucket(&bucketName); err != nil {
