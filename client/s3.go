@@ -74,43 +74,6 @@ func (s3Bucket *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 	return errors, nil
 }
 
-// TODO: ListObjectVersionsで賄えるなら消す
-func (s3Bucket *S3) ListObjects(bucketName *string) ([]types.Object, error) {
-	objects := []types.Object{}
-	nextContinuationToken := ""
-	isTruncated := true
-
-	for isTruncated {
-		output, err := s3Bucket.iterateListObjects(bucketName, &nextContinuationToken)
-		if err != nil {
-			return nil, err
-		}
-
-		objects = append(objects, output.Contents...)
-
-		isTruncated = output.IsTruncated
-		nextContinuationToken = *output.ContinuationToken
-	}
-
-	return objects, nil
-}
-
-// TODO: ListObjectVersionsで賄えるなら消す
-func (s3Bucket *S3) iterateListObjects(bucketName *string, nextContinuationToken *string) (*s3.ListObjectsV2Output, error) {
-	input := &s3.ListObjectsV2Input{
-		Bucket:            bucketName,
-		ContinuationToken: nextContinuationToken,
-	}
-
-	output, err := s3Bucket.client.ListObjectsV2(context.TODO(), input)
-	if err != nil {
-		log.Fatalf("failed list objects, %v", err)
-		return nil, err
-	}
-
-	return output, nil
-}
-
 func (s3Bucket *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
 	var keyMarker *string
 	var versionIdMarker *string
