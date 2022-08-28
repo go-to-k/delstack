@@ -20,9 +20,9 @@ func NewS3(config aws.Config) *S3 {
 	}
 }
 
-func (s3Bucket *S3) DeleteBucket(bucketName *string) error {
+func (s3Bucket *S3) DeleteBucket(bucketName string) error {
 	input := &s3.DeleteBucketInput{
-		Bucket: bucketName,
+		Bucket: &bucketName,
 	}
 
 	_, err := s3Bucket.client.DeleteBucket(context.TODO(), input)
@@ -34,7 +34,7 @@ func (s3Bucket *S3) DeleteBucket(bucketName *string) error {
 	return nil
 }
 
-func (s3Bucket *S3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error) {
+func (s3Bucket *S3) DeleteObjects(bucketName string, objects []types.ObjectIdentifier) ([]types.Error, error) {
 	errors := []types.Error{}
 	nextObjects := make([]types.ObjectIdentifier, len(objects))
 	copy(nextObjects, objects)
@@ -51,7 +51,7 @@ func (s3Bucket *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 		}
 
 		input := &s3.DeleteObjectsInput{
-			Bucket: bucketName,
+			Bucket: &bucketName,
 			Delete: &types.Delete{
 				Objects: inputObjects,
 				Quiet:   *aws.Bool(true),
@@ -74,14 +74,14 @@ func (s3Bucket *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 	return errors, nil
 }
 
-func (s3Bucket *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+func (s3Bucket *S3) ListObjectVersions(bucketName string) ([]types.ObjectIdentifier, error) {
 	var keyMarker *string
 	var versionIdMarker *string
 	objectIdentifiers := []types.ObjectIdentifier{}
 
 	for {
 		input := &s3.ListObjectVersionsInput{
-			Bucket:          bucketName,
+			Bucket:          &bucketName,
 			KeyMarker:       keyMarker,
 			VersionIdMarker: versionIdMarker,
 		}
