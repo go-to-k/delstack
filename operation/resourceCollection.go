@@ -111,7 +111,7 @@ func (collection *ResourceCollection) DeleteResourceCollection() error {
 	if err := DeleteECRs(collection.config, collection.ECRArray); err != nil {
 		return err
 	}
-	if err := DeleteBackups(collection.config, collection.ECRArray); err != nil {
+	if err := DeleteBackupVaults(collection.config, collection.ECRArray); err != nil {
 		return err
 	}
 	if err := DeleteCustoms(collection.config, collection.CustomArray); err != nil {

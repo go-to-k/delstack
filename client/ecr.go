@@ -19,13 +19,13 @@ func NewECR(config aws.Config) *ECR {
 	}
 }
 
-func (ecrRepository *ECR) DeleteRepository(repositoryName string) error {
+func (ecrClient *ECR) DeleteRepository(repositoryName string) error {
 	input := &ecr.DeleteRepositoryInput{
 		RepositoryName: &repositoryName,
 		Force:          true,
 	}
 
-	_, err := ecrRepository.client.DeleteRepository(context.TODO(), input)
+	_, err := ecrClient.client.DeleteRepository(context.TODO(), input)
 	if err != nil {
 		log.Fatalf("failed delete the ECR Repository, %v", err)
 		return err

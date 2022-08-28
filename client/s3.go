@@ -20,12 +20,12 @@ func NewS3(config aws.Config) *S3 {
 	}
 }
 
-func (s3Bucket *S3) DeleteBucket(bucketName string) error {
+func (s3Client *S3) DeleteBucket(bucketName string) error {
 	input := &s3.DeleteBucketInput{
 		Bucket: &bucketName,
 	}
 
-	_, err := s3Bucket.client.DeleteBucket(context.TODO(), input)
+	_, err := s3Client.client.DeleteBucket(context.TODO(), input)
 	if err != nil {
 		log.Fatalf("failed delete the s3 bucket, %v", err)
 		return err
@@ -34,7 +34,7 @@ func (s3Bucket *S3) DeleteBucket(bucketName string) error {
 	return nil
 }
 
-func (s3Bucket *S3) DeleteObjects(bucketName string, objects []types.ObjectIdentifier) ([]types.Error, error) {
+func (s3Client *S3) DeleteObjects(bucketName string, objects []types.ObjectIdentifier) ([]types.Error, error) {
 	errors := []types.Error{}
 	nextObjects := make([]types.ObjectIdentifier, len(objects))
 	copy(nextObjects, objects)
@@ -58,7 +58,7 @@ func (s3Bucket *S3) DeleteObjects(bucketName string, objects []types.ObjectIdent
 			},
 		}
 
-		output, err := s3Bucket.client.DeleteObjects(context.TODO(), input)
+		output, err := s3Client.client.DeleteObjects(context.TODO(), input)
 		if err != nil {
 			log.Fatalf("failed delete objects, %v", err)
 			return nil, err
@@ -74,7 +74,7 @@ func (s3Bucket *S3) DeleteObjects(bucketName string, objects []types.ObjectIdent
 	return errors, nil
 }
 
-func (s3Bucket *S3) ListObjectVersions(bucketName string) ([]types.ObjectIdentifier, error) {
+func (s3Client *S3) ListObjectVersions(bucketName string) ([]types.ObjectIdentifier, error) {
 	var keyMarker *string
 	var versionIdMarker *string
 	objectIdentifiers := []types.ObjectIdentifier{}
@@ -86,7 +86,7 @@ func (s3Bucket *S3) ListObjectVersions(bucketName string) ([]types.ObjectIdentif
 			VersionIdMarker: versionIdMarker,
 		}
 
-		output, err := s3Bucket.client.ListObjectVersions(context.TODO(), input)
+		output, err := s3Client.client.ListObjectVersions(context.TODO(), input)
 		if err != nil {
 			log.Fatalf("failed list object versions, %v", err)
 			return nil, err
