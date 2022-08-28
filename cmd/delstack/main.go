@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/go-to-k/delstack/operations"
+	"github.com/go-to-k/delstack/operation"
 	"github.com/go-to-k/delstack/option"
 	flags "github.com/jessevdk/go-flags"
 )
@@ -23,13 +23,13 @@ func main() {
 		return
 	}
 
-	config, err := operations.LoadAwsConfig(opts.Profile, opts.Region)
+	config, err := operation.LoadAwsConfig(opts.Profile, opts.Region)
 	if err != nil {
 		log.Fatalf("Error: %s", err.Error())
 		os.Exit(1)
 	}
 
-	if err := operations.DeleteStackResources(config, opts.StackName); err != nil {
+	if err := operation.DeleteStackResources(config, opts.StackName); err != nil {
 		log.Fatalf("Error: %s", err.Error())
 		os.Exit(1)
 	}
