@@ -25,7 +25,7 @@ func DeleteStacks(config aws.Config, resources []types.StackResourceSummary) err
 func DeleteStackResources(config aws.Config, stackName string) error {
 	cfnClient := client.NewCloudFormation(config)
 
-	stackOutputBeforeDelete, isExistBeforeDelete, err := cfnClient.DescribeStacks(&stackName)
+	stackOutputBeforeDelete, isExistBeforeDelete, err := cfnClient.DescribeStacks(stackName)
 	if err != nil {
 		return err
 	}
@@ -39,11 +39,11 @@ func DeleteStackResources(config aws.Config, stackName string) error {
 		return nil
 	}
 
-	if err := cfnClient.DeleteStack(&stackName, []string{}); err != nil {
+	if err := cfnClient.DeleteStack(stackName, []string{}); err != nil {
 		return err
 	}
 
-	stackOutputAfterDelete, isExistAfterDelete, err := cfnClient.DescribeStacks(&stackName)
+	stackOutputAfterDelete, isExistAfterDelete, err := cfnClient.DescribeStacks(stackName)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func DeleteStackResources(config aws.Config, stackName string) error {
 		return err
 	}
 
-	stackResourceSummaries, err := cfnClient.ListStackResources(&stackName)
+	stackResourceSummaries, err := cfnClient.ListStackResources(stackName)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func DeleteStackResources(config aws.Config, stackName string) error {
 		return err
 	}
 
-	if err := cfnClient.DeleteStack(&stackName, collection.LogicalResourceIds); err != nil {
+	if err := cfnClient.DeleteStack(stackName, collection.LogicalResourceIds); err != nil {
 		return err
 	}
 
