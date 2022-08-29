@@ -19,9 +19,9 @@ func NewECR(config aws.Config) *ECR {
 	}
 }
 
-func (ecrClient *ECR) DeleteRepository(repositoryName string) error {
+func (ecrClient *ECR) DeleteRepository(repositoryName *string) error {
 	input := &ecr.DeleteRepositoryInput{
-		RepositoryName: &repositoryName,
+		RepositoryName: repositoryName,
 		Force:          true,
 	}
 

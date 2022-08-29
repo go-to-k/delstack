@@ -10,7 +10,7 @@ func DeleteECRs(config aws.Config, resources []types.StackResourceSummary) error
 	// TODO: Concurrency Delete
 	ecrClient := client.NewECR(config)
 	for _, repository := range resources {
-		err := DeleteECR(ecrClient, *repository.PhysicalResourceId)
+		err := DeleteECR(ecrClient, repository.PhysicalResourceId)
 		if err != nil {
 			return err
 		}
@@ -18,7 +18,7 @@ func DeleteECRs(config aws.Config, resources []types.StackResourceSummary) error
 	return nil
 }
 
-func DeleteECR(ecrClient *client.ECR, repositoryName string) error {
+func DeleteECR(ecrClient *client.ECR, repositoryName *string) error {
 	if err := ecrClient.DeleteRepository(repositoryName); err != nil {
 		return err
 	}

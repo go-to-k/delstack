@@ -20,13 +20,13 @@ func NewBackup(config aws.Config) *Backup {
 	}
 }
 
-func (backupClient *Backup) ListRecoveryPointsByBackupVault(repositoryName string) ([]types.RecoveryPointByBackupVault, error) {
+func (backupClient *Backup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
 	var nextToken *string
 	recoveryPoints := []types.RecoveryPointByBackupVault{}
 
 	for {
 		input := &backup.ListRecoveryPointsByBackupVaultInput{
-			BackupVaultName: &repositoryName,
+			BackupVaultName: backupVaultName,
 			NextToken:       nextToken,
 		}
 
@@ -46,7 +46,7 @@ func (backupClient *Backup) ListRecoveryPointsByBackupVault(repositoryName strin
 	return recoveryPoints, nil
 }
 
-func (backupClient *Backup) DeleteRecoveryPoints(backupVaultName string, recoveryPoints []types.RecoveryPointByBackupVault) error {
+func (backupClient *Backup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
 	for _, recoveryPoint := range recoveryPoints {
 		if err := backupClient.DeleteRecoveryPoint(backupVaultName, recoveryPoint.RecoveryPointArn); err != nil {
 			return err
@@ -55,9 +55,9 @@ func (backupClient *Backup) DeleteRecoveryPoints(backupVaultName string, recover
 	return nil
 }
 
-func (backupClient *Backup) DeleteRecoveryPoint(backupVaultName string, recoveryPointArn *string) error {
+func (backupClient *Backup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
 	input := &backup.DeleteRecoveryPointInput{
-		BackupVaultName:  &backupVaultName,
+		BackupVaultName:  backupVaultName,
 		RecoveryPointArn: recoveryPointArn,
 	}
 
@@ -70,9 +70,9 @@ func (backupClient *Backup) DeleteRecoveryPoint(backupVaultName string, recovery
 	return nil
 }
 
-func (backupClient *Backup) DeleteBackupVault(repositoryName string) error {
+func (backupClient *Backup) DeleteBackupVault(backupVaultName *string) error {
 	input := &backup.DeleteBackupVaultInput{
-		BackupVaultName: &repositoryName,
+		BackupVaultName: backupVaultName,
 	}
 
 	_, err := backupClient.client.DeleteBackupVault(context.TODO(), input)
