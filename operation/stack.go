@@ -15,14 +15,14 @@ func DeleteStacks(config aws.Config, resources []types.StackResourceSummary) err
 	re := regexp.MustCompile(`^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`)
 	for _, stack := range resources {
 		stackName := re.ReplaceAllString(*stack.PhysicalResourceId, `$1`)
-		if err := DeleteStackResources(config, stackName); err != nil {
+		if err := DeleteStackResources(config, &stackName); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func DeleteStackResources(config aws.Config, stackName string) error {
+func DeleteStackResources(config aws.Config, stackName *string) error {
 	cfnClient := client.NewCloudFormation(config)
 
 	stackOutputBeforeDelete, isExistBeforeDelete, err := cfnClient.DescribeStacks(stackName)
@@ -61,7 +61,7 @@ func DeleteStackResources(config aws.Config, stackName string) error {
 		return err
 	}
 
-	collection := NewResourceCollection(config, stackName, stackResourceSummaries)
+	collection := NewResourceCollection(config, *stackName, stackResourceSummaries)
 	if err := collection.CheckResourceCounts(); err != nil {
 		return err
 	}

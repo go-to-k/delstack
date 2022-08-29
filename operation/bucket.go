@@ -12,7 +12,7 @@ func DeleteBuckets(config aws.Config, resources []cfnTypes.StackResourceSummary)
 	// TODO: Concurrency Delete
 	s3Client := client.NewS3(config)
 	for _, bucket := range resources {
-		err := DeleteBucket(s3Client, *bucket.PhysicalResourceId)
+		err := DeleteBucket(s3Client, bucket.PhysicalResourceId)
 		if err != nil {
 			return err
 		}
@@ -20,7 +20,7 @@ func DeleteBuckets(config aws.Config, resources []cfnTypes.StackResourceSummary)
 	return nil
 }
 
-func DeleteBucket(s3Client *client.S3, bucketName string) error {
+func DeleteBucket(s3Client *client.S3, bucketName *string) error {
 	versions, err := s3Client.ListObjectVersions(bucketName)
 	if err != nil {
 		return err
