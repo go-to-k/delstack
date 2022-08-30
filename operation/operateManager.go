@@ -15,7 +15,7 @@ func NewOperatorManager(config aws.Config, stackName string, stackResourceSummar
 	}
 }
 
-func (operatorManager *OperatorManager) getResourcesLengthFromOperatorList() int {
+func (operatorManager *OperatorManager) getOperatorResourcesLength() int {
 	var length int
 	for _, operator := range *operatorManager.operatorCollection.GetOperatorList() {
 		length += operator.GetResourcesLength()
@@ -25,7 +25,7 @@ func (operatorManager *OperatorManager) getResourcesLengthFromOperatorList() int
 
 func (operatorManager *OperatorManager) CheckResourceCounts() error {
 	logicalResourceIdsLength := len(*operatorManager.operatorCollection.GetLogicalResourceIds())
-	operatorResourcesLength := operatorManager.getResourcesLengthFromOperatorList()
+	operatorResourcesLength := operatorManager.getOperatorResourcesLength()
 
 	if logicalResourceIdsLength != operatorResourcesLength {
 		return operatorManager.operatorCollection.GetNotSupportedServicesError()
