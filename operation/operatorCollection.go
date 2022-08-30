@@ -9,9 +9,9 @@ import (
 )
 
 type OperatorCollection struct {
-	StackName          string
-	LogicalResourceIds []string
-	OperatorList       []IOperator
+	stackName          string
+	logicalResourceIds []string
+	operatorList       []IOperator
 }
 
 func NewOperatorCollection(config aws.Config, stackName string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
@@ -55,19 +55,23 @@ func NewOperatorCollection(config aws.Config, stackName string, stackResourceSum
 	operatorList = append(operatorList, customOperator)
 
 	return &OperatorCollection{
-		StackName:          stackName,
-		LogicalResourceIds: logicalResourceIds,
-		OperatorList:       operatorList,
+		stackName:          stackName,
+		logicalResourceIds: logicalResourceIds,
+		operatorList:       operatorList,
 	}
 }
 
 func (operatorCollection *OperatorCollection) GetLogicalResourceIds() *[]string {
-	return &operatorCollection.LogicalResourceIds
+	return &operatorCollection.logicalResourceIds
+}
+
+func (operatorCollection *OperatorCollection) GetOperatorList() *[]IOperator {
+	return &operatorCollection.operatorList
 }
 
 func (operatorCollection *OperatorCollection) GetNotSupportedServicesError() error {
 	fmt.Println("===========================================================")
-	fmt.Printf("%v is FAILED !!!", operatorCollection.StackName)
+	fmt.Printf("%v is FAILED !!!", operatorCollection.stackName)
 	fmt.Println("")
 	fmt.Println("The deletion seems to be failing for some other reason.")
 	fmt.Println("This function supports force deletion of ")
