@@ -9,7 +9,6 @@ import (
 )
 
 type OperatorCollection struct {
-	config             aws.Config
 	StackName          string
 	LogicalResourceIds []string
 	OperatorList       []IOperator
@@ -56,7 +55,6 @@ func NewOperatorCollection(config aws.Config, stackName string, stackResourceSum
 	operatorList = append(operatorList, customOperator)
 
 	return &OperatorCollection{
-		config:             config,
 		StackName:          stackName,
 		LogicalResourceIds: logicalResourceIds,
 		OperatorList:       operatorList,
@@ -67,45 +65,20 @@ func (operatorCollection *OperatorCollection) GetLogicalResourceIds() *[]string 
 	return &operatorCollection.LogicalResourceIds
 }
 
-func (operatorCollection *OperatorCollection) getResourcesLengthFromOperatorList() int {
-	var length int
-	for _, operator := range operatorCollection.OperatorList {
-		length += operator.GetResourcesLength()
-	}
-	return length
-}
+func (operatorCollection *OperatorCollection) GetNotSupportedServicesError() error {
+	fmt.Println("===========================================================")
+	fmt.Printf("%v is FAILED !!!", operatorCollection.StackName)
+	fmt.Println("")
+	fmt.Println("The deletion seems to be failing for some other reason.")
+	fmt.Println("This function supports force deletion of ")
+	fmt.Println("<S3 buckets> that are Non-empty or Versioning enabled")
+	fmt.Println("and <IAM roles> with policies attached from outside the stack,")
+	fmt.Println("and <ECR> still contains images,")
+	fmt.Println("and <BackupVault> contains recovery points,")
+	fmt.Println("and <Nested Child Stack>.")
+	fmt.Println("<Custom Resources> was also forced to delete.")
+	fmt.Println("===========================================================")
+	fmt.Println("")
 
-func (operatorCollection *OperatorCollection) CheckResourceCounts() error {
-	collectionLength := operatorCollection.getResourcesLengthFromOperatorList()
-
-	if len(operatorCollection.LogicalResourceIds) != collectionLength {
-		fmt.Println("===========================================================")
-		fmt.Printf("%v is FAILED !!!", operatorCollection.StackName)
-		fmt.Println("")
-		fmt.Println("The deletion seems to be failing for some other reason.")
-		fmt.Println("This function supports force deletion of ")
-		fmt.Println("<S3 buckets> that are Non-empty or Versioning enabled")
-		fmt.Println("and <IAM roles> with policies attached from outside the stack,")
-		fmt.Println("and <ECR> still contains images,")
-		fmt.Println("and <BackupVault> contains recovery points,")
-		fmt.Println("and <Nested Child Stack>.")
-		fmt.Println("<Custom Resources> was also forced to delete.")
-		fmt.Println("===========================================================")
-		fmt.Println("")
-
-		return fmt.Errorf("not supported services error")
-	}
-
-	return nil
-}
-
-func (operatorCollection *OperatorCollection) DeleteResourceCollection() error {
-	// TODO: Concurrency deletion of failed resources
-	for _, operator := range operatorCollection.OperatorList {
-		if err := operator.DeleteResources(); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return fmt.Errorf("not supported services error")
 }
