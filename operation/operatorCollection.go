@@ -26,8 +26,6 @@ func NewOperatorCollection(config aws.Config, stackName string, stackResourceSum
 
 	for _, v := range stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {
-			// elseでremoveでも？
-			// それかcountでintでも？
 			logicalResourceIds = append(logicalResourceIds, *v.LogicalResourceId)
 
 			switch *v.ResourceType {
