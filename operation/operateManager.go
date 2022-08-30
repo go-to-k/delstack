@@ -9,7 +9,7 @@ type OperatorManager struct {
 	operatorCollection *OperatorCollection
 }
 
-func NewOperatorManager(config aws.Config, stackName *string, stackResourceSummaries *[]types.StackResourceSummary) *OperatorManager {
+func NewOperatorManager(config aws.Config, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorManager {
 	return &OperatorManager{
 		operatorCollection: NewOperatorCollection(config, stackName, stackResourceSummaries),
 	}
@@ -17,14 +17,14 @@ func NewOperatorManager(config aws.Config, stackName *string, stackResourceSumma
 
 func (operatorManager *OperatorManager) getOperatorResourcesLength() int {
 	var length int
-	for _, operator := range *operatorManager.operatorCollection.GetOperatorList() {
+	for _, operator := range operatorManager.operatorCollection.GetOperatorList() {
 		length += operator.GetResourcesLength()
 	}
 	return length
 }
 
 func (operatorManager *OperatorManager) CheckResourceCounts() error {
-	logicalResourceIdsLength := len(*operatorManager.operatorCollection.GetLogicalResourceIds())
+	logicalResourceIdsLength := len(operatorManager.operatorCollection.GetLogicalResourceIds())
 	operatorResourcesLength := operatorManager.getOperatorResourcesLength()
 
 	if logicalResourceIdsLength != operatorResourcesLength {
@@ -34,13 +34,13 @@ func (operatorManager *OperatorManager) CheckResourceCounts() error {
 	return nil
 }
 
-func (operatorManager *OperatorManager) GetLogicalResourceIds() *[]string {
+func (operatorManager *OperatorManager) GetLogicalResourceIds() []string {
 	return operatorManager.operatorCollection.GetLogicalResourceIds()
 }
 
 func (operatorManager *OperatorManager) DeleteResourceCollection() error {
 	// TODO: Concurrency deletion of failed resources
-	for _, operator := range *operatorManager.operatorCollection.GetOperatorList() {
+	for _, operator := range operatorManager.operatorCollection.GetOperatorList() {
 		if err := operator.DeleteResources(); err != nil {
 			return err
 		}

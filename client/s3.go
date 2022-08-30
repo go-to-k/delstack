@@ -34,10 +34,10 @@ func (s3Client *S3) DeleteBucket(bucketName *string) error {
 	return nil
 }
 
-func (s3Client *S3) DeleteObjects(bucketName *string, objects *[]types.ObjectIdentifier) (*[]types.Error, error) {
+func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error) {
 	errors := []types.Error{}
-	nextObjects := make([]types.ObjectIdentifier, len(*objects))
-	copy(nextObjects, *objects)
+	nextObjects := make([]types.ObjectIdentifier, len(objects))
+	copy(nextObjects, objects)
 
 	for {
 		inputObjects := []types.ObjectIdentifier{}
@@ -71,10 +71,10 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects *[]types.ObjectIde
 		}
 	}
 
-	return &errors, nil
+	return errors, nil
 }
 
-func (s3Client *S3) ListObjectVersions(bucketName *string) (*[]types.ObjectIdentifier, error) {
+func (s3Client *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
 	var keyMarker *string
 	var versionIdMarker *string
 	objectIdentifiers := []types.ObjectIdentifier{}
@@ -116,5 +116,5 @@ func (s3Client *S3) ListObjectVersions(bucketName *string) (*[]types.ObjectIdent
 		}
 	}
 
-	return &objectIdentifiers, nil
+	return objectIdentifiers, nil
 }
