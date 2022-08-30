@@ -14,7 +14,7 @@ type OperatorCollection struct {
 	operatorList       []IOperator
 }
 
-func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSummaries *[]types.StackResourceSummary) *OperatorCollection {
+func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
 	logicalResourceIds := []string{}
 	stackOperator := NewStackOperator(config)
 	bucketOperator := NewBucketOperator(config)
@@ -23,7 +23,7 @@ func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSu
 	backupVaultOperator := NewBackupVaultOperator(config)
 	customOperator := NewCustomOperator(config)
 
-	for _, v := range *stackResourceSummaries {
+	for _, v := range stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {
 			logicalResourceIds = append(logicalResourceIds, aws.ToString(v.LogicalResourceId))
 
@@ -61,12 +61,12 @@ func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSu
 	}
 }
 
-func (operatorCollection *OperatorCollection) GetLogicalResourceIds() *[]string {
-	return &operatorCollection.logicalResourceIds
+func (operatorCollection *OperatorCollection) GetLogicalResourceIds() []string {
+	return operatorCollection.logicalResourceIds
 }
 
-func (operatorCollection *OperatorCollection) GetOperatorList() *[]IOperator {
-	return &operatorCollection.operatorList
+func (operatorCollection *OperatorCollection) GetOperatorList() []IOperator {
+	return operatorCollection.operatorList
 }
 
 func (operatorCollection *OperatorCollection) GetNotSupportedServicesError() error {

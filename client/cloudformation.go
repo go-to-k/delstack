@@ -24,10 +24,10 @@ func NewCloudFormation(config aws.Config) *CloudFormation {
 	}
 }
 
-func (cfnClient *CloudFormation) DeleteStack(stackName *string, retainResources *[]string) error {
+func (cfnClient *CloudFormation) DeleteStack(stackName *string, retainResources []string) error {
 	input := &cloudformation.DeleteStackInput{
 		StackName:       stackName,
-		RetainResources: *retainResources,
+		RetainResources: retainResources,
 	}
 
 	_, err := cfnClient.client.DeleteStack(context.TODO(), input)
@@ -73,7 +73,7 @@ func (cfnClient *CloudFormation) waitDeleteStack(stackName *string) error {
 	return nil
 }
 
-func (cfnClient *CloudFormation) ListStackResources(stackName *string) (*[]types.StackResourceSummary, error) {
+func (cfnClient *CloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
 	var nextToken *string
 	stackResourceSummaries := []types.StackResourceSummary{}
 
@@ -86,7 +86,7 @@ func (cfnClient *CloudFormation) ListStackResources(stackName *string) (*[]types
 		output, err := cfnClient.client.ListStackResources(context.TODO(), input)
 		if err != nil {
 			log.Fatalf("failed list the cloudformation stack resources, %v", err)
-			return &stackResourceSummaries, err
+			return stackResourceSummaries, err
 		}
 
 		stackResourceSummaries = append(stackResourceSummaries, output.StackResourceSummaries...)
@@ -97,5 +97,5 @@ func (cfnClient *CloudFormation) ListStackResources(stackName *string) (*[]types
 		}
 	}
 
-	return &stackResourceSummaries, nil
+	return stackResourceSummaries, nil
 }

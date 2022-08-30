@@ -52,8 +52,8 @@ func (operator *BucketOperator) DeleteBucket(bucketName *string) error {
 	if err != nil {
 		return err
 	}
-	if len(*errors) > 0 {
-		return fmt.Errorf("DeleteObjects Error: %v", *errors)
+	if len(errors) > 0 {
+		return fmt.Errorf("DeleteObjects Error: %v", errors)
 	}
 
 	if err := operator.client.DeleteBucket(bucketName); err != nil {
