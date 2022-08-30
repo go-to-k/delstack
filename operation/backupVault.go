@@ -6,11 +6,33 @@ import (
 	"github.com/go-to-k/delstack/client"
 )
 
-func DeleteBackupVaults(config aws.Config, resources []types.StackResourceSummary) error {
+var _ IOperator = (*BackupVaultOperator)(nil)
+
+type BackupVaultOperator struct {
+	client    *client.Backup
+	resources []types.StackResourceSummary
+}
+
+func NewBackupVaultOperator(config aws.Config) *BackupVaultOperator {
+	client := client.NewBackup(config)
+	return &BackupVaultOperator{
+		client:    client,
+		resources: []types.StackResourceSummary{},
+	}
+}
+
+func (operator *BackupVaultOperator) AddResources(resource types.StackResourceSummary) {
+	operator.resources = append(operator.resources, resource)
+}
+
+func (operator *BackupVaultOperator) GetResourcesLength() int {
+	return len(operator.resources)
+}
+
+func (operator *BackupVaultOperator) DeleteResources() error {
 	// TODO: Concurrency Delete
-	backupVaultClient := client.NewBackup(config)
-	for _, backupVault := range resources {
-		err := DeleteBackupVault(backupVaultClient, backupVault.PhysicalResourceId)
+	for _, backupVault := range operator.resources {
+		err := operator.DeleteBackupVault(backupVault.PhysicalResourceId)
 		if err != nil {
 			return err
 		}
@@ -18,17 +40,17 @@ func DeleteBackupVaults(config aws.Config, resources []types.StackResourceSummar
 	return nil
 }
 
-func DeleteBackupVault(backupVaultClient *client.Backup, backupVaultName *string) error {
-	recoveryPoints, err := backupVaultClient.ListRecoveryPointsByBackupVault(backupVaultName)
+func (operator *BackupVaultOperator) DeleteBackupVault(backupVaultName *string) error {
+	recoveryPoints, err := operator.client.ListRecoveryPointsByBackupVault(backupVaultName)
 	if err != nil {
 		return err
 	}
 
-	if err := backupVaultClient.DeleteRecoveryPoints(backupVaultName, recoveryPoints); err != nil {
+	if err := operator.client.DeleteRecoveryPoints(backupVaultName, recoveryPoints); err != nil {
 		return err
 	}
 
-	if err := backupVaultClient.DeleteBackupVault(backupVaultName); err != nil {
+	if err := operator.client.DeleteBackupVault(backupVaultName); err != nil {
 		return err
 	}
 

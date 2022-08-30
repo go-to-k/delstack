@@ -9,71 +9,71 @@ import (
 )
 
 type ResourceCollection struct {
-	config             aws.Config
-	StackName          string
-	LogicalResourceIds []string
-	StackArray         []types.StackResourceSummary
-	BucketArray        []types.StackResourceSummary
-	RoleArray          []types.StackResourceSummary
-	ECRArray           []types.StackResourceSummary
-	BackupArray        []types.StackResourceSummary
-	CustomArray        []types.StackResourceSummary
+	config              aws.Config
+	StackName           string
+	LogicalResourceIds  []string
+	StackOperator       *StackOperator
+	BucketOperator      *BucketOperator
+	RoleOperator        *RoleOperator
+	ECROperator         *ECROperator
+	BackupVaultOperator *BackupVaultOperator
+	CustomOperator      *CustomOperator
 }
 
 func NewResourceCollection(config aws.Config, stackName string, stackResourceSummaries []types.StackResourceSummary) *ResourceCollection {
 	var logicalResourceIds []string
-	var (
-		stackArray  []types.StackResourceSummary
-		bucketArray []types.StackResourceSummary
-		roleArray   []types.StackResourceSummary
-		ecrArray    []types.StackResourceSummary
-		backupArray []types.StackResourceSummary
-		customArray []types.StackResourceSummary
-	)
+	stackOperator := NewStackOperator(config)
+	bucketOperator := NewBucketOperator(config)
+	roleOperator := NewRoleOperator(config)
+	ecrOperator := NewECROperator(config)
+	backupVaultOperator := NewBackupVaultOperator(config)
+	customOperator := NewCustomOperator(config)
 
 	for _, v := range stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {
+			// elseでremoveでも？
+			// それかcountでintでも？
 			logicalResourceIds = append(logicalResourceIds, *v.LogicalResourceId)
 
 			switch *v.ResourceType {
 			case "AWS::CloudFormation::Stack":
-				stackArray = append(stackArray, v)
+				stackOperator.AddResources(v)
 			case "AWS::S3::Bucket":
-				bucketArray = append(bucketArray, v)
+				bucketOperator.AddResources(v)
 			case "AWS::IAM::Role":
-				roleArray = append(roleArray, v)
+				roleOperator.AddResources(v)
 			case "AWS::ECR::Repository":
-				ecrArray = append(ecrArray, v)
+				ecrOperator.AddResources(v)
 			case "AWS::Backup::BackupVault":
-				backupArray = append(backupArray, v)
+				backupVaultOperator.AddResources(v)
 			default:
 				if strings.Contains(*v.ResourceType, "Custom::") {
-					customArray = append(customArray, v)
+					customOperator.AddResources(v)
 				}
 			}
 		}
 	}
 
 	return &ResourceCollection{
-		config:             config,
-		StackName:          stackName,
-		LogicalResourceIds: logicalResourceIds,
-		StackArray:         stackArray,
-		BucketArray:        bucketArray,
-		RoleArray:          roleArray,
-		ECRArray:           ecrArray,
-		BackupArray:        backupArray,
-		CustomArray:        customArray,
+		config:              config,
+		StackName:           stackName,
+		LogicalResourceIds:  logicalResourceIds,
+		StackOperator:       stackOperator,
+		BucketOperator:      bucketOperator,
+		RoleOperator:        roleOperator,
+		ECROperator:         ecrOperator,
+		BackupVaultOperator: backupVaultOperator,
+		CustomOperator:      customOperator,
 	}
 }
 
 func (collection *ResourceCollection) CheckResourceCounts() error {
-	collectionLength := len(collection.StackArray) +
-		len(collection.BucketArray) +
-		len(collection.RoleArray) +
-		len(collection.ECRArray) +
-		len(collection.BackupArray) +
-		len(collection.CustomArray)
+	collectionLength := collection.StackOperator.GetResourcesLength() +
+		collection.BucketOperator.GetResourcesLength() +
+		collection.RoleOperator.GetResourcesLength() +
+		collection.ECROperator.GetResourcesLength() +
+		collection.BackupVaultOperator.GetResourcesLength() +
+		collection.CustomOperator.GetResourcesLength()
 
 	if len(collection.LogicalResourceIds) != collectionLength {
 		fmt.Println("===========================================================")
@@ -98,23 +98,22 @@ func (collection *ResourceCollection) CheckResourceCounts() error {
 
 func (collection *ResourceCollection) DeleteResourceCollection() error {
 	// TODO: Concurrency deletion of failed resources
-
-	if err := DeleteStacks(collection.config, collection.StackArray); err != nil {
+	if err := collection.StackOperator.DeleteResources(); err != nil {
 		return err
 	}
-	if err := DeleteBuckets(collection.config, collection.BucketArray); err != nil {
+	if err := collection.BucketOperator.DeleteResources(); err != nil {
 		return err
 	}
-	if err := DeleteRoles(collection.config, collection.RoleArray); err != nil {
+	if err := collection.RoleOperator.DeleteResources(); err != nil {
 		return err
 	}
-	if err := DeleteECRs(collection.config, collection.ECRArray); err != nil {
+	if err := collection.ECROperator.DeleteResources(); err != nil {
 		return err
 	}
-	if err := DeleteBackupVaults(collection.config, collection.ECRArray); err != nil {
+	if err := collection.BackupVaultOperator.DeleteResources(); err != nil {
 		return err
 	}
-	if err := DeleteCustoms(collection.config, collection.CustomArray); err != nil {
+	if err := collection.CustomOperator.DeleteResources(); err != nil {
 		return err
 	}
 

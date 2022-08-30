@@ -6,11 +6,33 @@ import (
 	"github.com/go-to-k/delstack/client"
 )
 
-func DeleteECRs(config aws.Config, resources []types.StackResourceSummary) error {
+var _ IOperator = (*ECROperator)(nil)
+
+type ECROperator struct {
+	client    *client.ECR
+	resources []types.StackResourceSummary
+}
+
+func NewECROperator(config aws.Config) *ECROperator {
+	client := client.NewECR(config)
+	return &ECROperator{
+		client:    client,
+		resources: []types.StackResourceSummary{},
+	}
+}
+
+func (operator *ECROperator) AddResources(resource types.StackResourceSummary) {
+	operator.resources = append(operator.resources, resource)
+}
+
+func (operator *ECROperator) GetResourcesLength() int {
+	return len(operator.resources)
+}
+
+func (operator *ECROperator) DeleteResources() error {
 	// TODO: Concurrency Delete
-	ecrClient := client.NewECR(config)
-	for _, repository := range resources {
-		err := DeleteECR(ecrClient, repository.PhysicalResourceId)
+	for _, repository := range operator.resources {
+		err := operator.DeleteECR(repository.PhysicalResourceId)
 		if err != nil {
 			return err
 		}
@@ -18,8 +40,8 @@ func DeleteECRs(config aws.Config, resources []types.StackResourceSummary) error
 	return nil
 }
 
-func DeleteECR(ecrClient *client.ECR, repositoryName *string) error {
-	if err := ecrClient.DeleteRepository(repositoryName); err != nil {
+func (operator *ECROperator) DeleteECR(repositoryName *string) error {
+	if err := operator.client.DeleteRepository(repositoryName); err != nil {
 		return err
 	}
 

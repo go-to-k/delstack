@@ -29,7 +29,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := operation.DeleteStackResources(config, opts.StackName); err != nil {
+	cfnOperator := operation.NewStackOperator(config)
+	if err := cfnOperator.DeleteStackResources(&opts.StackName); err != nil {
 		log.Fatalf("Error: %s", err.Error())
 		os.Exit(1)
 	}
