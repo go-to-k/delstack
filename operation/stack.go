@@ -10,22 +10,45 @@ import (
 	"github.com/go-to-k/delstack/client"
 )
 
-func DeleteStacks(config aws.Config, resources []types.StackResourceSummary) error {
+var _ IOperator = (*StackOperator)(nil)
+
+type StackOperator struct {
+	config    aws.Config
+	client    *client.CloudFormation
+	resources []types.StackResourceSummary
+}
+
+func NewStackOperator(config aws.Config) *StackOperator {
+	client := client.NewCloudFormation(config)
+	return &StackOperator{
+		config:    config,
+		client:    client,
+		resources: []types.StackResourceSummary{},
+	}
+}
+
+func (operator *StackOperator) AddResources(resource types.StackResourceSummary) {
+	operator.resources = append(operator.resources, resource)
+}
+
+func (operator *StackOperator) GetResourcesLength() int {
+	return len(operator.resources)
+}
+
+func (operator *StackOperator) DeleteResources() error {
 	// TODO: Concurrency DeleteStack
 	re := regexp.MustCompile(`^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`)
-	for _, stack := range resources {
+	for _, stack := range operator.resources {
 		stackName := re.ReplaceAllString(*stack.PhysicalResourceId, `$1`)
-		if err := DeleteStackResources(config, &stackName); err != nil {
+		if err := operator.DeleteStackResources(&stackName); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func DeleteStackResources(config aws.Config, stackName *string) error {
-	cfnClient := client.NewCloudFormation(config)
-
-	stackOutputBeforeDelete, isExistBeforeDelete, err := cfnClient.DescribeStacks(stackName)
+func (operator *StackOperator) DeleteStackResources(stackName *string) error {
+	stackOutputBeforeDelete, isExistBeforeDelete, err := operator.client.DescribeStacks(stackName)
 	if err != nil {
 		return err
 	}
@@ -39,11 +62,11 @@ func DeleteStackResources(config aws.Config, stackName *string) error {
 		return nil
 	}
 
-	if err := cfnClient.DeleteStack(stackName, []string{}); err != nil {
+	if err := operator.client.DeleteStack(stackName, []string{}); err != nil {
 		return err
 	}
 
-	stackOutputAfterDelete, isExistAfterDelete, err := cfnClient.DescribeStacks(stackName)
+	stackOutputAfterDelete, isExistAfterDelete, err := operator.client.DescribeStacks(stackName)
 	if err != nil {
 		return err
 	}
@@ -56,17 +79,17 @@ func DeleteStackResources(config aws.Config, stackName *string) error {
 		return err
 	}
 
-	stackResourceSummaries, err := cfnClient.ListStackResources(stackName)
+	stackResourceSummaries, err := operator.client.ListStackResources(stackName)
 	if err != nil {
 		return err
 	}
 
-	collection := NewResourceCollection(config, *stackName, stackResourceSummaries)
+	collection := NewResourceCollection(operator.config, *stackName, stackResourceSummaries)
 	if err := collection.CheckResourceCounts(); err != nil {
 		return err
 	}
 
-	if err := cfnClient.DeleteStack(stackName, collection.LogicalResourceIds); err != nil {
+	if err := operator.client.DeleteStack(stackName, collection.LogicalResourceIds); err != nil {
 		return err
 	}
 
