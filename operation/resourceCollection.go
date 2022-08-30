@@ -8,21 +8,15 @@ import (
 type ResourceCollection struct {
 	config             aws.Config
 	StackName          string
-	LogicalResourceIds *[]string
-	OperatorList       *[]IOperator
 	OperatorCollection *OperatorCollection
 }
 
 func NewResourceCollection(config aws.Config, stackName string, stackResourceSummaries []types.StackResourceSummary) *ResourceCollection {
 	operatorCollection := NewOperatorCollection(config)
-	logicalResourceIds := operatorCollection.GetLogicalResourceIds()
-	operatorList := operatorCollection.GetOperatorList()
 
 	return &ResourceCollection{
 		config:             config,
 		StackName:          stackName,
-		LogicalResourceIds: logicalResourceIds,
-		OperatorList:       operatorList,
 		OperatorCollection: operatorCollection,
 	}
 }
@@ -32,8 +26,10 @@ func (collection *ResourceCollection) CheckResourceCounts() error {
 }
 
 func (collection *ResourceCollection) DeleteResourceCollection() error {
+	operatorList := collection.OperatorCollection.GetOperatorList()
+
 	// TODO: Concurrency deletion of failed resources
-	for _, operator := range *collection.OperatorList {
+	for _, operator := range *operatorList {
 		if err := operator.DeleteResources(); err != nil {
 			return err
 		}
