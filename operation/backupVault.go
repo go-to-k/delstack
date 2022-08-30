@@ -10,18 +10,18 @@ var _ IOperator = (*BackupVaultOperator)(nil)
 
 type BackupVaultOperator struct {
 	client    *client.Backup
-	resources []types.StackResourceSummary
+	resources []*types.StackResourceSummary
 }
 
 func NewBackupVaultOperator(config aws.Config) *BackupVaultOperator {
 	client := client.NewBackup(config)
 	return &BackupVaultOperator{
 		client:    client,
-		resources: []types.StackResourceSummary{},
+		resources: []*types.StackResourceSummary{},
 	}
 }
 
-func (operator *BackupVaultOperator) AddResources(resource types.StackResourceSummary) {
+func (operator *BackupVaultOperator) AddResources(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 

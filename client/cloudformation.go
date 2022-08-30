@@ -73,9 +73,9 @@ func (cfnClient *CloudFormation) waitDeleteStack(stackName *string) error {
 	return nil
 }
 
-func (cfnClient *CloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
+func (cfnClient *CloudFormation) ListStackResources(stackName *string) (*[]types.StackResourceSummary, error) {
 	var nextToken *string
-	StackResourceSummaries := []types.StackResourceSummary{}
+	stackResourceSummaries := []types.StackResourceSummary{}
 
 	for {
 		input := &cloudformation.ListStackResourcesInput{
@@ -86,10 +86,10 @@ func (cfnClient *CloudFormation) ListStackResources(stackName *string) ([]types.
 		output, err := cfnClient.client.ListStackResources(context.TODO(), input)
 		if err != nil {
 			log.Fatalf("failed list the cloudformation stack resources, %v", err)
-			return StackResourceSummaries, err
+			return &stackResourceSummaries, err
 		}
 
-		StackResourceSummaries = append(StackResourceSummaries, output.StackResourceSummaries...)
+		stackResourceSummaries = append(stackResourceSummaries, output.StackResourceSummaries...)
 		nextToken = output.NextToken
 
 		if nextToken == nil {
@@ -97,5 +97,5 @@ func (cfnClient *CloudFormation) ListStackResources(stackName *string) ([]types.
 		}
 	}
 
-	return StackResourceSummaries, nil
+	return &stackResourceSummaries, nil
 }

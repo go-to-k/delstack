@@ -10,18 +10,18 @@ var _ IOperator = (*ECROperator)(nil)
 
 type ECROperator struct {
 	client    *client.ECR
-	resources []types.StackResourceSummary
+	resources []*types.StackResourceSummary
 }
 
 func NewECROperator(config aws.Config) *ECROperator {
 	client := client.NewECR(config)
 	return &ECROperator{
 		client:    client,
-		resources: []types.StackResourceSummary{},
+		resources: []*types.StackResourceSummary{},
 	}
 }
 
-func (operator *ECROperator) AddResources(resource types.StackResourceSummary) {
+func (operator *ECROperator) AddResources(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 

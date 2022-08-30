@@ -9,18 +9,18 @@ var _ IOperator = (*CustomOperator)(nil)
 
 type CustomOperator struct {
 	// client    *client.Custom
-	resources []types.StackResourceSummary
+	resources []*types.StackResourceSummary
 }
 
 func NewCustomOperator(config aws.Config) *CustomOperator {
 	// client := client.NewCustom(config)
 	return &CustomOperator{
 		// client:    client,
-		resources: []types.StackResourceSummary{},
+		resources: []*types.StackResourceSummary{},
 	}
 }
 
-func (operator *CustomOperator) AddResources(resource types.StackResourceSummary) {
+func (operator *CustomOperator) AddResources(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 

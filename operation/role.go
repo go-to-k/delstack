@@ -9,18 +9,18 @@ var _ IOperator = (*RoleOperator)(nil)
 
 type RoleOperator struct {
 	// client    *client.IAM
-	resources []types.StackResourceSummary
+	resources []*types.StackResourceSummary
 }
 
 func NewRoleOperator(config aws.Config) *RoleOperator {
 	// client := client.NewIAM(config)
 	return &RoleOperator{
 		// client:    client,
-		resources: []types.StackResourceSummary{},
+		resources: []*types.StackResourceSummary{},
 	}
 }
 
-func (operator *RoleOperator) AddResources(resource types.StackResourceSummary) {
+func (operator *RoleOperator) AddResources(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 

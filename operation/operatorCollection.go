@@ -14,7 +14,7 @@ type OperatorCollection struct {
 	operatorList       []IOperator
 }
 
-func NewOperatorCollection(config aws.Config, stackName string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
+func NewOperatorCollection(config aws.Config, stackName string, stackResourceSummaries *[]types.StackResourceSummary) *OperatorCollection {
 	logicalResourceIds := []string{}
 	stackOperator := NewStackOperator(config)
 	bucketOperator := NewBucketOperator(config)
@@ -23,24 +23,24 @@ func NewOperatorCollection(config aws.Config, stackName string, stackResourceSum
 	backupVaultOperator := NewBackupVaultOperator(config)
 	customOperator := NewCustomOperator(config)
 
-	for _, v := range stackResourceSummaries {
+	for _, v := range *stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {
-			logicalResourceIds = append(logicalResourceIds, *v.LogicalResourceId)
+			logicalResourceIds = append(logicalResourceIds, aws.ToString(v.LogicalResourceId))
 
 			switch *v.ResourceType {
 			case "AWS::CloudFormation::Stack":
-				stackOperator.AddResources(v)
+				stackOperator.AddResources(&v)
 			case "AWS::S3::Bucket":
-				bucketOperator.AddResources(v)
+				bucketOperator.AddResources(&v)
 			case "AWS::IAM::Role":
-				roleOperator.AddResources(v)
+				roleOperator.AddResources(&v)
 			case "AWS::ECR::Repository":
-				ecrOperator.AddResources(v)
+				ecrOperator.AddResources(&v)
 			case "AWS::Backup::BackupVault":
-				backupVaultOperator.AddResources(v)
+				backupVaultOperator.AddResources(&v)
 			default:
 				if strings.Contains(*v.ResourceType, "Custom::") {
-					customOperator.AddResources(v)
+					customOperator.AddResources(&v)
 				}
 			}
 		}
