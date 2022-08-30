@@ -32,7 +32,7 @@ func (backupClient *Backup) ListRecoveryPointsByBackupVault(backupVaultName *str
 
 		output, err := backupClient.client.ListRecoveryPointsByBackupVault(context.TODO(), input)
 		if err != nil {
-			log.Fatalf("failed list recovery points: %v", err)
+			log.Fatalf("failed list the Recovery Points: %v", err)
 			return nil, err
 		}
 		recoveryPoints = append(recoveryPoints, output.RecoveryPoints...)
