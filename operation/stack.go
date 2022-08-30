@@ -84,7 +84,7 @@ func (operator *StackOperator) DeleteStackResources(stackName *string) error {
 		return err
 	}
 
-	operatorManager := NewOperatorManager(operator.config, *stackName, stackResourceSummaries)
+	operatorManager := NewOperatorManager(operator.config, stackName, stackResourceSummaries)
 	if err := operatorManager.CheckResourceCounts(); err != nil {
 		return err
 	}
