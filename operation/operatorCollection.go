@@ -9,16 +9,13 @@ import (
 )
 
 type OperatorCollection struct {
-	LogicalResourceIds  []string
-	StackOperator       *StackOperator
-	BucketOperator      *BucketOperator
-	RoleOperator        *RoleOperator
-	ECROperator         *ECROperator
-	BackupVaultOperator *BackupVaultOperator
-	CustomOperator      *CustomOperator
+	config             aws.Config
+	StackName          string
+	LogicalResourceIds []string
+	OperatorList       []IOperator
 }
 
-func NewOperatorCollection(config aws.Config) *OperatorCollection {
+func NewOperatorCollection(config aws.Config, stackName string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
 	logicalResourceIds := []string{}
 	stackOperator := NewStackOperator(config)
 	bucketOperator := NewBucketOperator(config)
@@ -27,41 +24,44 @@ func NewOperatorCollection(config aws.Config) *OperatorCollection {
 	backupVaultOperator := NewBackupVaultOperator(config)
 	customOperator := NewCustomOperator(config)
 
-	return &OperatorCollection{
-		LogicalResourceIds:  logicalResourceIds,
-		StackOperator:       stackOperator,
-		BucketOperator:      bucketOperator,
-		RoleOperator:        roleOperator,
-		ECROperator:         ecrOperator,
-		BackupVaultOperator: backupVaultOperator,
-		CustomOperator:      customOperator,
-	}
-}
-
-func (operatorCollection *OperatorCollection) AddStackResources(stackResourceSummaries []types.StackResourceSummary) {
 	for _, v := range stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {
 			// elseでremoveでも？
 			// それかcountでintでも？
-			operatorCollection.LogicalResourceIds = append(operatorCollection.LogicalResourceIds, *v.LogicalResourceId)
+			logicalResourceIds = append(logicalResourceIds, *v.LogicalResourceId)
 
 			switch *v.ResourceType {
 			case "AWS::CloudFormation::Stack":
-				operatorCollection.StackOperator.AddResources(v)
+				stackOperator.AddResources(v)
 			case "AWS::S3::Bucket":
-				operatorCollection.BucketOperator.AddResources(v)
+				bucketOperator.AddResources(v)
 			case "AWS::IAM::Role":
-				operatorCollection.RoleOperator.AddResources(v)
+				roleOperator.AddResources(v)
 			case "AWS::ECR::Repository":
-				operatorCollection.ECROperator.AddResources(v)
+				ecrOperator.AddResources(v)
 			case "AWS::Backup::BackupVault":
-				operatorCollection.BackupVaultOperator.AddResources(v)
+				backupVaultOperator.AddResources(v)
 			default:
 				if strings.Contains(*v.ResourceType, "Custom::") {
-					operatorCollection.CustomOperator.AddResources(v)
+					customOperator.AddResources(v)
 				}
 			}
 		}
+	}
+
+	var operatorList []IOperator
+	operatorList = append(operatorList, stackOperator)
+	operatorList = append(operatorList, bucketOperator)
+	operatorList = append(operatorList, roleOperator)
+	operatorList = append(operatorList, ecrOperator)
+	operatorList = append(operatorList, backupVaultOperator)
+	operatorList = append(operatorList, customOperator)
+
+	return &OperatorCollection{
+		config:             config,
+		StackName:          stackName,
+		LogicalResourceIds: logicalResourceIds,
+		OperatorList:       operatorList,
 	}
 }
 
@@ -69,17 +69,20 @@ func (operatorCollection *OperatorCollection) GetLogicalResourceIds() *[]string 
 	return &operatorCollection.LogicalResourceIds
 }
 
-func (operatorCollection *OperatorCollection) CheckResourceCounts(stackName string) error {
-	collectionLength := operatorCollection.StackOperator.GetResourcesLength() +
-		operatorCollection.BucketOperator.GetResourcesLength() +
-		operatorCollection.RoleOperator.GetResourcesLength() +
-		operatorCollection.ECROperator.GetResourcesLength() +
-		operatorCollection.BackupVaultOperator.GetResourcesLength() +
-		operatorCollection.CustomOperator.GetResourcesLength()
+func (operatorCollection *OperatorCollection) getResourcesLengthFromOperatorList() int {
+	var length int
+	for _, operator := range operatorCollection.OperatorList {
+		length += operator.GetResourcesLength()
+	}
+	return length
+}
+
+func (operatorCollection *OperatorCollection) CheckResourceCounts() error {
+	collectionLength := operatorCollection.getResourcesLengthFromOperatorList()
 
 	if len(operatorCollection.LogicalResourceIds) != collectionLength {
 		fmt.Println("===========================================================")
-		fmt.Printf("%v is FAILED !!!", stackName)
+		fmt.Printf("%v is FAILED !!!", operatorCollection.StackName)
 		fmt.Println("")
 		fmt.Println("The deletion seems to be failing for some other reason.")
 		fmt.Println("This function supports force deletion of ")
@@ -98,15 +101,13 @@ func (operatorCollection *OperatorCollection) CheckResourceCounts(stackName stri
 	return nil
 }
 
-func (operatorCollection *OperatorCollection) GetOperatorList() *[]IOperator {
-	var operatorList []IOperator
+func (operatorCollection *OperatorCollection) DeleteResourceCollection() error {
+	// TODO: Concurrency deletion of failed resources
+	for _, operator := range operatorCollection.OperatorList {
+		if err := operator.DeleteResources(); err != nil {
+			return err
+		}
+	}
 
-	operatorList = append(operatorList, operatorCollection.StackOperator)
-	operatorList = append(operatorList, operatorCollection.BucketOperator)
-	operatorList = append(operatorList, operatorCollection.RoleOperator)
-	operatorList = append(operatorList, operatorCollection.ECROperator)
-	operatorList = append(operatorList, operatorCollection.BackupVaultOperator)
-	operatorList = append(operatorList, operatorCollection.CustomOperator)
-
-	return &operatorList
+	return nil
 }

@@ -62,7 +62,7 @@ func (operator *StackOperator) DeleteStackResources(stackName *string) error {
 		return nil
 	}
 
-	if err := operator.client.DeleteStack(stackName, []string{}); err != nil {
+	if err := operator.client.DeleteStack(stackName, &[]string{}); err != nil {
 		return err
 	}
 
@@ -84,16 +84,16 @@ func (operator *StackOperator) DeleteStackResources(stackName *string) error {
 		return err
 	}
 
-	collection := NewResourceCollection(operator.config, *stackName, stackResourceSummaries)
-	if err := collection.CheckResourceCounts(); err != nil {
+	operatorCollection := NewOperatorCollection(operator.config, *stackName, stackResourceSummaries)
+	if err := operatorCollection.CheckResourceCounts(); err != nil {
 		return err
 	}
 
-	if err := operator.client.DeleteStack(stackName, *collection.OperatorCollection.GetLogicalResourceIds()); err != nil {
+	if err := operator.client.DeleteStack(stackName, operatorCollection.GetLogicalResourceIds()); err != nil {
 		return err
 	}
 
-	if err := collection.DeleteResourceCollection(); err != nil {
+	if err := operatorCollection.DeleteResourceCollection(); err != nil {
 		return err
 	}
 

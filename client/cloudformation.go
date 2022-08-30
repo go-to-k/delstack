@@ -24,10 +24,10 @@ func NewCloudFormation(config aws.Config) *CloudFormation {
 	}
 }
 
-func (cfnClient *CloudFormation) DeleteStack(stackName *string, retainResources []string) error {
+func (cfnClient *CloudFormation) DeleteStack(stackName *string, retainResources *[]string) error {
 	input := &cloudformation.DeleteStackInput{
 		StackName:       stackName,
-		RetainResources: retainResources,
+		RetainResources: *retainResources,
 	}
 
 	_, err := cfnClient.client.DeleteStack(context.TODO(), input)
