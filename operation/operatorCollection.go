@@ -21,7 +21,7 @@ func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSu
 	roleOperator := NewRoleOperator(config)
 	ecrOperator := NewECROperator(config)
 	backupVaultOperator := NewBackupVaultOperator(config)
-	customOperator := NewCustomOperator(config)
+	customOperator := NewCustomOperator() // Implicit instances that do not actually delete resources
 
 	for _, v := range stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {
@@ -80,7 +80,7 @@ func (operatorCollection *OperatorCollection) GetNotSupportedServicesError() err
 	fmt.Println("and <ECR> still contains images,")
 	fmt.Println("and <BackupVault> contains recovery points,")
 	fmt.Println("and <Nested Child Stack>.")
-	fmt.Println("<Custom Resources> was also forced to delete.")
+	fmt.Println("<Custom Resources> will be deleted on its own.")
 	fmt.Println("===========================================================")
 	fmt.Println("")
 
