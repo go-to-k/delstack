@@ -89,7 +89,7 @@ func (operator *StackOperator) DeleteStackResources(stackName *string) error {
 		return err
 	}
 
-	if err := operator.client.DeleteStack(stackName, *collection.LogicalResourceIds); err != nil {
+	if err := operator.client.DeleteStack(stackName, *collection.OperatorCollection.GetLogicalResourceIds()); err != nil {
 		return err
 	}
 
