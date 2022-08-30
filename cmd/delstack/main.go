@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/operation"
 	"github.com/go-to-k/delstack/option"
 	flags "github.com/jessevdk/go-flags"
@@ -30,7 +31,7 @@ func main() {
 	}
 
 	cfnOperator := operation.NewStackOperator(config)
-	if err := cfnOperator.DeleteStackResources(&opts.StackName); err != nil {
+	if err := cfnOperator.DeleteStackResources(aws.String(opts.StackName)); err != nil {
 		log.Fatalf("Error: %s", err.Error())
 		os.Exit(1)
 	}

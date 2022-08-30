@@ -12,18 +12,18 @@ var _ IOperator = (*BucketOperator)(nil)
 
 type BucketOperator struct {
 	client    *client.S3
-	resources []types.StackResourceSummary
+	resources []*types.StackResourceSummary
 }
 
 func NewBucketOperator(config aws.Config) *BucketOperator {
 	client := client.NewS3(config)
 	return &BucketOperator{
 		client:    client,
-		resources: []types.StackResourceSummary{},
+		resources: []*types.StackResourceSummary{},
 	}
 }
 
-func (operator *BucketOperator) AddResources(resource types.StackResourceSummary) {
+func (operator *BucketOperator) AddResources(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 
@@ -52,8 +52,8 @@ func (operator *BucketOperator) DeleteBucket(bucketName *string) error {
 	if err != nil {
 		return err
 	}
-	if len(errors) > 0 {
-		return fmt.Errorf("DeleteObjects Error: %v", errors)
+	if len(*errors) > 0 {
+		return fmt.Errorf("DeleteObjects Error: %v", *errors)
 	}
 
 	if err := operator.client.DeleteBucket(bucketName); err != nil {

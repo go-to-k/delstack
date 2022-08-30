@@ -20,7 +20,7 @@ func NewBackup(config aws.Config) *Backup {
 	}
 }
 
-func (backupClient *Backup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
+func (backupClient *Backup) ListRecoveryPointsByBackupVault(backupVaultName *string) (*[]types.RecoveryPointByBackupVault, error) {
 	var nextToken *string
 	recoveryPoints := []types.RecoveryPointByBackupVault{}
 
@@ -43,11 +43,11 @@ func (backupClient *Backup) ListRecoveryPointsByBackupVault(backupVaultName *str
 		}
 	}
 
-	return recoveryPoints, nil
+	return &recoveryPoints, nil
 }
 
-func (backupClient *Backup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
-	for _, recoveryPoint := range recoveryPoints {
+func (backupClient *Backup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints *[]types.RecoveryPointByBackupVault) error {
+	for _, recoveryPoint := range *recoveryPoints {
 		if err := backupClient.DeleteRecoveryPoint(backupVaultName, recoveryPoint.RecoveryPointArn); err != nil {
 			return err
 		}

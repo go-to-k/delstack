@@ -15,7 +15,7 @@ var _ IOperator = (*StackOperator)(nil)
 type StackOperator struct {
 	config    aws.Config
 	client    *client.CloudFormation
-	resources []types.StackResourceSummary
+	resources []*types.StackResourceSummary
 }
 
 func NewStackOperator(config aws.Config) *StackOperator {
@@ -23,11 +23,11 @@ func NewStackOperator(config aws.Config) *StackOperator {
 	return &StackOperator{
 		config:    config,
 		client:    client,
-		resources: []types.StackResourceSummary{},
+		resources: []*types.StackResourceSummary{},
 	}
 }
 
-func (operator *StackOperator) AddResources(resource types.StackResourceSummary) {
+func (operator *StackOperator) AddResources(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 
@@ -39,8 +39,8 @@ func (operator *StackOperator) DeleteResources() error {
 	// TODO: Concurrency DeleteStack
 	re := regexp.MustCompile(`^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`)
 	for _, stack := range operator.resources {
-		stackName := re.ReplaceAllString(*stack.PhysicalResourceId, `$1`)
-		if err := operator.DeleteStackResources(&stackName); err != nil {
+		stackName := re.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
+		if err := operator.DeleteStackResources(aws.String(stackName)); err != nil {
 			return err
 		}
 	}
