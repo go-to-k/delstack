@@ -14,7 +14,7 @@ type OperatorCollection struct {
 	operatorList       []IOperator
 }
 
-func NewOperatorCollection(config aws.Config, stackName string, stackResourceSummaries *[]types.StackResourceSummary) *OperatorCollection {
+func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSummaries *[]types.StackResourceSummary) *OperatorCollection {
 	logicalResourceIds := []string{}
 	stackOperator := NewStackOperator(config)
 	bucketOperator := NewBucketOperator(config)
@@ -55,7 +55,7 @@ func NewOperatorCollection(config aws.Config, stackName string, stackResourceSum
 	operatorList = append(operatorList, customOperator)
 
 	return &OperatorCollection{
-		stackName:          stackName,
+		stackName:          aws.ToString(stackName),
 		logicalResourceIds: logicalResourceIds,
 		operatorList:       operatorList,
 	}

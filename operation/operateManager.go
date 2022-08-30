@@ -9,7 +9,7 @@ type OperatorManager struct {
 	operatorCollection *OperatorCollection
 }
 
-func NewOperatorManager(config aws.Config, stackName string, stackResourceSummaries *[]types.StackResourceSummary) *OperatorManager {
+func NewOperatorManager(config aws.Config, stackName *string, stackResourceSummaries *[]types.StackResourceSummary) *OperatorManager {
 	return &OperatorManager{
 		operatorCollection: NewOperatorCollection(config, stackName, stackResourceSummaries),
 	}
