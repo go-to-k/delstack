@@ -25,22 +25,23 @@ func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSu
 
 	for _, v := range stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {
+			stackResource := v // Copy for pointer used below
 			logicalResourceIds = append(logicalResourceIds, aws.ToString(v.LogicalResourceId))
 
 			switch *v.ResourceType {
 			case "AWS::CloudFormation::Stack":
-				stackOperator.AddResources(&v)
+				stackOperator.AddResources(&stackResource)
 			case "AWS::S3::Bucket":
-				bucketOperator.AddResources(&v)
+				bucketOperator.AddResources(&stackResource)
 			case "AWS::IAM::Role":
-				roleOperator.AddResources(&v)
+				roleOperator.AddResources(&stackResource)
 			case "AWS::ECR::Repository":
-				ecrOperator.AddResources(&v)
+				ecrOperator.AddResources(&stackResource)
 			case "AWS::Backup::BackupVault":
-				backupVaultOperator.AddResources(&v)
+				backupVaultOperator.AddResources(&stackResource)
 			default:
 				if strings.Contains(*v.ResourceType, "Custom::") {
-					customOperator.AddResources(&v)
+					customOperator.AddResources(&stackResource)
 				}
 			}
 		}
