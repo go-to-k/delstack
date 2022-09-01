@@ -11,7 +11,7 @@ import (
 type OperatorCollection struct {
 	stackName          string
 	logicalResourceIds []string
-	operatorList       []IOperator
+	operatorList       []Operator
 }
 
 func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
@@ -47,7 +47,7 @@ func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSu
 		}
 	}
 
-	var operatorList []IOperator
+	var operatorList []Operator
 	operatorList = append(operatorList, stackOperator)
 	operatorList = append(operatorList, bucketOperator)
 	operatorList = append(operatorList, roleOperator)
@@ -66,7 +66,7 @@ func (operatorCollection *OperatorCollection) GetLogicalResourceIds() []string {
 	return operatorCollection.logicalResourceIds
 }
 
-func (operatorCollection *OperatorCollection) GetOperatorList() []IOperator {
+func (operatorCollection *OperatorCollection) GetOperatorList() []Operator {
 	return operatorCollection.operatorList
 }
 

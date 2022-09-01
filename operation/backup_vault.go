@@ -6,7 +6,7 @@ import (
 	"github.com/go-to-k/delstack/client"
 )
 
-var _ IOperator = (*BackupVaultOperator)(nil)
+var _ Operator = (*BackupVaultOperator)(nil)
 
 type BackupVaultOperator struct {
 	client    *client.Backup
