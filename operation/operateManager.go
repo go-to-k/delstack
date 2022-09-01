@@ -28,7 +28,7 @@ func (operatorManager *OperatorManager) CheckResourceCounts() error {
 	operatorResourcesLength := operatorManager.getOperatorResourcesLength()
 
 	if logicalResourceIdsLength != operatorResourcesLength {
-		return operatorManager.operatorCollection.GetNotSupportedServicesError()
+		return operatorManager.operatorCollection.RaiseNotSupportedServicesError()
 	}
 
 	return nil

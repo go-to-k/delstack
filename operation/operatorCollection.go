@@ -70,7 +70,7 @@ func (operatorCollection *OperatorCollection) GetOperatorList() []IOperator {
 	return operatorCollection.operatorList
 }
 
-func (operatorCollection *OperatorCollection) GetNotSupportedServicesError() error {
+func (operatorCollection *OperatorCollection) RaiseNotSupportedServicesError() error {
 	fmt.Println("===========================================================")
 	fmt.Printf("%v is FAILED !!!", operatorCollection.stackName)
 	fmt.Println("")
