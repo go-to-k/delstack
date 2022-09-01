@@ -6,7 +6,7 @@ import (
 	"github.com/go-to-k/delstack/client"
 )
 
-var _ IOperator = (*RoleOperator)(nil)
+var _ Operator = (*RoleOperator)(nil)
 
 type RoleOperator struct {
 	client    *client.IAM

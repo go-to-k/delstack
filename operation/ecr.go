@@ -6,7 +6,7 @@ import (
 	"github.com/go-to-k/delstack/client"
 )
 
-var _ IOperator = (*ECROperator)(nil)
+var _ Operator = (*ECROperator)(nil)
 
 type ECROperator struct {
 	client    *client.ECR

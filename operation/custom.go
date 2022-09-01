@@ -4,7 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 )
 
-var _ IOperator = (*CustomOperator)(nil)
+var _ Operator = (*CustomOperator)(nil)
 
 type CustomOperator struct {
 	resources []*types.StackResourceSummary

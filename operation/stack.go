@@ -10,7 +10,7 @@ import (
 	"github.com/go-to-k/delstack/client"
 )
 
-var _ IOperator = (*StackOperator)(nil)
+var _ Operator = (*StackOperator)(nil)
 
 type StackOperator struct {
 	config    aws.Config

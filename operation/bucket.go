@@ -8,7 +8,7 @@ import (
 	"github.com/go-to-k/delstack/client"
 )
 
-var _ IOperator = (*BucketOperator)(nil)
+var _ Operator = (*BucketOperator)(nil)
 
 type BucketOperator struct {
 	client    *client.S3
