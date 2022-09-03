@@ -76,7 +76,7 @@ func (operatorCollection *OperatorCollection) RaiseNotSupportedServicesError() e
 	fmt.Println("")
 	fmt.Println("The deletion seems to be failing for some other reason.")
 	fmt.Println("This function supports force deletion of ")
-	fmt.Println("<S3 buckets> that are Non-empty or Versioning enabled")
+	fmt.Println("<S3 buckets> that have Non-empty or Versioning enabled and DeletionPolicy is not Retain.")
 	fmt.Println("and <IAM roles> with policies attached from outside the stack,")
 	fmt.Println("and <ECR> still contains images,")
 	fmt.Println("and <BackupVault> contains recovery points,")
