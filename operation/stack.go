@@ -12,6 +12,8 @@ import (
 
 var _ Operator = (*StackOperator)(nil)
 
+const STACK_NAME_RULE = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
+
 type StackOperator struct {
 	config    aws.Config
 	client    *client.CloudFormation
@@ -37,7 +39,7 @@ func (operator *StackOperator) GetResourcesLength() int {
 
 func (operator *StackOperator) DeleteResources() error {
 	// TODO: Concurrency Delete
-	re := regexp.MustCompile(`^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`)
+	re := regexp.MustCompile(STACK_NAME_RULE)
 	for _, stack := range operator.resources {
 		stackName := re.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
 		if err := operator.DeleteStackResources(aws.String(stackName)); err != nil {
