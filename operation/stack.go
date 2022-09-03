@@ -36,7 +36,7 @@ func (operator *StackOperator) GetResourcesLength() int {
 }
 
 func (operator *StackOperator) DeleteResources() error {
-	// TODO: Concurrency DeleteStack
+	// TODO: Concurrency Delete
 	re := regexp.MustCompile(`^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`)
 	for _, stack := range operator.resources {
 		stackName := re.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
