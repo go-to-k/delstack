@@ -9,6 +9,7 @@ import (
 )
 
 var CONCURRENCY_NUM = runtime.NumCPU()
+var SEMAPHORE = make(chan struct{}, CONCURRENCY_NUM)
 
 type OperatorManager struct {
 	operatorCollection *OperatorCollection
@@ -45,16 +46,13 @@ func (operatorManager *OperatorManager) GetLogicalResourceIds() []string {
 
 func (operatorManager *OperatorManager) DeleteResourceCollection() error {
 	var eg errgroup.Group
-	semaphore := make(chan struct{}, CONCURRENCY_NUM)
 
 	for _, operator := range operatorManager.operatorCollection.GetOperatorList() {
 		operator := operator
 		eg.Go(func() error {
-			semaphore <- struct{}{}
 			if err := operator.DeleteResources(); err != nil {
 				return err
 			}
-			<-semaphore
 			return nil
 		})
 	}
