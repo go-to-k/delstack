@@ -4,6 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
+	"golang.org/x/sync/errgroup"
 )
 
 var _ Operator = (*RoleOperator)(nil)
@@ -30,13 +31,25 @@ func (operator *RoleOperator) GetResourcesLength() int {
 }
 
 func (operator *RoleOperator) DeleteResources() error {
-	// TODO: Concurrency Delete
+	var eg errgroup.Group
+
 	for _, role := range operator.resources {
-		err := operator.DeleteRole(role.PhysicalResourceId)
-		if err != nil {
-			return err
-		}
+		role := role
+		eg.Go(func() error {
+			SEMAPHORE <- struct{}{}
+
+			if err := operator.DeleteRole(role.PhysicalResourceId); err != nil {
+				return err
+			}
+			<-SEMAPHORE
+
+			return nil
+		})
 	}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
 	return nil
 }
 

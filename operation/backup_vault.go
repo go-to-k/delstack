@@ -4,6 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
+	"golang.org/x/sync/errgroup"
 )
 
 var _ Operator = (*BackupVaultOperator)(nil)
@@ -30,13 +31,25 @@ func (operator *BackupVaultOperator) GetResourcesLength() int {
 }
 
 func (operator *BackupVaultOperator) DeleteResources() error {
-	// TODO: Concurrency Delete
+	var eg errgroup.Group
+
 	for _, backupVault := range operator.resources {
-		err := operator.DeleteBackupVault(backupVault.PhysicalResourceId)
-		if err != nil {
-			return err
-		}
+		backupVault := backupVault
+		eg.Go(func() error {
+			SEMAPHORE <- struct{}{}
+
+			if err := operator.DeleteBackupVault(backupVault.PhysicalResourceId); err != nil {
+				return err
+			}
+			<-SEMAPHORE
+
+			return nil
+		})
 	}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
