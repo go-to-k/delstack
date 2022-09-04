@@ -1,9 +1,14 @@
 package operation
 
 import (
+	"runtime"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	"golang.org/x/sync/errgroup"
 )
+
+var CONCURRENCY_NUM = runtime.NumCPU()
 
 type OperatorManager struct {
 	operatorCollection *OperatorCollection
@@ -39,11 +44,22 @@ func (operatorManager *OperatorManager) GetLogicalResourceIds() []string {
 }
 
 func (operatorManager *OperatorManager) DeleteResourceCollection() error {
-	// TODO: Concurrency deletion of failed resources
+	var eg errgroup.Group
+	semaphore := make(chan struct{}, CONCURRENCY_NUM)
+
 	for _, operator := range operatorManager.operatorCollection.GetOperatorList() {
-		if err := operator.DeleteResources(); err != nil {
-			return err
-		}
+		operator := operator
+		eg.Go(func() error {
+			semaphore <- struct{}{}
+			if err := operator.DeleteResources(); err != nil {
+				return err
+			}
+			<-semaphore
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		return err
 	}
 
 	return nil
