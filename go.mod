@@ -11,6 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iam v1.18.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.5
 	github.com/jessevdk/go-flags v1.5.0
+	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
 )
 
 require (
