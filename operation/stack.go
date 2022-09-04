@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
+	"golang.org/x/sync/errgroup"
 )
 
 var _ Operator = (*StackOperator)(nil)
@@ -38,14 +39,27 @@ func (operator *StackOperator) GetResourcesLength() int {
 }
 
 func (operator *StackOperator) DeleteResources() error {
-	// TODO: Concurrency Delete
+	var eg errgroup.Group
 	re := regexp.MustCompile(STACK_NAME_RULE)
+
 	for _, stack := range operator.resources {
-		stackName := re.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
-		if err := operator.DeleteStackResources(aws.String(stackName)); err != nil {
-			return err
-		}
+		stack := stack
+		eg.Go(func() error {
+			stackName := re.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
+			SEMAPHORE <- struct{}{}
+
+			if err := operator.DeleteStackResources(aws.String(stackName)); err != nil {
+				return err
+			}
+			<-SEMAPHORE
+
+			return nil
+		})
 	}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
