@@ -7,6 +7,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/go-to-k/delstack/option"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 )
 
 type S3 struct {
@@ -35,6 +38,10 @@ func (s3Client *S3) DeleteBucket(bucketName *string) error {
 }
 
 func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error) {
+	var eg errgroup.Group
+	errorsCh := make(chan []types.Error)
+	sem := semaphore.NewWeighted(int64(option.CONCURRENCY_NUM))
+
 	errors := []types.Error{}
 	nextObjects := make([]types.ObjectIdentifier, len(objects))
 	copy(nextObjects, objects)
@@ -58,17 +65,31 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 			},
 		}
 
-		output, err := s3Client.client.DeleteObjects(context.TODO(), input)
-		if err != nil {
-			log.Fatalf("failed delete objects, %v", err)
-			return nil, err
-		}
+		eg.Go(func() error {
+			sem.Acquire(context.Background(), 1)
+			defer sem.Release(1)
 
-		errors = append(errors, output.Errors...)
+			output, err := s3Client.client.DeleteObjects(context.TODO(), input)
+			if err != nil {
+				return err
+			}
+
+			errorsCh <- output.Errors
+			return nil
+		})
 
 		if len(nextObjects) == 0 {
 			break
 		}
+	}
+
+	if err := eg.Wait(); err != nil {
+		log.Fatalf("failed delete objects: %v", err)
+		return nil, err
+	}
+
+	for outputErrors := range errorsCh {
+		errors = append(errors, outputErrors...)
 	}
 
 	return errors, nil
@@ -88,7 +109,7 @@ func (s3Client *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdenti
 
 		output, err := s3Client.client.ListObjectVersions(context.TODO(), input)
 		if err != nil {
-			log.Fatalf("failed list object versions, %v", err)
+			log.Fatalf("failed list object versions: %v", err)
 			return nil, err
 		}
 
