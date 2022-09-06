@@ -7,8 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
-	"github.com/go-to-k/delstack/option"
-	"golang.org/x/sync/errgroup"
 )
 
 type IAM struct {
@@ -64,24 +62,10 @@ func (iamClient *IAM) ListAttachedRolePolicies(roleName *string) ([]types.Attach
 }
 
 func (iamClient *IAM) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy) error {
-	var eg errgroup.Group
-	var semaphore = make(chan struct{}, option.CONCURRENCY_NUM)
-
 	for _, policy := range policies {
-		policy := policy
-		eg.Go(func() error {
-			semaphore <- struct{}{}
-
-			if err := iamClient.DetachRolePolicy(roleName, policy.PolicyArn); err != nil {
-				return err
-			}
-			<-semaphore
-
-			return nil
-		})
-	}
-	if err := eg.Wait(); err != nil {
-		return err
+		if err := iamClient.DetachRolePolicy(roleName, policy.PolicyArn); err != nil {
+			return err
+		}
 	}
 
 	return nil
