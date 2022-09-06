@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
+	"github.com/go-to-k/delstack/option"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -41,7 +42,7 @@ func (operator *StackOperator) GetResourcesLength() int {
 func (operator *StackOperator) DeleteResources() error {
 	var eg errgroup.Group
 	re := regexp.MustCompile(STACK_NAME_RULE)
-	var semaphore = make(chan struct{}, CONCURRENCY_NUM)
+	var semaphore = make(chan struct{}, option.CONCURRENCY_NUM)
 
 	for _, stack := range operator.resources {
 		stack := stack

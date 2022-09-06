@@ -4,6 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
+	"github.com/go-to-k/delstack/option"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,7 +33,7 @@ func (operator *ECROperator) GetResourcesLength() int {
 
 func (operator *ECROperator) DeleteResources() error {
 	var eg errgroup.Group
-	var semaphore = make(chan struct{}, CONCURRENCY_NUM)
+	var semaphore = make(chan struct{}, option.CONCURRENCY_NUM)
 
 	for _, repository := range operator.resources {
 		repository := repository
