@@ -41,17 +41,18 @@ func (operator *StackOperator) GetResourcesLength() int {
 func (operator *StackOperator) DeleteResources() error {
 	var eg errgroup.Group
 	re := regexp.MustCompile(STACK_NAME_RULE)
+	var semaphore = make(chan struct{}, CONCURRENCY_NUM)
 
 	for _, stack := range operator.resources {
 		stack := stack
 		eg.Go(func() error {
 			stackName := re.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
-			SEMAPHORE <- struct{}{}
+			semaphore <- struct{}{}
 
 			if err := operator.DeleteStackResources(aws.String(stackName)); err != nil {
 				return err
 			}
-			<-SEMAPHORE
+			<-semaphore
 
 			return nil
 		})

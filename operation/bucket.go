@@ -34,16 +34,17 @@ func (operator *BucketOperator) GetResourcesLength() int {
 
 func (operator *BucketOperator) DeleteResources() error {
 	var eg errgroup.Group
+	var semaphore = make(chan struct{}, CONCURRENCY_NUM)
 
 	for _, bucket := range operator.resources {
 		bucket := bucket
 		eg.Go(func() error {
-			SEMAPHORE <- struct{}{}
+			semaphore <- struct{}{}
 
 			if err := operator.DeleteBucket(bucket.PhysicalResourceId); err != nil {
 				return err
 			}
-			<-SEMAPHORE
+			<-semaphore
 
 			return nil
 		})

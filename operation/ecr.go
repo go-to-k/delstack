@@ -32,16 +32,17 @@ func (operator *ECROperator) GetResourcesLength() int {
 
 func (operator *ECROperator) DeleteResources() error {
 	var eg errgroup.Group
+	var semaphore = make(chan struct{}, CONCURRENCY_NUM)
 
 	for _, repository := range operator.resources {
 		repository := repository
 		eg.Go(func() (err error) {
-			SEMAPHORE <- struct{}{}
+			semaphore <- struct{}{}
 
 			if err := operator.DeleteECR(repository.PhysicalResourceId); err != nil {
 				return err
 			}
-			<-SEMAPHORE
+			<-semaphore
 
 			return nil
 		})

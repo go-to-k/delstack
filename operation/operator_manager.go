@@ -9,7 +9,6 @@ import (
 )
 
 var CONCURRENCY_NUM = runtime.NumCPU()
-var SEMAPHORE = make(chan struct{}, CONCURRENCY_NUM)
 
 type OperatorManager struct {
 	operatorCollection *OperatorCollection

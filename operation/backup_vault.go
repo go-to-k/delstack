@@ -32,16 +32,17 @@ func (operator *BackupVaultOperator) GetResourcesLength() int {
 
 func (operator *BackupVaultOperator) DeleteResources() error {
 	var eg errgroup.Group
+	var semaphore = make(chan struct{}, CONCURRENCY_NUM)
 
 	for _, backupVault := range operator.resources {
 		backupVault := backupVault
 		eg.Go(func() error {
-			SEMAPHORE <- struct{}{}
+			semaphore <- struct{}{}
 
 			if err := operator.DeleteBackupVault(backupVault.PhysicalResourceId); err != nil {
 				return err
 			}
-			<-SEMAPHORE
+			<-semaphore
 
 			return nil
 		})
