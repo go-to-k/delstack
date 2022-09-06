@@ -1,6 +1,7 @@
 package operation
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -8,6 +9,7 @@ import (
 	"github.com/go-to-k/delstack/client"
 	"github.com/go-to-k/delstack/option"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 )
 
 var _ Operator = (*BucketOperator)(nil)
@@ -35,17 +37,17 @@ func (operator *BucketOperator) GetResourcesLength() int {
 
 func (operator *BucketOperator) DeleteResources() error {
 	var eg errgroup.Group
-	var semaphore = make(chan struct{}, option.CONCURRENCY_NUM)
+	sem := semaphore.NewWeighted(int64(option.CONCURRENCY_NUM))
 
 	for _, bucket := range operator.resources {
 		bucket := bucket
 		eg.Go(func() error {
-			semaphore <- struct{}{}
+			sem.Acquire(context.Background(), 1)
+			defer sem.Release(1)
 
 			if err := operator.DeleteBucket(bucket.PhysicalResourceId); err != nil {
 				return err
 			}
-			<-semaphore
 
 			return nil
 		})
