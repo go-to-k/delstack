@@ -1,6 +1,7 @@
 package operation
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -10,6 +11,7 @@ import (
 	"github.com/go-to-k/delstack/client"
 	"github.com/go-to-k/delstack/option"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 )
 
 var _ Operator = (*StackOperator)(nil)
@@ -42,18 +44,18 @@ func (operator *StackOperator) GetResourcesLength() int {
 func (operator *StackOperator) DeleteResources() error {
 	var eg errgroup.Group
 	re := regexp.MustCompile(STACK_NAME_RULE)
-	var semaphore = make(chan struct{}, option.CONCURRENCY_NUM)
+	sem := semaphore.NewWeighted(int64(option.CONCURRENCY_NUM))
 
 	for _, stack := range operator.resources {
 		stack := stack
 		eg.Go(func() error {
 			stackName := re.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
-			semaphore <- struct{}{}
+			sem.Acquire(context.Background(), 1)
+			defer sem.Release(1)
 
 			if err := operator.DeleteStackResources(aws.String(stackName)); err != nil {
 				return err
 			}
-			<-semaphore
 
 			return nil
 		})
