@@ -38,8 +38,8 @@ func (s3Client *S3) DeleteBucket(bucketName *string) error {
 }
 
 func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error) {
-	var eg errgroup.Group
-	errorsCh := make(chan []types.Error)
+	eg, ctx := errgroup.WithContext(context.Background())
+	outputsCh := make(chan *s3.DeleteObjectsOutput)
 	sem := semaphore.NewWeighted(int64(option.CONCURRENCY_NUM))
 
 	errors := []types.Error{}
@@ -74,7 +74,12 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 				return err
 			}
 
-			errorsCh <- output.Errors
+			select {
+			case outputsCh <- output:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+
 			return nil
 		})
 
@@ -83,13 +88,20 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 		}
 	}
 
+	go func() {
+		eg.Wait()
+		close(outputsCh)
+	}()
+
+	for outputErrors := range outputsCh {
+		if len(outputErrors.Errors) > 0 {
+			errors = append(errors, outputErrors.Errors...)
+		}
+	}
+
 	if err := eg.Wait(); err != nil {
 		log.Fatalf("failed delete objects: %v", err)
 		return nil, err
-	}
-
-	for outputErrors := range errorsCh {
-		errors = append(errors, outputErrors...)
 	}
 
 	return errors, nil
