@@ -3,6 +3,8 @@ package client
 import (
 	"context"
 	"log"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -25,10 +27,17 @@ func (iamClient *IAM) DeleteRole(roleName *string) error {
 		RoleName: roleName,
 	}
 
-	_, err := iamClient.client.DeleteRole(context.TODO(), input)
-	if err != nil {
-		log.Fatalf("failed delete the IAM Role, %v", err)
-		return err
+	for {
+		_, err := iamClient.client.DeleteRole(context.TODO(), input)
+		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
+			time.Sleep(time.Second * 1)
+			continue
+		}
+		if err != nil {
+			log.Fatalf("failed delete the IAM Role, %v", err)
+			return err
+		}
+		break
 	}
 
 	return nil
@@ -77,10 +86,17 @@ func (iamClient *IAM) DetachRolePolicy(roleName *string, PolicyArn *string) erro
 		RoleName:  roleName,
 	}
 
-	_, err := iamClient.client.DetachRolePolicy(context.TODO(), input)
-	if err != nil {
-		log.Fatalf("failed detach the Role Policy, %v", err)
-		return err
+	for {
+		_, err := iamClient.client.DetachRolePolicy(context.TODO(), input)
+		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
+			time.Sleep(time.Second * 1)
+			continue
+		}
+		if err != nil {
+			log.Fatalf("failed detach the Role Policy, %v", err)
+			return err
+		}
+		break
 	}
 
 	return nil
