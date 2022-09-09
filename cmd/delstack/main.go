@@ -13,6 +13,7 @@ import (
 /*
 	TODO: add logger
 	TODO: message handler or high usability messages
+	TODO: os.Exit(1) or not when exit 1
 */
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 	_, err := flags.Parse(&opts)
 	if err != nil {
 		// os.Exit(1)
-		// TODO: show help message
+		// TODO: show help message(Usage)
 		return
 	}
 
@@ -31,7 +32,8 @@ func main() {
 	}
 
 	cfnOperator := operation.NewStackOperator(config)
-	if err := cfnOperator.DeleteStackResources(aws.String(opts.StackName)); err != nil {
+	isRootStack := true
+	if err := cfnOperator.DeleteStackResources(aws.String(opts.StackName), isRootStack); err != nil {
 		log.Fatalf("Error: %s", err.Error())
 		os.Exit(1)
 	}
