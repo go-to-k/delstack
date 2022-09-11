@@ -25,9 +25,6 @@ func NewOption() *Option {
 
 func (option *Option) Parse() ([]string, error) {
 	result, err := flags.Parse(option)
-	if err != nil {
-		// TODO: show help message(Usage)
-	}
 	return result, err
 }
 

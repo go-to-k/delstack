@@ -19,7 +19,6 @@ func main() {
 	opts := option.NewOption()
 	_, err := opts.Parse()
 	if err != nil {
-		// os.Exit(1)
 		return
 	}
 
