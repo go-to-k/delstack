@@ -103,12 +103,12 @@ func (operator *StackOperator) deleteRootStack(stackName *string) error {
 		return err
 	}
 	if !isExistBeforeDelete {
-		fmt.Printf("The stack is not exists: %v", *stackName)
+		fmt.Printf("The stack is not exists: %v\n", *stackName)
 		return err
 	}
 
 	if *stackOutputBeforeDelete.Stacks[0].EnableTerminationProtection {
-		fmt.Printf("TerminationProtection is enabled: %v", *stackName)
+		fmt.Printf("TerminationProtection is enabled: %v\n", *stackName)
 		return nil
 	}
 
@@ -121,7 +121,7 @@ func (operator *StackOperator) deleteRootStack(stackName *string) error {
 		return err
 	}
 	if !isExistAfterDelete {
-		fmt.Printf("Successfully deleted without failed resources: %v", *stackName)
+		fmt.Printf("Successfully deleted without failed resources: %v\n", *stackName)
 		return nil
 	}
 	if stackOutputAfterDelete.Stacks[0].StackStatus != "DELETE_FAILED" {

@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/operation"
 	"github.com/go-to-k/delstack/option"
-	flags "github.com/jessevdk/go-flags"
 )
 
 /*
@@ -17,15 +16,14 @@ import (
 */
 
 func main() {
-	var opts option.Option
-	_, err := flags.Parse(&opts)
+	opts := option.NewOption()
+	_, err := opts.Parse()
 	if err != nil {
 		// os.Exit(1)
-		// TODO: show help message(Usage)
 		return
 	}
 
-	config, err := operation.LoadAwsConfig(opts.Profile, opts.Region)
+	config, err := opts.LoadAwsConfig()
 	if err != nil {
 		log.Fatalf("Error: %s", err.Error())
 		os.Exit(1)
