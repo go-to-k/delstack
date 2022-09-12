@@ -2,11 +2,11 @@ package client
 
 import (
 	"context"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/go-to-k/delstack/logger"
 	"github.com/go-to-k/delstack/option"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -30,7 +30,7 @@ func (s3Client *S3) DeleteBucket(bucketName *string) error {
 
 	_, err := s3Client.client.DeleteBucket(context.TODO(), input)
 	if err != nil {
-		log.Fatalf("failed delete the s3 bucket, %v", err)
+		logger.Logger.Fatal().Msgf("Error: failed delete the s3 bucket, %v", err.Error())
 		return err
 	}
 
@@ -100,7 +100,7 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 	}
 
 	if err := eg.Wait(); err != nil {
-		log.Fatalf("failed delete objects: %v", err)
+		logger.Logger.Fatal().Msgf("Error: failed delete objects: %v", err.Error())
 		return nil, err
 	}
 
@@ -121,7 +121,7 @@ func (s3Client *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdenti
 
 		output, err := s3Client.client.ListObjectVersions(context.TODO(), input)
 		if err != nil {
-			log.Fatalf("failed list object versions: %v", err)
+			logger.Logger.Fatal().Msgf("Error: failed list object versions: %v", err.Error())
 			return nil, err
 		}
 

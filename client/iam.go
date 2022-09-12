@@ -2,13 +2,13 @@ package client
 
 import (
 	"context"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"github.com/go-to-k/delstack/logger"
 )
 
 type IAM struct {
@@ -34,7 +34,7 @@ func (iamClient *IAM) DeleteRole(roleName *string) error {
 			continue
 		}
 		if err != nil {
-			log.Fatalf("failed delete the IAM Role, %v", err)
+			logger.Logger.Fatal().Msgf("Error: failed delete the IAM Role, %v", err.Error())
 			return err
 		}
 		break
@@ -55,7 +55,7 @@ func (iamClient *IAM) ListAttachedRolePolicies(roleName *string) ([]types.Attach
 
 		output, err := iamClient.client.ListAttachedRolePolicies(context.TODO(), input)
 		if err != nil {
-			log.Fatalf("failed list attached Role Policies, %v", err)
+			logger.Logger.Fatal().Msgf("Error: failed list attached Role Policies, %v", err.Error())
 			return nil, err
 		}
 
@@ -93,7 +93,7 @@ func (iamClient *IAM) DetachRolePolicy(roleName *string, PolicyArn *string) erro
 			continue
 		}
 		if err != nil {
-			log.Fatalf("failed detach the Role Policy, %v", err)
+			logger.Logger.Fatal().Msgf("Error: failed detach the Role Policy, %v", err.Error())
 			return err
 		}
 		break

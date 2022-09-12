@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	"github.com/go-to-k/delstack/logger"
 )
 
 type OperatorCollection struct {
@@ -71,19 +72,19 @@ func (operatorCollection *OperatorCollection) GetOperatorList() []Operator {
 }
 
 func (operatorCollection *OperatorCollection) RaiseNotSupportedServicesError() error {
-	fmt.Println("===========================================================")
-	fmt.Printf("%v is FAILED !!!", operatorCollection.stackName)
-	fmt.Println("")
-	fmt.Println("The deletion seems to be failing for some other reason.")
-	fmt.Println("This function supports force deletion of ")
-	fmt.Println("<S3 buckets> that have Non-empty or Versioning enabled and DeletionPolicy is not Retain.")
-	fmt.Println("and <IAM roles> with policies attached from outside the stack,")
-	fmt.Println("and <ECR> still contains images,")
-	fmt.Println("and <BackupVault> contains recovery points,")
-	fmt.Println("and <Nested Child Stack>.")
-	fmt.Println("<Custom Resources> will be deleted on its own.")
-	fmt.Println("===========================================================")
-	fmt.Println("")
+	logger.Logger.Info().Msg("===========================================================")
+	logger.Logger.Info().Msgf("Error: %v is FAILED !!!", operatorCollection.stackName)
+	logger.Logger.Info().Msg("")
+	logger.Logger.Info().Msg("The deletion seems to be failing for some other reason.")
+	logger.Logger.Info().Msg("This function supports force deletion of ")
+	logger.Logger.Info().Msg("<S3 buckets> that have Non-empty or Versioning enabled and DeletionPolicy is not Retain.")
+	logger.Logger.Info().Msg("and <IAM roles> with policies attached from outside the stack,")
+	logger.Logger.Info().Msg("and <ECR> still contains images,")
+	logger.Logger.Info().Msg("and <BackupVault> contains recovery points,")
+	logger.Logger.Info().Msg("and <Nested Child Stack>.")
+	logger.Logger.Info().Msg("<Custom Resources> will be deleted on its own.")
+	logger.Logger.Info().Msg("===========================================================")
+	logger.Logger.Info().Msg("")
 
 	return fmt.Errorf("not supported services error")
 }

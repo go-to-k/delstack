@@ -2,11 +2,11 @@ package client
 
 import (
 	"context"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
+	"github.com/go-to-k/delstack/logger"
 )
 
 type Backup struct {
@@ -32,7 +32,7 @@ func (backupClient *Backup) ListRecoveryPointsByBackupVault(backupVaultName *str
 
 		output, err := backupClient.client.ListRecoveryPointsByBackupVault(context.TODO(), input)
 		if err != nil {
-			log.Fatalf("failed list the Recovery Points: %v", err)
+			logger.Logger.Fatal().Msgf("Error: failed list the Recovery Points: %v", err.Error())
 			return nil, err
 		}
 		recoveryPoints = append(recoveryPoints, output.RecoveryPoints...)
@@ -63,7 +63,7 @@ func (backupClient *Backup) DeleteRecoveryPoint(backupVaultName *string, recover
 
 	_, err := backupClient.client.DeleteRecoveryPoint(context.TODO(), input)
 	if err != nil {
-		log.Fatalf("failed delete the Recovery Point, %v", err)
+		logger.Logger.Fatal().Msgf("Error: failed delete the Recovery Point, %v", err.Error())
 		return err
 	}
 
@@ -77,7 +77,7 @@ func (backupClient *Backup) DeleteBackupVault(backupVaultName *string) error {
 
 	_, err := backupClient.client.DeleteBackupVault(context.TODO(), input)
 	if err != nil {
-		log.Fatalf("failed delete the Backup Vault, %v", err)
+		logger.Logger.Fatal().Msgf("Error: failed delete the Backup Vault, %v", err.Error())
 		return err
 	}
 
