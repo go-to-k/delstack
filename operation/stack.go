@@ -2,13 +2,12 @@ package operation
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"regexp"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
+	"github.com/go-to-k/delstack/logger"
 	"github.com/go-to-k/delstack/option"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -103,12 +102,12 @@ func (operator *StackOperator) deleteRootStack(stackName *string) error {
 		return err
 	}
 	if !isExistBeforeDelete {
-		fmt.Printf("The stack is not exists: %v\n", *stackName)
+		logger.Logger.Info().Msgf("The stack is not exists: %v\n", *stackName)
 		return err
 	}
 
 	if *stackOutputBeforeDelete.Stacks[0].EnableTerminationProtection {
-		fmt.Printf("TerminationProtection is enabled: %v\n", *stackName)
+		logger.Logger.Info().Msgf("TerminationProtection is enabled: %v\n", *stackName)
 		return nil
 	}
 
@@ -121,11 +120,11 @@ func (operator *StackOperator) deleteRootStack(stackName *string) error {
 		return err
 	}
 	if !isExistAfterDelete {
-		fmt.Printf("Successfully deleted without failed resources: %v\n", *stackName)
+		logger.Logger.Info().Msgf("Successfully deleted without failed resources: %v\n", *stackName)
 		return nil
 	}
 	if stackOutputAfterDelete.Stacks[0].StackStatus != "DELETE_FAILED" {
-		log.Fatalf("StackStatus is expected to be DELETE_FAILED, but %v: %v", stackOutputAfterDelete.Stacks[0].StackStatus, *stackName)
+		logger.Logger.Fatal().Msgf("Error: StackStatus is expected to be DELETE_FAILED, but %v: %v", stackOutputAfterDelete.Stacks[0].StackStatus, *stackName)
 		return err
 	}
 

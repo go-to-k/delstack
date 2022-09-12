@@ -3,5 +3,7 @@
         "delstack",
         "jessevdk",
         "errgroup",
+        "zerolog",
+        "Msgf",
     ]
 }

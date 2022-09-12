@@ -2,11 +2,11 @@ package option
 
 import (
 	"context"
-	"log"
 	"runtime"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/go-to-k/delstack/logger"
 	"github.com/jessevdk/go-flags"
 )
 
@@ -41,7 +41,7 @@ func (option *Option) LoadAwsConfig() (aws.Config, error) {
 	}
 
 	if err != nil {
-		log.Fatalf("failed to load configuration, %v", err)
+		logger.Logger.Fatal().Msgf("Error: failed to load configuration, %v", err.Error())
 		return cfg, err
 	}
 
