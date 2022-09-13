@@ -45,15 +45,9 @@ func (operatorManager *OperatorManager) DeleteResourceCollection() error {
 	for _, operator := range operatorManager.operatorCollection.GetOperatorList() {
 		operator := operator
 		eg.Go(func() error {
-			if err := operator.DeleteResources(); err != nil {
-				return err
-			}
-			return nil
+			return operator.DeleteResources()
 		})
 	}
-	if err := eg.Wait(); err != nil {
-		return err
-	}
 
-	return nil
+	return eg.Wait()
 }

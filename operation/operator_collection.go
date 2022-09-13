@@ -72,8 +72,7 @@ func (operatorCollection *OperatorCollection) GetOperatorList() []Operator {
 }
 
 func (operatorCollection *OperatorCollection) RaiseNotSupportedServicesError() error {
-	logger.Logger.Info().Msg("===========================================================")
-	logger.Logger.Info().Msgf("Error: %v is FAILED !!!", operatorCollection.stackName)
+	logger.Logger.Error().Msgf("%v is FAILED !!!", operatorCollection.stackName)
 	logger.Logger.Info().Msg("")
 	logger.Logger.Info().Msg("The deletion seems to be failing for some other reason.")
 	logger.Logger.Info().Msg("This function supports force deletion of ")
@@ -83,8 +82,6 @@ func (operatorCollection *OperatorCollection) RaiseNotSupportedServicesError() e
 	logger.Logger.Info().Msg("and <BackupVault> contains recovery points,")
 	logger.Logger.Info().Msg("and <Nested Child Stack>.")
 	logger.Logger.Info().Msg("<Custom Resources> will be deleted on its own.")
-	logger.Logger.Info().Msg("===========================================================")
-	logger.Logger.Info().Msg("")
 
 	return fmt.Errorf("not supported services error")
 }

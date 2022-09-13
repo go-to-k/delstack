@@ -23,12 +23,12 @@ func main() {
 
 	config, err := opts.LoadAwsConfig()
 	if err != nil {
-		logger.Logger.Fatal().Msgf("Error: %v\n", err.Error())
+		logger.Logger.Fatal().Msgf("%v", err.Error())
 	}
 
 	cfnOperator := operation.NewStackOperator(config)
 	isRootStack := true
 	if err := cfnOperator.DeleteStackResources(aws.String(opts.StackName), isRootStack); err != nil {
-		logger.Logger.Fatal().Msgf("Error: %v\n", err.Error())
+		logger.Logger.Fatal().Msgf("%v", err.Error())
 	}
 }
