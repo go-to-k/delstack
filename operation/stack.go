@@ -2,6 +2,7 @@ package operation
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -53,25 +54,21 @@ func (operator *StackOperator) DeleteResources() error {
 			defer sem.Release(1)
 
 			isRootStack := false
-			if err := operator.DeleteStackResources(aws.String(stackName), isRootStack); err != nil {
-				return err
-			}
-
-			return nil
+			return operator.DeleteStackResources(aws.String(stackName), isRootStack)
 		})
 	}
-	if err := eg.Wait(); err != nil {
-		return err
-	}
 
-	return nil
+	return eg.Wait()
 }
 
 func (operator *StackOperator) DeleteStackResources(stackName *string, isRootStack bool) error {
 	if isRootStack {
-		err := operator.deleteRootStack(stackName)
+		isSuccessfullyDeletedWithoutFailedResources, err := operator.deleteRootStack(stackName)
 		if err != nil {
 			return err
+		}
+		if isSuccessfullyDeletedWithoutFailedResources {
+			return nil
 		}
 	}
 
@@ -96,37 +93,35 @@ func (operator *StackOperator) DeleteStackResources(stackName *string, isRootSta
 	return nil
 }
 
-func (operator *StackOperator) deleteRootStack(stackName *string) error {
+func (operator *StackOperator) deleteRootStack(stackName *string) (bool, error) {
 	stackOutputBeforeDelete, isExistBeforeDelete, err := operator.client.DescribeStacks(stackName)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if !isExistBeforeDelete {
-		logger.Logger.Info().Msgf("The stack is not exists: %v\n", *stackName)
-		return err
+		return false, fmt.Errorf("the stack is not exists: %v", *stackName)
 	}
 
 	if *stackOutputBeforeDelete.Stacks[0].EnableTerminationProtection {
-		logger.Logger.Info().Msgf("TerminationProtection is enabled: %v\n", *stackName)
-		return nil
+		return false, fmt.Errorf("TerminationProtection is enabled: %v", *stackName)
 	}
 
 	if err := operator.client.DeleteStack(stackName, []string{}); err != nil {
-		return err
+		return false, err
 	}
 
 	stackOutputAfterDelete, isExistAfterDelete, err := operator.client.DescribeStacks(stackName)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if !isExistAfterDelete {
-		logger.Logger.Info().Msgf("Successfully deleted without failed resources: %v\n", *stackName)
-		return nil
+		logger.Logger.Info().Msgf("Successfully deleted without failed resources: %v", *stackName)
+		return true, nil
 	}
 	if stackOutputAfterDelete.Stacks[0].StackStatus != "DELETE_FAILED" {
-		logger.Logger.Fatal().Msgf("Error: StackStatus is expected to be DELETE_FAILED, but %v: %v", stackOutputAfterDelete.Stacks[0].StackStatus, *stackName)
-		return err
+		logger.Logger.Error().Msgf("StackStatus is expected to be DELETE_FAILED, but %v: %v", stackOutputAfterDelete.Stacks[0].StackStatus, *stackName)
+		return false, err
 	}
 
-	return nil
+	return false, nil
 }

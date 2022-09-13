@@ -44,24 +44,14 @@ func (operator *ECROperator) DeleteResources() error {
 			sem.Acquire(context.Background(), 1)
 			defer sem.Release(1)
 
-			if err := operator.DeleteECR(repository.PhysicalResourceId); err != nil {
-				return err
-			}
-
-			return nil
+			return operator.DeleteECR(repository.PhysicalResourceId)
 		})
 	}
-	if err := eg.Wait(); err != nil {
-		return err
-	}
 
-	return nil
+	err := eg.Wait()
+	return err
 }
 
 func (operator *ECROperator) DeleteECR(repositoryName *string) error {
-	if err := operator.client.DeleteRepository(repositoryName); err != nil {
-		return err
-	}
-
-	return nil
+	return operator.client.DeleteRepository(repositoryName)
 }

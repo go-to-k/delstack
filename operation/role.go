@@ -44,18 +44,11 @@ func (operator *RoleOperator) DeleteResources() error {
 			sem.Acquire(context.Background(), 1)
 			defer sem.Release(1)
 
-			if err := operator.DeleteRole(role.PhysicalResourceId); err != nil {
-				return err
-			}
-
-			return nil
+			return operator.DeleteRole(role.PhysicalResourceId)
 		})
 	}
-	if err := eg.Wait(); err != nil {
-		return err
-	}
 
-	return nil
+	return eg.Wait()
 }
 
 func (operator *RoleOperator) DeleteRole(roleName *string) error {

@@ -5,7 +5,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
-	"github.com/go-to-k/delstack/logger"
 )
 
 type ECR struct {
@@ -26,10 +25,6 @@ func (ecrClient *ECR) DeleteRepository(repositoryName *string) error {
 	}
 
 	_, err := ecrClient.client.DeleteRepository(context.TODO(), input)
-	if err != nil {
-		logger.Logger.Fatal().Msgf("Error: failed delete the ECR Repository, %v", err.Error())
-		return err
-	}
 
-	return nil
+	return err
 }
