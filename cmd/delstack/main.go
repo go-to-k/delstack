@@ -9,7 +9,7 @@ import (
 
 /*
 	TODO: message handler or high usability messages("Started, Successfully, etc...")
-	TODO: use tables or logging by one log for message outputs in OperatorCollection.RaiseNotSupportedServicesError()
+	TODO: use tables for message outputs in OperatorCollection.RaiseNotSupportedServicesError()
 */
 
 func main() {
