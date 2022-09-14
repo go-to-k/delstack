@@ -72,16 +72,17 @@ func (operatorCollection *OperatorCollection) GetOperatorList() []Operator {
 }
 
 func (operatorCollection *OperatorCollection) RaiseNotSupportedServicesError() error {
-	logger.Logger.Error().Msgf("%v is FAILED !!!", operatorCollection.stackName)
-	logger.Logger.Info().Msg("")
-	logger.Logger.Info().Msg("The deletion seems to be failing for some other reason.")
-	logger.Logger.Info().Msg("This function supports force deletion of ")
-	logger.Logger.Info().Msg("<S3 buckets> that have Non-empty or Versioning enabled and DeletionPolicy is not Retain.")
-	logger.Logger.Info().Msg("and <IAM roles> with policies attached from outside the stack,")
-	logger.Logger.Info().Msg("and <ECR> still contains images,")
-	logger.Logger.Info().Msg("and <BackupVault> contains recovery points,")
-	logger.Logger.Info().Msg("and <Nested Child Stack>.")
-	logger.Logger.Info().Msg("<Custom Resources> will be deleted on its own.")
+	title := fmt.Sprintf("%v is FAILED !!!\n", operatorCollection.stackName)
+	messages := "\tThe deletion seems to be failing for some other reason.\n" +
+		"\tThis function supports force deletion of \n" +
+		"\t<S3 buckets> that have Non-empty or Versioning enabled and DeletionPolicy is not Retain.\n" +
+		"\tand <IAM roles> with policies attached from outside the stack,\n" +
+		"\tand <ECR> still contains images,\n" +
+		"\tand <BackupVault> contains recovery points,\n" +
+		"\tand <Nested Child Stack>.\n" +
+		"\t<Custom Resources> will be deleted on its own."
+
+	logger.Logger.Error().Msg(title + messages)
 
 	return fmt.Errorf("not supported services error")
 }
