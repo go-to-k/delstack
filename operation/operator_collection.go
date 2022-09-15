@@ -10,15 +10,15 @@ import (
 )
 
 type OperatorCollection struct {
-	stackName                  string
-	logicalResourceIds         []string
-	notSupportedStackResources []types.StackResourceSummary
-	operatorList               []Operator
+	stackName                 string
+	logicalResourceIds        []string
+	unsupportedStackResources []types.StackResourceSummary
+	operatorList              []Operator
 }
 
 func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
 	logicalResourceIds := []string{}
-	notSupportedStackResources := []types.StackResourceSummary{}
+	unsupportedStackResources := []types.StackResourceSummary{}
 	stackOperator := NewStackOperator(config)
 	bucketOperator := NewBucketOperator(config)
 	roleOperator := NewRoleOperator(config)
@@ -46,7 +46,7 @@ func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSu
 				if strings.Contains(*v.ResourceType, "Custom::") {
 					customOperator.AddResources(&stackResource)
 				} else {
-					notSupportedStackResources = append(notSupportedStackResources, stackResource)
+					unsupportedStackResources = append(unsupportedStackResources, stackResource)
 				}
 			}
 		}
@@ -61,10 +61,10 @@ func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSu
 	operatorList = append(operatorList, customOperator)
 
 	return &OperatorCollection{
-		stackName:                  aws.ToString(stackName),
-		logicalResourceIds:         logicalResourceIds,
-		notSupportedStackResources: notSupportedStackResources,
-		operatorList:               operatorList,
+		stackName:                 aws.ToString(stackName),
+		logicalResourceIds:        logicalResourceIds,
+		unsupportedStackResources: unsupportedStackResources,
+		operatorList:              operatorList,
 	}
 }
 
@@ -76,16 +76,16 @@ func (operatorCollection *OperatorCollection) GetOperatorList() []Operator {
 	return operatorCollection.operatorList
 }
 
-func (operatorCollection *OperatorCollection) RaiseNotSupportedResourceError() error {
+func (operatorCollection *OperatorCollection) RaiseUnsupportedResourceError() error {
 	title := fmt.Sprintf("%v deletion is FAILED !!!\n", operatorCollection.stackName)
 
-	notSupportedStackResourcesHeader := []string{"ResourceType", "Resource"}
-	notSupportedStackResourcesData := [][]string{}
+	unsupportedStackResourcesHeader := []string{"ResourceType", "Resource"}
+	unsupportedStackResourcesData := [][]string{}
 
-	for _, resource := range operatorCollection.notSupportedStackResources {
-		notSupportedStackResourcesData = append(notSupportedStackResourcesData, []string{*resource.ResourceType, *resource.LogicalResourceId})
+	for _, resource := range operatorCollection.unsupportedStackResources {
+		unsupportedStackResourcesData = append(unsupportedStackResourcesData, []string{*resource.ResourceType, *resource.LogicalResourceId})
 	}
-	notSupportedStackResources := "\nThese are not supported resources so failed delete:\n" + *logger.ToStringAsTableFormat(notSupportedStackResourcesHeader, notSupportedStackResourcesData)
+	unsupportedStackResources := "\nThese are unsupported resources so failed delete:\n" + *logger.ToStringAsTableFormat(unsupportedStackResourcesHeader, unsupportedStackResourcesData)
 
 	supportedStackResourcesHeader := []string{"ResourceType", "Description"}
 	supportedStackResourcesData := [][]string{
@@ -98,7 +98,7 @@ func (operatorCollection *OperatorCollection) RaiseNotSupportedResourceError() e
 	}
 	supportedStackResources := "\nSupported resources for force deletion of DELETE_FAILED resources are followings.\n" + *logger.ToStringAsTableFormat(supportedStackResourcesHeader, supportedStackResourcesData)
 
-	notSupportedResourceError := title + notSupportedStackResources + supportedStackResources
+	unsupportedResourceError := title + unsupportedStackResources + supportedStackResources
 
-	return fmt.Errorf("NotSupportedResourceError: %v", notSupportedResourceError)
+	return fmt.Errorf("UnsupportedResourceError: %v", unsupportedResourceError)
 }
