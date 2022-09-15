@@ -63,11 +63,11 @@ func (operator *StackOperator) DeleteResources() error {
 
 func (operator *StackOperator) DeleteStackResources(stackName *string, isRootStack bool) error {
 	if isRootStack {
-		isSuccessfullyDeletedWithoutFailedResources, err := operator.deleteRootStack(stackName)
+		isSuccess, err := operator.deleteRootStack(stackName)
 		if err != nil {
 			return err
 		}
-		if isSuccessfullyDeletedWithoutFailedResources {
+		if isSuccess {
 			return nil
 		}
 	}
@@ -99,11 +99,11 @@ func (operator *StackOperator) deleteRootStack(stackName *string) (bool, error) 
 		return false, err
 	}
 	if !isExistBeforeDelete {
-		return false, fmt.Errorf("the stack is not exists: %v", *stackName)
+		return false, fmt.Errorf("NotExistsError: %v", *stackName)
 	}
 
 	if *stackOutputBeforeDelete.Stacks[0].EnableTerminationProtection {
-		return false, fmt.Errorf("TerminationProtection is enabled: %v", *stackName)
+		return false, fmt.Errorf("TerminationProtectionIsEnabled: %v", *stackName)
 	}
 
 	if err := operator.client.DeleteStack(stackName, []string{}); err != nil {
@@ -115,12 +115,11 @@ func (operator *StackOperator) deleteRootStack(stackName *string) (bool, error) 
 		return false, err
 	}
 	if !isExistAfterDelete {
-		logger.Logger.Info().Msgf("Successfully deleted without failed resources: %v", *stackName)
+		logger.Logger.Info().Msg("No resources were DELETE_FAILED.")
 		return true, nil
 	}
 	if stackOutputAfterDelete.Stacks[0].StackStatus != "DELETE_FAILED" {
-		logger.Logger.Error().Msgf("StackStatus is expected to be DELETE_FAILED, but %v: %v", stackOutputAfterDelete.Stacks[0].StackStatus, *stackName)
-		return false, err
+		return false, fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but %v: %v", stackOutputAfterDelete.Stacks[0].StackStatus, *stackName)
 	}
 
 	return false, nil

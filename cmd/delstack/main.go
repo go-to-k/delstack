@@ -1,16 +1,13 @@
 package main
 
 import (
+	"os"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/logger"
 	"github.com/go-to-k/delstack/operation"
 	"github.com/go-to-k/delstack/option"
 )
-
-/*
-	TODO: message handler or high usability messages("Started, Successfully, etc...")
-	TODO: use tables for message outputs in OperatorCollection.RaiseNotSupportedServicesError()
-*/
 
 func main() {
 	logger.NewLogger()
@@ -23,12 +20,18 @@ func main() {
 
 	config, err := opts.LoadAwsConfig()
 	if err != nil {
-		logger.Logger.Fatal().Msgf("%v", err.Error())
+		logger.Logger.Error().Msg(err.Error())
+		os.Exit(1)
 	}
+
+	logger.Logger.Info().Msgf("Start deletion, %v", opts.StackName)
 
 	cfnOperator := operation.NewStackOperator(config)
 	isRootStack := true
 	if err := cfnOperator.DeleteStackResources(aws.String(opts.StackName), isRootStack); err != nil {
-		logger.Logger.Fatal().Msgf("%v", err.Error())
+		logger.Logger.Error().Msg(err.Error())
+		os.Exit(1)
 	}
+
+	logger.Logger.Info().Msgf("Successfully deleted, %v", opts.StackName)
 }

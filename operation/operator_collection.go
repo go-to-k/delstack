@@ -10,13 +10,15 @@ import (
 )
 
 type OperatorCollection struct {
-	stackName          string
-	logicalResourceIds []string
-	operatorList       []Operator
+	stackName                  string
+	logicalResourceIds         []string
+	notSupportedStackResources []types.StackResourceSummary
+	operatorList               []Operator
 }
 
 func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
 	logicalResourceIds := []string{}
+	notSupportedStackResources := []types.StackResourceSummary{}
 	stackOperator := NewStackOperator(config)
 	bucketOperator := NewBucketOperator(config)
 	roleOperator := NewRoleOperator(config)
@@ -27,9 +29,9 @@ func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSu
 	for _, v := range stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {
 			stackResource := v // Copy for pointer used below
-			logicalResourceIds = append(logicalResourceIds, aws.ToString(v.LogicalResourceId))
+			logicalResourceIds = append(logicalResourceIds, aws.ToString(stackResource.LogicalResourceId))
 
-			switch *v.ResourceType {
+			switch *stackResource.ResourceType {
 			case "AWS::CloudFormation::Stack":
 				stackOperator.AddResources(&stackResource)
 			case "AWS::S3::Bucket":
@@ -43,6 +45,8 @@ func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSu
 			default:
 				if strings.Contains(*v.ResourceType, "Custom::") {
 					customOperator.AddResources(&stackResource)
+				} else {
+					notSupportedStackResources = append(notSupportedStackResources, stackResource)
 				}
 			}
 		}
@@ -57,9 +61,10 @@ func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSu
 	operatorList = append(operatorList, customOperator)
 
 	return &OperatorCollection{
-		stackName:          aws.ToString(stackName),
-		logicalResourceIds: logicalResourceIds,
-		operatorList:       operatorList,
+		stackName:                  aws.ToString(stackName),
+		logicalResourceIds:         logicalResourceIds,
+		notSupportedStackResources: notSupportedStackResources,
+		operatorList:               operatorList,
 	}
 }
 
@@ -71,18 +76,29 @@ func (operatorCollection *OperatorCollection) GetOperatorList() []Operator {
 	return operatorCollection.operatorList
 }
 
-func (operatorCollection *OperatorCollection) RaiseNotSupportedServicesError() error {
-	title := fmt.Sprintf("%v is FAILED !!!\n", operatorCollection.stackName)
-	messages := "\tThe deletion seems to be failing for some other reason.\n" +
-		"\tThis function supports force deletion of \n" +
-		"\t<S3 buckets> that have Non-empty or Versioning enabled and DeletionPolicy is not Retain.\n" +
-		"\tand <IAM roles> with policies attached from outside the stack,\n" +
-		"\tand <ECR> still contains images,\n" +
-		"\tand <BackupVault> contains recovery points,\n" +
-		"\tand <Nested Child Stack>.\n" +
-		"\t<Custom Resources> will be deleted on its own."
+func (operatorCollection *OperatorCollection) RaiseNotSupportedResourceError() error {
+	title := fmt.Sprintf("%v deletion is FAILED !!!\n", operatorCollection.stackName)
 
-	logger.Logger.Error().Msg(title + messages)
+	notSupportedStackResourcesHeader := []string{"ResourceType", "Resource"}
+	notSupportedStackResourcesData := [][]string{}
 
-	return fmt.Errorf("not supported services error")
+	for _, resource := range operatorCollection.notSupportedStackResources {
+		notSupportedStackResourcesData = append(notSupportedStackResourcesData, []string{*resource.ResourceType, *resource.LogicalResourceId})
+	}
+	notSupportedStackResources := "\nThese are not supported resources so failed delete:\n" + *logger.ToStringAsTableFormat(notSupportedStackResourcesHeader, notSupportedStackResourcesData)
+
+	supportedStackResourcesHeader := []string{"ResourceType", "Description"}
+	supportedStackResourcesData := [][]string{
+		{"AWS::S3::Bucket", "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
+		{"AWS::IAM::Role", "IAM Roles, including roles with policies from outside the stack."},
+		{"AWS::ECR::Repository", "ECR Repositories, including repositories containing images."},
+		{"AWS::Backup::BackupVault", "Backup Vaults, including vaults containing recovery points."},
+		{"AWS::CloudFormation::Stack", "Nested Child Stacks that failed to delete."},
+		{"Custom::Xxx", "Custom Resources, but they will be deleted on its own."},
+	}
+	supportedStackResources := "\nSupported resources for force deletion of DELETE_FAILED resources are followings.\n" + *logger.ToStringAsTableFormat(supportedStackResourcesHeader, supportedStackResourcesData)
+
+	notSupportedResourceError := title + notSupportedStackResources + supportedStackResources
+
+	return fmt.Errorf("NotSupportedResourceError: %v", notSupportedResourceError)
 }
