@@ -11,6 +11,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const AppName = "delstack"
+
 type App struct {
 	Cli       *cli.App
 	StackName string
@@ -22,7 +24,7 @@ func NewApp(version string) *App {
 	app := App{}
 
 	app.Cli = &cli.App{
-		Name:  "delstack",
+		Name:  AppName,
 		Usage: "A CLI tool to force delete the entire CloudFormation stack.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -50,6 +52,7 @@ func NewApp(version string) *App {
 
 	app.Cli.Version = version
 	app.Cli.Action = app.getAction()
+	app.Cli.HideHelpCommand = true
 
 	return &app
 }
