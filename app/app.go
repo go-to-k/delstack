@@ -2,14 +2,14 @@ package app
 
 import (
 	"context"
-	"runtime"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/go-to-k/delstack/logger"
+	"github.com/go-to-k/delstack/operation"
 	"github.com/urfave/cli/v2"
 )
-
-var ConcurrencyNum = runtime.NumCPU()
 
 type App struct {
 	Cli       *cli.App
@@ -18,7 +18,7 @@ type App struct {
 	Region    string
 }
 
-func NewApp() *App {
+func NewApp(version string) *App {
 	app := App{}
 
 	app.Cli = &cli.App{
@@ -48,7 +48,34 @@ func NewApp() *App {
 		},
 	}
 
+	app.Cli.Version = version
+	app.Cli.Action = app.getAction()
+
 	return &app
+}
+
+func (app *App) Run(ctx context.Context) error {
+	return app.Cli.RunContext(ctx, os.Args)
+}
+
+func (app *App) getAction() func(c *cli.Context) error {
+	return func(c *cli.Context) error {
+		config, err := app.LoadAwsConfig()
+		if err != nil {
+			return err
+		}
+
+		logger.Logger.Info().Msgf("Start deletion, %v", app.StackName)
+
+		cfnOperator := operation.NewStackOperator(config)
+		isRootStack := true
+		if err := cfnOperator.DeleteStackResources(aws.String(app.StackName), isRootStack); err != nil {
+			return err
+		}
+
+		logger.Logger.Info().Msgf("Successfully deleted, %v", app.StackName)
+		return nil
+	}
 }
 
 func (app *App) LoadAwsConfig() (aws.Config, error) {
