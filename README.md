@@ -14,7 +14,7 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
 |  AWS::IAM::Role  |  IAM Roles, including roles **with policies from outside the stack**.  |
 |  AWS::ECR::Repository  |  ECR Repositories, including repositories **containing images**.  |
 |  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
-|  AWS::CloudFormation::Stack  |  **Nested Child Stacks** that failed to delete. If any of these other resources are included in the child stack, **they too will be deleted**.  |
+|  AWS::CloudFormation::Stack  |  **Nested Child Stacks** that failed to delete. If any of the other resources are included in the child stack, **they too will be deleted**.  |
 |  Custom::Xxx  |  Custom Resources, but they will be deleted on its own.  |
 
 <br>
