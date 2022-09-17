@@ -30,9 +30,11 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
   ```
   preparing...
   ```
-- Git Clone and build
+- Git Clone and install
   ```
-  preparing...
+  git clone https://github.com/go-to-k/delstack.git
+  cd delstack
+  make install
   ```
 - Binary
   ```
