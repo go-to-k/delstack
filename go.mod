@@ -10,9 +10,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.2.3
 	github.com/aws/aws-sdk-go-v2/service/iam v1.18.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.5
-	github.com/jessevdk/go-flags v1.5.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/rs/zerolog v1.28.0
+	github.com/urfave/cli/v2 v2.16.3
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
 )
 
@@ -31,9 +31,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.11.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.7 // indirect
 	github.com/aws/smithy-go v1.13.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6 // indirect
 )
