@@ -30,15 +30,15 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
   ```
   preparing...
   ```
-- Git Clone and install
+- Binary
+  ```
+  preparing...
+  ```
+- Git Clone and install(for developers)
   ```
   git clone https://github.com/go-to-k/delstack.git
   cd delstack
   make install
-  ```
-- Binary
-  ```
-  preparing...
   ```
 
 ## How to use
@@ -52,5 +52,3 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
   - AWS profile name
 - -r, --region: optional(default: `ap-northeast-1`)
   - AWS Region
-- -h, --help
-  - Show this help message
