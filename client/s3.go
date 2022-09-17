@@ -2,10 +2,15 @@ package client
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/go-to-k/delstack/logger"
 	"github.com/go-to-k/delstack/option"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -64,9 +69,28 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 			sem.Acquire(context.Background(), 1)
 			defer sem.Release(1)
 
-			output, err := s3Client.client.DeleteObjects(context.TODO(), input)
-			if err != nil {
-				return err
+			var (
+				output     *s3.DeleteObjectsOutput
+				err        error
+				retryCount int
+			)
+			for {
+				output, err = s3Client.client.DeleteObjects(context.TODO(), input)
+				if err != nil && strings.Contains(err.Error(), "api error SlowDown") {
+					retryCount++
+					if retryCount > option.MaxRetryCount {
+						logger.Logger.Warn().Msg(err.Error() + "\nRetried over " + strconv.Itoa(option.MaxRetryCount) + " but failed. ")
+						return fmt.Errorf("RetryCountOverError: %v", bucketName)
+					}
+
+					logger.Logger.Warn().Msg(err.Error() + "\nRetrying...")
+					time.Sleep(time.Second * 10)
+					continue
+				}
+				if err != nil {
+					return err
+				}
+				break
 			}
 
 			select {
