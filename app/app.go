@@ -63,7 +63,7 @@ func (app *App) Run(ctx context.Context) error {
 
 func (app *App) getAction() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		config, err := app.LoadAwsConfig()
+		config, err := app.loadAwsConfig()
 		if err != nil {
 			return err
 		}
@@ -81,7 +81,7 @@ func (app *App) getAction() func(c *cli.Context) error {
 	}
 }
 
-func (app *App) LoadAwsConfig() (aws.Config, error) {
+func (app *App) loadAwsConfig() (aws.Config, error) {
 	var (
 		cfg aws.Config
 		err error
