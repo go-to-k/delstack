@@ -12,6 +12,7 @@ import (
 )
 
 var _ IOperator = (*BucketOperator)(nil)
+var sleepTimeSecForS3 = 10
 
 type BucketOperator struct {
 	client    client.IS3
@@ -56,7 +57,7 @@ func (operator *BucketOperator) DeleteBucket(bucketName *string) error {
 		return err
 	}
 
-	errors, err := operator.client.DeleteObjects(bucketName, versions)
+	errors, err := operator.client.DeleteObjects(bucketName, versions, sleepTimeSecForS3)
 	if err != nil {
 		return err
 	}

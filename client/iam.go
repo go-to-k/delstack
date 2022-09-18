@@ -9,10 +9,10 @@ import (
 )
 
 type IIam interface {
-	DeleteRole(roleName *string) error
+	DeleteRole(roleName *string, sleepTimeSec int) error
 	ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error)
-	DetachRolePolicies(roleName *string, policies []types.AttachedPolicy) error
-	DetachRolePolicy(roleName *string, PolicyArn *string) error
+	DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error
+	DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error
 }
 
 var _ IIam = (*Iam)(nil)
@@ -33,7 +33,7 @@ func NewIam(client IIamSDKClient) *Iam {
 	}
 }
 
-func (iamClient *Iam) DeleteRole(roleName *string) error {
+func (iamClient *Iam) DeleteRole(roleName *string, sleepTimeSec int) error {
 	input := &iam.DeleteRoleInput{
 		RoleName: roleName,
 	}
@@ -43,7 +43,7 @@ func (iamClient *Iam) DeleteRole(roleName *string) error {
 		_, err := iamClient.client.DeleteRole(context.TODO(), input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
-			if err := WaitForRetry(retryCount, 1, roleName, err); err != nil {
+			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
 				return err
 			}
 			continue
@@ -83,9 +83,9 @@ func (iamClient *Iam) ListAttachedRolePolicies(roleName *string) ([]types.Attach
 	return policies, nil
 }
 
-func (iamClient *Iam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy) error {
+func (iamClient *Iam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
 	for _, policy := range policies {
-		if err := iamClient.DetachRolePolicy(roleName, policy.PolicyArn); err != nil {
+		if err := iamClient.DetachRolePolicy(roleName, policy.PolicyArn, sleepTimeSec); err != nil {
 			return err
 		}
 	}
@@ -93,7 +93,7 @@ func (iamClient *Iam) DetachRolePolicies(roleName *string, policies []types.Atta
 	return nil
 }
 
-func (iamClient *Iam) DetachRolePolicy(roleName *string, PolicyArn *string) error {
+func (iamClient *Iam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
 	input := &iam.DetachRolePolicyInput{
 		PolicyArn: PolicyArn,
 		RoleName:  roleName,
@@ -104,7 +104,7 @@ func (iamClient *Iam) DetachRolePolicy(roleName *string, PolicyArn *string) erro
 		_, err := iamClient.client.DetachRolePolicy(context.TODO(), input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
-			if err := WaitForRetry(retryCount, 1, roleName, err); err != nil {
+			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
 				return err
 			}
 			continue
