@@ -14,13 +14,13 @@ func NewBucketOperatorFactory(config aws.Config) *BucketOperatorFactory {
 	return &BucketOperatorFactory{config}
 }
 
-func (factory *BucketOperatorFactory) CreateBucketOperator() Operator {
+func (factory *BucketOperatorFactory) CreateBucketOperator() *BucketOperator {
 	return NewBucketOperator(
 		factory.createBucketClient(),
 	)
 }
 
-func (factory *BucketOperatorFactory) createBucketClient() client.IS3 {
+func (factory *BucketOperatorFactory) createBucketClient() *client.S3 {
 	sdkBucketClient := s3.NewFromConfig(factory.config)
 
 	return client.NewS3(

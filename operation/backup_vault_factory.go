@@ -14,13 +14,13 @@ func NewBackupVaultOperatorFactory(config aws.Config) *BackupVaultOperatorFactor
 	return &BackupVaultOperatorFactory{config}
 }
 
-func (factory *BackupVaultOperatorFactory) CreateBackupVaultOperator() Operator {
+func (factory *BackupVaultOperatorFactory) CreateBackupVaultOperator() *BackupVaultOperator {
 	return NewBackupVaultOperator(
 		factory.createBackupClient(),
 	)
 }
 
-func (factory *BackupVaultOperatorFactory) createBackupClient() client.IBackup {
+func (factory *BackupVaultOperatorFactory) createBackupClient() *client.Backup {
 	sdkBackupClient := backup.NewFromConfig(factory.config)
 
 	return client.NewBackup(

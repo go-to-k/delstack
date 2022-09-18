@@ -14,14 +14,14 @@ func NewStackOperatorFactory(config aws.Config) *StackOperatorFactory {
 	return &StackOperatorFactory{config}
 }
 
-func (factory *StackOperatorFactory) CreateStackOperator() Operator {
+func (factory *StackOperatorFactory) CreateStackOperator() *StackOperator {
 	return NewStackOperator(
 		factory.config,
 		factory.createCloudFormationClient(),
 	)
 }
 
-func (factory *StackOperatorFactory) createCloudFormationClient() client.ICloudFormation {
+func (factory *StackOperatorFactory) createCloudFormationClient() *client.CloudFormation {
 	sdkCfnClient := cloudformation.NewFromConfig(factory.config)
 	sdkCfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
 
