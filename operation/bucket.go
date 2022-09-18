@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
 	"github.com/go-to-k/delstack/option"
@@ -12,15 +11,15 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ Operator = (*BucketOperator)(nil)
+var _ IOperator = (*BucketOperator)(nil)
+var sleepTimeSecForS3 = 10
 
 type BucketOperator struct {
-	client    *client.S3
+	client    client.IS3
 	resources []*types.StackResourceSummary
 }
 
-func NewBucketOperator(config aws.Config) *BucketOperator {
-	client := client.NewS3(config)
+func NewBucketOperator(client client.IS3) *BucketOperator {
 	return &BucketOperator{
 		client:    client,
 		resources: []*types.StackResourceSummary{},
@@ -58,7 +57,7 @@ func (operator *BucketOperator) DeleteBucket(bucketName *string) error {
 		return err
 	}
 
-	errors, err := operator.client.DeleteObjects(bucketName, versions)
+	errors, err := operator.client.DeleteObjects(bucketName, versions, sleepTimeSecForS3)
 	if err != nil {
 		return err
 	}

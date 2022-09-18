@@ -1,18 +1,16 @@
 package operation
 
 import (
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"golang.org/x/sync/errgroup"
 )
 
 type OperatorManager struct {
-	operatorCollection *OperatorCollection
+	operatorCollection IOperatorCollection
 }
 
-func NewOperatorManager(config aws.Config, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorManager {
+func NewOperatorManager(operatorCollection IOperatorCollection) *OperatorManager {
 	return &OperatorManager{
-		operatorCollection: NewOperatorCollection(config, stackName, stackResourceSummaries),
+		operatorCollection: operatorCollection,
 	}
 }
 

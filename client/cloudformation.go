@@ -3,20 +3,37 @@ package client
 import (
 	"context"
 	"strings"
+	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 )
 
-type CloudFormation struct {
-	client *cloudformation.Client
-	waiter *cloudformation.StackDeleteCompleteWaiter
+type ICloudFormation interface {
+	DeleteStack(stackName *string, retainResources []string) error
+	DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error)
+	waitDeleteStack(stackName *string) error
+	ListStackResources(stackName *string) ([]types.StackResourceSummary, error)
 }
 
-func NewCloudFormation(config aws.Config) *CloudFormation {
-	client := cloudformation.NewFromConfig(config)
-	waiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+var _ ICloudFormation = (*CloudFormation)(nil)
+
+type ICloudFormationSDKClient interface {
+	DeleteStack(ctx context.Context, params *cloudformation.DeleteStackInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DeleteStackOutput, error)
+	DescribeStacks(ctx context.Context, params *cloudformation.DescribeStacksInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DescribeStacksOutput, error)
+	ListStackResources(ctx context.Context, params *cloudformation.ListStackResourcesInput, optFns ...func(*cloudformation.Options)) (*cloudformation.ListStackResourcesOutput, error)
+}
+
+type ICloudFormationSDKWaiter interface {
+	Wait(ctx context.Context, params *cloudformation.DescribeStacksInput, maxWaitDur time.Duration, optFns ...func(*cloudformation.StackDeleteCompleteWaiterOptions)) error
+}
+
+type CloudFormation struct {
+	client ICloudFormationSDKClient
+	waiter ICloudFormationSDKWaiter
+}
+
+func NewCloudFormation(client ICloudFormationSDKClient, waiter ICloudFormationSDKWaiter) *CloudFormation {
 	return &CloudFormation{
 		client,
 		waiter,

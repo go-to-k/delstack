@@ -3,7 +3,6 @@ package operation
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
 	"github.com/go-to-k/delstack/option"
@@ -11,30 +10,29 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ Operator = (*ECROperator)(nil)
+var _ IOperator = (*EcrOperator)(nil)
 
-type ECROperator struct {
-	client    *client.ECR
+type EcrOperator struct {
+	client    client.IEcr
 	resources []*types.StackResourceSummary
 }
 
-func NewECROperator(config aws.Config) *ECROperator {
-	client := client.NewECR(config)
-	return &ECROperator{
+func NewEcrOperator(client client.IEcr) *EcrOperator {
+	return &EcrOperator{
 		client:    client,
 		resources: []*types.StackResourceSummary{},
 	}
 }
 
-func (operator *ECROperator) AddResources(resource *types.StackResourceSummary) {
+func (operator *EcrOperator) AddResources(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 
-func (operator *ECROperator) GetResourcesLength() int {
+func (operator *EcrOperator) GetResourcesLength() int {
 	return len(operator.resources)
 }
 
-func (operator *ECROperator) DeleteResources() error {
+func (operator *EcrOperator) DeleteResources() error {
 	var eg errgroup.Group
 	sem := semaphore.NewWeighted(int64(option.ConcurrencyNum))
 
@@ -44,7 +42,7 @@ func (operator *ECROperator) DeleteResources() error {
 			sem.Acquire(context.Background(), 1)
 			defer sem.Release(1)
 
-			return operator.DeleteECR(repository.PhysicalResourceId)
+			return operator.DeleteEcr(repository.PhysicalResourceId)
 		})
 	}
 
@@ -52,6 +50,6 @@ func (operator *ECROperator) DeleteResources() error {
 	return err
 }
 
-func (operator *ECROperator) DeleteECR(repositoryName *string) error {
+func (operator *EcrOperator) DeleteEcr(repositoryName *string) error {
 	return operator.client.DeleteRepository(repositoryName)
 }
