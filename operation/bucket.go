@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ Operator = (*BucketOperator)(nil)
+var _ IOperator = (*BucketOperator)(nil)
 
 type BucketOperator struct {
 	client    client.IS3

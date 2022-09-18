@@ -5,10 +5,10 @@ import (
 )
 
 type OperatorManager struct {
-	operatorCollection *OperatorCollection
+	operatorCollection IOperatorCollection
 }
 
-func NewOperatorManager(operatorCollection *OperatorCollection) *OperatorManager {
+func NewOperatorManager(operatorCollection IOperatorCollection) *OperatorManager {
 	return &OperatorManager{
 		operatorCollection: operatorCollection,
 	}

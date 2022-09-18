@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ Operator = (*EcrOperator)(nil)
+var _ IOperator = (*EcrOperator)(nil)
 
 type EcrOperator struct {
 	client    client.IEcr

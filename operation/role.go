@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ Operator = (*RoleOperator)(nil)
+var _ IOperator = (*RoleOperator)(nil)
 
 type RoleOperator struct {
 	client    client.IIam

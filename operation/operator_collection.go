@@ -9,11 +9,19 @@ import (
 	"github.com/go-to-k/delstack/logger"
 )
 
+type IOperatorCollection interface {
+	GetLogicalResourceIds() []string
+	GetOperatorList() []IOperator
+	RaiseUnsupportedResourceError() error
+}
+
+var _ IOperatorCollection = (*OperatorCollection)(nil)
+
 type OperatorCollection struct {
 	stackName                 string
 	logicalResourceIds        []string
 	unsupportedStackResources []types.StackResourceSummary
-	operatorList              []Operator
+	operatorList              []IOperator
 }
 
 func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
@@ -53,7 +61,7 @@ func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, 
 		}
 	}
 
-	var operatorList []Operator
+	var operatorList []IOperator
 	operatorList = append(operatorList, stackOperator)
 	operatorList = append(operatorList, bucketOperator)
 	operatorList = append(operatorList, roleOperator)
@@ -73,7 +81,7 @@ func (operatorCollection *OperatorCollection) GetLogicalResourceIds() []string {
 	return operatorCollection.logicalResourceIds
 }
 
-func (operatorCollection *OperatorCollection) GetOperatorList() []Operator {
+func (operatorCollection *OperatorCollection) GetOperatorList() []IOperator {
 	return operatorCollection.operatorList
 }
 
