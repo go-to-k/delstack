@@ -16,15 +16,16 @@ type OperatorCollection struct {
 	operatorList              []Operator
 }
 
-func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
+func NewOperatorCollection(config aws.Config, operatorFactory *OperatorFactory, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
 	logicalResourceIds := []string{}
 	unsupportedStackResources := []types.StackResourceSummary{}
-	stackOperator := NewStackOperator(config)
-	bucketOperator := NewBucketOperator(config)
-	roleOperator := NewRoleOperator(config)
-	ecrOperator := NewECROperator(config)
-	backupVaultOperator := NewBackupVaultOperator(config)
-	customOperator := NewCustomOperator() // Implicit instances that do not actually delete resources
+
+	stackOperator := operatorFactory.CreateStackOperator()
+	bucketOperator := operatorFactory.CreateBucketOperator()
+	roleOperator := operatorFactory.CreateRoleOperator()
+	ecrOperator := operatorFactory.CreateEcrOperator()
+	backupVaultOperator := operatorFactory.CreateBackupVaultOperator()
+	customOperator := operatorFactory.CreateCustomOperator()
 
 	for _, v := range stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {

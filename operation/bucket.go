@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
 	"github.com/go-to-k/delstack/option"
@@ -15,12 +14,11 @@ import (
 var _ Operator = (*BucketOperator)(nil)
 
 type BucketOperator struct {
-	client    *client.S3
+	client    client.IS3
 	resources []*types.StackResourceSummary
 }
 
-func NewBucketOperator(config aws.Config) *BucketOperator {
-	client := client.NewS3(config)
+func NewBucketOperator(client client.IS3) *BucketOperator {
 	return &BucketOperator{
 		client:    client,
 		resources: []*types.StackResourceSummary{},

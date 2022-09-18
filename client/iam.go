@@ -9,18 +9,32 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 )
 
-type IAM struct {
-	client *iam.Client
+type IIam interface {
+	DeleteRole(roleName *string) error
+	ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error)
+	DetachRolePolicies(roleName *string, policies []types.AttachedPolicy) error
+	DetachRolePolicy(roleName *string, PolicyArn *string) error
 }
 
-func NewIAM(config aws.Config) *IAM {
-	client := iam.NewFromConfig(config)
-	return &IAM{
+var _ IIam = (*Iam)(nil)
+
+type IIamSDKClient interface {
+	DeleteRole(ctx context.Context, params *iam.DeleteRoleInput, optFns ...func(*iam.Options)) (*iam.DeleteRoleOutput, error)
+	ListAttachedRolePolicies(ctx context.Context, params *iam.ListAttachedRolePoliciesInput, optFns ...func(*iam.Options)) (*iam.ListAttachedRolePoliciesOutput, error)
+	DetachRolePolicy(ctx context.Context, params *iam.DetachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.DetachRolePolicyOutput, error)
+}
+
+type Iam struct {
+	client IIamSDKClient
+}
+
+func NewIam(config aws.Config, client IIamSDKClient) *Iam {
+	return &Iam{
 		client,
 	}
 }
 
-func (iamClient *IAM) DeleteRole(roleName *string) error {
+func (iamClient *Iam) DeleteRole(roleName *string) error {
 	input := &iam.DeleteRoleInput{
 		RoleName: roleName,
 	}
@@ -44,7 +58,7 @@ func (iamClient *IAM) DeleteRole(roleName *string) error {
 	return nil
 }
 
-func (iamClient *IAM) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
+func (iamClient *Iam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
 	var marker *string
 	policies := []types.AttachedPolicy{}
 
@@ -70,7 +84,7 @@ func (iamClient *IAM) ListAttachedRolePolicies(roleName *string) ([]types.Attach
 	return policies, nil
 }
 
-func (iamClient *IAM) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy) error {
+func (iamClient *Iam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy) error {
 	for _, policy := range policies {
 		if err := iamClient.DetachRolePolicy(roleName, policy.PolicyArn); err != nil {
 			return err
@@ -80,7 +94,7 @@ func (iamClient *IAM) DetachRolePolicies(roleName *string, policies []types.Atta
 	return nil
 }
 
-func (iamClient *IAM) DetachRolePolicy(roleName *string, PolicyArn *string) error {
+func (iamClient *Iam) DetachRolePolicy(roleName *string, PolicyArn *string) error {
 	input := &iam.DetachRolePolicyInput{
 		PolicyArn: PolicyArn,
 		RoleName:  roleName,
