@@ -14,18 +14,17 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ Operator = (*StackOperator)(nil)
+var _ IOperator = (*StackOperator)(nil)
 
 const STACK_NAME_RULE = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
 type StackOperator struct {
 	config    aws.Config
-	client    *client.CloudFormation
+	client    client.ICloudFormation
 	resources []*types.StackResourceSummary
 }
 
-func NewStackOperator(config aws.Config) *StackOperator {
-	client := client.NewCloudFormation(config)
+func NewStackOperator(config aws.Config, client client.ICloudFormation) *StackOperator {
 	return &StackOperator{
 		config:    config,
 		client:    client,
@@ -77,7 +76,9 @@ func (operator *StackOperator) DeleteStackResources(stackName *string, isRootSta
 		return err
 	}
 
-	operatorManager := NewOperatorManager(operator.config, stackName, stackResourceSummaries)
+	operatorFactory := NewOperatorFactory(operator.config)
+	operatorCollection := NewOperatorCollection(operator.config, operatorFactory, stackName, stackResourceSummaries)
+	operatorManager := NewOperatorManager(operatorCollection)
 	if err := operatorManager.CheckResourceCounts(); err != nil {
 		return err
 	}

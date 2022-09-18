@@ -9,22 +9,31 @@ import (
 	"github.com/go-to-k/delstack/logger"
 )
 
+type IOperatorCollection interface {
+	GetLogicalResourceIds() []string
+	GetOperatorList() []IOperator
+	RaiseUnsupportedResourceError() error
+}
+
+var _ IOperatorCollection = (*OperatorCollection)(nil)
+
 type OperatorCollection struct {
 	stackName                 string
 	logicalResourceIds        []string
 	unsupportedStackResources []types.StackResourceSummary
-	operatorList              []Operator
+	operatorList              []IOperator
 }
 
-func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
+func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
 	logicalResourceIds := []string{}
 	unsupportedStackResources := []types.StackResourceSummary{}
-	stackOperator := NewStackOperator(config)
-	bucketOperator := NewBucketOperator(config)
-	roleOperator := NewRoleOperator(config)
-	ecrOperator := NewECROperator(config)
-	backupVaultOperator := NewBackupVaultOperator(config)
-	customOperator := NewCustomOperator() // Implicit instances that do not actually delete resources
+
+	stackOperator := operatorFactory.CreateStackOperator()
+	bucketOperator := operatorFactory.CreateBucketOperator()
+	roleOperator := operatorFactory.CreateRoleOperator()
+	ecrOperator := operatorFactory.CreateEcrOperator()
+	backupVaultOperator := operatorFactory.CreateBackupVaultOperator()
+	customOperator := operatorFactory.CreateCustomOperator()
 
 	for _, v := range stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {
@@ -52,7 +61,7 @@ func NewOperatorCollection(config aws.Config, stackName *string, stackResourceSu
 		}
 	}
 
-	var operatorList []Operator
+	var operatorList []IOperator
 	operatorList = append(operatorList, stackOperator)
 	operatorList = append(operatorList, bucketOperator)
 	operatorList = append(operatorList, roleOperator)
@@ -72,7 +81,7 @@ func (operatorCollection *OperatorCollection) GetLogicalResourceIds() []string {
 	return operatorCollection.logicalResourceIds
 }
 
-func (operatorCollection *OperatorCollection) GetOperatorList() []Operator {
+func (operatorCollection *OperatorCollection) GetOperatorList() []IOperator {
 	return operatorCollection.operatorList
 }
 

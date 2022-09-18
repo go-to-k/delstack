@@ -3,7 +3,6 @@ package operation
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
 	"github.com/go-to-k/delstack/option"
@@ -11,15 +10,15 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ Operator = (*RoleOperator)(nil)
+var _ IOperator = (*RoleOperator)(nil)
+var sleepTimeSecForIam = 1
 
 type RoleOperator struct {
-	client    *client.IAM
+	client    client.IIam
 	resources []*types.StackResourceSummary
 }
 
-func NewRoleOperator(config aws.Config) *RoleOperator {
-	client := client.NewIAM(config)
+func NewRoleOperator(client client.IIam) *RoleOperator {
 	return &RoleOperator{
 		client:    client,
 		resources: []*types.StackResourceSummary{},
@@ -57,11 +56,11 @@ func (operator *RoleOperator) DeleteRole(roleName *string) error {
 		return err
 	}
 
-	if err := operator.client.DetachRolePolicies(roleName, policies); err != nil {
+	if err := operator.client.DetachRolePolicies(roleName, policies, sleepTimeSecForIam); err != nil {
 		return err
 	}
 
-	if err := operator.client.DeleteRole(roleName); err != nil {
+	if err := operator.client.DeleteRole(roleName, sleepTimeSecForIam); err != nil {
 		return err
 	}
 

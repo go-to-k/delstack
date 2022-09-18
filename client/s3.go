@@ -12,12 +12,25 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-type S3 struct {
-	client *s3.Client
+type IS3 interface {
+	DeleteBucket(bucketName *string) error
+	DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error)
+	ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error)
 }
 
-func NewS3(config aws.Config) *S3 {
-	client := s3.NewFromConfig(config)
+var _ IS3 = (*S3)(nil)
+
+type IS3SDKClient interface {
+	DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error)
+	DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error)
+	ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error)
+}
+
+type S3 struct {
+	client IS3SDKClient
+}
+
+func NewS3(client IS3SDKClient) *S3 {
 	return &S3{
 		client,
 	}
@@ -33,7 +46,7 @@ func (s3Client *S3) DeleteBucket(bucketName *string) error {
 	return err
 }
 
-func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error) {
+func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
 	eg, ctx := errgroup.WithContext(context.Background())
 	outputsCh := make(chan *s3.DeleteObjectsOutput)
 	sem := semaphore.NewWeighted(int64(option.ConcurrencyNum))
@@ -74,7 +87,7 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 				output, err = s3Client.client.DeleteObjects(context.TODO(), input)
 				if err != nil && strings.Contains(err.Error(), "api error SlowDown") {
 					retryCount++
-					if err := WaitForRetry(retryCount, 10, bucketName, err); err != nil {
+					if err := WaitForRetry(retryCount, sleepTimeSec, bucketName, err); err != nil {
 						return err
 					}
 					continue

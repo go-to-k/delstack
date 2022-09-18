@@ -3,22 +3,30 @@ package client
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 )
 
-type ECR struct {
-	client *ecr.Client
+type IEcr interface {
+	DeleteRepository(repositoryName *string) error
 }
 
-func NewECR(config aws.Config) *ECR {
-	client := ecr.NewFromConfig(config)
-	return &ECR{
+var _ IEcr = (*Ecr)(nil)
+
+type IEcrSDKClient interface {
+	DeleteRepository(ctx context.Context, params *ecr.DeleteRepositoryInput, optFns ...func(*ecr.Options)) (*ecr.DeleteRepositoryOutput, error)
+}
+
+type Ecr struct {
+	client IEcrSDKClient
+}
+
+func NewEcr(client IEcrSDKClient) *Ecr {
+	return &Ecr{
 		client,
 	}
 }
 
-func (ecrClient *ECR) DeleteRepository(repositoryName *string) error {
+func (ecrClient *Ecr) DeleteRepository(repositoryName *string) error {
 	input := &ecr.DeleteRepositoryInput{
 		RepositoryName: repositoryName,
 		Force:          true,
