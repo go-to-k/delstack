@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
+	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
 	"github.com/go-to-k/delstack/logger"
 )
@@ -221,6 +222,66 @@ func TestDeleteBackupVault(t *testing.T) {
 			backupOperator := NewBackupVaultOperator(tt.args.client)
 
 			err := backupOperator.DeleteBackupVault(tt.args.backupVaultName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.Error())
+				return
+			}
+		})
+	}
+}
+
+func TestDeleteResources(t *testing.T) {
+	logger.NewLogger()
+	ctx := context.TODO()
+	mock := NewMockBackup()
+	allErrorMock := NewAllErrorMockBackup()
+
+	type args struct {
+		ctx    context.Context
+		client client.IBackup
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    error
+		wantErr bool
+	}{
+		{
+			name: "delete resources successfully",
+			args: args{
+				ctx:    ctx,
+				client: mock,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete resources failure",
+			args: args{
+				ctx:    ctx,
+				client: allErrorMock,
+			},
+			want:    fmt.Errorf("ListRecoveryPointsByBackupVaultError"),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			backupOperator := NewBackupVaultOperator(tt.args.client)
+			backupOperator.AddResources(&cfnTypes.StackResourceSummary{
+				LogicalResourceId:  aws.String("LogicalResourceId1"),
+				ResourceStatus:     "DELETE_FAILED",
+				ResourceType:       aws.String("AWS::Backup::BackupVault"),
+				PhysicalResourceId: aws.String("PhysicalResourceId1"),
+			})
+
+			err := backupOperator.DeleteResources()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
