@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 )
@@ -34,7 +33,7 @@ type CloudFormation struct {
 	waiter ICloudFormationSDKWaiter
 }
 
-func NewCloudFormation(config aws.Config, client ICloudFormationSDKClient, waiter ICloudFormationSDKWaiter) *CloudFormation {
+func NewCloudFormation(client ICloudFormationSDKClient, waiter ICloudFormationSDKWaiter) *CloudFormation {
 	return &CloudFormation{
 		client,
 		waiter,

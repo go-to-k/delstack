@@ -30,7 +30,7 @@ type S3 struct {
 	client IS3SDKClient
 }
 
-func NewS3(config aws.Config, client IS3SDKClient) *S3 {
+func NewS3(client IS3SDKClient) *S3 {
 	return &S3{
 		client,
 	}
