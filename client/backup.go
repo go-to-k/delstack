@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 )
@@ -27,7 +26,7 @@ type Backup struct {
 	client IBackupSDKClient
 }
 
-func NewBackup(config aws.Config, client IBackupSDKClient) *Backup {
+func NewBackup(client IBackupSDKClient) *Backup {
 	return &Backup{
 		client,
 	}

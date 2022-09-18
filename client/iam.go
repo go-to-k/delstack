@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 )
@@ -28,7 +27,7 @@ type Iam struct {
 	client IIamSDKClient
 }
 
-func NewIam(config aws.Config, client IIamSDKClient) *Iam {
+func NewIam(client IIamSDKClient) *Iam {
 	return &Iam{
 		client,
 	}
