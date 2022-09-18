@@ -26,7 +26,6 @@ func (factory *StackOperatorFactory) createCloudFormationClient() *client.CloudF
 	sdkCfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
 
 	return client.NewCloudFormation(
-		factory.config,
 		sdkCfnClient,
 		sdkCfnWaiter,
 	)
