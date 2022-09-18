@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -70,9 +71,15 @@ func (app *App) getAction() func(c *cli.Context) error {
 
 		logger.Logger.Info().Msgf("Start deletion, %v", app.StackName)
 
-		cfnOperator := operation.NewStackOperator(config)
+		stackOperatorFactory := operation.NewStackOperatorFactory(config)
+		stackOperatorInterface := stackOperatorFactory.CreateStackOperator()
+		stackOperator, ok := stackOperatorInterface.(*operation.StackOperator)
+		if !ok {
+			return fmt.Errorf("AssertionError: %v", stackOperatorInterface)
+		}
+
 		isRootStack := true
-		if err := cfnOperator.DeleteStackResources(aws.String(app.StackName), isRootStack); err != nil {
+		if err := stackOperator.DeleteStackResources(aws.String(app.StackName), isRootStack); err != nil {
 			return err
 		}
 

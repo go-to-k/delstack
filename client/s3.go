@@ -12,12 +12,25 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-type S3 struct {
-	client *s3.Client
+type IS3 interface {
+	DeleteBucket(bucketName *string) error
+	DeleteObjects(bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error)
+	ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error)
 }
 
-func NewS3(config aws.Config) *S3 {
-	client := s3.NewFromConfig(config)
+var _ IS3 = (*S3)(nil)
+
+type IS3SDKClient interface {
+	DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error)
+	DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error)
+	ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error)
+}
+
+type S3 struct {
+	client IS3SDKClient
+}
+
+func NewS3(config aws.Config, client IS3SDKClient) *S3 {
 	return &S3{
 		client,
 	}

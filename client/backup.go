@@ -8,12 +8,26 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 )
 
-type Backup struct {
-	client *backup.Client
+type IBackup interface {
+	ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error)
+	DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error
+	DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error
+	DeleteBackupVault(backupVaultName *string) error
 }
 
-func NewBackup(config aws.Config) *Backup {
-	client := backup.NewFromConfig(config)
+var _ IBackup = (*Backup)(nil)
+
+type IBackupSDKClient interface {
+	ListRecoveryPointsByBackupVault(ctx context.Context, params *backup.ListRecoveryPointsByBackupVaultInput, optFns ...func(*backup.Options)) (*backup.ListRecoveryPointsByBackupVaultOutput, error)
+	DeleteRecoveryPoint(ctx context.Context, params *backup.DeleteRecoveryPointInput, optFns ...func(*backup.Options)) (*backup.DeleteRecoveryPointOutput, error)
+	DeleteBackupVault(ctx context.Context, params *backup.DeleteBackupVaultInput, optFns ...func(*backup.Options)) (*backup.DeleteBackupVaultOutput, error)
+}
+
+type Backup struct {
+	client IBackupSDKClient
+}
+
+func NewBackup(config aws.Config, client IBackupSDKClient) *Backup {
 	return &Backup{
 		client,
 	}

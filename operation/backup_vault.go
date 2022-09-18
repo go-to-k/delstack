@@ -3,7 +3,6 @@ package operation
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
 	"github.com/go-to-k/delstack/option"
@@ -14,12 +13,11 @@ import (
 var _ Operator = (*BackupVaultOperator)(nil)
 
 type BackupVaultOperator struct {
-	client    *client.Backup
+	client    client.IBackup
 	resources []*types.StackResourceSummary
 }
 
-func NewBackupVaultOperator(config aws.Config) *BackupVaultOperator {
-	client := client.NewBackup(config)
+func NewBackupVaultOperator(client client.IBackup) *BackupVaultOperator {
 	return &BackupVaultOperator{
 		client:    client,
 		resources: []*types.StackResourceSummary{},

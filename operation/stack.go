@@ -20,12 +20,11 @@ const STACK_NAME_RULE = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
 type StackOperator struct {
 	config    aws.Config
-	client    *client.CloudFormation
+	client    client.ICloudFormation
 	resources []*types.StackResourceSummary
 }
 
-func NewStackOperator(config aws.Config) *StackOperator {
-	client := client.NewCloudFormation(config)
+func NewStackOperator(config aws.Config, client client.ICloudFormation) *StackOperator {
 	return &StackOperator{
 		config:    config,
 		client:    client,

@@ -11,8 +11,10 @@ type OperatorManager struct {
 }
 
 func NewOperatorManager(config aws.Config, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorManager {
+	operatorFactory := NewOperatorFactory(config)
+
 	return &OperatorManager{
-		operatorCollection: NewOperatorCollection(config, stackName, stackResourceSummaries),
+		operatorCollection: NewOperatorCollection(config, operatorFactory, stackName, stackResourceSummaries),
 	}
 }
 

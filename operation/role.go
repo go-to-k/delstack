@@ -3,7 +3,6 @@ package operation
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/client"
 	"github.com/go-to-k/delstack/option"
@@ -14,12 +13,11 @@ import (
 var _ Operator = (*RoleOperator)(nil)
 
 type RoleOperator struct {
-	client    *client.IAM
+	client    client.IIam
 	resources []*types.StackResourceSummary
 }
 
-func NewRoleOperator(config aws.Config) *RoleOperator {
-	client := client.NewIAM(config)
+func NewRoleOperator(client client.IIam) *RoleOperator {
 	return &RoleOperator{
 		client:    client,
 		resources: []*types.StackResourceSummary{},
