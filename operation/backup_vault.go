@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ Operator = (*BackupVaultOperator)(nil)
+var _ IOperator = (*BackupVaultOperator)(nil)
 
 type BackupVaultOperator struct {
 	client    client.IBackup
