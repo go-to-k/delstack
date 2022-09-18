@@ -4,6 +4,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
+type IOperatorFactory interface {
+	CreateStackOperator() *StackOperator
+	CreateBackupVaultOperator() *BackupVaultOperator
+	CreateEcrOperator() *EcrOperator
+	CreateRoleOperator() *RoleOperator
+	CreateBucketOperator() *BucketOperator
+	CreateCustomOperator() *CustomOperator
+}
+
+var _ IOperatorFactory = (*OperatorFactory)(nil)
+
 type OperatorFactory struct {
 	config                     aws.Config
 	stackOperatorFactory       *StackOperatorFactory
