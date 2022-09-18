@@ -11,6 +11,7 @@ import (
 )
 
 var _ IOperator = (*RoleOperator)(nil)
+var sleepTimeSecForIam = 1
 
 type RoleOperator struct {
 	client    client.IIam
@@ -55,11 +56,11 @@ func (operator *RoleOperator) DeleteRole(roleName *string) error {
 		return err
 	}
 
-	if err := operator.client.DetachRolePolicies(roleName, policies); err != nil {
+	if err := operator.client.DetachRolePolicies(roleName, policies, sleepTimeSecForIam); err != nil {
 		return err
 	}
 
-	if err := operator.client.DeleteRole(roleName); err != nil {
+	if err := operator.client.DeleteRole(roleName, sleepTimeSecForIam); err != nil {
 		return err
 	}
 

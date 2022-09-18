@@ -14,7 +14,7 @@ import (
 
 type IS3 interface {
 	DeleteBucket(bucketName *string) error
-	DeleteObjects(bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error)
+	DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error)
 	ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error)
 }
 
@@ -46,7 +46,7 @@ func (s3Client *S3) DeleteBucket(bucketName *string) error {
 	return err
 }
 
-func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error) {
+func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
 	eg, ctx := errgroup.WithContext(context.Background())
 	outputsCh := make(chan *s3.DeleteObjectsOutput)
 	sem := semaphore.NewWeighted(int64(option.ConcurrencyNum))
@@ -87,7 +87,7 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 				output, err = s3Client.client.DeleteObjects(context.TODO(), input)
 				if err != nil && strings.Contains(err.Error(), "api error SlowDown") {
 					retryCount++
-					if err := WaitForRetry(retryCount, 10, bucketName, err); err != nil {
+					if err := WaitForRetry(retryCount, sleepTimeSec, bucketName, err); err != nil {
 						return err
 					}
 					continue
