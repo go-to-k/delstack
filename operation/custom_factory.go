@@ -12,6 +12,6 @@ func NewCustomOperatorFactory(config aws.Config) *CustomOperatorFactory {
 	return &CustomOperatorFactory{config}
 }
 
-func (factory *CustomOperatorFactory) CreateCustomOperator() Operator {
+func (factory *CustomOperatorFactory) CreateCustomOperator() *CustomOperator {
 	return NewCustomOperator() // Implicit instances that do not actually delete resources
 }

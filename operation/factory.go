@@ -26,26 +26,26 @@ func NewOperatorFactory(config aws.Config) *OperatorFactory {
 	}
 }
 
-func (factory *OperatorFactory) CreateStackOperator() Operator {
+func (factory *OperatorFactory) CreateStackOperator() *StackOperator {
 	return factory.stackOperatorFactory.CreateStackOperator()
 }
 
-func (factory *OperatorFactory) CreateBackupVaultOperator() Operator {
+func (factory *OperatorFactory) CreateBackupVaultOperator() *BackupVaultOperator {
 	return factory.backupVaultOperatorFactory.CreateBackupVaultOperator()
 }
 
-func (factory *OperatorFactory) CreateEcrOperator() Operator {
+func (factory *OperatorFactory) CreateEcrOperator() *EcrOperator {
 	return factory.ecrOperatorFactory.CreateEcrOperator()
 }
 
-func (factory *OperatorFactory) CreateRoleOperator() Operator {
+func (factory *OperatorFactory) CreateRoleOperator() *RoleOperator {
 	return factory.roleOperatorFactory.CreateRoleOperator()
 }
 
-func (factory *OperatorFactory) CreateBucketOperator() Operator {
+func (factory *OperatorFactory) CreateBucketOperator() *BucketOperator {
 	return factory.bucketOperatorFactory.CreateBucketOperator()
 }
 
-func (factory *OperatorFactory) CreateCustomOperator() Operator {
+func (factory *OperatorFactory) CreateCustomOperator() *CustomOperator {
 	return factory.customOperatorFactory.CreateCustomOperator()
 }
