@@ -16,7 +16,7 @@ type OperatorCollection struct {
 	operatorList              []Operator
 }
 
-func NewOperatorCollection(config aws.Config, operatorFactory *OperatorFactory, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
+func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
 	logicalResourceIds := []string{}
 	unsupportedStackResources := []types.StackResourceSummary{}
 
