@@ -24,7 +24,6 @@ func (factory *BackupVaultOperatorFactory) createBackupClient() *client.Backup {
 	sdkBackupClient := backup.NewFromConfig(factory.config)
 
 	return client.NewBackup(
-		factory.config,
 		sdkBackupClient,
 	)
 }

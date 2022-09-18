@@ -24,7 +24,6 @@ func (factory *RoleOperatorFactory) createIamClient() *client.Iam {
 	sdkIamClient := iam.NewFromConfig(factory.config)
 
 	return client.NewIam(
-		factory.config,
 		sdkIamClient,
 	)
 }

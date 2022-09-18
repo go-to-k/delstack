@@ -24,7 +24,6 @@ func (factory *BucketOperatorFactory) createBucketClient() *client.S3 {
 	sdkBucketClient := s3.NewFromConfig(factory.config)
 
 	return client.NewS3(
-		factory.config,
 		sdkBucketClient,
 	)
 }

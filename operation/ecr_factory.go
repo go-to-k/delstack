@@ -24,7 +24,6 @@ func (factory *EcrOperatorFactory) createEcrClient() *client.Ecr {
 	sdkEcrClient := ecr.NewFromConfig(factory.config)
 
 	return client.NewEcr(
-		factory.config,
 		sdkEcrClient,
 	)
 }
