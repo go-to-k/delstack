@@ -59,7 +59,7 @@ func TestDeleteRepository(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "delete ecr vault successfully",
+			name: "delete ecr successfully",
 			args: args{
 				ctx:            ctx,
 				repositoryName: aws.String("test"),
@@ -69,7 +69,7 @@ func TestDeleteRepository(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete ecr vault failure",
+			name: "delete ecr failure",
 			args: args{
 				ctx:            ctx,
 				repositoryName: aws.String("test"),
