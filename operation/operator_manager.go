@@ -1,8 +1,18 @@
 package operation
 
 import (
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"golang.org/x/sync/errgroup"
 )
+
+type IOperatorManager interface {
+	SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary)
+	CheckResourceCounts() error
+	GetLogicalResourceIds() []string
+	DeleteResourceCollection() error
+}
+
+var _ IOperatorManager = (*OperatorManager)(nil)
 
 type OperatorManager struct {
 	operatorCollection IOperatorCollection
@@ -12,6 +22,10 @@ func NewOperatorManager(operatorCollection IOperatorCollection) *OperatorManager
 	return &OperatorManager{
 		operatorCollection: operatorCollection,
 	}
+}
+
+func (operatorManager *OperatorManager) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
+	operatorManager.operatorCollection.SetOperatorCollection(stackName, stackResourceSummaries)
 }
 
 func (operatorManager *OperatorManager) getOperatorResourcesLength() int {

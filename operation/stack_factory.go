@@ -17,6 +17,7 @@ func NewStackOperatorFactory(config aws.Config) *StackOperatorFactory {
 func (factory *StackOperatorFactory) CreateStackOperator() *StackOperator {
 	return NewStackOperator(
 		factory.config,
+		factory.createOperatorManager(),
 		factory.createCloudFormationClient(),
 	)
 }
@@ -29,4 +30,12 @@ func (factory *StackOperatorFactory) createCloudFormationClient() *client.CloudF
 		sdkCfnClient,
 		sdkCfnWaiter,
 	)
+}
+
+func (factory *StackOperatorFactory) createOperatorManager() *OperatorManager {
+	operatorFactory := NewOperatorFactory(factory.config)
+	operatorCollection := NewOperatorCollection(factory.config, operatorFactory)
+	operatorManager := NewOperatorManager(operatorCollection)
+
+	return operatorManager
 }
