@@ -77,7 +77,8 @@ func (operator *StackOperator) DeleteStackResources(stackName *string, isRootSta
 	}
 
 	operatorFactory := NewOperatorFactory(operator.config)
-	operatorCollection := NewOperatorCollection(operator.config, operatorFactory, stackName, stackResourceSummaries)
+	operatorCollection := NewOperatorCollection(operator.config, operatorFactory, stackName)
+	operatorCollection.SetOperatorCollection(stackResourceSummaries)
 	operatorManager := NewOperatorManager(operatorCollection)
 	if err := operatorManager.CheckResourceCounts(); err != nil {
 		return err

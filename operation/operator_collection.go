@@ -19,26 +19,31 @@ var _ IOperatorCollection = (*OperatorCollection)(nil)
 
 type OperatorCollection struct {
 	stackName                 string
+	operatorFactory           IOperatorFactory
 	logicalResourceIds        []string
 	unsupportedStackResources []types.StackResourceSummary
 	operatorList              []IOperator
 }
 
-func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, stackName *string, stackResourceSummaries []types.StackResourceSummary) *OperatorCollection {
-	logicalResourceIds := []string{}
-	unsupportedStackResources := []types.StackResourceSummary{}
+func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, stackName *string) *OperatorCollection {
+	return &OperatorCollection{
+		stackName:       aws.ToString(stackName),
+		operatorFactory: operatorFactory,
+	}
+}
 
-	stackOperator := operatorFactory.CreateStackOperator()
-	bucketOperator := operatorFactory.CreateBucketOperator()
-	roleOperator := operatorFactory.CreateRoleOperator()
-	ecrOperator := operatorFactory.CreateEcrOperator()
-	backupVaultOperator := operatorFactory.CreateBackupVaultOperator()
-	customOperator := operatorFactory.CreateCustomOperator()
+func (operatorCollection *OperatorCollection) SetOperatorCollection(stackResourceSummaries []types.StackResourceSummary) {
+	stackOperator := operatorCollection.operatorFactory.CreateStackOperator()
+	bucketOperator := operatorCollection.operatorFactory.CreateBucketOperator()
+	roleOperator := operatorCollection.operatorFactory.CreateRoleOperator()
+	ecrOperator := operatorCollection.operatorFactory.CreateEcrOperator()
+	backupVaultOperator := operatorCollection.operatorFactory.CreateBackupVaultOperator()
+	customOperator := operatorCollection.operatorFactory.CreateCustomOperator()
 
 	for _, v := range stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {
 			stackResource := v // Copy for pointer used below
-			logicalResourceIds = append(logicalResourceIds, aws.ToString(stackResource.LogicalResourceId))
+			operatorCollection.logicalResourceIds = append(operatorCollection.logicalResourceIds, aws.ToString(stackResource.LogicalResourceId))
 
 			switch *stackResource.ResourceType {
 			case "AWS::CloudFormation::Stack":
@@ -55,26 +60,18 @@ func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, 
 				if strings.Contains(*v.ResourceType, "Custom::") {
 					customOperator.AddResources(&stackResource)
 				} else {
-					unsupportedStackResources = append(unsupportedStackResources, stackResource)
+					operatorCollection.unsupportedStackResources = append(operatorCollection.unsupportedStackResources, stackResource)
 				}
 			}
 		}
 	}
 
-	var operatorList []IOperator
-	operatorList = append(operatorList, stackOperator)
-	operatorList = append(operatorList, bucketOperator)
-	operatorList = append(operatorList, roleOperator)
-	operatorList = append(operatorList, ecrOperator)
-	operatorList = append(operatorList, backupVaultOperator)
-	operatorList = append(operatorList, customOperator)
-
-	return &OperatorCollection{
-		stackName:                 aws.ToString(stackName),
-		logicalResourceIds:        logicalResourceIds,
-		unsupportedStackResources: unsupportedStackResources,
-		operatorList:              operatorList,
-	}
+	operatorCollection.operatorList = append(operatorCollection.operatorList, stackOperator)
+	operatorCollection.operatorList = append(operatorCollection.operatorList, bucketOperator)
+	operatorCollection.operatorList = append(operatorCollection.operatorList, roleOperator)
+	operatorCollection.operatorList = append(operatorCollection.operatorList, ecrOperator)
+	operatorCollection.operatorList = append(operatorCollection.operatorList, backupVaultOperator)
+	operatorCollection.operatorList = append(operatorCollection.operatorList, customOperator)
 }
 
 func (operatorCollection *OperatorCollection) GetLogicalResourceIds() []string {
