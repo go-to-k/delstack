@@ -81,6 +81,7 @@ func (operator *StackOperator) DeleteStackResources(stackName *string, isRootSta
 	}
 
 	operatorManager.SetOperatorCollection(stackName, stackResourceSummaries)
+
 	if err := operatorManager.CheckResourceCounts(); err != nil {
 		return err
 	}
