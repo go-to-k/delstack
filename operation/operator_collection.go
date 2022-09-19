@@ -25,14 +25,15 @@ type OperatorCollection struct {
 	operatorList              []IOperator
 }
 
-func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, stackName *string) *OperatorCollection {
+func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory) *OperatorCollection {
 	return &OperatorCollection{
-		stackName:       aws.ToString(stackName),
 		operatorFactory: operatorFactory,
 	}
 }
 
-func (operatorCollection *OperatorCollection) SetOperatorCollection(stackResourceSummaries []types.StackResourceSummary) {
+func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
+	operatorCollection.stackName = aws.ToString(stackName)
+
 	stackOperator := operatorCollection.operatorFactory.CreateStackOperator()
 	bucketOperator := operatorCollection.operatorFactory.CreateBucketOperator()
 	roleOperator := operatorCollection.operatorFactory.CreateRoleOperator()
