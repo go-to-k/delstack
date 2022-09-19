@@ -19,15 +19,13 @@ var _ IOperator = (*StackOperator)(nil)
 const STACK_NAME_RULE = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
 type StackOperator struct {
-	config          aws.Config
 	operatorManager IOperatorManager
 	client          client.ICloudFormation
 	resources       []*types.StackResourceSummary
 }
 
-func NewStackOperator(config aws.Config, operatorManager IOperatorManager, client client.ICloudFormation) *StackOperator {
+func NewStackOperator(operatorManager IOperatorManager, client client.ICloudFormation) *StackOperator {
 	return &StackOperator{
-		config:          config,
 		operatorManager: operatorManager,
 		client:          client,
 		resources:       []*types.StackResourceSummary{},

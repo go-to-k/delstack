@@ -12,7 +12,6 @@ import (
 type ICloudFormation interface {
 	DeleteStack(stackName *string, retainResources []string) error
 	DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error)
-	waitDeleteStack(stackName *string) error
 	ListStackResources(stackName *string) ([]types.StackResourceSummary, error)
 }
 
