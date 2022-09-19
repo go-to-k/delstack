@@ -10,6 +10,7 @@ import (
 )
 
 type IOperatorCollection interface {
+	SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary)
 	GetLogicalResourceIds() []string
 	GetOperatorList() []IOperator
 	RaiseUnsupportedResourceError() error

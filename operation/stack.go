@@ -19,16 +19,18 @@ var _ IOperator = (*StackOperator)(nil)
 const STACK_NAME_RULE = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
 type StackOperator struct {
-	config    aws.Config
-	client    client.ICloudFormation
-	resources []*types.StackResourceSummary
+	config          aws.Config
+	operatorManager IOperatorManager
+	client          client.ICloudFormation
+	resources       []*types.StackResourceSummary
 }
 
-func NewStackOperator(config aws.Config, client client.ICloudFormation) *StackOperator {
+func NewStackOperator(config aws.Config, operatorManager IOperatorManager, client client.ICloudFormation) *StackOperator {
 	return &StackOperator{
-		config:    config,
-		client:    client,
-		resources: []*types.StackResourceSummary{},
+		config:          config,
+		operatorManager: operatorManager,
+		client:          client,
+		resources:       []*types.StackResourceSummary{},
 	}
 }
 
@@ -76,19 +78,17 @@ func (operator *StackOperator) DeleteStackResources(stackName *string, isRootSta
 		return err
 	}
 
-	operatorFactory := NewOperatorFactory(operator.config)
-	operatorCollection := NewOperatorCollection(operator.config, operatorFactory)
-	operatorCollection.SetOperatorCollection(stackName, stackResourceSummaries)
-	operatorManager := NewOperatorManager(operatorCollection)
-	if err := operatorManager.CheckResourceCounts(); err != nil {
+	operator.operatorManager.SetOperatorCollection(stackName, stackResourceSummaries)
+
+	if err := operator.operatorManager.CheckResourceCounts(); err != nil {
 		return err
 	}
 
-	if err := operator.client.DeleteStack(stackName, operatorManager.GetLogicalResourceIds()); err != nil {
+	if err := operator.client.DeleteStack(stackName, operator.operatorManager.GetLogicalResourceIds()); err != nil {
 		return err
 	}
 
-	if err := operatorManager.DeleteResourceCollection(); err != nil {
+	if err := operator.operatorManager.DeleteResourceCollection(); err != nil {
 		return err
 	}
 
