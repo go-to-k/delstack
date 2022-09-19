@@ -6,5 +6,7 @@
         "zerolog",
         "Msgf",
         "tablewriter",
+        "ldflags",
+        "goreleaser",
     ]
 }
