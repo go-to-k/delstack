@@ -74,7 +74,11 @@ func (app *App) getAction() func(c *cli.Context) error {
 		stackOperator := stackOperatorFactory.CreateStackOperator()
 
 		isRootStack := true
-		if err := stackOperator.DeleteStackResources(aws.String(app.StackName), isRootStack); err != nil {
+		operatorFactory := operation.NewOperatorFactory(config)
+		operatorCollection := operation.NewOperatorCollection(config, operatorFactory)
+		operatorManager := operation.NewOperatorManager(operatorCollection)
+
+		if err := stackOperator.DeleteStackResources(aws.String(app.StackName), isRootStack, operatorManager); err != nil {
 			return err
 		}
 
