@@ -28,12 +28,11 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
 
 - Homebrew
   ```
-  preparing...
+  brew tap go-to-k/tap
+  brew install go-to-k/tap/delstack
   ```
 - Binary
-  ```
-  preparing...
-  ```
+  - [Releases](https://github.com/go-to-k/delstack/releases)
 - Git Clone and install(for developers)
   ```
   git clone https://github.com/go-to-k/delstack.git
