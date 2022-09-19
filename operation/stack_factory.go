@@ -16,7 +16,6 @@ func NewStackOperatorFactory(config aws.Config) *StackOperatorFactory {
 
 func (factory *StackOperatorFactory) CreateStackOperator() *StackOperator {
 	return NewStackOperator(
-		factory.config,
 		factory.createOperatorManager(),
 		factory.createCloudFormationClient(),
 	)
