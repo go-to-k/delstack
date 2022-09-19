@@ -657,82 +657,9 @@ func TestDeleteStack(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			cloudformationOperator := NewStackOperator(tt.args.operatorManagerMock, tt.args.clientMock)
+			cloudformationOperator := NewStackOperator(aws.Config{}, tt.args.clientMock)
 
-			err := cloudformationOperator.DeleteStackResources(tt.args.stackName, tt.args.isRootStack)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
-				return
-			}
-			if tt.wantErr && err.Error() != tt.want.Error() {
-				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.Error())
-				return
-			}
-		})
-	}
-}
-
-func TestDeleteResourcesForStack(t *testing.T) {
-	logger.NewLogger()
-	ctx := context.TODO()
-	mock := NewMockCloudFormation()
-	allErrorMock := NewAllErrorMockCloudFormation()
-	mockOperatorManager := NewMockOperatorManager()
-
-	type args struct {
-		ctx                 context.Context
-		stackName           *string
-		clientMock          client.ICloudFormation
-		operatorManagerMock IOperatorManager
-	}
-
-	cases := []struct {
-		name    string
-		args    args
-		want    error
-		wantErr bool
-	}{
-		{
-			name: "delete resources successfully",
-			args: args{
-				ctx:                 ctx,
-				stackName:           aws.String("test"),
-				clientMock:          mock,
-				operatorManagerMock: mockOperatorManager,
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "delete resources failure",
-			args: args{
-				ctx:                 ctx,
-				stackName:           aws.String("test"),
-				clientMock:          allErrorMock,
-				operatorManagerMock: mockOperatorManager,
-			},
-			want:    fmt.Errorf("ListStackResourcesError"),
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			cloudformationOperator := NewStackOperator(tt.args.operatorManagerMock, tt.args.clientMock)
-			cloudformationOperator.AddResources(&types.StackResourceSummary{
-				LogicalResourceId:  aws.String("LogicalResourceId1"),
-				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String("AWS::CloudFormation::Stack"),
-				PhysicalResourceId: aws.String("PhysicalResourceId1"),
-			})
-			cloudformationOperator.AddResources(&types.StackResourceSummary{
-				LogicalResourceId:  aws.String("LogicalResourceId2"),
-				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String("AWS::CloudFormation::Stack"),
-				PhysicalResourceId: aws.String("PhysicalResourceId2"),
-			})
-
-			err := cloudformationOperator.DeleteResources()
+			err := cloudformationOperator.DeleteStackResources(tt.args.stackName, tt.args.isRootStack, tt.args.operatorManagerMock)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return

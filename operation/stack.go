@@ -19,16 +19,16 @@ var _ IOperator = (*StackOperator)(nil)
 const STACK_NAME_RULE = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
 type StackOperator struct {
-	operatorManager IOperatorManager
-	client          client.ICloudFormation
-	resources       []*types.StackResourceSummary
+	config    aws.Config
+	client    client.ICloudFormation
+	resources []*types.StackResourceSummary
 }
 
-func NewStackOperator(operatorManager IOperatorManager, client client.ICloudFormation) *StackOperator {
+func NewStackOperator(config aws.Config, client client.ICloudFormation) *StackOperator {
 	return &StackOperator{
-		operatorManager: operatorManager,
-		client:          client,
-		resources:       []*types.StackResourceSummary{},
+		config:    config,
+		client:    client,
+		resources: []*types.StackResourceSummary{},
 	}
 }
 
@@ -53,14 +53,18 @@ func (operator *StackOperator) DeleteResources() error {
 			defer sem.Release(1)
 
 			isRootStack := false
-			return operator.DeleteStackResources(aws.String(stackName), isRootStack)
+			operatorFactory := NewOperatorFactory(operator.config)
+			operatorCollection := NewOperatorCollection(operator.config, operatorFactory)
+			operatorManager := NewOperatorManager(operatorCollection)
+
+			return operator.DeleteStackResources(aws.String(stackName), isRootStack, operatorManager)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (operator *StackOperator) DeleteStackResources(stackName *string, isRootStack bool) error {
+func (operator *StackOperator) DeleteStackResources(stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
 	if isRootStack {
 		isSuccess, err := operator.deleteRootStack(stackName)
 		if err != nil {
@@ -76,17 +80,16 @@ func (operator *StackOperator) DeleteStackResources(stackName *string, isRootSta
 		return err
 	}
 
-	operator.operatorManager.SetOperatorCollection(stackName, stackResourceSummaries)
-
-	if err := operator.operatorManager.CheckResourceCounts(); err != nil {
+	operatorManager.SetOperatorCollection(stackName, stackResourceSummaries)
+	if err := operatorManager.CheckResourceCounts(); err != nil {
 		return err
 	}
 
-	if err := operator.client.DeleteStack(stackName, operator.operatorManager.GetLogicalResourceIds()); err != nil {
+	if err := operator.client.DeleteStack(stackName, operatorManager.GetLogicalResourceIds()); err != nil {
 		return err
 	}
 
-	if err := operator.operatorManager.DeleteResourceCollection(); err != nil {
+	if err := operatorManager.DeleteResourceCollection(); err != nil {
 		return err
 	}
 
