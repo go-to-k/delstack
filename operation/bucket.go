@@ -62,7 +62,14 @@ func (operator *BucketOperator) DeleteBucket(bucketName *string) error {
 		return err
 	}
 	if len(errors) > 0 {
-		return fmt.Errorf("DeleteObjectsError: %v", errors)
+		errorStr := ""
+		for _, error := range errors {
+			errorStr += fmt.Sprintf("\nCode: %v\n", *error.Code)
+			errorStr += fmt.Sprintf("Key: %v\n", *error.Key)
+			errorStr += fmt.Sprintf("VersionId: %v\n", *error.VersionId)
+			errorStr += fmt.Sprintf("Message: %v\n", *error.Message)
+		}
+		return fmt.Errorf("DeleteObjectsError: followings %v", errorStr)
 	}
 
 	if err := operator.client.DeleteBucket(bucketName); err != nil {

@@ -234,7 +234,7 @@ func TestDeleteBackupVault(t *testing.T) {
 	}
 }
 
-func TestDeleteResources(t *testing.T) {
+func TestDeleteResourcesForBackupVault(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockBackup()
