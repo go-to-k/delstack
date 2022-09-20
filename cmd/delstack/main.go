@@ -7,9 +7,8 @@ import (
 
 	"github.com/go-to-k/delstack/app"
 	"github.com/go-to-k/delstack/logger"
+	"github.com/go-to-k/delstack/option"
 )
-
-var version = ""
 
 func main() {
 	logger.NewLogger()
@@ -23,8 +22,8 @@ func main() {
 }
 
 func getVersion() string {
-	if version != "" {
-		return version
+	if option.Version != "" {
+		return option.Version
 	}
 	i, ok := debug.ReadBuildInfo()
 	if !ok {

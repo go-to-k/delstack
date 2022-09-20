@@ -8,10 +8,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/go-to-k/delstack/logger"
 	"github.com/go-to-k/delstack/operation"
+	"github.com/go-to-k/delstack/option"
 	"github.com/urfave/cli/v2"
 )
-
-const AppName = "delstack"
 
 type App struct {
 	Cli       *cli.App
@@ -24,7 +23,7 @@ func NewApp(version string) *App {
 	app := App{}
 
 	app.Cli = &cli.App{
-		Name:  AppName,
+		Name:  option.AppName,
 		Usage: "A CLI tool to force delete the entire CloudFormation stack.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
