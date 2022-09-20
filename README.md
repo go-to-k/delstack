@@ -1,5 +1,7 @@
 # delstack
 
+The description in **Japanese** is as follows -> [Blog](https://go-to-k.hatenablog.com/entry/delstack)
+
 ## What is
 
 Tool to force delete the **entire** CloudFormation stack, **even if it contains resources that fail to delete by the CloudFormation delete operation**.
