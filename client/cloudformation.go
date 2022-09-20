@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	"github.com/go-to-k/delstack/option"
 )
 
 type ICloudFormation interface {
@@ -74,7 +75,7 @@ func (cfnClient *CloudFormation) waitDeleteStack(stackName *string) error {
 		StackName: stackName,
 	}
 
-	err := cfnClient.waiter.Wait(context.TODO(), input, 3600000000000)
+	err := cfnClient.waiter.Wait(context.TODO(), input, option.CloudFormationWaitNanoSecTime)
 	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
 		return err
 	}
