@@ -59,7 +59,7 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 			case "AWS::Backup::BackupVault":
 				backupVaultOperator.AddResources(&stackResource)
 			default:
-				if strings.Contains(*v.ResourceType, "Custom::") {
+				if strings.Contains(*stackResource.ResourceType, "Custom::") {
 					customOperator.AddResources(&stackResource)
 				} else {
 					operatorCollection.unsupportedStackResources = append(operatorCollection.unsupportedStackResources, stackResource)
