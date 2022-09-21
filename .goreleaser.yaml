@@ -33,9 +33,6 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
-      - '^style:'
-      - '^WIP'
-      - '^wip'
 brews:
   - tap:
       owner: go-to-k
