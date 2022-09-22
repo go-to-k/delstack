@@ -20,7 +20,7 @@ func NewMockStackOperator() *mockStackOperator {
 	return &mockStackOperator{}
 }
 
-func (m *mockStackOperator) AddResources(resource *types.StackResourceSummary) {}
+func (m *mockStackOperator) AddResource(resource *types.StackResourceSummary) {}
 
 func (m *mockStackOperator) GetResourcesLength() int {
 	return 1
@@ -36,7 +36,7 @@ func NewErrorMockStackOperator() *errorMockStackOperator {
 	return &errorMockStackOperator{}
 }
 
-func (m *errorMockStackOperator) AddResources(resource *types.StackResourceSummary) {}
+func (m *errorMockStackOperator) AddResource(resource *types.StackResourceSummary) {}
 
 func (m *errorMockStackOperator) GetResourcesLength() int {
 	return 1
@@ -52,7 +52,7 @@ func NewMockBucketOperator() *mockBucketOperator {
 	return &mockBucketOperator{}
 }
 
-func (m *mockBucketOperator) AddResources(resource *types.StackResourceSummary) {}
+func (m *mockBucketOperator) AddResource(resource *types.StackResourceSummary) {}
 
 func (m *mockBucketOperator) GetResourcesLength() int {
 	return 1
@@ -68,7 +68,7 @@ func NewMockRoleOperator() *mockRoleOperator {
 	return &mockRoleOperator{}
 }
 
-func (m *mockRoleOperator) AddResources(resource *types.StackResourceSummary) {}
+func (m *mockRoleOperator) AddResource(resource *types.StackResourceSummary) {}
 
 func (m *mockRoleOperator) GetResourcesLength() int {
 	return 1
@@ -84,7 +84,7 @@ func NewMockEcrOperator() *mockEcrOperator {
 	return &mockEcrOperator{}
 }
 
-func (m *mockEcrOperator) AddResources(resource *types.StackResourceSummary) {}
+func (m *mockEcrOperator) AddResource(resource *types.StackResourceSummary) {}
 
 func (m *mockEcrOperator) GetResourcesLength() int {
 	return 1
@@ -100,7 +100,7 @@ func NewMockBackupVaultOperator() *mockBackupVaultOperator {
 	return &mockBackupVaultOperator{}
 }
 
-func (m *mockBackupVaultOperator) AddResources(resource *types.StackResourceSummary) {}
+func (m *mockBackupVaultOperator) AddResource(resource *types.StackResourceSummary) {}
 
 func (m *mockBackupVaultOperator) GetResourcesLength() int {
 	return 1
@@ -116,7 +116,7 @@ func NewMockCustomOperator() *mockCustomOperator {
 	return &mockCustomOperator{}
 }
 
-func (m *mockCustomOperator) AddResources(resource *types.StackResourceSummary) {}
+func (m *mockCustomOperator) AddResource(resource *types.StackResourceSummary) {}
 
 func (m *mockCustomOperator) GetResourcesLength() int {
 	return 1
@@ -152,8 +152,8 @@ func (m *mockOperatorCollection) GetLogicalResourceIds() []string {
 	}
 }
 
-func (m *mockOperatorCollection) GetOperatorList() []IOperator {
-	var operatorList []IOperator
+func (m *mockOperatorCollection) GetOperators() []IOperator {
+	var operators []IOperator
 
 	stackOperator := NewMockStackOperator()
 	bucketOperator := NewMockBucketOperator()
@@ -162,14 +162,14 @@ func (m *mockOperatorCollection) GetOperatorList() []IOperator {
 	backupVaultOperator := NewMockBackupVaultOperator()
 	customOperator := NewMockCustomOperator()
 
-	operatorList = append(operatorList, stackOperator)
-	operatorList = append(operatorList, bucketOperator)
-	operatorList = append(operatorList, roleOperator)
-	operatorList = append(operatorList, ecrOperator)
-	operatorList = append(operatorList, backupVaultOperator)
-	operatorList = append(operatorList, customOperator)
+	operators = append(operators, stackOperator)
+	operators = append(operators, bucketOperator)
+	operators = append(operators, roleOperator)
+	operators = append(operators, ecrOperator)
+	operators = append(operators, backupVaultOperator)
+	operators = append(operators, customOperator)
 
-	return operatorList
+	return operators
 }
 
 func (m *mockOperatorCollection) RaiseUnsupportedResourceError() error {
@@ -192,8 +192,8 @@ func (m *incorrectResourceCountsMockOperatorCollection) GetLogicalResourceIds() 
 	}
 }
 
-func (m *incorrectResourceCountsMockOperatorCollection) GetOperatorList() []IOperator {
-	var operatorList []IOperator
+func (m *incorrectResourceCountsMockOperatorCollection) GetOperators() []IOperator {
+	var operators []IOperator
 
 	stackOperator := NewMockStackOperator()
 	bucketOperator := NewMockBucketOperator()
@@ -202,14 +202,14 @@ func (m *incorrectResourceCountsMockOperatorCollection) GetOperatorList() []IOpe
 	backupVaultOperator := NewMockBackupVaultOperator()
 	customOperator := NewMockCustomOperator()
 
-	operatorList = append(operatorList, stackOperator)
-	operatorList = append(operatorList, bucketOperator)
-	operatorList = append(operatorList, roleOperator)
-	operatorList = append(operatorList, ecrOperator)
-	operatorList = append(operatorList, backupVaultOperator)
-	operatorList = append(operatorList, customOperator)
+	operators = append(operators, stackOperator)
+	operators = append(operators, bucketOperator)
+	operators = append(operators, roleOperator)
+	operators = append(operators, ecrOperator)
+	operators = append(operators, backupVaultOperator)
+	operators = append(operators, customOperator)
 
-	return operatorList
+	return operators
 }
 
 func (m *incorrectResourceCountsMockOperatorCollection) RaiseUnsupportedResourceError() error {
@@ -236,8 +236,8 @@ func (m *operatorDeleteResourcesMockOperatorCollection) GetLogicalResourceIds() 
 	}
 }
 
-func (m *operatorDeleteResourcesMockOperatorCollection) GetOperatorList() []IOperator {
-	var operatorList []IOperator
+func (m *operatorDeleteResourcesMockOperatorCollection) GetOperators() []IOperator {
+	var operators []IOperator
 
 	stackOperator := NewErrorMockStackOperator()
 	bucketOperator := NewMockBucketOperator()
@@ -246,14 +246,14 @@ func (m *operatorDeleteResourcesMockOperatorCollection) GetOperatorList() []IOpe
 	backupVaultOperator := NewMockBackupVaultOperator()
 	customOperator := NewMockCustomOperator()
 
-	operatorList = append(operatorList, stackOperator)
-	operatorList = append(operatorList, bucketOperator)
-	operatorList = append(operatorList, roleOperator)
-	operatorList = append(operatorList, ecrOperator)
-	operatorList = append(operatorList, backupVaultOperator)
-	operatorList = append(operatorList, customOperator)
+	operators = append(operators, stackOperator)
+	operators = append(operators, bucketOperator)
+	operators = append(operators, roleOperator)
+	operators = append(operators, ecrOperator)
+	operators = append(operators, backupVaultOperator)
+	operators = append(operators, customOperator)
 
-	return operatorList
+	return operators
 }
 
 func (m *operatorDeleteResourcesMockOperatorCollection) RaiseUnsupportedResourceError() error {

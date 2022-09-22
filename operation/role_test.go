@@ -294,7 +294,7 @@ func TestDeleteResourcesForIam(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			iamOperator := NewRoleOperator(tt.args.client)
-			iamOperator.AddResources(&cfnTypes.StackResourceSummary{
+			iamOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
 				ResourceType:       aws.String("AWS::IAM::Role"),

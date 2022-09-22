@@ -24,7 +24,7 @@ func NewBackupVaultOperator(client client.IBackup) *BackupVaultOperator {
 	}
 }
 
-func (operator *BackupVaultOperator) AddResources(resource *types.StackResourceSummary) {
+func (operator *BackupVaultOperator) AddResource(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 

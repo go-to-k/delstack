@@ -16,7 +16,7 @@ func NewCustomOperator() *CustomOperator {
 	}
 }
 
-func (operator *CustomOperator) AddResources(resource *types.StackResourceSummary) {
+func (operator *CustomOperator) AddResource(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 

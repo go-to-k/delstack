@@ -274,7 +274,7 @@ func TestDeleteResourcesForBackupVault(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			backupOperator := NewBackupVaultOperator(tt.args.client)
-			backupOperator.AddResources(&cfnTypes.StackResourceSummary{
+			backupOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
 				ResourceType:       aws.String("AWS::Backup::BackupVault"),

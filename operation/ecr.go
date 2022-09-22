@@ -24,7 +24,7 @@ func NewEcrOperator(client client.IEcr) *EcrOperator {
 	}
 }
 
-func (operator *EcrOperator) AddResources(resource *types.StackResourceSummary) {
+func (operator *EcrOperator) AddResource(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 
