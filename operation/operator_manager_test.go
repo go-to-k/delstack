@@ -13,6 +13,13 @@ import (
 	Mocks for each Operator
 */
 var _ IOperator = (*mockStackOperator)(nil)
+var _ IOperator = (*errorMockStackOperator)(nil)
+var _ IOperator = (*mockBucketOperator)(nil)
+var _ IOperator = (*mockRoleOperator)(nil)
+var _ IOperator = (*mockEcrOperator)(nil)
+var _ IOperator = (*mockBackupVaultOperator)(nil)
+var _ IOperator = (*mockCustomOperator)(nil)
+var _ IOperator = (*mockStackOperator)(nil)
 
 type mockStackOperator struct{}
 
@@ -131,6 +138,7 @@ func (m *mockCustomOperator) DeleteResources() error {
 */
 var _ IOperatorCollection = (*mockOperatorCollection)(nil)
 var _ IOperatorCollection = (*incorrectResourceCountsMockOperatorCollection)(nil)
+var _ IOperatorCollection = (*operatorDeleteResourcesMockOperatorCollection)(nil)
 
 type mockOperatorCollection struct{}
 
