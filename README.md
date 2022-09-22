@@ -54,3 +54,20 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
   - AWS profile name
 - -r, --region: optional(default: `ap-northeast-1`)
   - AWS Region
+- -i, --interactive: optional
+  - Interactive Mode
+
+## Interactive Mode
+
+If you selected `-i, --interactive` option, **you can select** ResourceTypes **you wish to delete even if DELETE_FAILED** in a prompt.
+
+```sh
+❯ delstack -s YourStack -i
+? Select ResourceTypes you wish to delete even if DELETE_FAILED.  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
+  [x]  AWS::CloudFormation::Stack
+  [ ]  AWS::S3::Bucket
+  [x]  AWS::IAM::Role
+> [x]  AWS::ECR::Repository
+  [ ]  AWS::Backup::BackupVault
+  [ ]  Custom::
+```
