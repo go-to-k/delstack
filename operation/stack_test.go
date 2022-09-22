@@ -151,7 +151,7 @@ func (m *mockCloudFormation) ListStackResources(stackName *string) ([]types.Stac
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId2"),
 			ResourceStatus:     "DELETE_FAILED",
-			ResourceType:       aws.String(resourcetype.S3_STACK),
+			ResourceType:       aws.String(resourcetype.S3_BUCKET),
 			PhysicalResourceId: aws.String("PhysicalResourceId2"),
 		},
 	}
@@ -193,7 +193,7 @@ func (m *terminationProtectionIsEnabledMockCloudFormation) ListStackResources(st
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId2"),
 			ResourceStatus:     "DELETE_FAILED",
-			ResourceType:       aws.String(resourcetype.S3_STACK),
+			ResourceType:       aws.String(resourcetype.S3_BUCKET),
 			PhysicalResourceId: aws.String("PhysicalResourceId2"),
 		},
 	}
@@ -235,7 +235,7 @@ func (m *notDeleteFailedMockCloudFormation) ListStackResources(stackName *string
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId2"),
 			ResourceStatus:     "UPDATE_ROLLBACK_COMPLETE",
-			ResourceType:       aws.String(resourcetype.S3_STACK),
+			ResourceType:       aws.String(resourcetype.S3_BUCKET),
 			PhysicalResourceId: aws.String("PhysicalResourceId2"),
 		},
 	}
@@ -298,7 +298,7 @@ func (m *deleteStackErrorMockCloudFormation) ListStackResources(stackName *strin
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId2"),
 			ResourceStatus:     "DELETE_FAILED",
-			ResourceType:       aws.String(resourcetype.S3_STACK),
+			ResourceType:       aws.String(resourcetype.S3_BUCKET),
 			PhysicalResourceId: aws.String("PhysicalResourceId2"),
 		},
 	}
@@ -332,7 +332,7 @@ func (m *describeStacksErrorMockCloudFormation) ListStackResources(stackName *st
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId2"),
 			ResourceStatus:     "DELETE_FAILED",
-			ResourceType:       aws.String(resourcetype.S3_STACK),
+			ResourceType:       aws.String(resourcetype.S3_BUCKET),
 			PhysicalResourceId: aws.String("PhysicalResourceId2"),
 		},
 	}
@@ -366,7 +366,7 @@ func (m *describeStacksNotExistsErrorMockCloudFormation) ListStackResources(stac
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId2"),
 			ResourceStatus:     "DELETE_FAILED",
-			ResourceType:       aws.String(resourcetype.S3_STACK),
+			ResourceType:       aws.String(resourcetype.S3_BUCKET),
 			PhysicalResourceId: aws.String("PhysicalResourceId2"),
 		},
 	}
