@@ -56,7 +56,7 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 				switch *stackResource.ResourceType {
 				case resourcetype.CLOUDFORMATION_STACK:
 					stackOperator.AddResource(&stackResource)
-				case resourcetype.S3_STACK:
+				case resourcetype.S3_BUCKET:
 					bucketOperator.AddResource(&stackResource)
 				case resourcetype.IAM_ROLE:
 					roleOperator.AddResource(&stackResource)
@@ -83,7 +83,7 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 
 func (operatorCollection *OperatorCollection) containsResourceType(resource string) bool {
 	for _, t := range operatorCollection.targetResourceTypes {
-		if t == resource {
+		if t == resource || (t == resourcetype.CUSTOM_RESOURCE && strings.Contains(resource, resourcetype.CUSTOM_RESOURCE)) {
 			return true
 		}
 	}
@@ -111,7 +111,7 @@ func (operatorCollection *OperatorCollection) RaiseUnsupportedResourceError() er
 
 	supportedStackResourcesHeader := []string{"ResourceType", "Description"}
 	supportedStackResourcesData := [][]string{
-		{resourcetype.S3_STACK, "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
+		{resourcetype.S3_BUCKET, "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
 		{resourcetype.IAM_ROLE, "IAM Roles, including roles with policies from outside the stack."},
 		{resourcetype.ECR_REPOSITORY, "ECR Repositories, including repositories containing images."},
 		{resourcetype.BACKUP_VAULT, "Backup Vaults, including vaults containing recovery points."},
