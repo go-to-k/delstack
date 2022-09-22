@@ -25,18 +25,20 @@ type OperatorCollection struct {
 	logicalResourceIds        []string
 	unsupportedStackResources []types.StackResourceSummary
 	operators                 []IOperator
+	targetResourceTypes       []string
 }
 
-func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory) *OperatorCollection {
+func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, targetResourceTypes []string) *OperatorCollection {
 	return &OperatorCollection{
-		operatorFactory: operatorFactory,
+		operatorFactory:     operatorFactory,
+		targetResourceTypes: targetResourceTypes,
 	}
 }
 
 func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 	operatorCollection.stackName = aws.ToString(stackName)
 
-	stackOperator := operatorCollection.operatorFactory.CreateStackOperator()
+	stackOperator := operatorCollection.operatorFactory.CreateStackOperator(operatorCollection.targetResourceTypes)
 	bucketOperator := operatorCollection.operatorFactory.CreateBucketOperator()
 	roleOperator := operatorCollection.operatorFactory.CreateRoleOperator()
 	ecrOperator := operatorCollection.operatorFactory.CreateEcrOperator()
@@ -48,22 +50,24 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 			stackResource := v // Copy for pointer used below
 			operatorCollection.logicalResourceIds = append(operatorCollection.logicalResourceIds, aws.ToString(stackResource.LogicalResourceId))
 
-			switch *stackResource.ResourceType {
-			case resourcetype.CLOUDFORMATION_STACK:
-				stackOperator.AddResource(&stackResource)
-			case resourcetype.S3_STACK:
-				bucketOperator.AddResource(&stackResource)
-			case resourcetype.IAM_ROLE:
-				roleOperator.AddResource(&stackResource)
-			case resourcetype.ECR_REPOSITORY:
-				ecrOperator.AddResource(&stackResource)
-			case resourcetype.BACKUP_VAULT:
-				backupVaultOperator.AddResource(&stackResource)
-			default:
-				if strings.Contains(*stackResource.ResourceType, resourcetype.CUSTOM_RESOURCE) {
-					customOperator.AddResource(&stackResource)
-				} else {
-					operatorCollection.unsupportedStackResources = append(operatorCollection.unsupportedStackResources, stackResource)
+			if !operatorCollection.containsResourceType(*stackResource.ResourceType) {
+				operatorCollection.unsupportedStackResources = append(operatorCollection.unsupportedStackResources, stackResource)
+			} else {
+				switch *stackResource.ResourceType {
+				case resourcetype.CLOUDFORMATION_STACK:
+					stackOperator.AddResource(&stackResource)
+				case resourcetype.S3_STACK:
+					bucketOperator.AddResource(&stackResource)
+				case resourcetype.IAM_ROLE:
+					roleOperator.AddResource(&stackResource)
+				case resourcetype.ECR_REPOSITORY:
+					ecrOperator.AddResource(&stackResource)
+				case resourcetype.BACKUP_VAULT:
+					backupVaultOperator.AddResource(&stackResource)
+				default:
+					if strings.Contains(*stackResource.ResourceType, resourcetype.CUSTOM_RESOURCE) {
+						customOperator.AddResource(&stackResource)
+					}
 				}
 			}
 		}
@@ -75,6 +79,15 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 	operatorCollection.operators = append(operatorCollection.operators, ecrOperator)
 	operatorCollection.operators = append(operatorCollection.operators, backupVaultOperator)
 	operatorCollection.operators = append(operatorCollection.operators, customOperator)
+}
+
+func (operatorCollection *OperatorCollection) containsResourceType(resource string) bool {
+	for _, t := range operatorCollection.targetResourceTypes {
+		if t == resource {
+			return true
+		}
+	}
+	return false
 }
 
 func (operatorCollection *OperatorCollection) GetLogicalResourceIds() []string {
@@ -94,7 +107,7 @@ func (operatorCollection *OperatorCollection) RaiseUnsupportedResourceError() er
 	for _, resource := range operatorCollection.unsupportedStackResources {
 		unsupportedStackResourcesData = append(unsupportedStackResourcesData, []string{*resource.ResourceType, *resource.LogicalResourceId})
 	}
-	unsupportedStackResources := "\nThese are unsupported resources so failed delete:\n" + *logger.ToStringAsTableFormat(unsupportedStackResourcesHeader, unsupportedStackResourcesData)
+	unsupportedStackResources := "\nThese are the resources unsupported (or you did not selected in the interactive prompt), so failed delete:\n" + *logger.ToStringAsTableFormat(unsupportedStackResourcesHeader, unsupportedStackResourcesData)
 
 	supportedStackResourcesHeader := []string{"ResourceType", "Description"}
 	supportedStackResourcesData := [][]string{

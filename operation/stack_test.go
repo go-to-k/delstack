@@ -658,7 +658,8 @@ func TestDeleteStack(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			cloudformationOperator := NewStackOperator(aws.Config{}, tt.args.clientMock)
+			targetResourceTypes := resourcetype.GetResourceTypes()
+			cloudformationOperator := NewStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
 
 			err := cloudformationOperator.DeleteStackResources(tt.args.stackName, tt.args.isRootStack, tt.args.operatorManagerMock)
 			if (err != nil) != tt.wantErr {
