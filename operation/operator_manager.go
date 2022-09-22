@@ -30,7 +30,7 @@ func (operatorManager *OperatorManager) SetOperatorCollection(stackName *string,
 
 func (operatorManager *OperatorManager) getOperatorResourcesLength() int {
 	var length int
-	for _, operator := range operatorManager.operatorCollection.GetOperatorList() {
+	for _, operator := range operatorManager.operatorCollection.GetOperators() {
 		length += operator.GetResourcesLength()
 	}
 	return length
@@ -54,7 +54,7 @@ func (operatorManager *OperatorManager) GetLogicalResourceIds() []string {
 func (operatorManager *OperatorManager) DeleteResourceCollection() error {
 	var eg errgroup.Group
 
-	for _, operator := range operatorManager.operatorCollection.GetOperatorList() {
+	for _, operator := range operatorManager.operatorCollection.GetOperators() {
 		operator := operator
 		eg.Go(func() error {
 			return operator.DeleteResources()

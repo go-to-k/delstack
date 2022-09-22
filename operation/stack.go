@@ -32,7 +32,7 @@ func NewStackOperator(config aws.Config, client client.ICloudFormation) *StackOp
 	}
 }
 
-func (operator *StackOperator) AddResources(resource *types.StackResourceSummary) {
+func (operator *StackOperator) AddResource(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 

@@ -12,7 +12,7 @@ import (
 type IOperatorCollection interface {
 	SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary)
 	GetLogicalResourceIds() []string
-	GetOperatorList() []IOperator
+	GetOperators() []IOperator
 	RaiseUnsupportedResourceError() error
 }
 
@@ -23,7 +23,7 @@ type OperatorCollection struct {
 	operatorFactory           IOperatorFactory
 	logicalResourceIds        []string
 	unsupportedStackResources []types.StackResourceSummary
-	operatorList              []IOperator
+	operators                 []IOperator
 }
 
 func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory) *OperatorCollection {
@@ -49,18 +49,18 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 
 			switch *stackResource.ResourceType {
 			case "AWS::CloudFormation::Stack":
-				stackOperator.AddResources(&stackResource)
+				stackOperator.AddResource(&stackResource)
 			case "AWS::S3::Bucket":
-				bucketOperator.AddResources(&stackResource)
+				bucketOperator.AddResource(&stackResource)
 			case "AWS::IAM::Role":
-				roleOperator.AddResources(&stackResource)
+				roleOperator.AddResource(&stackResource)
 			case "AWS::ECR::Repository":
-				ecrOperator.AddResources(&stackResource)
+				ecrOperator.AddResource(&stackResource)
 			case "AWS::Backup::BackupVault":
-				backupVaultOperator.AddResources(&stackResource)
+				backupVaultOperator.AddResource(&stackResource)
 			default:
 				if strings.Contains(*stackResource.ResourceType, "Custom::") {
-					customOperator.AddResources(&stackResource)
+					customOperator.AddResource(&stackResource)
 				} else {
 					operatorCollection.unsupportedStackResources = append(operatorCollection.unsupportedStackResources, stackResource)
 				}
@@ -68,20 +68,20 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 		}
 	}
 
-	operatorCollection.operatorList = append(operatorCollection.operatorList, stackOperator)
-	operatorCollection.operatorList = append(operatorCollection.operatorList, bucketOperator)
-	operatorCollection.operatorList = append(operatorCollection.operatorList, roleOperator)
-	operatorCollection.operatorList = append(operatorCollection.operatorList, ecrOperator)
-	operatorCollection.operatorList = append(operatorCollection.operatorList, backupVaultOperator)
-	operatorCollection.operatorList = append(operatorCollection.operatorList, customOperator)
+	operatorCollection.operators = append(operatorCollection.operators, stackOperator)
+	operatorCollection.operators = append(operatorCollection.operators, bucketOperator)
+	operatorCollection.operators = append(operatorCollection.operators, roleOperator)
+	operatorCollection.operators = append(operatorCollection.operators, ecrOperator)
+	operatorCollection.operators = append(operatorCollection.operators, backupVaultOperator)
+	operatorCollection.operators = append(operatorCollection.operators, customOperator)
 }
 
 func (operatorCollection *OperatorCollection) GetLogicalResourceIds() []string {
 	return operatorCollection.logicalResourceIds
 }
 
-func (operatorCollection *OperatorCollection) GetOperatorList() []IOperator {
-	return operatorCollection.operatorList
+func (operatorCollection *OperatorCollection) GetOperators() []IOperator {
+	return operatorCollection.operators
 }
 
 func (operatorCollection *OperatorCollection) RaiseUnsupportedResourceError() error {

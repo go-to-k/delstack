@@ -322,7 +322,7 @@ func TestDeleteResourcesForBucket(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			bucketOperator := NewBucketOperator(tt.args.client)
-			bucketOperator.AddResources(&cfnTypes.StackResourceSummary{
+			bucketOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
 				ResourceType:       aws.String("AWS::S3::Bucket"),

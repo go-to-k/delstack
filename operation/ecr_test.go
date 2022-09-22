@@ -137,7 +137,7 @@ func TestDeleteResourcesForEcrVault(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			ecrOperator := NewEcrOperator(tt.args.client)
-			ecrOperator.AddResources(&cfnTypes.StackResourceSummary{
+			ecrOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
 				ResourceType:       aws.String("AWS::ECR::Repository"),

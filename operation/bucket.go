@@ -26,7 +26,7 @@ func NewBucketOperator(client client.IS3) *BucketOperator {
 	}
 }
 
-func (operator *BucketOperator) AddResources(resource *types.StackResourceSummary) {
+func (operator *BucketOperator) AddResource(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 

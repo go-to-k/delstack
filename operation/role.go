@@ -25,7 +25,7 @@ func NewRoleOperator(client client.IIam) *RoleOperator {
 	}
 }
 
-func (operator *RoleOperator) AddResources(resource *types.StackResourceSummary) {
+func (operator *RoleOperator) AddResource(resource *types.StackResourceSummary) {
 	operator.resources = append(operator.resources, resource)
 }
 
