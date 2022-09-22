@@ -25,6 +25,7 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
   - So **all stack deletions can basically be done with this tool!!**
 - If there are resources other than those listed above that result in DELETE_FAILED, the deletion will fail.
 - **"Termination Protection" stacks will not be deleted.** Because it probably really should not want to delete it.
+- Deletion of resources that fail to be deleted because they are used by other stack resources, i.e., **resources that are referenced (depended on) from outside the stack, is not supported**. Only forced deletion of resources that can be completed only within the stack is supported.
 
 ## Install
 
