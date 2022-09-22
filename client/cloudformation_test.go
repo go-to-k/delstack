@@ -92,7 +92,7 @@ func (m *mockCloudFormationSDKClient) ListStackResources(ctx context.Context, pa
 			{
 				LogicalResourceId:  aws.String("LogicalResourceId2"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String(resourcetype.S3_STACK),
+				ResourceType:       aws.String(resourcetype.S3_BUCKET),
 				PhysicalResourceId: aws.String("PhysicalResourceId2"),
 			},
 		},
@@ -134,7 +134,7 @@ func (m *errorMockCloudFormationSDKClient) ListStackResources(ctx context.Contex
 			{
 				LogicalResourceId:  aws.String("LogicalResourceId2"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String(resourcetype.S3_STACK),
+				ResourceType:       aws.String(resourcetype.S3_BUCKET),
 				PhysicalResourceId: aws.String("PhysicalResourceId2"),
 			},
 		},
@@ -420,7 +420,7 @@ func TestListStackResources(t *testing.T) {
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId2"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String(resourcetype.S3_STACK),
+						ResourceType:       aws.String(resourcetype.S3_BUCKET),
 						PhysicalResourceId: aws.String("PhysicalResourceId2"),
 					},
 				},

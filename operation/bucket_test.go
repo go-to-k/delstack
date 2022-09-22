@@ -326,7 +326,7 @@ func TestDeleteResourcesForBucket(t *testing.T) {
 			bucketOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String(resourcetype.S3_STACK),
+				ResourceType:       aws.String(resourcetype.S3_BUCKET),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			})
 
