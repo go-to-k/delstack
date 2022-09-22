@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/logger"
+	"github.com/go-to-k/delstack/resourcetype"
 )
 
 /*
@@ -42,31 +43,31 @@ func TestSetOperatorCollection(t *testing.T) {
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId1"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						ResourceType:       aws.String(resourcetype.CLOUDFORMATION_STACK),
 						PhysicalResourceId: aws.String("PhysicalResourceId1"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId2"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::S3::Bucket"),
+						ResourceType:       aws.String(resourcetype.S3_STACK),
 						PhysicalResourceId: aws.String("PhysicalResourceId2"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId3"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::IAM::Role"),
+						ResourceType:       aws.String(resourcetype.IAM_ROLE),
 						PhysicalResourceId: aws.String("PhysicalResourceId3"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId4"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::ECR::Repository"),
+						ResourceType:       aws.String(resourcetype.ECR_REPOSITORY),
 						PhysicalResourceId: aws.String("PhysicalResourceId4"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId5"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::Backup::BackupVault"),
+						ResourceType:       aws.String(resourcetype.BACKUP_VAULT),
 						PhysicalResourceId: aws.String("PhysicalResourceId5"),
 					},
 					{
@@ -91,7 +92,7 @@ func TestSetOperatorCollection(t *testing.T) {
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId1"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						ResourceType:       aws.String(resourcetype.CLOUDFORMATION_STACK),
 						PhysicalResourceId: aws.String("PhysicalResourceId1"),
 					},
 					{
@@ -116,7 +117,7 @@ func TestSetOperatorCollection(t *testing.T) {
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId1"),
 						ResourceStatus:     "DELETE_COMPLETE",
-						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						ResourceType:       aws.String(resourcetype.CLOUDFORMATION_STACK),
 						PhysicalResourceId: aws.String("PhysicalResourceId1"),
 					},
 					{
@@ -141,7 +142,7 @@ func TestSetOperatorCollection(t *testing.T) {
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId1"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						ResourceType:       aws.String(resourcetype.CLOUDFORMATION_STACK),
 						PhysicalResourceId: aws.String("PhysicalResourceId1"),
 					},
 					{

@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/logger"
+	"github.com/go-to-k/delstack/resourcetype"
 )
 
 type IOperatorCollection interface {
@@ -48,18 +49,18 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 			operatorCollection.logicalResourceIds = append(operatorCollection.logicalResourceIds, aws.ToString(stackResource.LogicalResourceId))
 
 			switch *stackResource.ResourceType {
-			case "AWS::CloudFormation::Stack":
+			case resourcetype.CLOUDFORMATION_STACK:
 				stackOperator.AddResource(&stackResource)
-			case "AWS::S3::Bucket":
+			case resourcetype.S3_STACK:
 				bucketOperator.AddResource(&stackResource)
-			case "AWS::IAM::Role":
+			case resourcetype.IAM_ROLE:
 				roleOperator.AddResource(&stackResource)
-			case "AWS::ECR::Repository":
+			case resourcetype.ECR_REPOSITORY:
 				ecrOperator.AddResource(&stackResource)
-			case "AWS::Backup::BackupVault":
+			case resourcetype.BACKUP_VAULT:
 				backupVaultOperator.AddResource(&stackResource)
 			default:
-				if strings.Contains(*stackResource.ResourceType, "Custom::") {
+				if strings.Contains(*stackResource.ResourceType, resourcetype.CUSTOM_RESOURCE) {
 					customOperator.AddResource(&stackResource)
 				} else {
 					operatorCollection.unsupportedStackResources = append(operatorCollection.unsupportedStackResources, stackResource)
@@ -97,11 +98,11 @@ func (operatorCollection *OperatorCollection) RaiseUnsupportedResourceError() er
 
 	supportedStackResourcesHeader := []string{"ResourceType", "Description"}
 	supportedStackResourcesData := [][]string{
-		{"AWS::S3::Bucket", "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
-		{"AWS::IAM::Role", "IAM Roles, including roles with policies from outside the stack."},
-		{"AWS::ECR::Repository", "ECR Repositories, including repositories containing images."},
-		{"AWS::Backup::BackupVault", "Backup Vaults, including vaults containing recovery points."},
-		{"AWS::CloudFormation::Stack", "Nested Child Stacks that failed to delete."},
+		{resourcetype.S3_STACK, "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
+		{resourcetype.IAM_ROLE, "IAM Roles, including roles with policies from outside the stack."},
+		{resourcetype.ECR_REPOSITORY, "ECR Repositories, including repositories containing images."},
+		{resourcetype.BACKUP_VAULT, "Backup Vaults, including vaults containing recovery points."},
+		{resourcetype.CLOUDFORMATION_STACK, "Nested Child Stacks that failed to delete."},
 		{"Custom::Xxx", "Custom Resources, but they will be deleted on its own."},
 	}
 	supportedStackResources := "\nSupported resources for force deletion of DELETE_FAILED resources are followings.\n" + *logger.ToStringAsTableFormat(supportedStackResourcesHeader, supportedStackResourcesData)
