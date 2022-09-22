@@ -19,16 +19,18 @@ var _ IOperator = (*StackOperator)(nil)
 const STACK_NAME_RULE = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
 type StackOperator struct {
-	config    aws.Config
-	client    client.ICloudFormation
-	resources []*types.StackResourceSummary
+	config              aws.Config
+	client              client.ICloudFormation
+	resources           []*types.StackResourceSummary
+	targetResourceTypes []string
 }
 
-func NewStackOperator(config aws.Config, client client.ICloudFormation) *StackOperator {
+func NewStackOperator(config aws.Config, client client.ICloudFormation, targetResourceTypes []string) *StackOperator {
 	return &StackOperator{
-		config:    config,
-		client:    client,
-		resources: []*types.StackResourceSummary{},
+		config:              config,
+		client:              client,
+		resources:           []*types.StackResourceSummary{},
+		targetResourceTypes: targetResourceTypes,
 	}
 }
 
@@ -54,7 +56,7 @@ func (operator *StackOperator) DeleteResources() error {
 
 			isRootStack := false
 			operatorFactory := NewOperatorFactory(operator.config)
-			operatorCollection := NewOperatorCollection(operator.config, operatorFactory)
+			operatorCollection := NewOperatorCollection(operator.config, operatorFactory, operator.targetResourceTypes)
 			operatorManager := NewOperatorManager(operatorCollection)
 
 			return operator.DeleteStackResources(aws.String(stackName), isRootStack, operatorManager)

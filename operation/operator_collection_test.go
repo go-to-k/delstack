@@ -164,7 +164,8 @@ func TestSetOperatorCollection(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := aws.Config{}
 			operatorFactory := NewOperatorFactory(config)
-			operatorCollection := NewOperatorCollection(config, operatorFactory)
+			targetResourceTypes := resourcetype.GetResourceTypes()
+			operatorCollection := NewOperatorCollection(config, operatorFactory, targetResourceTypes)
 
 			operatorCollection.SetOperatorCollection(tt.args.stackName, tt.args.stackResourceSummaries)
 
