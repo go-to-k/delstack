@@ -45,7 +45,7 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
 
 ## How to use
   ```
-  delstack -s <stackName> [-p <profile>] [-r <region>]
+  delstack -s <stackName> [-p <profile>] [-r <region>] [-i]
   ```
 
 - -s, --stackName: **required**
@@ -61,7 +61,9 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
 
 If you selected `-i, --interactive` option, **you can select** ResourceTypes **you wish to delete even if DELETE_FAILED** in a prompt. This allows you to protect resources you do not want to delete!!
 
-However, if resources of the selected ResourceTypes **will not to be DELETE_FAILED when the stack is deleted**, the resources will be deleted **even if you selected**. The purpose of this tool is not to protect specific resources from CloudFormation's stack deletion feature, but simply to avoid forcing the deletion of something that really should not be deleted.
+However, if resources of the selected ResourceTypes **will not be DELETE_FAILED when the stack is deleted**, the resources will be deleted **even if you selected**. The purpose of this tool is not to protect specific resources from CloudFormation's stack deletion feature, but simply to avoid forcing the deletion of something that really should not be deleted.
+
+If the stack contains resources that will be DELETE_FAILED but is not selected, all DELETE_FAILED resources including the selected or not selected resources and the stack will remain undeleted.
 
 ```sh
 ❯ delstack -s YourStack -i
