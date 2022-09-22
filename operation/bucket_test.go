@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/go-to-k/delstack/client"
 	"github.com/go-to-k/delstack/logger"
+	"github.com/go-to-k/delstack/resourcetype"
 )
 
 var _ client.IS3 = (*mockS3)(nil)
@@ -325,7 +326,7 @@ func TestDeleteResourcesForBucket(t *testing.T) {
 			bucketOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String("AWS::S3::Bucket"),
+				ResourceType:       aws.String(resourcetype.S3_BUCKET),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			})
 

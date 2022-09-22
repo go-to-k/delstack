@@ -1,22 +1,28 @@
 package app
 
 import (
+	"bufio"
 	"context"
+	"fmt"
 	"os"
+	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/go-to-k/delstack/logger"
 	"github.com/go-to-k/delstack/operation"
 	"github.com/go-to-k/delstack/option"
+	"github.com/go-to-k/delstack/resourcetype"
 	"github.com/urfave/cli/v2"
 )
 
 type App struct {
-	Cli       *cli.App
-	StackName string
-	Profile   string
-	Region    string
+	Cli             *cli.App
+	StackName       string
+	Profile         string
+	Region          string
+	InteractiveMode bool
 }
 
 func NewApp(version string) *App {
@@ -46,6 +52,13 @@ func NewApp(version string) *App {
 				Usage:       "CloudFormation stack name",
 				Destination: &app.Region,
 			},
+			&cli.BoolFlag{
+				Name:        "interactive",
+				Aliases:     []string{"i"},
+				Value:       false,
+				Usage:       "Interactive Mode",
+				Destination: &app.InteractiveMode,
+			},
 		},
 	}
 
@@ -67,14 +80,26 @@ func (app *App) getAction() func(c *cli.Context) error {
 			return err
 		}
 
+		var targetResourceTypes []string
+		continuation := true
+		if app.InteractiveMode {
+			targetResourceTypes, continuation = doInteractiveMode()
+		} else {
+			targetResourceTypes = resourcetype.GetResourceTypes()
+		}
+
+		if !continuation {
+			return nil
+		}
+
 		logger.Logger.Info().Msgf("Start deletion, %v", app.StackName)
 
 		stackOperatorFactory := operation.NewStackOperatorFactory(config)
-		stackOperator := stackOperatorFactory.CreateStackOperator()
+		stackOperator := stackOperatorFactory.CreateStackOperator(targetResourceTypes)
 
 		isRootStack := true
 		operatorFactory := operation.NewOperatorFactory(config)
-		operatorCollection := operation.NewOperatorCollection(config, operatorFactory)
+		operatorCollection := operation.NewOperatorCollection(config, operatorFactory, targetResourceTypes)
 		operatorManager := operation.NewOperatorManager(operatorCollection)
 
 		if err := stackOperator.DeleteStackResources(aws.String(app.StackName), isRootStack, operatorManager); err != nil {
@@ -99,4 +124,66 @@ func (app *App) loadAwsConfig() (aws.Config, error) {
 	}
 
 	return cfg, err
+}
+
+func doInteractiveMode() ([]string, bool) {
+	var checkboxes []string
+
+	for {
+		checkboxes = getCheckboxes()
+
+		if len(checkboxes) == 0 {
+			logger.Logger.Warn().Msg("Select ResourceTypes!")
+			ok := getYesNo("Want to finish?")
+			if ok {
+				logger.Logger.Info().Msg("Finished...")
+				return checkboxes, false
+			}
+			continue
+		}
+		logger.Logger.Info().Msgf("Your selected ResourceTypes: %s", strings.Join(checkboxes, ", "))
+
+		ok := getYesNo("OK?")
+		if ok {
+			return checkboxes, true
+		}
+	}
+}
+
+func getCheckboxes() []string {
+	label := "Select ResourceTypes you wish to delete even if DELETE_FAILED."
+	opts := resourcetype.GetResourceTypes()
+	res := []string{}
+
+	prompt := &survey.MultiSelect{
+		Message: label,
+		Options: opts,
+	}
+	survey.AskOne(prompt, &res)
+
+	return res
+}
+
+func getYesNo(label string) bool {
+	choices := "Y/n"
+	r := bufio.NewReader(os.Stdin)
+	var s string
+
+	for {
+		fmt.Fprintf(os.Stderr, "%s (%s) ", label, choices)
+		s, _ = r.ReadString('\n')
+		fmt.Fprintln(os.Stderr)
+
+		s = strings.TrimSpace(s)
+		if s == "" {
+			return true
+		}
+		s = strings.ToLower(s)
+		if s == "y" || s == "yes" {
+			return true
+		}
+		if s == "n" || s == "no" {
+			return false
+		}
+	}
 }

@@ -14,10 +14,11 @@ func NewStackOperatorFactory(config aws.Config) *StackOperatorFactory {
 	return &StackOperatorFactory{config}
 }
 
-func (factory *StackOperatorFactory) CreateStackOperator() *StackOperator {
+func (factory *StackOperatorFactory) CreateStackOperator(targetResourceTypes []string) *StackOperator {
 	return NewStackOperator(
 		factory.config,
 		factory.createCloudFormationClient(),
+		targetResourceTypes,
 	)
 }
 

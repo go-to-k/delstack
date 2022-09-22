@@ -5,7 +5,7 @@ import (
 )
 
 type IOperatorFactory interface {
-	CreateStackOperator() *StackOperator
+	CreateStackOperator(targetResourceTypes []string) *StackOperator
 	CreateBackupVaultOperator() *BackupVaultOperator
 	CreateEcrOperator() *EcrOperator
 	CreateRoleOperator() *RoleOperator
@@ -37,8 +37,8 @@ func NewOperatorFactory(config aws.Config) *OperatorFactory {
 	}
 }
 
-func (factory *OperatorFactory) CreateStackOperator() *StackOperator {
-	return factory.stackOperatorFactory.CreateStackOperator()
+func (factory *OperatorFactory) CreateStackOperator(targetResourceTypes []string) *StackOperator {
+	return factory.stackOperatorFactory.CreateStackOperator(targetResourceTypes)
 }
 
 func (factory *OperatorFactory) CreateBackupVaultOperator() *BackupVaultOperator {
