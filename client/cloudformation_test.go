@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/logger"
+	"github.com/go-to-k/delstack/resourcetype"
 )
 
 /*
@@ -85,13 +86,13 @@ func (m *mockCloudFormationSDKClient) ListStackResources(ctx context.Context, pa
 			{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+				ResourceType:       aws.String(resourcetype.CLOUDFORMATION_STACK),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			},
 			{
 				LogicalResourceId:  aws.String("LogicalResourceId2"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String("AWS::S3::Bucket"),
+				ResourceType:       aws.String(resourcetype.S3_BUCKET),
 				PhysicalResourceId: aws.String("PhysicalResourceId2"),
 			},
 		},
@@ -127,13 +128,13 @@ func (m *errorMockCloudFormationSDKClient) ListStackResources(ctx context.Contex
 			{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+				ResourceType:       aws.String(resourcetype.CLOUDFORMATION_STACK),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			},
 			{
 				LogicalResourceId:  aws.String("LogicalResourceId2"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String("AWS::S3::Bucket"),
+				ResourceType:       aws.String(resourcetype.S3_BUCKET),
 				PhysicalResourceId: aws.String("PhysicalResourceId2"),
 			},
 		},
@@ -413,13 +414,13 @@ func TestListStackResources(t *testing.T) {
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId1"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						ResourceType:       aws.String(resourcetype.CLOUDFORMATION_STACK),
 						PhysicalResourceId: aws.String("PhysicalResourceId1"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId2"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::S3::Bucket"),
+						ResourceType:       aws.String(resourcetype.S3_BUCKET),
 						PhysicalResourceId: aws.String("PhysicalResourceId2"),
 					},
 				},

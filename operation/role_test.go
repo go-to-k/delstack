@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/go-to-k/delstack/client"
 	"github.com/go-to-k/delstack/logger"
+	"github.com/go-to-k/delstack/resourcetype"
 )
 
 var _ client.IIam = (*mockIam)(nil)
@@ -297,7 +298,7 @@ func TestDeleteResourcesForIam(t *testing.T) {
 			iamOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String("AWS::IAM::Role"),
+				ResourceType:       aws.String(resourcetype.IAM_ROLE),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			})
 
