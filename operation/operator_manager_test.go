@@ -271,6 +271,45 @@ func (m *OperatorDeleteResourcesMockOperatorCollection) RaiseUnsupportedResource
 /*
 	Test Cases
 */
+func Test_getOperatorResourcesLength(t *testing.T) {
+	logger.NewLogger()
+	ctx := context.TODO()
+
+	mock := NewMockOperatorCollection()
+
+	type args struct {
+		ctx  context.Context
+		mock IOperatorCollection
+	}
+
+	cases := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			name: "get operator resources length successfully",
+			args: args{
+				ctx:  ctx,
+				mock: mock,
+			},
+			want: 6,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			operatorManager := NewOperatorManager(tt.args.mock)
+
+			got := operatorManager.getOperatorResourcesLength()
+			if got != tt.want {
+				t.Errorf("got = %#v, want %#v", got, tt.want)
+				return
+			}
+		})
+	}
+}
+
 func TestCheckResourceCounts(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()

@@ -376,6 +376,78 @@ func TestDescribeStacks(t *testing.T) {
 	}
 }
 
+func Test_waitDeleteStack(t *testing.T) {
+	logger.NewLogger()
+	ctx := context.TODO()
+	mockWaiter := NewMockCloudFormationSDKWaiter()
+	failureErrorMockWaiter := NewFailureErrorMockCloudFormationSDKWaiter()
+	otherErrorMockWaiter := NewOtherErrorMockCloudFormationSDKWaiter()
+	mock := NewMockCloudFormationSDKClient()
+
+	type args struct {
+		ctx        context.Context
+		stackName  *string
+		mockClient ICloudFormationSDKClient
+		mockWaiter ICloudFormationSDKWaiter
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    error
+		wantErr bool
+	}{
+		{
+			name: "wait successfully",
+			args: args{
+				ctx:        ctx,
+				stackName:  aws.String("test"),
+				mockClient: mock,
+				mockWaiter: mockWaiter,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "wait failure for other error",
+			args: args{
+				ctx:        ctx,
+				stackName:  aws.String("test"),
+				mockClient: mock,
+				mockWaiter: otherErrorMockWaiter,
+			},
+			want:    fmt.Errorf("WaitError"),
+			wantErr: true,
+		},
+		{
+			name: "wait failure for transitioned to Failure",
+			args: args{
+				ctx:        ctx,
+				stackName:  aws.String("test"),
+				mockClient: mock,
+				mockWaiter: failureErrorMockWaiter,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cloudformationClient := NewCloudFormation(tt.args.mockClient, tt.args.mockWaiter)
+
+			err := cloudformationClient.waitDeleteStack(tt.args.stackName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestListStackResources(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
