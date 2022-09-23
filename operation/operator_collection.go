@@ -38,11 +38,11 @@ func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, 
 func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 	operatorCollection.stackName = aws.ToString(stackName)
 
-	stackOperator := operatorCollection.operatorFactory.CreateStackOperator(operatorCollection.targetResourceTypes)
 	bucketOperator := operatorCollection.operatorFactory.CreateBucketOperator()
 	roleOperator := operatorCollection.operatorFactory.CreateRoleOperator()
 	ecrOperator := operatorCollection.operatorFactory.CreateEcrOperator()
 	backupVaultOperator := operatorCollection.operatorFactory.CreateBackupVaultOperator()
+	stackOperator := operatorCollection.operatorFactory.CreateStackOperator(operatorCollection.targetResourceTypes)
 	customOperator := operatorCollection.operatorFactory.CreateCustomOperator()
 
 	for _, v := range stackResourceSummaries {
