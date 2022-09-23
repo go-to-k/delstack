@@ -12,144 +12,144 @@ import (
 /*
 	Mocks for each Operator
 */
-var _ IOperator = (*mockStackOperator)(nil)
-var _ IOperator = (*errorMockStackOperator)(nil)
-var _ IOperator = (*mockBucketOperator)(nil)
-var _ IOperator = (*mockRoleOperator)(nil)
-var _ IOperator = (*mockEcrOperator)(nil)
-var _ IOperator = (*mockBackupVaultOperator)(nil)
-var _ IOperator = (*mockCustomOperator)(nil)
-var _ IOperator = (*mockStackOperator)(nil)
+var _ IOperator = (*MockStackOperator)(nil)
+var _ IOperator = (*ErrorMockStackOperator)(nil)
+var _ IOperator = (*MockBucketOperator)(nil)
+var _ IOperator = (*MockRoleOperator)(nil)
+var _ IOperator = (*MockEcrOperator)(nil)
+var _ IOperator = (*MockBackupVaultOperator)(nil)
+var _ IOperator = (*MockCustomOperator)(nil)
+var _ IOperator = (*MockStackOperator)(nil)
 
-type mockStackOperator struct{}
+type MockStackOperator struct{}
 
-func NewMockStackOperator() *mockStackOperator {
-	return &mockStackOperator{}
+func NewMockStackOperator() *MockStackOperator {
+	return &MockStackOperator{}
 }
 
-func (m *mockStackOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockStackOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *mockStackOperator) GetResourcesLength() int {
+func (m *MockStackOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *mockStackOperator) DeleteResources() error {
+func (m *MockStackOperator) DeleteResources() error {
 	return nil
 }
 
-type errorMockStackOperator struct{}
+type ErrorMockStackOperator struct{}
 
-func NewErrorMockStackOperator() *errorMockStackOperator {
-	return &errorMockStackOperator{}
+func NewErrorMockStackOperator() *ErrorMockStackOperator {
+	return &ErrorMockStackOperator{}
 }
 
-func (m *errorMockStackOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *ErrorMockStackOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *errorMockStackOperator) GetResourcesLength() int {
+func (m *ErrorMockStackOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *errorMockStackOperator) DeleteResources() error {
+func (m *ErrorMockStackOperator) DeleteResources() error {
 	return fmt.Errorf("ErrorDeleteResources")
 }
 
-type mockBucketOperator struct{}
+type MockBucketOperator struct{}
 
-func NewMockBucketOperator() *mockBucketOperator {
-	return &mockBucketOperator{}
+func NewMockBucketOperator() *MockBucketOperator {
+	return &MockBucketOperator{}
 }
 
-func (m *mockBucketOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockBucketOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *mockBucketOperator) GetResourcesLength() int {
+func (m *MockBucketOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *mockBucketOperator) DeleteResources() error {
+func (m *MockBucketOperator) DeleteResources() error {
 	return nil
 }
 
-type mockRoleOperator struct{}
+type MockRoleOperator struct{}
 
-func NewMockRoleOperator() *mockRoleOperator {
-	return &mockRoleOperator{}
+func NewMockRoleOperator() *MockRoleOperator {
+	return &MockRoleOperator{}
 }
 
-func (m *mockRoleOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockRoleOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *mockRoleOperator) GetResourcesLength() int {
+func (m *MockRoleOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *mockRoleOperator) DeleteResources() error {
+func (m *MockRoleOperator) DeleteResources() error {
 	return nil
 }
 
-type mockEcrOperator struct{}
+type MockEcrOperator struct{}
 
-func NewMockEcrOperator() *mockEcrOperator {
-	return &mockEcrOperator{}
+func NewMockEcrOperator() *MockEcrOperator {
+	return &MockEcrOperator{}
 }
 
-func (m *mockEcrOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockEcrOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *mockEcrOperator) GetResourcesLength() int {
+func (m *MockEcrOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *mockEcrOperator) DeleteResources() error {
+func (m *MockEcrOperator) DeleteResources() error {
 	return nil
 }
 
-type mockBackupVaultOperator struct{}
+type MockBackupVaultOperator struct{}
 
-func NewMockBackupVaultOperator() *mockBackupVaultOperator {
-	return &mockBackupVaultOperator{}
+func NewMockBackupVaultOperator() *MockBackupVaultOperator {
+	return &MockBackupVaultOperator{}
 }
 
-func (m *mockBackupVaultOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockBackupVaultOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *mockBackupVaultOperator) GetResourcesLength() int {
+func (m *MockBackupVaultOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *mockBackupVaultOperator) DeleteResources() error {
+func (m *MockBackupVaultOperator) DeleteResources() error {
 	return nil
 }
 
-type mockCustomOperator struct{}
+type MockCustomOperator struct{}
 
-func NewMockCustomOperator() *mockCustomOperator {
-	return &mockCustomOperator{}
+func NewMockCustomOperator() *MockCustomOperator {
+	return &MockCustomOperator{}
 }
 
-func (m *mockCustomOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockCustomOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *mockCustomOperator) GetResourcesLength() int {
+func (m *MockCustomOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *mockCustomOperator) DeleteResources() error {
+func (m *MockCustomOperator) DeleteResources() error {
 	return nil
 }
 
 /*
 	Mocks for OperatorCollection
 */
-var _ IOperatorCollection = (*mockOperatorCollection)(nil)
-var _ IOperatorCollection = (*incorrectResourceCountsMockOperatorCollection)(nil)
-var _ IOperatorCollection = (*operatorDeleteResourcesMockOperatorCollection)(nil)
+var _ IOperatorCollection = (*MockOperatorCollection)(nil)
+var _ IOperatorCollection = (*IncorrectResourceCountsMockOperatorCollection)(nil)
+var _ IOperatorCollection = (*OperatorDeleteResourcesMockOperatorCollection)(nil)
 
-type mockOperatorCollection struct{}
+type MockOperatorCollection struct{}
 
-func NewMockOperatorCollection() *mockOperatorCollection {
-	return &mockOperatorCollection{}
+func NewMockOperatorCollection() *MockOperatorCollection {
+	return &MockOperatorCollection{}
 }
 
-func (m *mockOperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
+func (m *MockOperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 }
 
-func (m *mockOperatorCollection) GetLogicalResourceIds() []string {
+func (m *MockOperatorCollection) GetLogicalResourceIds() []string {
 	return []string{
 		"logicalResourceId1",
 		"logicalResourceId2",
@@ -160,7 +160,7 @@ func (m *mockOperatorCollection) GetLogicalResourceIds() []string {
 	}
 }
 
-func (m *mockOperatorCollection) GetOperators() []IOperator {
+func (m *MockOperatorCollection) GetOperators() []IOperator {
 	var operators []IOperator
 
 	stackOperator := NewMockStackOperator()
@@ -180,27 +180,27 @@ func (m *mockOperatorCollection) GetOperators() []IOperator {
 	return operators
 }
 
-func (m *mockOperatorCollection) RaiseUnsupportedResourceError() error {
+func (m *MockOperatorCollection) RaiseUnsupportedResourceError() error {
 	return fmt.Errorf("UnsupportedResourceError")
 }
 
-type incorrectResourceCountsMockOperatorCollection struct{}
+type IncorrectResourceCountsMockOperatorCollection struct{}
 
-func NewIncorrectResourceCountsMockOperatorCollection() *incorrectResourceCountsMockOperatorCollection {
-	return &incorrectResourceCountsMockOperatorCollection{}
+func NewIncorrectResourceCountsMockOperatorCollection() *IncorrectResourceCountsMockOperatorCollection {
+	return &IncorrectResourceCountsMockOperatorCollection{}
 }
 
-func (m *incorrectResourceCountsMockOperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
+func (m *IncorrectResourceCountsMockOperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 }
 
-func (m *incorrectResourceCountsMockOperatorCollection) GetLogicalResourceIds() []string {
+func (m *IncorrectResourceCountsMockOperatorCollection) GetLogicalResourceIds() []string {
 	return []string{
 		"logicalResourceId1",
 		"logicalResourceId2",
 	}
 }
 
-func (m *incorrectResourceCountsMockOperatorCollection) GetOperators() []IOperator {
+func (m *IncorrectResourceCountsMockOperatorCollection) GetOperators() []IOperator {
 	var operators []IOperator
 
 	stackOperator := NewMockStackOperator()
@@ -220,20 +220,20 @@ func (m *incorrectResourceCountsMockOperatorCollection) GetOperators() []IOperat
 	return operators
 }
 
-func (m *incorrectResourceCountsMockOperatorCollection) RaiseUnsupportedResourceError() error {
+func (m *IncorrectResourceCountsMockOperatorCollection) RaiseUnsupportedResourceError() error {
 	return fmt.Errorf("UnsupportedResourceError")
 }
 
-type operatorDeleteResourcesMockOperatorCollection struct{}
+type OperatorDeleteResourcesMockOperatorCollection struct{}
 
-func NewOperatorDeleteResourcesMockOperatorCollection() *operatorDeleteResourcesMockOperatorCollection {
-	return &operatorDeleteResourcesMockOperatorCollection{}
+func NewOperatorDeleteResourcesMockOperatorCollection() *OperatorDeleteResourcesMockOperatorCollection {
+	return &OperatorDeleteResourcesMockOperatorCollection{}
 }
 
-func (m *operatorDeleteResourcesMockOperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
+func (m *OperatorDeleteResourcesMockOperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 }
 
-func (m *operatorDeleteResourcesMockOperatorCollection) GetLogicalResourceIds() []string {
+func (m *OperatorDeleteResourcesMockOperatorCollection) GetLogicalResourceIds() []string {
 	return []string{
 		"logicalResourceId1",
 		"logicalResourceId2",
@@ -244,7 +244,7 @@ func (m *operatorDeleteResourcesMockOperatorCollection) GetLogicalResourceIds() 
 	}
 }
 
-func (m *operatorDeleteResourcesMockOperatorCollection) GetOperators() []IOperator {
+func (m *OperatorDeleteResourcesMockOperatorCollection) GetOperators() []IOperator {
 	var operators []IOperator
 
 	stackOperator := NewErrorMockStackOperator()
@@ -264,7 +264,7 @@ func (m *operatorDeleteResourcesMockOperatorCollection) GetOperators() []IOperat
 	return operators
 }
 
-func (m *operatorDeleteResourcesMockOperatorCollection) RaiseUnsupportedResourceError() error {
+func (m *OperatorDeleteResourcesMockOperatorCollection) RaiseUnsupportedResourceError() error {
 	return fmt.Errorf("UnsupportedResourceError")
 }
 

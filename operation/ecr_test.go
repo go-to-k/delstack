@@ -12,29 +12,29 @@ import (
 	"github.com/go-to-k/delstack/resourcetype"
 )
 
-var _ client.IEcr = (*mockEcr)(nil)
-var _ client.IEcr = (*errorMockEcr)(nil)
+var _ client.IEcr = (*MockEcr)(nil)
+var _ client.IEcr = (*ErrorMockEcr)(nil)
 
 /*
 	Mocks for client
 */
-type mockEcr struct{}
+type MockEcr struct{}
 
-func NewMockEcr() *mockEcr {
-	return &mockEcr{}
+func NewMockEcr() *MockEcr {
+	return &MockEcr{}
 }
 
-func (m *mockEcr) DeleteRepository(repositoryName *string) error {
+func (m *MockEcr) DeleteRepository(repositoryName *string) error {
 	return nil
 }
 
-type errorMockEcr struct{}
+type ErrorMockEcr struct{}
 
-func NewErrorMockEcr() *errorMockEcr {
-	return &errorMockEcr{}
+func NewErrorMockEcr() *ErrorMockEcr {
+	return &ErrorMockEcr{}
 }
 
-func (m *errorMockEcr) DeleteRepository(repositoryName *string) error {
+func (m *ErrorMockEcr) DeleteRepository(repositoryName *string) error {
 	return fmt.Errorf("DeleteRepositoryError")
 }
 

@@ -13,26 +13,26 @@ import (
 	"github.com/go-to-k/delstack/resourcetype"
 )
 
-var _ client.IIam = (*mockIam)(nil)
-var _ client.IIam = (*allErrorMockIam)(nil)
-var _ client.IIam = (*deleteRoleErrorMockIam)(nil)
-var _ client.IIam = (*listAttachedRolePoliciesErrorMockIam)(nil)
-var _ client.IIam = (*detachRolePoliciesErrorMockIam)(nil)
+var _ client.IIam = (*MockIam)(nil)
+var _ client.IIam = (*AllErrorMockIam)(nil)
+var _ client.IIam = (*DeleteRoleErrorMockIam)(nil)
+var _ client.IIam = (*ListAttachedRolePoliciesErrorMockIam)(nil)
+var _ client.IIam = (*DetachRolePoliciesErrorMockIam)(nil)
 
 /*
 	Mocks for client
 */
-type mockIam struct{}
+type MockIam struct{}
 
-func NewMockIam() *mockIam {
-	return &mockIam{}
+func NewMockIam() *MockIam {
+	return &MockIam{}
 }
 
-func (m *mockIam) DeleteRole(roleName *string, sleepTimeSec int) error {
+func (m *MockIam) DeleteRole(roleName *string, sleepTimeSec int) error {
 	return nil
 }
 
-func (m *mockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
+func (m *MockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
 	output := []types.AttachedPolicy{
 		{
 			PolicyArn:  aws.String("PolicyArn1"),
@@ -46,47 +46,47 @@ func (m *mockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPo
 	return output, nil
 }
 
-func (m *mockIam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
+func (m *MockIam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
 	return nil
 }
 
-func (m *mockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
+func (m *MockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
 	return nil
 }
 
-type allErrorMockIam struct{}
+type AllErrorMockIam struct{}
 
-func NewAllErrorMockIam() *allErrorMockIam {
-	return &allErrorMockIam{}
+func NewAllErrorMockIam() *AllErrorMockIam {
+	return &AllErrorMockIam{}
 }
 
-func (m *allErrorMockIam) DeleteRole(roleName *string, sleepTimeSec int) error {
+func (m *AllErrorMockIam) DeleteRole(roleName *string, sleepTimeSec int) error {
 	return fmt.Errorf("DeleteRoleError")
 }
 
-func (m *allErrorMockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
+func (m *AllErrorMockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
 	return nil, fmt.Errorf("ListAttachedRolePoliciesError")
 }
 
-func (m *allErrorMockIam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
+func (m *AllErrorMockIam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
 	return fmt.Errorf("DetachRolePoliciesError")
 }
 
-func (m *allErrorMockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
+func (m *AllErrorMockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
 	return fmt.Errorf("DetachRolePolicyError")
 }
 
-type deleteRoleErrorMockIam struct{}
+type DeleteRoleErrorMockIam struct{}
 
-func NewDeleteRoleErrorMockIam() *deleteRoleErrorMockIam {
-	return &deleteRoleErrorMockIam{}
+func NewDeleteRoleErrorMockIam() *DeleteRoleErrorMockIam {
+	return &DeleteRoleErrorMockIam{}
 }
 
-func (m *deleteRoleErrorMockIam) DeleteRole(roleName *string, sleepTimeSec int) error {
+func (m *DeleteRoleErrorMockIam) DeleteRole(roleName *string, sleepTimeSec int) error {
 	return fmt.Errorf("DeleteRoleError")
 }
 
-func (m *deleteRoleErrorMockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
+func (m *DeleteRoleErrorMockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
 	output := []types.AttachedPolicy{
 		{
 			PolicyArn:  aws.String("PolicyArn1"),
@@ -100,47 +100,47 @@ func (m *deleteRoleErrorMockIam) ListAttachedRolePolicies(roleName *string) ([]t
 	return output, nil
 }
 
-func (m *deleteRoleErrorMockIam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
+func (m *DeleteRoleErrorMockIam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
 	return nil
 }
 
-func (m *deleteRoleErrorMockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
+func (m *DeleteRoleErrorMockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
 	return nil
 }
 
-type listAttachedRolePoliciesErrorMockIam struct{}
+type ListAttachedRolePoliciesErrorMockIam struct{}
 
-func NewListAttachedRolePoliciesErrorMockIam() *listAttachedRolePoliciesErrorMockIam {
-	return &listAttachedRolePoliciesErrorMockIam{}
+func NewListAttachedRolePoliciesErrorMockIam() *ListAttachedRolePoliciesErrorMockIam {
+	return &ListAttachedRolePoliciesErrorMockIam{}
 }
 
-func (m *listAttachedRolePoliciesErrorMockIam) DeleteRole(roleName *string, sleepTimeSec int) error {
+func (m *ListAttachedRolePoliciesErrorMockIam) DeleteRole(roleName *string, sleepTimeSec int) error {
 	return nil
 }
 
-func (m *listAttachedRolePoliciesErrorMockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
+func (m *ListAttachedRolePoliciesErrorMockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
 	return nil, fmt.Errorf("ListAttachedRolePoliciesError")
 }
 
-func (m *listAttachedRolePoliciesErrorMockIam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
+func (m *ListAttachedRolePoliciesErrorMockIam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
 	return nil
 }
 
-func (m *listAttachedRolePoliciesErrorMockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
+func (m *ListAttachedRolePoliciesErrorMockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
 	return nil
 }
 
-type detachRolePoliciesErrorMockIam struct{}
+type DetachRolePoliciesErrorMockIam struct{}
 
-func NewDetachRolePoliciesErrorMockIam() *detachRolePoliciesErrorMockIam {
-	return &detachRolePoliciesErrorMockIam{}
+func NewDetachRolePoliciesErrorMockIam() *DetachRolePoliciesErrorMockIam {
+	return &DetachRolePoliciesErrorMockIam{}
 }
 
-func (m *detachRolePoliciesErrorMockIam) DeleteRole(roleName *string, sleepTimeSec int) error {
+func (m *DetachRolePoliciesErrorMockIam) DeleteRole(roleName *string, sleepTimeSec int) error {
 	return nil
 }
 
-func (m *detachRolePoliciesErrorMockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
+func (m *DetachRolePoliciesErrorMockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
 	output := []types.AttachedPolicy{
 		{
 			PolicyArn:  aws.String("PolicyArn1"),
@@ -154,11 +154,11 @@ func (m *detachRolePoliciesErrorMockIam) ListAttachedRolePolicies(roleName *stri
 	return output, nil
 }
 
-func (m *detachRolePoliciesErrorMockIam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
+func (m *DetachRolePoliciesErrorMockIam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
 	return fmt.Errorf("DetachRolePoliciesError")
 }
 
-func (m *detachRolePoliciesErrorMockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
+func (m *DetachRolePoliciesErrorMockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
 	return nil
 }
 

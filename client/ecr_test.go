@@ -10,29 +10,29 @@ import (
 	"github.com/go-to-k/delstack/logger"
 )
 
-var _ IEcrSDKClient = (*mockEcrSDKClient)(nil)
-var _ IEcrSDKClient = (*errorMockEcrSDKClient)(nil)
+var _ IEcrSDKClient = (*MockEcrSDKClient)(nil)
+var _ IEcrSDKClient = (*ErrorMockEcrSDKClient)(nil)
 
 /*
 	Mocks for SDK Client
 */
-type mockEcrSDKClient struct{}
+type MockEcrSDKClient struct{}
 
-func NewMockEcrSDKClient() *mockEcrSDKClient {
-	return &mockEcrSDKClient{}
+func NewMockEcrSDKClient() *MockEcrSDKClient {
+	return &MockEcrSDKClient{}
 }
 
-func (m *mockEcrSDKClient) DeleteRepository(ctx context.Context, params *ecr.DeleteRepositoryInput, optFns ...func(*ecr.Options)) (*ecr.DeleteRepositoryOutput, error) {
+func (m *MockEcrSDKClient) DeleteRepository(ctx context.Context, params *ecr.DeleteRepositoryInput, optFns ...func(*ecr.Options)) (*ecr.DeleteRepositoryOutput, error) {
 	return nil, nil
 }
 
-type errorMockEcrSDKClient struct{}
+type ErrorMockEcrSDKClient struct{}
 
-func NewErrorMockEcrSDKClient() *errorMockEcrSDKClient {
-	return &errorMockEcrSDKClient{}
+func NewErrorMockEcrSDKClient() *ErrorMockEcrSDKClient {
+	return &ErrorMockEcrSDKClient{}
 }
 
-func (m *errorMockEcrSDKClient) DeleteRepository(ctx context.Context, params *ecr.DeleteRepositoryInput, optFns ...func(*ecr.Options)) (*ecr.DeleteRepositoryOutput, error) {
+func (m *ErrorMockEcrSDKClient) DeleteRepository(ctx context.Context, params *ecr.DeleteRepositoryInput, optFns ...func(*ecr.Options)) (*ecr.DeleteRepositoryOutput, error) {
 	return nil, fmt.Errorf("DeleteRepositoryError")
 }
 

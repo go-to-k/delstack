@@ -13,31 +13,31 @@ import (
 	"github.com/go-to-k/delstack/resourcetype"
 )
 
-var _ client.IS3 = (*mockS3)(nil)
-var _ client.IS3 = (*allErrorMockS3)(nil)
-var _ client.IS3 = (*deleteObjectsErrorMockS3)(nil)
-var _ client.IS3 = (*deleteObjectsOutputErrorMockS3)(nil)
-var _ client.IS3 = (*listObjectVersionsErrorMockS3)(nil)
-var _ client.IS3 = (*deleteBucketErrorMockS3)(nil)
+var _ client.IS3 = (*MockS3)(nil)
+var _ client.IS3 = (*AllErrorMockS3)(nil)
+var _ client.IS3 = (*DeleteObjectsErrorMockS3)(nil)
+var _ client.IS3 = (*DeleteObjectsOutputErrorMockS3)(nil)
+var _ client.IS3 = (*ListObjectVersionsErrorMockS3)(nil)
+var _ client.IS3 = (*DeleteBucketErrorMockS3)(nil)
 
 /*
 	Mocks for client
 */
-type mockS3 struct{}
+type MockS3 struct{}
 
-func NewMockS3() *mockS3 {
-	return &mockS3{}
+func NewMockS3() *MockS3 {
+	return &MockS3{}
 }
 
-func (m *mockS3) DeleteBucket(bucketName *string) error {
+func (m *MockS3) DeleteBucket(bucketName *string) error {
 	return nil
 }
 
-func (m *mockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+func (m *MockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
 	return []types.Error{}, nil
 }
 
-func (m *mockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+func (m *MockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
 	output := []types.ObjectIdentifier{
 		{
 			Key:       aws.String("KeyForVersions"),
@@ -51,39 +51,39 @@ func (m *mockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifie
 	return output, nil
 }
 
-type allErrorMockS3 struct{}
+type AllErrorMockS3 struct{}
 
-func NewAllErrorMockS3() *allErrorMockS3 {
-	return &allErrorMockS3{}
+func NewAllErrorMockS3() *AllErrorMockS3 {
+	return &AllErrorMockS3{}
 }
 
-func (m *allErrorMockS3) DeleteBucket(bucketName *string) error {
+func (m *AllErrorMockS3) DeleteBucket(bucketName *string) error {
 	return fmt.Errorf("DeleteBucketError")
 }
 
-func (m *allErrorMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+func (m *AllErrorMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
 	return []types.Error{}, fmt.Errorf("DeleteObjectsError")
 }
 
-func (m *allErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+func (m *AllErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
 	return nil, fmt.Errorf("ListObjectVersionsError")
 }
 
-type deleteBucketErrorMockS3 struct{}
+type DeleteBucketErrorMockS3 struct{}
 
-func NewDeleteBucketErrorMockS3() *deleteBucketErrorMockS3 {
-	return &deleteBucketErrorMockS3{}
+func NewDeleteBucketErrorMockS3() *DeleteBucketErrorMockS3 {
+	return &DeleteBucketErrorMockS3{}
 }
 
-func (m *deleteBucketErrorMockS3) DeleteBucket(bucketName *string) error {
+func (m *DeleteBucketErrorMockS3) DeleteBucket(bucketName *string) error {
 	return fmt.Errorf("DeleteBucketError")
 }
 
-func (m *deleteBucketErrorMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+func (m *DeleteBucketErrorMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
 	return []types.Error{}, nil
 }
 
-func (m *deleteBucketErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+func (m *DeleteBucketErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
 	output := []types.ObjectIdentifier{
 		{
 			Key:       aws.String("KeyForVersions"),
@@ -97,21 +97,21 @@ func (m *deleteBucketErrorMockS3) ListObjectVersions(bucketName *string) ([]type
 	return output, nil
 }
 
-type deleteObjectsErrorMockS3 struct{}
+type DeleteObjectsErrorMockS3 struct{}
 
-func NewDeleteObjectsErrorMockS3() *deleteObjectsErrorMockS3 {
-	return &deleteObjectsErrorMockS3{}
+func NewDeleteObjectsErrorMockS3() *DeleteObjectsErrorMockS3 {
+	return &DeleteObjectsErrorMockS3{}
 }
 
-func (m *deleteObjectsErrorMockS3) DeleteBucket(bucketName *string) error {
+func (m *DeleteObjectsErrorMockS3) DeleteBucket(bucketName *string) error {
 	return nil
 }
 
-func (m *deleteObjectsErrorMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+func (m *DeleteObjectsErrorMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
 	return []types.Error{}, fmt.Errorf("DeleteObjectsError")
 }
 
-func (m *deleteObjectsErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+func (m *DeleteObjectsErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
 	output := []types.ObjectIdentifier{
 		{
 			Key:       aws.String("KeyForVersions"),
@@ -125,17 +125,17 @@ func (m *deleteObjectsErrorMockS3) ListObjectVersions(bucketName *string) ([]typ
 	return output, nil
 }
 
-type deleteObjectsOutputErrorMockS3 struct{}
+type DeleteObjectsOutputErrorMockS3 struct{}
 
-func NewDeleteObjectsOutputErrorMockS3() *deleteObjectsOutputErrorMockS3 {
-	return &deleteObjectsOutputErrorMockS3{}
+func NewDeleteObjectsOutputErrorMockS3() *DeleteObjectsOutputErrorMockS3 {
+	return &DeleteObjectsOutputErrorMockS3{}
 }
 
-func (m *deleteObjectsOutputErrorMockS3) DeleteBucket(bucketName *string) error {
+func (m *DeleteObjectsOutputErrorMockS3) DeleteBucket(bucketName *string) error {
 	return nil
 }
 
-func (m *deleteObjectsOutputErrorMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+func (m *DeleteObjectsOutputErrorMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
 	output := []types.Error{
 		{
 			Key:       aws.String("Key"),
@@ -147,7 +147,7 @@ func (m *deleteObjectsOutputErrorMockS3) DeleteObjects(bucketName *string, objec
 	return output, nil
 }
 
-func (m *deleteObjectsOutputErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+func (m *DeleteObjectsOutputErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
 	output := []types.ObjectIdentifier{
 		{
 			Key:       aws.String("KeyForVersions"),
@@ -161,21 +161,21 @@ func (m *deleteObjectsOutputErrorMockS3) ListObjectVersions(bucketName *string) 
 	return output, nil
 }
 
-type listObjectVersionsErrorMockS3 struct{}
+type ListObjectVersionsErrorMockS3 struct{}
 
-func NewListObjectVersionsErrorMockS3() *listObjectVersionsErrorMockS3 {
-	return &listObjectVersionsErrorMockS3{}
+func NewListObjectVersionsErrorMockS3() *ListObjectVersionsErrorMockS3 {
+	return &ListObjectVersionsErrorMockS3{}
 }
 
-func (m *listObjectVersionsErrorMockS3) DeleteBucket(bucketName *string) error {
+func (m *ListObjectVersionsErrorMockS3) DeleteBucket(bucketName *string) error {
 	return nil
 }
 
-func (m *listObjectVersionsErrorMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+func (m *ListObjectVersionsErrorMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
 	return []types.Error{}, nil
 }
 
-func (m *listObjectVersionsErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+func (m *ListObjectVersionsErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
 	return nil, fmt.Errorf("ListObjectVersionsError")
 }
 

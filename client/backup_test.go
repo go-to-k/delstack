@@ -12,19 +12,19 @@ import (
 	"github.com/go-to-k/delstack/logger"
 )
 
-var _ IBackupSDKClient = (*mockBackupSDKClient)(nil)
-var _ IBackupSDKClient = (*errorMockBackupSDKClient)(nil)
+var _ IBackupSDKClient = (*MockBackupSDKClient)(nil)
+var _ IBackupSDKClient = (*ErrorMockBackupSDKClient)(nil)
 
 /*
 	Mocks for SDK Client
 */
-type mockBackupSDKClient struct{}
+type MockBackupSDKClient struct{}
 
-func NewMockBackupSDKClient() *mockBackupSDKClient {
-	return &mockBackupSDKClient{}
+func NewMockBackupSDKClient() *MockBackupSDKClient {
+	return &MockBackupSDKClient{}
 }
 
-func (m *mockBackupSDKClient) ListRecoveryPointsByBackupVault(ctx context.Context, params *backup.ListRecoveryPointsByBackupVaultInput, optFns ...func(*backup.Options)) (*backup.ListRecoveryPointsByBackupVaultOutput, error) {
+func (m *MockBackupSDKClient) ListRecoveryPointsByBackupVault(ctx context.Context, params *backup.ListRecoveryPointsByBackupVaultInput, optFns ...func(*backup.Options)) (*backup.ListRecoveryPointsByBackupVaultOutput, error) {
 	output := &backup.ListRecoveryPointsByBackupVaultOutput{
 		RecoveryPoints: []types.RecoveryPointByBackupVault{
 			{
@@ -40,29 +40,29 @@ func (m *mockBackupSDKClient) ListRecoveryPointsByBackupVault(ctx context.Contex
 	return output, nil
 }
 
-func (m *mockBackupSDKClient) DeleteRecoveryPoint(ctx context.Context, params *backup.DeleteRecoveryPointInput, optFns ...func(*backup.Options)) (*backup.DeleteRecoveryPointOutput, error) {
+func (m *MockBackupSDKClient) DeleteRecoveryPoint(ctx context.Context, params *backup.DeleteRecoveryPointInput, optFns ...func(*backup.Options)) (*backup.DeleteRecoveryPointOutput, error) {
 	return nil, nil
 }
 
-func (m *mockBackupSDKClient) DeleteBackupVault(ctx context.Context, params *backup.DeleteBackupVaultInput, optFns ...func(*backup.Options)) (*backup.DeleteBackupVaultOutput, error) {
+func (m *MockBackupSDKClient) DeleteBackupVault(ctx context.Context, params *backup.DeleteBackupVaultInput, optFns ...func(*backup.Options)) (*backup.DeleteBackupVaultOutput, error) {
 	return nil, nil
 }
 
-type errorMockBackupSDKClient struct{}
+type ErrorMockBackupSDKClient struct{}
 
-func NewErrorMockBackupSDKClient() *errorMockBackupSDKClient {
-	return &errorMockBackupSDKClient{}
+func NewErrorMockBackupSDKClient() *ErrorMockBackupSDKClient {
+	return &ErrorMockBackupSDKClient{}
 }
 
-func (m *errorMockBackupSDKClient) ListRecoveryPointsByBackupVault(ctx context.Context, params *backup.ListRecoveryPointsByBackupVaultInput, optFns ...func(*backup.Options)) (*backup.ListRecoveryPointsByBackupVaultOutput, error) {
+func (m *ErrorMockBackupSDKClient) ListRecoveryPointsByBackupVault(ctx context.Context, params *backup.ListRecoveryPointsByBackupVaultInput, optFns ...func(*backup.Options)) (*backup.ListRecoveryPointsByBackupVaultOutput, error) {
 	return nil, fmt.Errorf("ListRecoveryPointsByBackupVaultError")
 }
 
-func (m *errorMockBackupSDKClient) DeleteRecoveryPoint(ctx context.Context, params *backup.DeleteRecoveryPointInput, optFns ...func(*backup.Options)) (*backup.DeleteRecoveryPointOutput, error) {
+func (m *ErrorMockBackupSDKClient) DeleteRecoveryPoint(ctx context.Context, params *backup.DeleteRecoveryPointInput, optFns ...func(*backup.Options)) (*backup.DeleteRecoveryPointOutput, error) {
 	return nil, fmt.Errorf("DeleteRecoveryPointError")
 }
 
-func (m *errorMockBackupSDKClient) DeleteBackupVault(ctx context.Context, params *backup.DeleteBackupVaultInput, optFns ...func(*backup.Options)) (*backup.DeleteBackupVaultOutput, error) {
+func (m *ErrorMockBackupSDKClient) DeleteBackupVault(ctx context.Context, params *backup.DeleteBackupVaultInput, optFns ...func(*backup.Options)) (*backup.DeleteBackupVaultOutput, error) {
 	return nil, fmt.Errorf("DeleteBackupVaultError")
 }
 

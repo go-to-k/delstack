@@ -12,26 +12,26 @@ import (
 	"github.com/go-to-k/delstack/logger"
 )
 
-var _ IIamSDKClient = (*mockIamSDKClient)(nil)
-var _ IIamSDKClient = (*errorMockIamSDKClient)(nil)
-var _ IIamSDKClient = (*apiErrorMockIamSDKClient)(nil)
+var _ IIamSDKClient = (*MockIamSDKClient)(nil)
+var _ IIamSDKClient = (*ErrorMockIamSDKClient)(nil)
+var _ IIamSDKClient = (*ApiErrorMockIamSDKClient)(nil)
 
 var sleepTimeSecForIam = 1
 
 /*
 	Mocks for SDK Client
 */
-type mockIamSDKClient struct{}
+type MockIamSDKClient struct{}
 
-func NewMockIamSDKClient() *mockIamSDKClient {
-	return &mockIamSDKClient{}
+func NewMockIamSDKClient() *MockIamSDKClient {
+	return &MockIamSDKClient{}
 }
 
-func (m *mockIamSDKClient) DeleteRole(ctx context.Context, params *iam.DeleteRoleInput, optFns ...func(*iam.Options)) (*iam.DeleteRoleOutput, error) {
+func (m *MockIamSDKClient) DeleteRole(ctx context.Context, params *iam.DeleteRoleInput, optFns ...func(*iam.Options)) (*iam.DeleteRoleOutput, error) {
 	return nil, nil
 }
 
-func (m *mockIamSDKClient) ListAttachedRolePolicies(ctx context.Context, params *iam.ListAttachedRolePoliciesInput, optFns ...func(*iam.Options)) (*iam.ListAttachedRolePoliciesOutput, error) {
+func (m *MockIamSDKClient) ListAttachedRolePolicies(ctx context.Context, params *iam.ListAttachedRolePoliciesInput, optFns ...func(*iam.Options)) (*iam.ListAttachedRolePoliciesOutput, error) {
 	output := &iam.ListAttachedRolePoliciesOutput{
 		AttachedPolicies: []types.AttachedPolicy{
 			{
@@ -47,43 +47,43 @@ func (m *mockIamSDKClient) ListAttachedRolePolicies(ctx context.Context, params 
 	return output, nil
 }
 
-func (m *mockIamSDKClient) DetachRolePolicy(ctx context.Context, params *iam.DetachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.DetachRolePolicyOutput, error) {
+func (m *MockIamSDKClient) DetachRolePolicy(ctx context.Context, params *iam.DetachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.DetachRolePolicyOutput, error) {
 	return nil, nil
 }
 
-type errorMockIamSDKClient struct{}
+type ErrorMockIamSDKClient struct{}
 
-func NewErrorMockIamSDKClient() *errorMockIamSDKClient {
-	return &errorMockIamSDKClient{}
+func NewErrorMockIamSDKClient() *ErrorMockIamSDKClient {
+	return &ErrorMockIamSDKClient{}
 }
 
-func (m *errorMockIamSDKClient) DeleteRole(ctx context.Context, params *iam.DeleteRoleInput, optFns ...func(*iam.Options)) (*iam.DeleteRoleOutput, error) {
+func (m *ErrorMockIamSDKClient) DeleteRole(ctx context.Context, params *iam.DeleteRoleInput, optFns ...func(*iam.Options)) (*iam.DeleteRoleOutput, error) {
 	return nil, fmt.Errorf("DeleteRoleError")
 }
 
-func (m *errorMockIamSDKClient) ListAttachedRolePolicies(ctx context.Context, params *iam.ListAttachedRolePoliciesInput, optFns ...func(*iam.Options)) (*iam.ListAttachedRolePoliciesOutput, error) {
+func (m *ErrorMockIamSDKClient) ListAttachedRolePolicies(ctx context.Context, params *iam.ListAttachedRolePoliciesInput, optFns ...func(*iam.Options)) (*iam.ListAttachedRolePoliciesOutput, error) {
 	return nil, fmt.Errorf("ListAttachedRolePoliciesError")
 }
 
-func (m *errorMockIamSDKClient) DetachRolePolicy(ctx context.Context, params *iam.DetachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.DetachRolePolicyOutput, error) {
+func (m *ErrorMockIamSDKClient) DetachRolePolicy(ctx context.Context, params *iam.DetachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.DetachRolePolicyOutput, error) {
 	return nil, fmt.Errorf("DetachRolePolicyError")
 }
 
-type apiErrorMockIamSDKClient struct{}
+type ApiErrorMockIamSDKClient struct{}
 
-func NewApiErrorMockIamSDKClient() *apiErrorMockIamSDKClient {
-	return &apiErrorMockIamSDKClient{}
+func NewApiErrorMockIamSDKClient() *ApiErrorMockIamSDKClient {
+	return &ApiErrorMockIamSDKClient{}
 }
 
-func (m *apiErrorMockIamSDKClient) DeleteRole(ctx context.Context, params *iam.DeleteRoleInput, optFns ...func(*iam.Options)) (*iam.DeleteRoleOutput, error) {
+func (m *ApiErrorMockIamSDKClient) DeleteRole(ctx context.Context, params *iam.DeleteRoleInput, optFns ...func(*iam.Options)) (*iam.DeleteRoleOutput, error) {
 	return nil, fmt.Errorf("api error Throttling: Rate exceeded")
 }
 
-func (m *apiErrorMockIamSDKClient) ListAttachedRolePolicies(ctx context.Context, params *iam.ListAttachedRolePoliciesInput, optFns ...func(*iam.Options)) (*iam.ListAttachedRolePoliciesOutput, error) {
+func (m *ApiErrorMockIamSDKClient) ListAttachedRolePolicies(ctx context.Context, params *iam.ListAttachedRolePoliciesInput, optFns ...func(*iam.Options)) (*iam.ListAttachedRolePoliciesOutput, error) {
 	return nil, fmt.Errorf("api error Throttling: Rate exceeded")
 }
 
-func (m *apiErrorMockIamSDKClient) DetachRolePolicy(ctx context.Context, params *iam.DetachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.DetachRolePolicyOutput, error) {
+func (m *ApiErrorMockIamSDKClient) DetachRolePolicy(ctx context.Context, params *iam.DetachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.DetachRolePolicyOutput, error) {
 	return nil, fmt.Errorf("api error Throttling: Rate exceeded")
 }
 
