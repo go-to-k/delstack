@@ -271,7 +271,7 @@ func (m *OperatorDeleteResourcesMockOperatorCollection) RaiseUnsupportedResource
 /*
 	Test Cases
 */
-func Test_getOperatorResourcesLength(t *testing.T) {
+func TestOperatorManager_getOperatorResourcesLength(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 
@@ -310,7 +310,7 @@ func Test_getOperatorResourcesLength(t *testing.T) {
 	}
 }
 
-func TestCheckResourceCounts(t *testing.T) {
+func TestOperatorManager_CheckResourceCounts(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 
@@ -365,7 +365,7 @@ func TestCheckResourceCounts(t *testing.T) {
 	}
 }
 
-func TestDeleteResourceCollection(t *testing.T) {
+func TestOperatorManager_DeleteResourceCollection(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 

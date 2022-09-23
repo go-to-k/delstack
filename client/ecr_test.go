@@ -40,7 +40,7 @@ func (m *ErrorMockEcrSDKClient) DeleteRepository(ctx context.Context, params *ec
 	Test Cases
 */
 
-func TestDeleteRepository(t *testing.T) {
+func TestEcr_DeleteRepository(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockEcrSDKClient()

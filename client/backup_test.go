@@ -69,7 +69,7 @@ func (m *ErrorMockBackupSDKClient) DeleteBackupVault(ctx context.Context, params
 /*
 	Test Cases
 */
-func TestListRecoveryPointsByBackupVault(t *testing.T) {
+func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockBackupSDKClient()
@@ -149,7 +149,7 @@ func TestListRecoveryPointsByBackupVault(t *testing.T) {
 	}
 }
 
-func TestDeleteRecoveryPoints(t *testing.T) {
+func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockBackupSDKClient()
@@ -237,7 +237,7 @@ func TestDeleteRecoveryPoints(t *testing.T) {
 	}
 }
 
-func TestDeleteRecoveryPoint(t *testing.T) {
+func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockBackupSDKClient()
@@ -296,7 +296,7 @@ func TestDeleteRecoveryPoint(t *testing.T) {
 	}
 }
 
-func TestDeleteBackupVault(t *testing.T) {
+func TestBackup_DeleteBackupVault(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockBackupSDKClient()
