@@ -54,8 +54,6 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 				operatorCollection.unsupportedStackResources = append(operatorCollection.unsupportedStackResources, stackResource)
 			} else {
 				switch *stackResource.ResourceType {
-				case resourcetype.CLOUDFORMATION_STACK:
-					stackOperator.AddResource(&stackResource)
 				case resourcetype.S3_BUCKET:
 					bucketOperator.AddResource(&stackResource)
 				case resourcetype.IAM_ROLE:
@@ -64,6 +62,8 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 					ecrOperator.AddResource(&stackResource)
 				case resourcetype.BACKUP_VAULT:
 					backupVaultOperator.AddResource(&stackResource)
+				case resourcetype.CLOUDFORMATION_STACK:
+					stackOperator.AddResource(&stackResource)
 				default:
 					if strings.Contains(*stackResource.ResourceType, resourcetype.CUSTOM_RESOURCE) {
 						customOperator.AddResource(&stackResource)
@@ -73,11 +73,11 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 		}
 	}
 
-	operatorCollection.operators = append(operatorCollection.operators, stackOperator)
 	operatorCollection.operators = append(operatorCollection.operators, bucketOperator)
 	operatorCollection.operators = append(operatorCollection.operators, roleOperator)
 	operatorCollection.operators = append(operatorCollection.operators, ecrOperator)
 	operatorCollection.operators = append(operatorCollection.operators, backupVaultOperator)
+	operatorCollection.operators = append(operatorCollection.operators, stackOperator)
 	operatorCollection.operators = append(operatorCollection.operators, customOperator)
 }
 
