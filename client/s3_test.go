@@ -12,30 +12,30 @@ import (
 	"github.com/go-to-k/delstack/logger"
 )
 
-var _ IS3SDKClient = (*mockS3SDKClient)(nil)
-var _ IS3SDKClient = (*errorMockS3SDKClient)(nil)
-var _ IS3SDKClient = (*apiErrorMockS3SDKClient)(nil)
-var _ IS3SDKClient = (*outputErrorForDeleteObjectsMockS3SDKClient)(nil)
-var _ IS3SDKClient = (*emptyMockForListObjectVersionsS3SDKClient)(nil)
-var _ IS3SDKClient = (*versionsMockForListObjectVersionsS3SDKClient)(nil)
-var _ IS3SDKClient = (*deleteMarkersMockForListObjectVersionsS3SDKClient)(nil)
+var _ IS3SDKClient = (*MockS3SDKClient)(nil)
+var _ IS3SDKClient = (*ErrorMockS3SDKClient)(nil)
+var _ IS3SDKClient = (*ApiErrorMockS3SDKClient)(nil)
+var _ IS3SDKClient = (*OutputErrorForDeleteObjectsMockS3SDKClient)(nil)
+var _ IS3SDKClient = (*EmptyMockForListObjectVersionsS3SDKClient)(nil)
+var _ IS3SDKClient = (*VersionsMockForListObjectVersionsS3SDKClient)(nil)
+var _ IS3SDKClient = (*DeleteMarkersMockForListObjectVersionsS3SDKClient)(nil)
 
 var sleepTimeSecForS3 = 1
 
 /*
 	Mocks for SDK Client
 */
-type mockS3SDKClient struct{}
+type MockS3SDKClient struct{}
 
-func NewMockS3SDKClient() *mockS3SDKClient {
-	return &mockS3SDKClient{}
+func NewMockS3SDKClient() *MockS3SDKClient {
+	return &MockS3SDKClient{}
 }
 
-func (m *mockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
+func (m *MockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
 	return nil, nil
 }
 
-func (m *mockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
+func (m *MockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
 	output := &s3.DeleteObjectsOutput{
 		Deleted: []types.DeletedObject{},
 		Errors:  []types.Error{},
@@ -43,7 +43,7 @@ func (m *mockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteOb
 	return output, nil
 }
 
-func (m *mockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
+func (m *MockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
 	output := &s3.ListObjectVersionsOutput{
 		Versions: []types.ObjectVersion{
 			{
@@ -61,17 +61,17 @@ func (m *mockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.Lis
 	return output, nil
 }
 
-type errorMockS3SDKClient struct{}
+type ErrorMockS3SDKClient struct{}
 
-func NewErrorMockS3SDKClient() *errorMockS3SDKClient {
-	return &errorMockS3SDKClient{}
+func NewErrorMockS3SDKClient() *ErrorMockS3SDKClient {
+	return &ErrorMockS3SDKClient{}
 }
 
-func (m *errorMockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
+func (m *ErrorMockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
 	return nil, fmt.Errorf("DeleteBucketError")
 }
 
-func (m *errorMockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
+func (m *ErrorMockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
 	output := &s3.DeleteObjectsOutput{
 		Deleted: []types.DeletedObject{},
 		Errors:  []types.Error{},
@@ -79,21 +79,21 @@ func (m *errorMockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.Del
 	return output, fmt.Errorf("DeleteObjectsError")
 }
 
-func (m *errorMockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
+func (m *ErrorMockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
 	return nil, fmt.Errorf("ListObjectVersionsError")
 }
 
-type apiErrorMockS3SDKClient struct{}
+type ApiErrorMockS3SDKClient struct{}
 
-func NewApiErrorMockS3SDKClient() *apiErrorMockS3SDKClient {
-	return &apiErrorMockS3SDKClient{}
+func NewApiErrorMockS3SDKClient() *ApiErrorMockS3SDKClient {
+	return &ApiErrorMockS3SDKClient{}
 }
 
-func (m *apiErrorMockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
+func (m *ApiErrorMockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
 	return nil, fmt.Errorf("api error SlowDown")
 }
 
-func (m *apiErrorMockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
+func (m *ApiErrorMockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
 	output := &s3.DeleteObjectsOutput{
 		Deleted: []types.DeletedObject{},
 		Errors:  []types.Error{},
@@ -101,21 +101,21 @@ func (m *apiErrorMockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.
 	return output, fmt.Errorf("api error SlowDown")
 }
 
-func (m *apiErrorMockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
+func (m *ApiErrorMockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
 	return nil, fmt.Errorf("api error SlowDown")
 }
 
-type outputErrorForDeleteObjectsMockS3SDKClient struct{}
+type OutputErrorForDeleteObjectsMockS3SDKClient struct{}
 
-func NewOutputErrorForDeleteObjectsMockS3SDKClient() *outputErrorForDeleteObjectsMockS3SDKClient {
-	return &outputErrorForDeleteObjectsMockS3SDKClient{}
+func NewOutputErrorForDeleteObjectsMockS3SDKClient() *OutputErrorForDeleteObjectsMockS3SDKClient {
+	return &OutputErrorForDeleteObjectsMockS3SDKClient{}
 }
 
-func (m *outputErrorForDeleteObjectsMockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
+func (m *OutputErrorForDeleteObjectsMockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
 	return nil, nil
 }
 
-func (m *outputErrorForDeleteObjectsMockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
+func (m *OutputErrorForDeleteObjectsMockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
 	output := &s3.DeleteObjectsOutput{
 		Deleted: []types.DeletedObject{},
 		Errors: []types.Error{
@@ -130,25 +130,25 @@ func (m *outputErrorForDeleteObjectsMockS3SDKClient) DeleteObjects(ctx context.C
 	return output, nil
 }
 
-func (m *outputErrorForDeleteObjectsMockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
+func (m *OutputErrorForDeleteObjectsMockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
 	return nil, nil
 }
 
-type emptyMockForListObjectVersionsS3SDKClient struct{}
+type EmptyMockForListObjectVersionsS3SDKClient struct{}
 
-func NewEmptyMockForListObjectVersionsS3SDKClient() *emptyMockForListObjectVersionsS3SDKClient {
-	return &emptyMockForListObjectVersionsS3SDKClient{}
+func NewEmptyMockForListObjectVersionsS3SDKClient() *EmptyMockForListObjectVersionsS3SDKClient {
+	return &EmptyMockForListObjectVersionsS3SDKClient{}
 }
 
-func (m *emptyMockForListObjectVersionsS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
+func (m *EmptyMockForListObjectVersionsS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
 	return nil, nil
 }
 
-func (m *emptyMockForListObjectVersionsS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
+func (m *EmptyMockForListObjectVersionsS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
 	return nil, nil
 }
 
-func (m *emptyMockForListObjectVersionsS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
+func (m *EmptyMockForListObjectVersionsS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
 	output := &s3.ListObjectVersionsOutput{
 		Versions:      []types.ObjectVersion{},
 		DeleteMarkers: []types.DeleteMarkerEntry{},
@@ -156,21 +156,21 @@ func (m *emptyMockForListObjectVersionsS3SDKClient) ListObjectVersions(ctx conte
 	return output, nil
 }
 
-type versionsMockForListObjectVersionsS3SDKClient struct{}
+type VersionsMockForListObjectVersionsS3SDKClient struct{}
 
-func NewVersionsMockForListObjectVersionsS3SDKClient() *versionsMockForListObjectVersionsS3SDKClient {
-	return &versionsMockForListObjectVersionsS3SDKClient{}
+func NewVersionsMockForListObjectVersionsS3SDKClient() *VersionsMockForListObjectVersionsS3SDKClient {
+	return &VersionsMockForListObjectVersionsS3SDKClient{}
 }
 
-func (m *versionsMockForListObjectVersionsS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
+func (m *VersionsMockForListObjectVersionsS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
 	return nil, nil
 }
 
-func (m *versionsMockForListObjectVersionsS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
+func (m *VersionsMockForListObjectVersionsS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
 	return nil, nil
 }
 
-func (m *versionsMockForListObjectVersionsS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
+func (m *VersionsMockForListObjectVersionsS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
 	output := &s3.ListObjectVersionsOutput{
 		Versions: []types.ObjectVersion{
 			{
@@ -183,21 +183,21 @@ func (m *versionsMockForListObjectVersionsS3SDKClient) ListObjectVersions(ctx co
 	return output, nil
 }
 
-type deleteMarkersMockForListObjectVersionsS3SDKClient struct{}
+type DeleteMarkersMockForListObjectVersionsS3SDKClient struct{}
 
-func NewDeleteMarkersMockForListObjectVersionsS3SDKClient() *deleteMarkersMockForListObjectVersionsS3SDKClient {
-	return &deleteMarkersMockForListObjectVersionsS3SDKClient{}
+func NewDeleteMarkersMockForListObjectVersionsS3SDKClient() *DeleteMarkersMockForListObjectVersionsS3SDKClient {
+	return &DeleteMarkersMockForListObjectVersionsS3SDKClient{}
 }
 
-func (m *deleteMarkersMockForListObjectVersionsS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
+func (m *DeleteMarkersMockForListObjectVersionsS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
 	return nil, nil
 }
 
-func (m *deleteMarkersMockForListObjectVersionsS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
+func (m *DeleteMarkersMockForListObjectVersionsS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
 	return nil, nil
 }
 
-func (m *deleteMarkersMockForListObjectVersionsS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
+func (m *DeleteMarkersMockForListObjectVersionsS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
 	output := &s3.ListObjectVersionsOutput{
 		Versions: []types.ObjectVersion{},
 		DeleteMarkers: []types.DeleteMarkerEntry{

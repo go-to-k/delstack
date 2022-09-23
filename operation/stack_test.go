@@ -16,118 +16,118 @@ import (
 /*
 	Mocks for OperatorManager
 */
-var _ IOperatorManager = (*mockOperatorManager)(nil)
-var _ IOperatorManager = (*allErrorMockOperatorManager)(nil)
-var _ IOperatorManager = (*checkResourceCountsErrorMockOperatorManager)(nil)
-var _ IOperatorManager = (*deleteResourceCollectionErrorMockOperatorManager)(nil)
+var _ IOperatorManager = (*MockOperatorManager)(nil)
+var _ IOperatorManager = (*AllErrorMockOperatorManager)(nil)
+var _ IOperatorManager = (*CheckResourceCountsErrorMockOperatorManager)(nil)
+var _ IOperatorManager = (*DeleteResourceCollectionErrorMockOperatorManager)(nil)
 
-type mockOperatorManager struct{}
+type MockOperatorManager struct{}
 
-func NewMockOperatorManager() *mockOperatorManager {
-	return &mockOperatorManager{}
+func NewMockOperatorManager() *MockOperatorManager {
+	return &MockOperatorManager{}
 }
 
-func (m *mockOperatorManager) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
+func (m *MockOperatorManager) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 }
 
-func (m *mockOperatorManager) CheckResourceCounts() error {
+func (m *MockOperatorManager) CheckResourceCounts() error {
 	return nil
 }
 
-func (m *mockOperatorManager) GetLogicalResourceIds() []string {
+func (m *MockOperatorManager) GetLogicalResourceIds() []string {
 	return []string{"logicalResourceId1", "logicalResourceId2"}
 }
 
-func (m *mockOperatorManager) DeleteResourceCollection() error {
+func (m *MockOperatorManager) DeleteResourceCollection() error {
 	return nil
 }
 
-type allErrorMockOperatorManager struct{}
+type AllErrorMockOperatorManager struct{}
 
-func NewAllErrorMockOperatorManager() *allErrorMockOperatorManager {
-	return &allErrorMockOperatorManager{}
+func NewAllErrorMockOperatorManager() *AllErrorMockOperatorManager {
+	return &AllErrorMockOperatorManager{}
 }
 
-func (m *allErrorMockOperatorManager) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
+func (m *AllErrorMockOperatorManager) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 }
 
-func (m *allErrorMockOperatorManager) CheckResourceCounts() error {
+func (m *AllErrorMockOperatorManager) CheckResourceCounts() error {
 	return fmt.Errorf("CheckResourceCountsError")
 }
 
-func (m *allErrorMockOperatorManager) GetLogicalResourceIds() []string {
+func (m *AllErrorMockOperatorManager) GetLogicalResourceIds() []string {
 	return []string{"logicalResourceId1", "logicalResourceId2"}
 }
 
-func (m *allErrorMockOperatorManager) DeleteResourceCollection() error {
+func (m *AllErrorMockOperatorManager) DeleteResourceCollection() error {
 	return fmt.Errorf("DeleteResourceCollectionError")
 }
 
-type checkResourceCountsErrorMockOperatorManager struct{}
+type CheckResourceCountsErrorMockOperatorManager struct{}
 
-func NewCheckResourceCountsErrorMockOperatorManager() *checkResourceCountsErrorMockOperatorManager {
-	return &checkResourceCountsErrorMockOperatorManager{}
+func NewCheckResourceCountsErrorMockOperatorManager() *CheckResourceCountsErrorMockOperatorManager {
+	return &CheckResourceCountsErrorMockOperatorManager{}
 }
 
-func (m *checkResourceCountsErrorMockOperatorManager) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
+func (m *CheckResourceCountsErrorMockOperatorManager) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 }
 
-func (m *checkResourceCountsErrorMockOperatorManager) CheckResourceCounts() error {
+func (m *CheckResourceCountsErrorMockOperatorManager) CheckResourceCounts() error {
 	return fmt.Errorf("CheckResourceCountsError")
 }
 
-func (m *checkResourceCountsErrorMockOperatorManager) GetLogicalResourceIds() []string {
+func (m *CheckResourceCountsErrorMockOperatorManager) GetLogicalResourceIds() []string {
 	return []string{"logicalResourceId1", "logicalResourceId2"}
 }
 
-func (m *checkResourceCountsErrorMockOperatorManager) DeleteResourceCollection() error {
+func (m *CheckResourceCountsErrorMockOperatorManager) DeleteResourceCollection() error {
 	return nil
 }
 
-type deleteResourceCollectionErrorMockOperatorManager struct{}
+type DeleteResourceCollectionErrorMockOperatorManager struct{}
 
-func NewDeleteResourceCollectionErrorMockOperatorManager() *deleteResourceCollectionErrorMockOperatorManager {
-	return &deleteResourceCollectionErrorMockOperatorManager{}
+func NewDeleteResourceCollectionErrorMockOperatorManager() *DeleteResourceCollectionErrorMockOperatorManager {
+	return &DeleteResourceCollectionErrorMockOperatorManager{}
 }
 
-func (m *deleteResourceCollectionErrorMockOperatorManager) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
+func (m *DeleteResourceCollectionErrorMockOperatorManager) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 }
 
-func (m *deleteResourceCollectionErrorMockOperatorManager) CheckResourceCounts() error {
+func (m *DeleteResourceCollectionErrorMockOperatorManager) CheckResourceCounts() error {
 	return nil
 }
 
-func (m *deleteResourceCollectionErrorMockOperatorManager) GetLogicalResourceIds() []string {
+func (m *DeleteResourceCollectionErrorMockOperatorManager) GetLogicalResourceIds() []string {
 	return []string{"logicalResourceId1", "logicalResourceId2"}
 }
 
-func (m *deleteResourceCollectionErrorMockOperatorManager) DeleteResourceCollection() error {
+func (m *DeleteResourceCollectionErrorMockOperatorManager) DeleteResourceCollection() error {
 	return fmt.Errorf("DeleteResourceCollectionError")
 }
 
 /*
 	Mocks for client
 */
-var _ client.ICloudFormation = (*mockCloudFormation)(nil)
-var _ client.ICloudFormation = (*terminationProtectionIsEnabledMockCloudFormation)(nil)
-var _ client.ICloudFormation = (*notDeleteFailedMockCloudFormation)(nil)
-var _ client.ICloudFormation = (*allErrorMockCloudFormation)(nil)
-var _ client.ICloudFormation = (*deleteStackErrorMockCloudFormation)(nil)
-var _ client.ICloudFormation = (*describeStacksErrorMockCloudFormation)(nil)
-var _ client.ICloudFormation = (*describeStacksNotExistsErrorMockCloudFormation)(nil)
-var _ client.ICloudFormation = (*listStackResourcesErrorMockCloudFormation)(nil)
+var _ client.ICloudFormation = (*MockCloudFormation)(nil)
+var _ client.ICloudFormation = (*TerminationProtectionIsEnabledMockCloudFormation)(nil)
+var _ client.ICloudFormation = (*NotDeleteFailedMockCloudFormation)(nil)
+var _ client.ICloudFormation = (*AllErrorMockCloudFormation)(nil)
+var _ client.ICloudFormation = (*DeleteStackErrorMockCloudFormation)(nil)
+var _ client.ICloudFormation = (*DescribeStacksErrorMockCloudFormation)(nil)
+var _ client.ICloudFormation = (*DescribeStacksNotExistsErrorMockCloudFormation)(nil)
+var _ client.ICloudFormation = (*ListStackResourcesErrorMockCloudFormation)(nil)
 
-type mockCloudFormation struct{}
+type MockCloudFormation struct{}
 
-func NewMockCloudFormation() *mockCloudFormation {
-	return &mockCloudFormation{}
+func NewMockCloudFormation() *MockCloudFormation {
+	return &MockCloudFormation{}
 }
 
-func (m *mockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
+func (m *MockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
 	return nil
 }
 
-func (m *mockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
+func (m *MockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
 	output := &cloudformation.DescribeStacksOutput{
 		Stacks: []types.Stack{
 			{
@@ -140,7 +140,7 @@ func (m *mockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.
 	return output, true, nil
 }
 
-func (m *mockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
+func (m *MockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
 	output := []types.StackResourceSummary{
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId1"),
@@ -159,17 +159,17 @@ func (m *mockCloudFormation) ListStackResources(stackName *string) ([]types.Stac
 	return output, nil
 }
 
-type terminationProtectionIsEnabledMockCloudFormation struct{}
+type TerminationProtectionIsEnabledMockCloudFormation struct{}
 
-func NewTerminationProtectionIsEnabledMockCloudFormation() *terminationProtectionIsEnabledMockCloudFormation {
-	return &terminationProtectionIsEnabledMockCloudFormation{}
+func NewTerminationProtectionIsEnabledMockCloudFormation() *TerminationProtectionIsEnabledMockCloudFormation {
+	return &TerminationProtectionIsEnabledMockCloudFormation{}
 }
 
-func (m *terminationProtectionIsEnabledMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
+func (m *TerminationProtectionIsEnabledMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
 	return nil
 }
 
-func (m *terminationProtectionIsEnabledMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
+func (m *TerminationProtectionIsEnabledMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
 	output := &cloudformation.DescribeStacksOutput{
 		Stacks: []types.Stack{
 			{
@@ -182,7 +182,7 @@ func (m *terminationProtectionIsEnabledMockCloudFormation) DescribeStacks(stackN
 	return output, true, nil
 }
 
-func (m *terminationProtectionIsEnabledMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
+func (m *TerminationProtectionIsEnabledMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
 	output := []types.StackResourceSummary{
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId1"),
@@ -201,17 +201,17 @@ func (m *terminationProtectionIsEnabledMockCloudFormation) ListStackResources(st
 	return output, nil
 }
 
-type notDeleteFailedMockCloudFormation struct{}
+type NotDeleteFailedMockCloudFormation struct{}
 
-func NewNotDeleteFailedMockCloudFormation() *notDeleteFailedMockCloudFormation {
-	return &notDeleteFailedMockCloudFormation{}
+func NewNotDeleteFailedMockCloudFormation() *NotDeleteFailedMockCloudFormation {
+	return &NotDeleteFailedMockCloudFormation{}
 }
 
-func (m *notDeleteFailedMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
+func (m *NotDeleteFailedMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
 	return nil
 }
 
-func (m *notDeleteFailedMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
+func (m *NotDeleteFailedMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
 	output := &cloudformation.DescribeStacksOutput{
 		Stacks: []types.Stack{
 			{
@@ -224,7 +224,7 @@ func (m *notDeleteFailedMockCloudFormation) DescribeStacks(stackName *string) (*
 	return output, true, nil
 }
 
-func (m *notDeleteFailedMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
+func (m *NotDeleteFailedMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
 	output := []types.StackResourceSummary{
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId1"),
@@ -243,38 +243,38 @@ func (m *notDeleteFailedMockCloudFormation) ListStackResources(stackName *string
 	return output, nil
 }
 
-type allErrorMockCloudFormation struct{}
+type AllErrorMockCloudFormation struct{}
 
-func NewAllErrorMockCloudFormation() *allErrorMockCloudFormation {
-	return &allErrorMockCloudFormation{}
+func NewAllErrorMockCloudFormation() *AllErrorMockCloudFormation {
+	return &AllErrorMockCloudFormation{}
 }
 
-func (m *allErrorMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
+func (m *AllErrorMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
 	return fmt.Errorf("DeleteStackError")
 }
 
-func (m *allErrorMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
+func (m *AllErrorMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
 	output := &cloudformation.DescribeStacksOutput{}
 	return output, true, fmt.Errorf("DescribeStacksError")
 }
 
-func (m *allErrorMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
+func (m *AllErrorMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
 	output := []types.StackResourceSummary{}
 
 	return output, fmt.Errorf("ListStackResourcesError")
 }
 
-type deleteStackErrorMockCloudFormation struct{}
+type DeleteStackErrorMockCloudFormation struct{}
 
-func NewDeleteStackErrorMockCloudFormation() *deleteStackErrorMockCloudFormation {
-	return &deleteStackErrorMockCloudFormation{}
+func NewDeleteStackErrorMockCloudFormation() *DeleteStackErrorMockCloudFormation {
+	return &DeleteStackErrorMockCloudFormation{}
 }
 
-func (m *deleteStackErrorMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
+func (m *DeleteStackErrorMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
 	return fmt.Errorf("DeleteStackError")
 }
 
-func (m *deleteStackErrorMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
+func (m *DeleteStackErrorMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
 	output := &cloudformation.DescribeStacksOutput{
 		Stacks: []types.Stack{
 			{
@@ -287,7 +287,7 @@ func (m *deleteStackErrorMockCloudFormation) DescribeStacks(stackName *string) (
 	return output, true, nil
 }
 
-func (m *deleteStackErrorMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
+func (m *DeleteStackErrorMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
 	output := []types.StackResourceSummary{
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId1"),
@@ -306,22 +306,22 @@ func (m *deleteStackErrorMockCloudFormation) ListStackResources(stackName *strin
 	return output, nil
 }
 
-type describeStacksErrorMockCloudFormation struct{}
+type DescribeStacksErrorMockCloudFormation struct{}
 
-func NewDescribeStacksErrorMockCloudFormation() *describeStacksErrorMockCloudFormation {
-	return &describeStacksErrorMockCloudFormation{}
+func NewDescribeStacksErrorMockCloudFormation() *DescribeStacksErrorMockCloudFormation {
+	return &DescribeStacksErrorMockCloudFormation{}
 }
 
-func (m *describeStacksErrorMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
+func (m *DescribeStacksErrorMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
 	return nil
 }
 
-func (m *describeStacksErrorMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
+func (m *DescribeStacksErrorMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
 	output := &cloudformation.DescribeStacksOutput{}
 	return output, true, fmt.Errorf("DescribeStacksError")
 }
 
-func (m *describeStacksErrorMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
+func (m *DescribeStacksErrorMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
 	output := []types.StackResourceSummary{
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId1"),
@@ -340,22 +340,22 @@ func (m *describeStacksErrorMockCloudFormation) ListStackResources(stackName *st
 	return output, nil
 }
 
-type describeStacksNotExistsErrorMockCloudFormation struct{}
+type DescribeStacksNotExistsErrorMockCloudFormation struct{}
 
-func NewDescribeStacksNotExistsErrorMockCloudFormation() *describeStacksNotExistsErrorMockCloudFormation {
-	return &describeStacksNotExistsErrorMockCloudFormation{}
+func NewDescribeStacksNotExistsErrorMockCloudFormation() *DescribeStacksNotExistsErrorMockCloudFormation {
+	return &DescribeStacksNotExistsErrorMockCloudFormation{}
 }
 
-func (m *describeStacksNotExistsErrorMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
+func (m *DescribeStacksNotExistsErrorMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
 	return nil
 }
 
-func (m *describeStacksNotExistsErrorMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
+func (m *DescribeStacksNotExistsErrorMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
 	output := &cloudformation.DescribeStacksOutput{}
 	return output, false, fmt.Errorf("does not exist")
 }
 
-func (m *describeStacksNotExistsErrorMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
+func (m *DescribeStacksNotExistsErrorMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
 	output := []types.StackResourceSummary{
 		{
 			LogicalResourceId:  aws.String("LogicalResourceId1"),
@@ -374,17 +374,17 @@ func (m *describeStacksNotExistsErrorMockCloudFormation) ListStackResources(stac
 	return output, nil
 }
 
-type listStackResourcesErrorMockCloudFormation struct{}
+type ListStackResourcesErrorMockCloudFormation struct{}
 
-func NewListStackResourcesErrorMockCloudFormation() *listStackResourcesErrorMockCloudFormation {
-	return &listStackResourcesErrorMockCloudFormation{}
+func NewListStackResourcesErrorMockCloudFormation() *ListStackResourcesErrorMockCloudFormation {
+	return &ListStackResourcesErrorMockCloudFormation{}
 }
 
-func (m *listStackResourcesErrorMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
+func (m *ListStackResourcesErrorMockCloudFormation) DeleteStack(stackName *string, retainResources []string) error {
 	return nil
 }
 
-func (m *listStackResourcesErrorMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
+func (m *ListStackResourcesErrorMockCloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
 	output := &cloudformation.DescribeStacksOutput{
 		Stacks: []types.Stack{
 			{
@@ -397,7 +397,7 @@ func (m *listStackResourcesErrorMockCloudFormation) DescribeStacks(stackName *st
 	return output, true, nil
 }
 
-func (m *listStackResourcesErrorMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
+func (m *ListStackResourcesErrorMockCloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
 	output := []types.StackResourceSummary{}
 
 	return output, fmt.Errorf("ListStackResourcesError")
@@ -419,10 +419,10 @@ func TestDeleteStack(t *testing.T) {
 	describeStacksNotExistsErrorMock := NewDescribeStacksNotExistsErrorMockCloudFormation()
 	listStackResourcesErrorMock := NewListStackResourcesErrorMockCloudFormation()
 
-	mockOperatorManager := NewMockOperatorManager()
-	allErrorMockOperatorManager := NewAllErrorMockOperatorManager()
-	checkResourceCountsErrorMockOperatorManager := NewCheckResourceCountsErrorMockOperatorManager()
-	deleteResourceCollectionErrorMockOperatorManager := NewDeleteResourceCollectionErrorMockOperatorManager()
+	MockOperatorManager := NewMockOperatorManager()
+	AllErrorMockOperatorManager := NewAllErrorMockOperatorManager()
+	CheckResourceCountsErrorMockOperatorManager := NewCheckResourceCountsErrorMockOperatorManager()
+	DeleteResourceCollectionErrorMockOperatorManager := NewDeleteResourceCollectionErrorMockOperatorManager()
 
 	type args struct {
 		ctx                 context.Context
@@ -445,7 +445,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          mock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    nil,
 			wantErr: false,
@@ -457,7 +457,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          mock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    nil,
 			wantErr: false,
@@ -469,7 +469,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          terminationProtectionIsEnabledMock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    fmt.Errorf("TerminationProtectionIsEnabled: test"),
 			wantErr: true,
@@ -481,7 +481,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          notDeleteFailedMock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but UPDATE_ROLLBACK_COMPLETE: test"),
 			wantErr: true,
@@ -493,7 +493,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          allErrorMock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    fmt.Errorf("DescribeStacksError"),
 			wantErr: true,
@@ -505,7 +505,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          allErrorMock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    fmt.Errorf("ListStackResourcesError"),
 			wantErr: true,
@@ -517,7 +517,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          deleteStackErrorMock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    fmt.Errorf("DeleteStackError"),
 			wantErr: true,
@@ -529,7 +529,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          deleteStackErrorMock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    fmt.Errorf("DeleteStackError"),
 			wantErr: true,
@@ -541,7 +541,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          describeStacksErrorMock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    fmt.Errorf("DescribeStacksError"),
 			wantErr: true,
@@ -553,7 +553,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          describeStacksNotExistsErrorMock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    fmt.Errorf("does not exist"),
 			wantErr: true,
@@ -565,7 +565,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          listStackResourcesErrorMock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    fmt.Errorf("ListStackResourcesError"),
 			wantErr: true,
@@ -577,7 +577,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          listStackResourcesErrorMock,
-				operatorManagerMock: mockOperatorManager,
+				operatorManagerMock: MockOperatorManager,
 			},
 			want:    fmt.Errorf("ListStackResourcesError"),
 			wantErr: true,
@@ -589,7 +589,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          mock,
-				operatorManagerMock: allErrorMockOperatorManager,
+				operatorManagerMock: AllErrorMockOperatorManager,
 			},
 			want:    fmt.Errorf("CheckResourceCountsError"),
 			wantErr: true,
@@ -601,7 +601,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          mock,
-				operatorManagerMock: allErrorMockOperatorManager,
+				operatorManagerMock: AllErrorMockOperatorManager,
 			},
 			want:    fmt.Errorf("CheckResourceCountsError"),
 			wantErr: true,
@@ -613,7 +613,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          mock,
-				operatorManagerMock: checkResourceCountsErrorMockOperatorManager,
+				operatorManagerMock: CheckResourceCountsErrorMockOperatorManager,
 			},
 			want:    fmt.Errorf("CheckResourceCountsError"),
 			wantErr: true,
@@ -625,7 +625,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          mock,
-				operatorManagerMock: checkResourceCountsErrorMockOperatorManager,
+				operatorManagerMock: CheckResourceCountsErrorMockOperatorManager,
 			},
 			want:    fmt.Errorf("CheckResourceCountsError"),
 			wantErr: true,
@@ -637,7 +637,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          mock,
-				operatorManagerMock: deleteResourceCollectionErrorMockOperatorManager,
+				operatorManagerMock: DeleteResourceCollectionErrorMockOperatorManager,
 			},
 			want:    fmt.Errorf("DeleteResourceCollectionError"),
 			wantErr: true,
@@ -649,7 +649,7 @@ func TestDeleteStack(t *testing.T) {
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          mock,
-				operatorManagerMock: deleteResourceCollectionErrorMockOperatorManager,
+				operatorManagerMock: DeleteResourceCollectionErrorMockOperatorManager,
 			},
 			want:    fmt.Errorf("DeleteResourceCollectionError"),
 			wantErr: true,

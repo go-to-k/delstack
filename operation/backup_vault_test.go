@@ -13,22 +13,22 @@ import (
 	"github.com/go-to-k/delstack/resourcetype"
 )
 
-var _ client.IBackup = (*mockBackup)(nil)
-var _ client.IBackup = (*allErrorMockBackup)(nil)
-var _ client.IBackup = (*listRecoveryPointsErrorMockBackup)(nil)
-var _ client.IBackup = (*deleteRecoveryPointsErrorMockBackup)(nil)
-var _ client.IBackup = (*deleteBackupVaultErrorMockBackup)(nil)
+var _ client.IBackup = (*MockBackup)(nil)
+var _ client.IBackup = (*AllErrorMockBackup)(nil)
+var _ client.IBackup = (*ListRecoveryPointsErrorMockBackup)(nil)
+var _ client.IBackup = (*DeleteRecoveryPointsErrorMockBackup)(nil)
+var _ client.IBackup = (*DeleteBackupVaultErrorMockBackup)(nil)
 
 /*
 	Mocks for client
 */
-type mockBackup struct{}
+type MockBackup struct{}
 
-func NewMockBackup() *mockBackup {
-	return &mockBackup{}
+func NewMockBackup() *MockBackup {
+	return &MockBackup{}
 }
 
-func (m *mockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
+func (m *MockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
 	output := []types.RecoveryPointByBackupVault{
 		{
 			BackupVaultName: aws.String("BackupVaultName1"),
@@ -42,103 +42,103 @@ func (m *mockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([
 	return output, nil
 }
 
-func (m *mockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
+func (m *MockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
 	return nil
 }
 
-func (m *mockBackup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
+func (m *MockBackup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
 	return nil
 }
 
-func (m *mockBackup) DeleteBackupVault(backupVaultName *string) error {
+func (m *MockBackup) DeleteBackupVault(backupVaultName *string) error {
 	return nil
 }
 
-type allErrorMockBackup struct{}
+type AllErrorMockBackup struct{}
 
-func NewAllErrorMockBackup() *allErrorMockBackup {
-	return &allErrorMockBackup{}
+func NewAllErrorMockBackup() *AllErrorMockBackup {
+	return &AllErrorMockBackup{}
 }
 
-func (m *allErrorMockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
+func (m *AllErrorMockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
 	return nil, fmt.Errorf("ListRecoveryPointsByBackupVaultError")
 }
 
-func (m *allErrorMockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
+func (m *AllErrorMockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
 	return fmt.Errorf("DeleteRecoveryPointsError")
 }
 
-func (m *allErrorMockBackup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
+func (m *AllErrorMockBackup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
 	return fmt.Errorf("DeleteRecoveryPointError")
 }
 
-func (m *allErrorMockBackup) DeleteBackupVault(backupVaultName *string) error {
+func (m *AllErrorMockBackup) DeleteBackupVault(backupVaultName *string) error {
 	return fmt.Errorf("DeleteBackupVaultError")
 }
 
-type listRecoveryPointsErrorMockBackup struct{}
+type ListRecoveryPointsErrorMockBackup struct{}
 
-func NewListRecoveryPointsErrorMockBackup() *listRecoveryPointsErrorMockBackup {
-	return &listRecoveryPointsErrorMockBackup{}
+func NewListRecoveryPointsErrorMockBackup() *ListRecoveryPointsErrorMockBackup {
+	return &ListRecoveryPointsErrorMockBackup{}
 }
 
-func (m *listRecoveryPointsErrorMockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
+func (m *ListRecoveryPointsErrorMockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
 	return nil, fmt.Errorf("ListRecoveryPointsByBackupVaultError")
 }
 
-func (m *listRecoveryPointsErrorMockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
+func (m *ListRecoveryPointsErrorMockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
 	return nil
 }
 
-func (m *listRecoveryPointsErrorMockBackup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
+func (m *ListRecoveryPointsErrorMockBackup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
 	return nil
 }
 
-func (m *listRecoveryPointsErrorMockBackup) DeleteBackupVault(backupVaultName *string) error {
+func (m *ListRecoveryPointsErrorMockBackup) DeleteBackupVault(backupVaultName *string) error {
 	return nil
 }
 
-type deleteRecoveryPointsErrorMockBackup struct{}
+type DeleteRecoveryPointsErrorMockBackup struct{}
 
-func NewDeleteRecoveryPointsErrorMockBackup() *deleteRecoveryPointsErrorMockBackup {
-	return &deleteRecoveryPointsErrorMockBackup{}
+func NewDeleteRecoveryPointsErrorMockBackup() *DeleteRecoveryPointsErrorMockBackup {
+	return &DeleteRecoveryPointsErrorMockBackup{}
 }
 
-func (m *deleteRecoveryPointsErrorMockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
+func (m *DeleteRecoveryPointsErrorMockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
 	return nil, nil
 }
 
-func (m *deleteRecoveryPointsErrorMockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
+func (m *DeleteRecoveryPointsErrorMockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
 	return fmt.Errorf("DeleteRecoveryPointsError")
 }
 
-func (m *deleteRecoveryPointsErrorMockBackup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
+func (m *DeleteRecoveryPointsErrorMockBackup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
 	return nil
 }
 
-func (m *deleteRecoveryPointsErrorMockBackup) DeleteBackupVault(backupVaultName *string) error {
+func (m *DeleteRecoveryPointsErrorMockBackup) DeleteBackupVault(backupVaultName *string) error {
 	return nil
 }
 
-type deleteBackupVaultErrorMockBackup struct{}
+type DeleteBackupVaultErrorMockBackup struct{}
 
-func NewDeleteBackupVaultErrorMockBackup() *deleteBackupVaultErrorMockBackup {
-	return &deleteBackupVaultErrorMockBackup{}
+func NewDeleteBackupVaultErrorMockBackup() *DeleteBackupVaultErrorMockBackup {
+	return &DeleteBackupVaultErrorMockBackup{}
 }
 
-func (m *deleteBackupVaultErrorMockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
+func (m *DeleteBackupVaultErrorMockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
 	return nil, nil
 }
 
-func (m *deleteBackupVaultErrorMockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
+func (m *DeleteBackupVaultErrorMockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
 	return nil
 }
 
-func (m *deleteBackupVaultErrorMockBackup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
+func (m *DeleteBackupVaultErrorMockBackup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
 	return nil
 }
 
-func (m *deleteBackupVaultErrorMockBackup) DeleteBackupVault(backupVaultName *string) error {
+func (m *DeleteBackupVaultErrorMockBackup) DeleteBackupVault(backupVaultName *string) error {
 	return fmt.Errorf("DeleteBackupVaultError")
 }
 

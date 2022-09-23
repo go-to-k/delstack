@@ -17,58 +17,58 @@ import (
 /*
 	Mocks for SDK Waiter
 */
-var _ ICloudFormationSDKWaiter = (*mockCloudFormationSDKWaiter)(nil)
-var _ ICloudFormationSDKWaiter = (*otherErrorMockCloudFormationSDKWaiter)(nil)
-var _ ICloudFormationSDKWaiter = (*failureErrorMockCloudFormationSDKWaiter)(nil)
+var _ ICloudFormationSDKWaiter = (*MockCloudFormationSDKWaiter)(nil)
+var _ ICloudFormationSDKWaiter = (*OtherErrorMockCloudFormationSDKWaiter)(nil)
+var _ ICloudFormationSDKWaiter = (*FailureErrorMockCloudFormationSDKWaiter)(nil)
 
-type mockCloudFormationSDKWaiter struct{}
+type MockCloudFormationSDKWaiter struct{}
 
-func NewMockCloudFormationSDKWaiter() *mockCloudFormationSDKWaiter {
-	return &mockCloudFormationSDKWaiter{}
+func NewMockCloudFormationSDKWaiter() *MockCloudFormationSDKWaiter {
+	return &MockCloudFormationSDKWaiter{}
 }
 
-func (m *mockCloudFormationSDKWaiter) Wait(ctx context.Context, params *cloudformation.DescribeStacksInput, maxWaitDur time.Duration, optFns ...func(*cloudformation.StackDeleteCompleteWaiterOptions)) error {
+func (m *MockCloudFormationSDKWaiter) Wait(ctx context.Context, params *cloudformation.DescribeStacksInput, maxWaitDur time.Duration, optFns ...func(*cloudformation.StackDeleteCompleteWaiterOptions)) error {
 	return nil
 }
 
-type otherErrorMockCloudFormationSDKWaiter struct{}
+type OtherErrorMockCloudFormationSDKWaiter struct{}
 
-func NewOtherErrorMockCloudFormationSDKWaiter() *otherErrorMockCloudFormationSDKWaiter {
-	return &otherErrorMockCloudFormationSDKWaiter{}
+func NewOtherErrorMockCloudFormationSDKWaiter() *OtherErrorMockCloudFormationSDKWaiter {
+	return &OtherErrorMockCloudFormationSDKWaiter{}
 }
 
-func (m *otherErrorMockCloudFormationSDKWaiter) Wait(ctx context.Context, params *cloudformation.DescribeStacksInput, maxWaitDur time.Duration, optFns ...func(*cloudformation.StackDeleteCompleteWaiterOptions)) error {
+func (m *OtherErrorMockCloudFormationSDKWaiter) Wait(ctx context.Context, params *cloudformation.DescribeStacksInput, maxWaitDur time.Duration, optFns ...func(*cloudformation.StackDeleteCompleteWaiterOptions)) error {
 	return fmt.Errorf("WaitError")
 }
 
-type failureErrorMockCloudFormationSDKWaiter struct{}
+type FailureErrorMockCloudFormationSDKWaiter struct{}
 
-func NewFailureErrorMockCloudFormationSDKWaiter() *failureErrorMockCloudFormationSDKWaiter {
-	return &failureErrorMockCloudFormationSDKWaiter{}
+func NewFailureErrorMockCloudFormationSDKWaiter() *FailureErrorMockCloudFormationSDKWaiter {
+	return &FailureErrorMockCloudFormationSDKWaiter{}
 }
 
-func (m *failureErrorMockCloudFormationSDKWaiter) Wait(ctx context.Context, params *cloudformation.DescribeStacksInput, maxWaitDur time.Duration, optFns ...func(*cloudformation.StackDeleteCompleteWaiterOptions)) error {
+func (m *FailureErrorMockCloudFormationSDKWaiter) Wait(ctx context.Context, params *cloudformation.DescribeStacksInput, maxWaitDur time.Duration, optFns ...func(*cloudformation.StackDeleteCompleteWaiterOptions)) error {
 	return fmt.Errorf("waiter state transitioned to Failure")
 }
 
 /*
 	Mocks for SDK Client
 */
-var _ ICloudFormationSDKClient = (*mockCloudFormationSDKClient)(nil)
-var _ ICloudFormationSDKClient = (*errorMockCloudFormationSDKClient)(nil)
-var _ ICloudFormationSDKClient = (*notExistsMockCloudFormationSDKClient)(nil)
+var _ ICloudFormationSDKClient = (*MockCloudFormationSDKClient)(nil)
+var _ ICloudFormationSDKClient = (*ErrorMockCloudFormationSDKClient)(nil)
+var _ ICloudFormationSDKClient = (*NotExistsMockCloudFormationSDKClient)(nil)
 
-type mockCloudFormationSDKClient struct{}
+type MockCloudFormationSDKClient struct{}
 
-func NewMockCloudFormationSDKClient() *mockCloudFormationSDKClient {
-	return &mockCloudFormationSDKClient{}
+func NewMockCloudFormationSDKClient() *MockCloudFormationSDKClient {
+	return &MockCloudFormationSDKClient{}
 }
 
-func (m *mockCloudFormationSDKClient) DeleteStack(ctx context.Context, params *cloudformation.DeleteStackInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DeleteStackOutput, error) {
+func (m *MockCloudFormationSDKClient) DeleteStack(ctx context.Context, params *cloudformation.DeleteStackInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DeleteStackOutput, error) {
 	return nil, nil
 }
 
-func (m *mockCloudFormationSDKClient) DescribeStacks(ctx context.Context, params *cloudformation.DescribeStacksInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DescribeStacksOutput, error) {
+func (m *MockCloudFormationSDKClient) DescribeStacks(ctx context.Context, params *cloudformation.DescribeStacksInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DescribeStacksOutput, error) {
 	output := &cloudformation.DescribeStacksOutput{
 		Stacks: []types.Stack{
 			{
@@ -80,7 +80,7 @@ func (m *mockCloudFormationSDKClient) DescribeStacks(ctx context.Context, params
 	return output, nil
 }
 
-func (m *mockCloudFormationSDKClient) ListStackResources(ctx context.Context, params *cloudformation.ListStackResourcesInput, optFns ...func(*cloudformation.Options)) (*cloudformation.ListStackResourcesOutput, error) {
+func (m *MockCloudFormationSDKClient) ListStackResources(ctx context.Context, params *cloudformation.ListStackResourcesInput, optFns ...func(*cloudformation.Options)) (*cloudformation.ListStackResourcesOutput, error) {
 	output := &cloudformation.ListStackResourcesOutput{
 		StackResourceSummaries: []types.StackResourceSummary{
 			{
@@ -100,17 +100,17 @@ func (m *mockCloudFormationSDKClient) ListStackResources(ctx context.Context, pa
 	return output, nil
 }
 
-type errorMockCloudFormationSDKClient struct{}
+type ErrorMockCloudFormationSDKClient struct{}
 
-func NewErrorMockCloudFormationSDKClient() *errorMockCloudFormationSDKClient {
-	return &errorMockCloudFormationSDKClient{}
+func NewErrorMockCloudFormationSDKClient() *ErrorMockCloudFormationSDKClient {
+	return &ErrorMockCloudFormationSDKClient{}
 }
 
-func (m *errorMockCloudFormationSDKClient) DeleteStack(ctx context.Context, params *cloudformation.DeleteStackInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DeleteStackOutput, error) {
+func (m *ErrorMockCloudFormationSDKClient) DeleteStack(ctx context.Context, params *cloudformation.DeleteStackInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DeleteStackOutput, error) {
 	return nil, fmt.Errorf("DeleteStackError")
 }
 
-func (m *errorMockCloudFormationSDKClient) DescribeStacks(ctx context.Context, params *cloudformation.DescribeStacksInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DescribeStacksOutput, error) {
+func (m *ErrorMockCloudFormationSDKClient) DescribeStacks(ctx context.Context, params *cloudformation.DescribeStacksInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DescribeStacksOutput, error) {
 	output := &cloudformation.DescribeStacksOutput{
 		Stacks: []types.Stack{
 			{
@@ -122,7 +122,7 @@ func (m *errorMockCloudFormationSDKClient) DescribeStacks(ctx context.Context, p
 	return output, fmt.Errorf("DescribeStacksError")
 }
 
-func (m *errorMockCloudFormationSDKClient) ListStackResources(ctx context.Context, params *cloudformation.ListStackResourcesInput, optFns ...func(*cloudformation.Options)) (*cloudformation.ListStackResourcesOutput, error) {
+func (m *ErrorMockCloudFormationSDKClient) ListStackResources(ctx context.Context, params *cloudformation.ListStackResourcesInput, optFns ...func(*cloudformation.Options)) (*cloudformation.ListStackResourcesOutput, error) {
 	output := &cloudformation.ListStackResourcesOutput{
 		StackResourceSummaries: []types.StackResourceSummary{
 			{
@@ -142,21 +142,21 @@ func (m *errorMockCloudFormationSDKClient) ListStackResources(ctx context.Contex
 	return output, fmt.Errorf("ListStackResourcesError")
 }
 
-type notExistsMockCloudFormationSDKClient struct{}
+type NotExistsMockCloudFormationSDKClient struct{}
 
-func NewNotExistsMockCloudFormationSDKClient() *notExistsMockCloudFormationSDKClient {
-	return &notExistsMockCloudFormationSDKClient{}
+func NewNotExistsMockCloudFormationSDKClient() *NotExistsMockCloudFormationSDKClient {
+	return &NotExistsMockCloudFormationSDKClient{}
 }
 
-func (m *notExistsMockCloudFormationSDKClient) DeleteStack(ctx context.Context, params *cloudformation.DeleteStackInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DeleteStackOutput, error) {
+func (m *NotExistsMockCloudFormationSDKClient) DeleteStack(ctx context.Context, params *cloudformation.DeleteStackInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DeleteStackOutput, error) {
 	return nil, nil
 }
 
-func (m *notExistsMockCloudFormationSDKClient) DescribeStacks(ctx context.Context, params *cloudformation.DescribeStacksInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DescribeStacksOutput, error) {
+func (m *NotExistsMockCloudFormationSDKClient) DescribeStacks(ctx context.Context, params *cloudformation.DescribeStacksInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DescribeStacksOutput, error) {
 	return &cloudformation.DescribeStacksOutput{}, fmt.Errorf("does not exist")
 }
 
-func (m *notExistsMockCloudFormationSDKClient) ListStackResources(ctx context.Context, params *cloudformation.ListStackResourcesInput, optFns ...func(*cloudformation.Options)) (*cloudformation.ListStackResourcesOutput, error) {
+func (m *NotExistsMockCloudFormationSDKClient) ListStackResources(ctx context.Context, params *cloudformation.ListStackResourcesInput, optFns ...func(*cloudformation.Options)) (*cloudformation.ListStackResourcesOutput, error) {
 	return nil, nil
 }
 
