@@ -68,10 +68,10 @@ If the stack contains resources that will be DELETE_FAILED but is not selected, 
 ```sh
 ❯ delstack -s YourStack -i
 ? Select ResourceTypes you wish to delete even if DELETE_FAILED.  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
-  [x]  AWS::CloudFormation::Stack
   [ ]  AWS::S3::Bucket
   [x]  AWS::IAM::Role
 > [x]  AWS::ECR::Repository
   [ ]  AWS::Backup::BackupVault
+  [x]  AWS::CloudFormation::Stack
   [ ]  Custom::
 ```
