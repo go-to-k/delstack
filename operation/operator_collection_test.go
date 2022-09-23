@@ -11,6 +11,13 @@ import (
 	"github.com/go-to-k/delstack/resourcetype"
 )
 
+var targetResourceTypesForAllServices = resourcetype.GetResourceTypes()
+var targetResourceTypesForPartialServices = []string{
+	resourcetype.S3_BUCKET,
+	resourcetype.IAM_ROLE,
+	resourcetype.CUSTOM_RESOURCE,
+}
+
 /*
 	Test Cases
 */
@@ -28,13 +35,6 @@ func TestSetOperatorCollection(t *testing.T) {
 	type want struct {
 		logicalResourceIdsLength        int
 		unsupportedStackResourcesLength int
-	}
-
-	targetResourceTypesForAllServices := resourcetype.GetResourceTypes()
-	targetResourceTypesForPartialServices := []string{
-		resourcetype.S3_BUCKET,
-		resourcetype.IAM_ROLE,
-		resourcetype.CUSTOM_RESOURCE,
 	}
 
 	cases := []struct {
@@ -470,6 +470,149 @@ func TestSetOperatorCollection(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_containsResourceType(t *testing.T) {
+	logger.NewLogger()
+	ctx := context.TODO()
+
+	type args struct {
+		ctx                 context.Context
+		stackName           *string
+		targetResourceTypes []string
+		resource            string
+	}
+
+	cases := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "S3 Bucket for all target resource types",
+			args: args{
+				ctx:                 ctx,
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForAllServices,
+				resource:            resourcetype.S3_BUCKET,
+			},
+			want: true,
+		},
+		{
+			name: "IAM Role for all target resource types",
+			args: args{
+				ctx:                 ctx,
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForAllServices,
+				resource:            resourcetype.IAM_ROLE,
+			},
+			want: true,
+		},
+		{
+			name: "ECR Repository for all target resource types",
+			args: args{
+				ctx:                 ctx,
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForAllServices,
+				resource:            resourcetype.ECR_REPOSITORY,
+			},
+			want: true,
+		},
+		{
+			name: "BACKUP VAULT for all target resource types",
+			args: args{
+				ctx:                 ctx,
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForAllServices,
+				resource:            resourcetype.BACKUP_VAULT,
+			},
+			want: true,
+		},
+		{
+			name: "CloudFormation Stack for all target resource types",
+			args: args{
+				ctx:                 ctx,
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForAllServices,
+				resource:            resourcetype.CLOUDFORMATION_STACK,
+			},
+			want: true,
+		},
+		{
+			name: "custom resource for all target resource types",
+			args: args{
+				ctx:                 ctx,
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForAllServices,
+				resource:            "Custom::Abc",
+			},
+			want: true,
+		},
+		{
+			name: "unsupported resource for all target resource types",
+			args: args{
+				ctx:                 ctx,
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForAllServices,
+				resource:            "AWS::DynamoDB::Table",
+			},
+			want: false,
+		},
+		{
+			name: "exists in partial target resource types",
+			args: args{
+				ctx:                 ctx,
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForPartialServices,
+				resource:            resourcetype.S3_BUCKET,
+			},
+			want: true,
+		},
+		{
+			name: "not exists in partial target resource types",
+			args: args{
+				ctx:                 ctx,
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForPartialServices,
+				resource:            resourcetype.BACKUP_VAULT,
+			},
+			want: false,
+		},
+		{
+			name: "custom resource exists in for partial target resource types",
+			args: args{
+				ctx:                 ctx,
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForPartialServices,
+				resource:            "Custom::Abc",
+			},
+			want: true,
+		},
+		{
+			name: "unsupported resource for partial target resource types",
+			args: args{
+				ctx:                 ctx,
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForPartialServices,
+				resource:            "AWS::DynamoDB::Table",
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			config := aws.Config{}
+			operatorFactory := NewOperatorFactory(config)
+			operatorCollection := NewOperatorCollection(config, operatorFactory, tt.args.targetResourceTypes)
+
+			got := operatorCollection.containsResourceType(tt.args.resource)
+
+			if got != tt.want {
 				t.Errorf("got = %#v, want %#v", got, tt.want)
 			}
 		})
