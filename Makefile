@@ -6,7 +6,7 @@ COLORIZE_PASS=sed ''/PASS/s//$$(printf "$(GREEN)PASS$(RESET)")/''
 COLORIZE_FAIL=sed ''/FAIL/s//$$(printf "$(RED)FAIL$(RESET)")/''
 
 test:
-	go test -v ./... | $(COLORIZE_PASS) | $(COLORIZE_FAIL)
+	go test -v -cover ./... | $(COLORIZE_PASS) | $(COLORIZE_FAIL)
 build: delstack
 delstack: *.go cmd/delstack/main.go
 	go build -o $@ cmd/delstack/main.go
