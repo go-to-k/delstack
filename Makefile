@@ -6,7 +6,10 @@ COLORIZE_PASS=sed ''/PASS/s//$$(printf "$(GREEN)PASS$(RESET)")/''
 COLORIZE_FAIL=sed ''/FAIL/s//$$(printf "$(RED)FAIL$(RESET)")/''
 
 test:
-	go test -race -cover -v ./... | $(COLORIZE_PASS) | $(COLORIZE_FAIL)
+	go test -race -cover -v ./... -coverpkg=./... | $(COLORIZE_PASS) | $(COLORIZE_FAIL)
+test_view:
+	go test -race -cover -v ./... -coverprofile=cover_file.out -coverpkg=./... | $(COLORIZE_PASS) | $(COLORIZE_FAIL)
+	go tool cover -html=cover_file.out -o cover_file.html
 build: delstack
 delstack: *.go cmd/delstack/main.go
 	go build -o $@ cmd/delstack/main.go
