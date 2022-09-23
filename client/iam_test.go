@@ -90,7 +90,7 @@ func (m *ApiErrorMockIamSDKClient) DetachRolePolicy(ctx context.Context, params 
 /*
 	Test Cases
 */
-func TestDeleteRole(t *testing.T) {
+func TestIam_DeleteRole(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
@@ -157,7 +157,7 @@ func TestDeleteRole(t *testing.T) {
 	}
 }
 
-func TestListAttachedRolePolicies(t *testing.T) {
+func TestIam_ListAttachedRolePolicies(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
@@ -237,7 +237,7 @@ func TestListAttachedRolePolicies(t *testing.T) {
 	}
 }
 
-func TestDetachRolePolicies(t *testing.T) {
+func TestIam_DetachRolePolicies(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
@@ -346,7 +346,7 @@ func TestDetachRolePolicies(t *testing.T) {
 	}
 }
 
-func TestDetachRolePolicy(t *testing.T) {
+func TestIam_DetachRolePolicy(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()

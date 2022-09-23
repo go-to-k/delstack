@@ -213,7 +213,7 @@ func (m *DeleteMarkersMockForListObjectVersionsS3SDKClient) ListObjectVersions(c
 /*
 	Test Cases
 */
-func TestDeleteBucket(t *testing.T) {
+func TestS3_DeleteBucket(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockS3SDKClient()
@@ -269,7 +269,7 @@ func TestDeleteBucket(t *testing.T) {
 	}
 }
 
-func TestDeleteObjects(t *testing.T) {
+func TestS3_DeleteObjects(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockS3SDKClient()
@@ -422,7 +422,7 @@ func TestDeleteObjects(t *testing.T) {
 	}
 }
 
-func TestListObjectVersions(t *testing.T) {
+func TestS3_ListObjectVersions(t *testing.T) {
 	logger.NewLogger()
 	ctx := context.TODO()
 	mock := NewMockS3SDKClient()
