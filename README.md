@@ -63,7 +63,7 @@ If you selected `-i, --interactive` option, **you can select** ResourceTypes **y
 
 However, if resources of the selected ResourceTypes **will not be DELETE_FAILED when the stack is deleted**, the resources will be deleted **even if you selected**. The purpose of this tool is not to protect specific resources from CloudFormation's stack deletion feature, but simply to avoid forcing the deletion of something that really should not be deleted.
 
-If the stack contains resources that will be DELETE_FAILED but is not selected, all DELETE_FAILED resources including the selected or not selected resources and the stack will remain undeleted.
+If the stack contains resources that will be DELETE_FAILED but is not selected, **all DELETE_FAILED resources including the selected or not selected resources and the stack will remain undeleted**.
 
 ```sh
 ❯ delstack -s YourStack -i
