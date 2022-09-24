@@ -29,8 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: build
-        run: make build
       - name: Cache
         uses: actions/cache@v3
         with:
@@ -40,6 +38,8 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: build
+        run: make build
 
   test:
     needs: setup
