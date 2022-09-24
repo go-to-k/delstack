@@ -9,5 +9,7 @@
         "ldflags",
         "resourcetype",
         "goreleaser",
+        "Unshallow",
+        "unshallow",
     ]
 }
