@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: build
-        run: go build ./...
+        run: make build
 
   test:
     needs: setup
@@ -41,13 +41,3 @@ jobs:
         with:
           name: code-coverage-report
           path: cover_file.html
-
-  lint:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.29
