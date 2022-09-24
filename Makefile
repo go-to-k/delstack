@@ -18,8 +18,10 @@ test_view:
 	go test -race -cover -v ./... -coverprofile=cover_file.out -coverpkg=./... | $(COLORIZE_PASS) | $(COLORIZE_FAIL)
 	go tool cover -html=cover_file.out -o cover_file.html
 run:
+	go mod tidy
 	go run -ldflags "$(LDFLAGS)" cmd/delstack/main.go $${OPT}
 build: $(GO_FILES)
+	go mod tidy
 	go build -ldflags "$(LDFLAGS)" -o delstack cmd/delstack/main.go
 install:
 	go install -ldflags "$(LDFLAGS)" github.com/go-to-k/delstack/cmd/delstack
