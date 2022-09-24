@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/backup v1.17.9
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.22.4
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.17.18
-	github.com/aws/aws-sdk-go-v2/service/iam v1.18.15
+	github.com/aws/aws-sdk-go-v2/service/iam v1.18.19
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.5
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/rs/zerolog v1.28.0
