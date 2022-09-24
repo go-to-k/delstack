@@ -1,6 +1,6 @@
 # delstack
 
-The description in **Japanese** is as follows -> [Blog](https://go-to-k.hatenablog.com/entry/delstack)
+The description in **Japanese** is available on the following blog age. -> [Blog](https://go-to-k.hatenablog.com/entry/delstack)
 
 ## What is
 
