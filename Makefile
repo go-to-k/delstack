@@ -22,7 +22,7 @@ run:
 build: $(GO_FILES)
 	go build -ldflags "$(LDFLAGS)" -o delstack cmd/delstack/main.go
 install:
-	go install github.com/go-to-k/delstack/cmd/delstack
+	go install -ldflags "$(LDFLAGS)" github.com/go-to-k/delstack/cmd/delstack
 clean:
 	go clean
 	rm -f delstack
