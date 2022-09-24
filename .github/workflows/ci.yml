@@ -22,6 +22,8 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Unshallow
+        run: git fetch --prune --unshallow --tags
       - name: build
         run: make build
       - name: test
