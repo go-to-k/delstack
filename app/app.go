@@ -134,7 +134,7 @@ func doInteractiveMode() ([]string, bool) {
 
 		if len(checkboxes) == 0 {
 			logger.Logger.Warn().Msg("Select ResourceTypes!")
-			ok := getYesNo("Want to finish?")
+			ok := getYesNo("Do you want to finish?")
 			if ok {
 				logger.Logger.Info().Msg("Finished...")
 				return checkboxes, false
