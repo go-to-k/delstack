@@ -10,4 +10,5 @@ const MaxRetryCount = 5
 const CloudFormationWaitNanoSecTime = time.Duration(4500000000000)
 
 var Version = ""
+var Revision = ""
 var ConcurrencyNum = runtime.NumCPU()

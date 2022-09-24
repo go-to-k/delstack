@@ -22,9 +22,13 @@ func main() {
 }
 
 func getVersion() string {
+	if option.Version != "" && option.Revision != "" {
+		return option.Version + "-" + option.Revision
+	}
 	if option.Version != "" {
 		return option.Version
 	}
+
 	i, ok := debug.ReadBuildInfo()
 	if !ok {
 		return "unknown"
