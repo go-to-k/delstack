@@ -51,6 +51,14 @@ func (operator *RoleOperator) DeleteResources() error {
 }
 
 func (operator *RoleOperator) DeleteRole(roleName *string) error {
+	exists, err := operator.client.CheckRoleExists(roleName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+
 	policies, err := operator.client.ListAttachedRolePolicies(roleName)
 	if err != nil {
 		return err
