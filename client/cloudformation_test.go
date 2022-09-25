@@ -164,7 +164,7 @@ func (m *NotExistsMockCloudFormationSDKClient) ListStackResources(ctx context.Co
 	Test Cases
 */
 func TestCloudFormation_DeleteStack(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	failureErrorMockWaiter := NewFailureErrorMockCloudFormationSDKWaiter()
@@ -265,7 +265,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 }
 
 func TestCloudFormation_DescribeStacks(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	mock := NewMockCloudFormationSDKClient()
@@ -377,7 +377,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 }
 
 func TestCloudFormation_waitDeleteStack(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	failureErrorMockWaiter := NewFailureErrorMockCloudFormationSDKWaiter()
@@ -449,7 +449,7 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 }
 
 func TestCloudFormation_ListStackResources(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	mock := NewMockCloudFormationSDKClient()

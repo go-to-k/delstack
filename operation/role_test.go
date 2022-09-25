@@ -166,7 +166,7 @@ func (m *DetachRolePoliciesErrorMockIam) DetachRolePolicy(roleName *string, Poli
 	Test Cases
 */
 func TestRoleOperator_DeleteRole(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockIam()
 	allErrorMock := NewAllErrorMockIam()
@@ -256,7 +256,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 }
 
 func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockIam()
 	allErrorMock := NewAllErrorMockIam()

@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/go-to-k/delstack/logger"
+	"github.com/go-to-k/delstack/option"
 )
 
 var _ IS3SDKClient = (*MockS3SDKClient)(nil)
@@ -214,7 +216,7 @@ func (m *DeleteMarkersMockForListObjectVersionsS3SDKClient) ListObjectVersions(c
 	Test Cases
 */
 func TestS3_DeleteBucket(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
@@ -270,7 +272,7 @@ func TestS3_DeleteBucket(t *testing.T) {
 }
 
 func TestS3_DeleteObjects(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
@@ -370,7 +372,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("RetryCountOverError: test"),
+				err:    fmt.Errorf("RetryCountOverError: test, api error SlowDown\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "),
 			},
 			wantErr: true,
 		},
@@ -423,7 +425,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 }
 
 func TestS3_ListObjectVersions(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()

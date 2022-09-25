@@ -10,13 +10,13 @@ import (
 	"github.com/go-to-k/delstack/option"
 )
 
-func WaitForRetry(retryCount int, sleepTimeSec int, targetResourceType *string, err error) error {
+func WaitForRetry(retryCount int, sleepTimeSec int, targetResource *string, err error) error {
 	if retryCount > option.MaxRetryCount {
-		logger.Logger.Warn().Msg(err.Error() + "\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. ")
-		return fmt.Errorf("RetryCountOverError: %v", *targetResourceType)
+		errorDetail := err.Error() + "\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "
+		return fmt.Errorf("RetryCountOverError: %v, %v", *targetResource, errorDetail)
 	}
 
-	logger.Logger.Warn().Msg(err.Error() + "\nRetrying...")
+	logger.Logger.Debug().Msg(err.Error() + "\nDon't worry. Retrying...")
 
 	rand.Seed(time.Now().UnixNano())
 	waitTime := 1

@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -10,7 +11,7 @@ import (
 )
 
 func TestWaitForRetry(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 
 	type args struct {
 		retryCount         int
@@ -77,7 +78,7 @@ func TestWaitForRetry(t *testing.T) {
 				targetResourceType: aws.String("resource"),
 				err:                fmt.Errorf("API Error"),
 			},
-			want:    fmt.Errorf("RetryCountOverError: %v", "resource"),
+			want:    fmt.Errorf("RetryCountOverError: resource, API Error\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
