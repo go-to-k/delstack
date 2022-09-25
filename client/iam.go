@@ -13,6 +13,7 @@ type IIam interface {
 	ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error)
 	DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error
 	DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error
+	CheckRoleExists(roleName *string) (bool, error)
 }
 
 var _ IIam = (*Iam)(nil)
@@ -21,6 +22,7 @@ type IIamSDKClient interface {
 	DeleteRole(ctx context.Context, params *iam.DeleteRoleInput, optFns ...func(*iam.Options)) (*iam.DeleteRoleOutput, error)
 	ListAttachedRolePolicies(ctx context.Context, params *iam.ListAttachedRolePoliciesInput, optFns ...func(*iam.Options)) (*iam.ListAttachedRolePoliciesOutput, error)
 	DetachRolePolicy(ctx context.Context, params *iam.DetachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.DetachRolePolicyOutput, error)
+	GetRole(ctx context.Context, params *iam.GetRoleInput, optFns ...func(*iam.Options)) (*iam.GetRoleOutput, error)
 }
 
 type Iam struct {
@@ -116,4 +118,20 @@ func (iamClient *Iam) DetachRolePolicy(roleName *string, PolicyArn *string, slee
 	}
 
 	return nil
+}
+
+func (iamClient *Iam) CheckRoleExists(roleName *string) (bool, error) {
+	input := &iam.GetRoleInput{
+		RoleName: roleName,
+	}
+
+	_, err := iamClient.client.GetRole(context.TODO(), input)
+	if err != nil && strings.Contains(err.Error(), "NoSuchEntity") {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
