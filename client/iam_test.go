@@ -17,6 +17,7 @@ import (
 var _ IIamSDKClient = (*MockIamSDKClient)(nil)
 var _ IIamSDKClient = (*ErrorMockIamSDKClient)(nil)
 var _ IIamSDKClient = (*ApiErrorMockIamSDKClient)(nil)
+var _ IIamSDKClient = (*NotExistsMockForGetRoleIamSDKClient)(nil)
 
 var sleepTimeSecForIam = 1
 
@@ -53,6 +54,15 @@ func (m *MockIamSDKClient) DetachRolePolicy(ctx context.Context, params *iam.Det
 	return nil, nil
 }
 
+func (m *MockIamSDKClient) GetRole(ctx context.Context, params *iam.GetRoleInput, optFns ...func(*iam.Options)) (*iam.GetRoleOutput, error) {
+	output := &iam.GetRoleOutput{
+		Role: &types.Role{
+			RoleName: aws.String("RoleName"),
+		},
+	}
+	return output, nil
+}
+
 type ErrorMockIamSDKClient struct{}
 
 func NewErrorMockIamSDKClient() *ErrorMockIamSDKClient {
@@ -71,6 +81,10 @@ func (m *ErrorMockIamSDKClient) DetachRolePolicy(ctx context.Context, params *ia
 	return nil, fmt.Errorf("DetachRolePolicyError")
 }
 
+func (m *ErrorMockIamSDKClient) GetRole(ctx context.Context, params *iam.GetRoleInput, optFns ...func(*iam.Options)) (*iam.GetRoleOutput, error) {
+	return nil, fmt.Errorf("GetRoleError")
+}
+
 type ApiErrorMockIamSDKClient struct{}
 
 func NewApiErrorMockIamSDKClient() *ApiErrorMockIamSDKClient {
@@ -87,6 +101,44 @@ func (m *ApiErrorMockIamSDKClient) ListAttachedRolePolicies(ctx context.Context,
 
 func (m *ApiErrorMockIamSDKClient) DetachRolePolicy(ctx context.Context, params *iam.DetachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.DetachRolePolicyOutput, error) {
 	return nil, fmt.Errorf("api error Throttling: Rate exceeded")
+}
+
+func (m *ApiErrorMockIamSDKClient) GetRole(ctx context.Context, params *iam.GetRoleInput, optFns ...func(*iam.Options)) (*iam.GetRoleOutput, error) {
+	return nil, fmt.Errorf("api error Throttling: Rate exceeded")
+}
+
+type NotExistsMockForGetRoleIamSDKClient struct{}
+
+func NewNotExistsMockForGetRoleIamSDKClient() *NotExistsMockForGetRoleIamSDKClient {
+	return &NotExistsMockForGetRoleIamSDKClient{}
+}
+
+func (m *NotExistsMockForGetRoleIamSDKClient) DeleteRole(ctx context.Context, params *iam.DeleteRoleInput, optFns ...func(*iam.Options)) (*iam.DeleteRoleOutput, error) {
+	return nil, nil
+}
+
+func (m *NotExistsMockForGetRoleIamSDKClient) ListAttachedRolePolicies(ctx context.Context, params *iam.ListAttachedRolePoliciesInput, optFns ...func(*iam.Options)) (*iam.ListAttachedRolePoliciesOutput, error) {
+	output := &iam.ListAttachedRolePoliciesOutput{
+		AttachedPolicies: []types.AttachedPolicy{
+			{
+				PolicyArn:  aws.String("PolicyArn1"),
+				PolicyName: aws.String("PolicyName1"),
+			},
+			{
+				PolicyArn:  aws.String("PolicyArn2"),
+				PolicyName: aws.String("PolicyName2"),
+			},
+		},
+	}
+	return output, nil
+}
+
+func (m *NotExistsMockForGetRoleIamSDKClient) DetachRolePolicy(ctx context.Context, params *iam.DetachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.DetachRolePolicyOutput, error) {
+	return nil, nil
+}
+
+func (m *NotExistsMockForGetRoleIamSDKClient) GetRole(ctx context.Context, params *iam.GetRoleInput, optFns ...func(*iam.Options)) (*iam.GetRoleOutput, error) {
+	return nil, fmt.Errorf("NoSuchEntity")
 }
 
 /*
@@ -414,6 +466,91 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 			}
 			if tt.wantErr && err.Error() != tt.want.Error() {
 				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestIam_CheckRoleExists(t *testing.T) {
+	logger.NewLogger(false)
+	ctx := context.TODO()
+	mock := NewMockIamSDKClient()
+	errorMock := NewErrorMockIamSDKClient()
+	notExitsMock := NewNotExistsMockForGetRoleIamSDKClient()
+
+	type args struct {
+		ctx      context.Context
+		roleName *string
+		client   IIamSDKClient
+	}
+
+	type want struct {
+		exists bool
+		err    error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "check role exists successfully",
+			args: args{
+				ctx:      ctx,
+				roleName: aws.String("test"),
+				client:   mock,
+			},
+			want: want{
+				exists: true,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "check role not exists successfully",
+			args: args{
+				ctx:      ctx,
+				roleName: aws.String("test"),
+				client:   notExitsMock,
+			},
+			want: want{
+				exists: false,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "check role exists failure",
+			args: args{
+				ctx:      ctx,
+				roleName: aws.String("test"),
+				client:   errorMock,
+			},
+			want: want{
+				exists: false,
+				err:    fmt.Errorf("GetRoleError"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			ecrClient := NewIam(tt.args.client)
+
+			output, err := ecrClient.CheckRoleExists(tt.args.roleName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.exists) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.exists)
 			}
 		})
 	}

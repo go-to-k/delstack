@@ -18,6 +18,8 @@ var _ client.IIam = (*AllErrorMockIam)(nil)
 var _ client.IIam = (*DeleteRoleErrorMockIam)(nil)
 var _ client.IIam = (*ListAttachedRolePoliciesErrorMockIam)(nil)
 var _ client.IIam = (*DetachRolePoliciesErrorMockIam)(nil)
+var _ client.IIam = (*CheckRoleExistsErrorMockRole)(nil)
+var _ client.IIam = (*CheckRoleNotExistsMockRole)(nil)
 
 /*
 	Mocks for client
@@ -54,6 +56,10 @@ func (m *MockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTim
 	return nil
 }
 
+func (m *MockIam) CheckRoleExists(repositoryName *string) (bool, error) {
+	return true, nil
+}
+
 type AllErrorMockIam struct{}
 
 func NewAllErrorMockIam() *AllErrorMockIam {
@@ -74,6 +80,10 @@ func (m *AllErrorMockIam) DetachRolePolicies(roleName *string, policies []types.
 
 func (m *AllErrorMockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
 	return fmt.Errorf("DetachRolePolicyError")
+}
+
+func (m *AllErrorMockIam) CheckRoleExists(repositoryName *string) (bool, error) {
+	return false, fmt.Errorf("GetRoleError")
 }
 
 type DeleteRoleErrorMockIam struct{}
@@ -108,6 +118,10 @@ func (m *DeleteRoleErrorMockIam) DetachRolePolicy(roleName *string, PolicyArn *s
 	return nil
 }
 
+func (m *DeleteRoleErrorMockIam) CheckRoleExists(repositoryName *string) (bool, error) {
+	return true, nil
+}
+
 type ListAttachedRolePoliciesErrorMockIam struct{}
 
 func NewListAttachedRolePoliciesErrorMockIam() *ListAttachedRolePoliciesErrorMockIam {
@@ -128,6 +142,10 @@ func (m *ListAttachedRolePoliciesErrorMockIam) DetachRolePolicies(roleName *stri
 
 func (m *ListAttachedRolePoliciesErrorMockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
 	return nil
+}
+
+func (m *ListAttachedRolePoliciesErrorMockIam) CheckRoleExists(repositoryName *string) (bool, error) {
+	return true, nil
 }
 
 type DetachRolePoliciesErrorMockIam struct{}
@@ -162,6 +180,82 @@ func (m *DetachRolePoliciesErrorMockIam) DetachRolePolicy(roleName *string, Poli
 	return nil
 }
 
+func (m *DetachRolePoliciesErrorMockIam) CheckRoleExists(repositoryName *string) (bool, error) {
+	return true, nil
+}
+
+type CheckRoleExistsErrorMockRole struct{}
+
+func NewCheckRoleExistsErrorMockRole() *CheckRoleExistsErrorMockRole {
+	return &CheckRoleExistsErrorMockRole{}
+}
+
+func (m *CheckRoleExistsErrorMockRole) DeleteRole(roleName *string, sleepTimeSec int) error {
+	return nil
+}
+
+func (m *CheckRoleExistsErrorMockRole) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
+	output := []types.AttachedPolicy{
+		{
+			PolicyArn:  aws.String("PolicyArn1"),
+			PolicyName: aws.String("PolicyName1"),
+		},
+		{
+			PolicyArn:  aws.String("PolicyArn2"),
+			PolicyName: aws.String("PolicyName2"),
+		},
+	}
+	return output, nil
+}
+
+func (m *CheckRoleExistsErrorMockRole) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
+	return nil
+}
+
+func (m *CheckRoleExistsErrorMockRole) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
+	return nil
+}
+
+func (m *CheckRoleExistsErrorMockRole) CheckRoleExists(repositoryName *string) (bool, error) {
+	return false, fmt.Errorf("GetRoleError")
+}
+
+type CheckRoleNotExistsMockRole struct{}
+
+func NewCheckRoleNotExistsMockRole() *CheckRoleNotExistsMockRole {
+	return &CheckRoleNotExistsMockRole{}
+}
+
+func (m *CheckRoleNotExistsMockRole) DeleteRole(roleName *string, sleepTimeSec int) error {
+	return nil
+}
+
+func (m *CheckRoleNotExistsMockRole) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
+	output := []types.AttachedPolicy{
+		{
+			PolicyArn:  aws.String("PolicyArn1"),
+			PolicyName: aws.String("PolicyName1"),
+		},
+		{
+			PolicyArn:  aws.String("PolicyArn2"),
+			PolicyName: aws.String("PolicyName2"),
+		},
+	}
+	return output, nil
+}
+
+func (m *CheckRoleNotExistsMockRole) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
+	return nil
+}
+
+func (m *CheckRoleNotExistsMockRole) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
+	return nil
+}
+
+func (m *CheckRoleNotExistsMockRole) CheckRoleExists(repositoryName *string) (bool, error) {
+	return false, nil
+}
+
 /*
 	Test Cases
 */
@@ -173,6 +267,8 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 	deleteRoleErrorMock := NewDeleteRoleErrorMockIam()
 	listAttachedRolePoliciesErrorMock := NewListAttachedRolePoliciesErrorMockIam()
 	detachRolePoliciesErrorMock := NewDetachRolePoliciesErrorMockIam()
+	checkRoleExistsErrorMock := NewCheckRoleExistsErrorMockRole()
+	checkRoleNotExistsMock := NewCheckRoleNotExistsMockRole()
 
 	type args struct {
 		ctx      context.Context
@@ -203,8 +299,28 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 				roleName: aws.String("test"),
 				client:   allErrorMock,
 			},
-			want:    fmt.Errorf("ListAttachedRolePoliciesError"),
+			want:    fmt.Errorf("GetRoleError"),
 			wantErr: true,
+		},
+		{
+			name: "delete role failure for check role exists errors",
+			args: args{
+				ctx:      ctx,
+				roleName: aws.String("test"),
+				client:   checkRoleExistsErrorMock,
+			},
+			want:    fmt.Errorf("GetRoleError"),
+			wantErr: true,
+		},
+		{
+			name: "delete role failure for check role not exists",
+			args: args{
+				ctx:      ctx,
+				roleName: aws.String("test"),
+				client:   checkRoleNotExistsMock,
+			},
+			want:    nil,
+			wantErr: false,
 		},
 		{
 			name: "delete role failure for delete role errors",
@@ -287,7 +403,7 @@ func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
 				ctx:    ctx,
 				client: allErrorMock,
 			},
-			want:    fmt.Errorf("ListAttachedRolePoliciesError"),
+			want:    fmt.Errorf("GetRoleError"),
 			wantErr: true,
 		},
 	}
