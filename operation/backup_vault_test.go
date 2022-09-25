@@ -119,7 +119,17 @@ func NewDeleteRecoveryPointsErrorMockBackup() *DeleteRecoveryPointsErrorMockBack
 }
 
 func (m *DeleteRecoveryPointsErrorMockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
-	return nil, nil
+	output := []types.RecoveryPointByBackupVault{
+		{
+			BackupVaultName: aws.String("BackupVaultName1"),
+			BackupVaultArn:  aws.String("BackupVaultArn1"),
+		},
+		{
+			BackupVaultName: aws.String("BackupVaultName2"),
+			BackupVaultArn:  aws.String("BackupVaultArn2"),
+		},
+	}
+	return output, nil
 }
 
 func (m *DeleteRecoveryPointsErrorMockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
@@ -145,7 +155,17 @@ func NewDeleteBackupVaultErrorMockBackup() *DeleteBackupVaultErrorMockBackup {
 }
 
 func (m *DeleteBackupVaultErrorMockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
-	return nil, nil
+	output := []types.RecoveryPointByBackupVault{
+		{
+			BackupVaultName: aws.String("BackupVaultName1"),
+			BackupVaultArn:  aws.String("BackupVaultArn1"),
+		},
+		{
+			BackupVaultName: aws.String("BackupVaultName2"),
+			BackupVaultArn:  aws.String("BackupVaultArn2"),
+		},
+	}
+	return output, nil
 }
 
 func (m *DeleteBackupVaultErrorMockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
