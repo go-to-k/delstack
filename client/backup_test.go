@@ -14,6 +14,7 @@ import (
 
 var _ IBackupSDKClient = (*MockBackupSDKClient)(nil)
 var _ IBackupSDKClient = (*ErrorMockBackupSDKClient)(nil)
+var _ IBackupSDKClient = (*NotExistsMockForListBackupVaultsBackupSDKClient)(nil)
 
 /*
 	Mocks for SDK Client
@@ -48,6 +49,20 @@ func (m *MockBackupSDKClient) DeleteBackupVault(ctx context.Context, params *bac
 	return nil, nil
 }
 
+func (m *MockBackupSDKClient) ListBackupVaults(ctx context.Context, params *backup.ListBackupVaultsInput, optFns ...func(*backup.Options)) (*backup.ListBackupVaultsOutput, error) {
+	output := &backup.ListBackupVaultsOutput{
+		BackupVaultList: []types.BackupVaultListMember{
+			{
+				BackupVaultName: aws.String("test"),
+			},
+			{
+				BackupVaultName: aws.String("test2"),
+			},
+		},
+	}
+	return output, nil
+}
+
 type ErrorMockBackupSDKClient struct{}
 
 func NewErrorMockBackupSDKClient() *ErrorMockBackupSDKClient {
@@ -64,6 +79,54 @@ func (m *ErrorMockBackupSDKClient) DeleteRecoveryPoint(ctx context.Context, para
 
 func (m *ErrorMockBackupSDKClient) DeleteBackupVault(ctx context.Context, params *backup.DeleteBackupVaultInput, optFns ...func(*backup.Options)) (*backup.DeleteBackupVaultOutput, error) {
 	return nil, fmt.Errorf("DeleteBackupVaultError")
+}
+
+func (m *ErrorMockBackupSDKClient) ListBackupVaults(ctx context.Context, params *backup.ListBackupVaultsInput, optFns ...func(*backup.Options)) (*backup.ListBackupVaultsOutput, error) {
+	return nil, fmt.Errorf("ListBackupVaultsError")
+}
+
+type NotExistsMockForListBackupVaultsBackupSDKClient struct{}
+
+func NewNotExistsMockForListBackupVaultsBackupSDKClient() *NotExistsMockForListBackupVaultsBackupSDKClient {
+	return &NotExistsMockForListBackupVaultsBackupSDKClient{}
+}
+
+func (m *NotExistsMockForListBackupVaultsBackupSDKClient) ListRecoveryPointsByBackupVault(ctx context.Context, params *backup.ListRecoveryPointsByBackupVaultInput, optFns ...func(*backup.Options)) (*backup.ListRecoveryPointsByBackupVaultOutput, error) {
+	output := &backup.ListRecoveryPointsByBackupVaultOutput{
+		RecoveryPoints: []types.RecoveryPointByBackupVault{
+			{
+				BackupVaultName: aws.String("BackupVaultName1"),
+				BackupVaultArn:  aws.String("BackupVaultArn1"),
+			},
+			{
+				BackupVaultName: aws.String("BackupVaultName2"),
+				BackupVaultArn:  aws.String("BackupVaultArn2"),
+			},
+		},
+	}
+	return output, nil
+}
+
+func (m *NotExistsMockForListBackupVaultsBackupSDKClient) DeleteRecoveryPoint(ctx context.Context, params *backup.DeleteRecoveryPointInput, optFns ...func(*backup.Options)) (*backup.DeleteRecoveryPointOutput, error) {
+	return nil, nil
+}
+
+func (m *NotExistsMockForListBackupVaultsBackupSDKClient) DeleteBackupVault(ctx context.Context, params *backup.DeleteBackupVaultInput, optFns ...func(*backup.Options)) (*backup.DeleteBackupVaultOutput, error) {
+	return nil, nil
+}
+
+func (m *NotExistsMockForListBackupVaultsBackupSDKClient) ListBackupVaults(ctx context.Context, params *backup.ListBackupVaultsInput, optFns ...func(*backup.Options)) (*backup.ListBackupVaultsOutput, error) {
+	output := &backup.ListBackupVaultsOutput{
+		BackupVaultList: []types.BackupVaultListMember{
+			{
+				BackupVaultName: aws.String("test0"),
+			},
+			{
+				BackupVaultName: aws.String("test2"),
+			},
+		},
+	}
+	return output, nil
 }
 
 /*
@@ -93,7 +156,7 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "list recovery points successfully",
+			name: "check backup vault exists successfully",
 			args: args{
 				ctx:             ctx,
 				backupVaultName: aws.String("test"),
@@ -115,7 +178,7 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "list recovery points failure",
+			name: "check backup vault exists failure",
 			args: args{
 				ctx:             ctx,
 				backupVaultName: aws.String("test"),
@@ -347,6 +410,91 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 			}
 			if tt.wantErr && err.Error() != tt.want.Error() {
 				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestBackup_CheckBackupVaultExists(t *testing.T) {
+	logger.NewLogger(false)
+	ctx := context.TODO()
+	mock := NewMockBackupSDKClient()
+	errorMock := NewErrorMockBackupSDKClient()
+	notExitsMock := NewNotExistsMockForListBackupVaultsBackupSDKClient()
+
+	type args struct {
+		ctx             context.Context
+		backupVaultName *string
+		client          IBackupSDKClient
+	}
+
+	type want struct {
+		exists bool
+		err    error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "check backup vault for backup vault exist",
+			args: args{
+				ctx:             ctx,
+				backupVaultName: aws.String("test"),
+				client:          mock,
+			},
+			want: want{
+				exists: true,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "check backup vault for backup vault do not exist",
+			args: args{
+				ctx:             ctx,
+				backupVaultName: aws.String("test"),
+				client:          notExitsMock,
+			},
+			want: want{
+				exists: false,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "check bucket exists failure",
+			args: args{
+				ctx:             ctx,
+				backupVaultName: aws.String("test"),
+				client:          errorMock,
+			},
+			want: want{
+				exists: false,
+				err:    fmt.Errorf("ListBackupVaultsError"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			backupClient := NewBackup(tt.args.client)
+
+			output, err := backupClient.CheckBackupVaultExists(tt.args.backupVaultName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.exists) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.exists)
 			}
 		})
 	}
