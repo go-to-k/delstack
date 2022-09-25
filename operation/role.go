@@ -11,7 +11,7 @@ import (
 )
 
 var _ IOperator = (*RoleOperator)(nil)
-var sleepTimeSecForIam = 1
+var sleepTimeSecForIam = 5
 
 type RoleOperator struct {
 	client    client.IIam

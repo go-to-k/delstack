@@ -6,7 +6,7 @@ import (
 )
 
 const AppName = "delstack"
-const MaxRetryCount = 5
+const MaxRetryCount = 10
 const CloudFormationWaitNanoSecTime = time.Duration(4500000000000)
 
 var Version = ""
