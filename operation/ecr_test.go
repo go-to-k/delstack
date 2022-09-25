@@ -42,7 +42,7 @@ func (m *ErrorMockEcr) DeleteRepository(repositoryName *string) error {
 	Test Cases
 */
 func TestEcrOperator_DeleteRepository(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockEcr()
 	errorMock := NewErrorMockEcr()
@@ -99,7 +99,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 }
 
 func TestEcrOperator_DeleteResourcesForEcrVault(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockEcr()
 	errorMock := NewErrorMockEcr()

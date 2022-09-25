@@ -8,7 +8,12 @@ import (
 
 var Logger *zerolog.Logger
 
-func NewLogger() {
+func NewLogger(isDebug bool) {
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if isDebug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+
 	consoleWriter := zerolog.ConsoleWriter{
 		Out: os.Stderr,
 		PartsExclude: []string{
