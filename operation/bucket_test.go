@@ -19,6 +19,8 @@ var _ client.IS3 = (*DeleteObjectsErrorMockS3)(nil)
 var _ client.IS3 = (*DeleteObjectsOutputErrorMockS3)(nil)
 var _ client.IS3 = (*ListObjectVersionsErrorMockS3)(nil)
 var _ client.IS3 = (*DeleteBucketErrorMockS3)(nil)
+var _ client.IS3 = (*CheckBucketExistsErrorMockS3)(nil)
+var _ client.IS3 = (*CheckBucketNotExistsMockS3)(nil)
 
 /*
 	Mocks for client
@@ -51,6 +53,10 @@ func (m *MockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifie
 	return output, nil
 }
 
+func (m *MockS3) CheckBucketExists(bucketName *string) (bool, error) {
+	return true, nil
+}
+
 type AllErrorMockS3 struct{}
 
 func NewAllErrorMockS3() *AllErrorMockS3 {
@@ -67,6 +73,10 @@ func (m *AllErrorMockS3) DeleteObjects(bucketName *string, objects []types.Objec
 
 func (m *AllErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
 	return nil, fmt.Errorf("ListObjectVersionsError")
+}
+
+func (m *AllErrorMockS3) CheckBucketExists(bucketName *string) (bool, error) {
+	return false, fmt.Errorf("ListBucketsError")
 }
 
 type DeleteBucketErrorMockS3 struct{}
@@ -97,6 +107,10 @@ func (m *DeleteBucketErrorMockS3) ListObjectVersions(bucketName *string) ([]type
 	return output, nil
 }
 
+func (m *DeleteBucketErrorMockS3) CheckBucketExists(bucketName *string) (bool, error) {
+	return true, nil
+}
+
 type DeleteObjectsErrorMockS3 struct{}
 
 func NewDeleteObjectsErrorMockS3() *DeleteObjectsErrorMockS3 {
@@ -123,6 +137,10 @@ func (m *DeleteObjectsErrorMockS3) ListObjectVersions(bucketName *string) ([]typ
 		},
 	}
 	return output, nil
+}
+
+func (m *DeleteObjectsErrorMockS3) CheckBucketExists(bucketName *string) (bool, error) {
+	return true, nil
 }
 
 type DeleteObjectsOutputErrorMockS3 struct{}
@@ -161,6 +179,10 @@ func (m *DeleteObjectsOutputErrorMockS3) ListObjectVersions(bucketName *string) 
 	return output, nil
 }
 
+func (m *DeleteObjectsOutputErrorMockS3) CheckBucketExists(bucketName *string) (bool, error) {
+	return true, nil
+}
+
 type ListObjectVersionsErrorMockS3 struct{}
 
 func NewListObjectVersionsErrorMockS3() *ListObjectVersionsErrorMockS3 {
@@ -179,6 +201,74 @@ func (m *ListObjectVersionsErrorMockS3) ListObjectVersions(bucketName *string) (
 	return nil, fmt.Errorf("ListObjectVersionsError")
 }
 
+func (m *ListObjectVersionsErrorMockS3) CheckBucketExists(bucketName *string) (bool, error) {
+	return true, nil
+}
+
+type CheckBucketExistsErrorMockS3 struct{}
+
+func NewCheckBucketExistsErrorMockS3() *CheckBucketExistsErrorMockS3 {
+	return &CheckBucketExistsErrorMockS3{}
+}
+
+func (m *CheckBucketExistsErrorMockS3) DeleteBucket(bucketName *string) error {
+	return nil
+}
+
+func (m *CheckBucketExistsErrorMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	return []types.Error{}, nil
+}
+
+func (m *CheckBucketExistsErrorMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{
+		{
+			Key:       aws.String("KeyForVersions"),
+			VersionId: aws.String("VersionIdForVersions"),
+		},
+		{
+			Key:       aws.String("KeyForDeleteMarkers"),
+			VersionId: aws.String("VersionIdForDeleteMarkers"),
+		},
+	}
+	return output, nil
+}
+
+func (m *CheckBucketExistsErrorMockS3) CheckBucketExists(bucketName *string) (bool, error) {
+	return false, fmt.Errorf("ListBucketsError")
+}
+
+type CheckBucketNotExistsMockS3 struct{}
+
+func NewCheckBucketNotExistsMockS3() *CheckBucketNotExistsMockS3 {
+	return &CheckBucketNotExistsMockS3{}
+}
+
+func (m *CheckBucketNotExistsMockS3) DeleteBucket(bucketName *string) error {
+	return nil
+}
+
+func (m *CheckBucketNotExistsMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	return []types.Error{}, nil
+}
+
+func (m *CheckBucketNotExistsMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{
+		{
+			Key:       aws.String("KeyForVersions"),
+			VersionId: aws.String("VersionIdForVersions"),
+		},
+		{
+			Key:       aws.String("KeyForDeleteMarkers"),
+			VersionId: aws.String("VersionIdForDeleteMarkers"),
+		},
+	}
+	return output, nil
+}
+
+func (m *CheckBucketNotExistsMockS3) CheckBucketExists(bucketName *string) (bool, error) {
+	return false, nil
+}
+
 /*
 	Test Cases
 */
@@ -191,6 +281,8 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 	deleteObjectsErrorMock := NewDeleteObjectsErrorMockS3()
 	deleteObjectsOutputErrorMock := NewDeleteObjectsOutputErrorMockS3()
 	listObjectVersionsErrorMock := NewListObjectVersionsErrorMockS3()
+	checkBucketExistsErrorMock := NewCheckBucketExistsErrorMockS3()
+	checkBucketNotExistsMock := NewCheckBucketNotExistsMockS3()
 
 	type args struct {
 		ctx        context.Context
@@ -221,11 +313,31 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 				bucketName: aws.String("test"),
 				client:     allErrorMock,
 			},
-			want:    fmt.Errorf("ListObjectVersionsError"),
+			want:    fmt.Errorf("ListBucketsError"),
 			wantErr: true,
 		},
 		{
-			name: "delete bucket failure for list object versions errors",
+			name: "delete bucket failure for check bucket exists errors",
+			args: args{
+				ctx:        ctx,
+				bucketName: aws.String("test"),
+				client:     checkBucketExistsErrorMock,
+			},
+			want:    fmt.Errorf("ListBucketsError"),
+			wantErr: true,
+		},
+		{
+			name: "delete bucket successfully for bucket not exists",
+			args: args{
+				ctx:        ctx,
+				bucketName: aws.String("test"),
+				client:     checkBucketNotExistsMock,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete bucket failure for check bucket exists errors",
 			args: args{
 				ctx:        ctx,
 				bucketName: aws.String("test"),
@@ -315,7 +427,7 @@ func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
 				ctx:    ctx,
 				client: allErrorMock,
 			},
-			want:    fmt.Errorf("ListObjectVersionsError"),
+			want:    fmt.Errorf("ListBucketsError"),
 			wantErr: true,
 		},
 	}
