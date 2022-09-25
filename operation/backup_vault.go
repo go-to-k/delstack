@@ -50,6 +50,14 @@ func (operator *BackupVaultOperator) DeleteResources() error {
 }
 
 func (operator *BackupVaultOperator) DeleteBackupVault(backupVaultName *string) error {
+	exists, err := operator.client.CheckBackupVaultExists(backupVaultName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+
 	recoveryPoints, err := operator.client.ListRecoveryPointsByBackupVault(backupVaultName)
 	if err != nil {
 		return err
