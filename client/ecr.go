@@ -45,9 +45,6 @@ func (ecrClient *Ecr) CheckEcrExists(repositoryName *string) (bool, error) {
 	for {
 		input := &ecr.DescribeRepositoriesInput{
 			NextToken: nextToken,
-			RepositoryNames: []string{
-				*repositoryName,
-			},
 		}
 
 		output, err := ecrClient.client.DescribeRepositories(context.TODO(), input)
