@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/go-to-k/delstack/logger"
+	"github.com/go-to-k/delstack/option"
 )
 
 var _ IIamSDKClient = (*MockIamSDKClient)(nil)
@@ -91,7 +93,7 @@ func (m *ApiErrorMockIamSDKClient) DetachRolePolicy(ctx context.Context, params 
 	Test Cases
 */
 func TestIam_DeleteRole(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
@@ -136,7 +138,7 @@ func TestIam_DeleteRole(t *testing.T) {
 				roleName: aws.String("test"),
 				client:   apiErrorMock,
 			},
-			want:    fmt.Errorf("RetryCountOverError: test"),
+			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
@@ -158,7 +160,7 @@ func TestIam_DeleteRole(t *testing.T) {
 }
 
 func TestIam_ListAttachedRolePolicies(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
@@ -238,7 +240,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicies(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
@@ -325,7 +327,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 				},
 				client: apiErrorMock,
 			},
-			want:    fmt.Errorf("RetryCountOverError: test"),
+			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
@@ -347,7 +349,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicy(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
@@ -367,7 +369,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "delete recovery point successfully",
+			name: "detach role policy successfully",
 			args: args{
 				ctx:       ctx,
 				roleName:  aws.String("test"),
@@ -378,7 +380,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete recovery point failure",
+			name: "detach role policy failure",
 			args: args{
 				ctx:       ctx,
 				roleName:  aws.String("test"),
@@ -389,14 +391,14 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete recovery point failure for api error",
+			name: "detach role policy failure for api error",
 			args: args{
 				ctx:       ctx,
 				roleName:  aws.String("test"),
 				PolicyArn: aws.String("test"),
 				client:    apiErrorMock,
 			},
-			want:    fmt.Errorf("RetryCountOverError: test"),
+			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
