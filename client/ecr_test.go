@@ -65,14 +65,7 @@ func (m *NotExistsMockForDescribeRepositoriesEcrSDKClient) DeleteRepository(ctx 
 }
 
 func (m *NotExistsMockForDescribeRepositoriesEcrSDKClient) DescribeRepositories(ctx context.Context, params *ecr.DescribeRepositoriesInput, optFns ...func(*ecr.Options)) (*ecr.DescribeRepositoriesOutput, error) {
-	output := &ecr.DescribeRepositoriesOutput{
-		Repositories: []types.Repository{
-			{
-				RepositoryName: aws.String("test0"),
-			},
-		},
-	}
-	return output, nil
+	return nil, fmt.Errorf("does not exist")
 }
 
 /*
