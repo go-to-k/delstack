@@ -88,11 +88,11 @@ func (operator *StackOperator) DeleteStackResources(stackName *string, isRootSta
 		return err
 	}
 
-	if err := operator.client.DeleteStack(stackName, operatorManager.GetLogicalResourceIds()); err != nil {
+	if err := operatorManager.DeleteResourceCollection(); err != nil {
 		return err
 	}
 
-	if err := operatorManager.DeleteResourceCollection(); err != nil {
+	if err := operator.client.DeleteStack(stackName, operatorManager.GetLogicalResourceIds()); err != nil {
 		return err
 	}
 
