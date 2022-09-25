@@ -51,5 +51,13 @@ func (operator *EcrOperator) DeleteResources() error {
 }
 
 func (operator *EcrOperator) DeleteEcr(repositoryName *string) error {
+	exists, err := operator.client.CheckEcrExists(repositoryName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+
 	return operator.client.DeleteRepository(repositoryName)
 }

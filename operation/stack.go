@@ -67,14 +67,12 @@ func (operator *StackOperator) DeleteResources() error {
 }
 
 func (operator *StackOperator) DeleteStackResources(stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
-	if isRootStack {
-		isSuccess, err := operator.deleteRootStack(stackName)
-		if err != nil {
-			return err
-		}
-		if isSuccess {
-			return nil
-		}
+	isSuccess, err := operator.deleteStackNormally(stackName, isRootStack)
+	if err != nil {
+		return err
+	}
+	if isSuccess {
+		return nil
 	}
 
 	stackResourceSummaries, err := operator.client.ListStackResources(stackName)
@@ -99,17 +97,24 @@ func (operator *StackOperator) DeleteStackResources(stackName *string, isRootSta
 	return nil
 }
 
-func (operator *StackOperator) deleteRootStack(stackName *string) (bool, error) {
+func (operator *StackOperator) deleteStackNormally(stackName *string, isRootStack bool) (bool, error) {
 	stackOutputBeforeDelete, isExistBeforeDelete, err := operator.client.DescribeStacks(stackName)
 	if err != nil {
 		return false, err
 	}
-	if !isExistBeforeDelete {
+	if !isExistBeforeDelete && isRootStack {
 		return false, fmt.Errorf("NotExistsError: %v", *stackName)
+	}
+	if !isExistBeforeDelete {
+		return true, nil
 	}
 
 	if *stackOutputBeforeDelete.Stacks[0].EnableTerminationProtection {
 		return false, fmt.Errorf("TerminationProtectionIsEnabled: %v", *stackName)
+	}
+
+	if stackOutputBeforeDelete.Stacks[0].StackStatus == "DELETE_FAILED" {
+		return false, nil
 	}
 
 	if err := operator.client.DeleteStack(stackName, []string{}); err != nil {
