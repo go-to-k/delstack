@@ -22,7 +22,7 @@ var targetResourceTypesForPartialServices = []string{
 	Test Cases
 */
 func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
-	logger.NewLogger(true)
+	logger.NewLogger(false)
 	ctx := context.TODO()
 
 	type args struct {
@@ -477,7 +477,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 }
 
 func TestOperatorCollection_containsResourceType(t *testing.T) {
-	logger.NewLogger(true)
+	logger.NewLogger(false)
 	ctx := context.TODO()
 
 	type args struct {

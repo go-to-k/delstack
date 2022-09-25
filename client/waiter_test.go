@@ -11,7 +11,7 @@ import (
 )
 
 func TestWaitForRetry(t *testing.T) {
-	logger.NewLogger(true)
+	logger.NewLogger(false)
 
 	type args struct {
 		retryCount         int
