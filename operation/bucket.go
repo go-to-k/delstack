@@ -52,6 +52,14 @@ func (operator *BucketOperator) DeleteResources() error {
 }
 
 func (operator *BucketOperator) DeleteBucket(bucketName *string) error {
+	exists, err := operator.client.CheckBucketExists(bucketName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+
 	versions, err := operator.client.ListObjectVersions(bucketName)
 	if err != nil {
 		return err

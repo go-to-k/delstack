@@ -16,6 +16,7 @@ type IS3 interface {
 	DeleteBucket(bucketName *string) error
 	DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error)
 	ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error)
+	CheckBucketExists(bucketName *string) (bool, error)
 }
 
 var _ IS3 = (*S3)(nil)
@@ -24,6 +25,7 @@ type IS3SDKClient interface {
 	DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error)
 	DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error)
 	ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error)
+	ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error)
 }
 
 type S3 struct {
@@ -172,4 +174,21 @@ func (s3Client *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdenti
 	}
 
 	return objectIdentifiers, nil
+}
+
+func (s3Client *S3) CheckBucketExists(bucketName *string) (bool, error) {
+	input := &s3.ListBucketsInput{}
+
+	output, err := s3Client.client.ListBuckets(context.TODO(), input)
+	if err != nil {
+		return false, err
+	}
+
+	for _, bucket := range output.Buckets {
+		if *bucket.Name == *bucketName {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
