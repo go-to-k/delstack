@@ -508,7 +508,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 				clientMock:          allErrorMock,
 				operatorManagerMock: mockOperatorManager,
 			},
-			want:    fmt.Errorf("ListStackResourcesError"),
+			want:    fmt.Errorf("DescribeStacksError"),
 			wantErr: true,
 		},
 		{
@@ -687,9 +687,10 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 	describeStacksNotExistsErrorMock := NewDescribeStacksNotExistsErrorMockCloudFormation()
 
 	type args struct {
-		ctx        context.Context
-		stackName  *string
-		clientMock client.ICloudFormation
+		ctx         context.Context
+		stackName   *string
+		isRootStack bool
+		clientMock  client.ICloudFormation
 	}
 
 	type want struct {
@@ -704,11 +705,12 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "delete root stack successfully",
+			name: "delete stack successfully for root stack",
 			args: args{
-				ctx:        ctx,
-				stackName:  aws.String("test"),
-				clientMock: mock,
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: true,
+				clientMock:  mock,
 			},
 			want: want{
 				got: false,
@@ -717,11 +719,12 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete root stack failure for TerminationProtection is enabled stack",
+			name: "delete stack failure for root stack for TerminationProtection is enabled stack",
 			args: args{
-				ctx:        ctx,
-				stackName:  aws.String("test"),
-				clientMock: terminationProtectionIsEnabledMock,
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: true,
+				clientMock:  terminationProtectionIsEnabledMock,
 			},
 			want: want{
 				got: false,
@@ -730,11 +733,12 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete root stack failure for not DELETE_FAILED stack",
+			name: "delete stack failure for root stack for not DELETE_FAILED stack",
 			args: args{
-				ctx:        ctx,
-				stackName:  aws.String("test"),
-				clientMock: notDeleteFailedMock,
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: true,
+				clientMock:  notDeleteFailedMock,
 			},
 			want: want{
 				got: false,
@@ -743,11 +747,12 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete root stack failure for all errors",
+			name: "delete stack failure for root stack for all errors",
 			args: args{
-				ctx:        ctx,
-				stackName:  aws.String("test"),
-				clientMock: allErrorMock,
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: true,
+				clientMock:  allErrorMock,
 			},
 			want: want{
 				got: false,
@@ -756,11 +761,12 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete root stack failure for describe stacks",
+			name: "delete stack failure for root stack for describe stacks",
 			args: args{
-				ctx:        ctx,
-				stackName:  aws.String("test"),
-				clientMock: describeStacksErrorMock,
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: true,
+				clientMock:  describeStacksErrorMock,
 			},
 			want: want{
 				got: false,
@@ -769,17 +775,102 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete root stack failure for describe stacks not exist",
+			name: "delete stack failure for root stack for describe stacks not exist",
 			args: args{
-				ctx:        ctx,
-				stackName:  aws.String("test"),
-				clientMock: describeStacksNotExistsErrorMock,
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: true,
+				clientMock:  describeStacksNotExistsErrorMock,
 			},
 			want: want{
 				got: false,
 				err: fmt.Errorf("NotExistsError: test"),
 			},
 			wantErr: true,
+		},
+		{
+			name: "delete stack successfully for child stack",
+			args: args{
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: false,
+				clientMock:  mock,
+			},
+			want: want{
+				got: false,
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "delete stack failure for child stack for TerminationProtection is enabled stack",
+			args: args{
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: false,
+				clientMock:  terminationProtectionIsEnabledMock,
+			},
+			want: want{
+				got: false,
+				err: fmt.Errorf("TerminationProtectionIsEnabled: test"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "delete stack failure for child stack for not DELETE_FAILED stack",
+			args: args{
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: false,
+				clientMock:  notDeleteFailedMock,
+			},
+			want: want{
+				got: false,
+				err: fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but UPDATE_ROLLBACK_COMPLETE: test"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "delete stack failure for child stack for all errors",
+			args: args{
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: false,
+				clientMock:  allErrorMock,
+			},
+			want: want{
+				got: false,
+				err: fmt.Errorf("DescribeStacksError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "delete stack failure for child stack for describe stacks",
+			args: args{
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: false,
+				clientMock:  describeStacksErrorMock,
+			},
+			want: want{
+				got: false,
+				err: fmt.Errorf("DescribeStacksError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "delete stack successfully for child stack for the stack already deleted",
+			args: args{
+				ctx:         ctx,
+				stackName:   aws.String("test"),
+				isRootStack: false,
+				clientMock:  describeStacksNotExistsErrorMock,
+			},
+			want: want{
+				got: true,
+				err: nil,
+			},
+			wantErr: false,
 		},
 	}
 
@@ -788,7 +879,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 			targetResourceTypes := resourcetype.GetResourceTypes()
 			cloudformationOperator := NewStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
 
-			got, err := cloudformationOperator.deleteRootStack(tt.args.stackName)
+			got, err := cloudformationOperator.deleteStackNormally(tt.args.stackName, tt.args.isRootStack)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
