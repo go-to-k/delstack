@@ -18,6 +18,7 @@ var _ client.IIam = (*AllErrorMockIam)(nil)
 var _ client.IIam = (*DeleteRoleErrorMockIam)(nil)
 var _ client.IIam = (*ListAttachedRolePoliciesErrorMockIam)(nil)
 var _ client.IIam = (*DetachRolePoliciesErrorMockIam)(nil)
+var _ client.IIam = (*DetachRolePoliciesErrorAfterZeroLengthMockIam)(nil)
 var _ client.IIam = (*CheckRoleExistsErrorMockRole)(nil)
 var _ client.IIam = (*CheckRoleNotExistsMockRole)(nil)
 
@@ -184,6 +185,33 @@ func (m *DetachRolePoliciesErrorMockIam) CheckRoleExists(repositoryName *string)
 	return true, nil
 }
 
+type DetachRolePoliciesErrorAfterZeroLengthMockIam struct{}
+
+func NewDetachRolePoliciesErrorAfterZeroLengthMockIam() *DetachRolePoliciesErrorAfterZeroLengthMockIam {
+	return &DetachRolePoliciesErrorAfterZeroLengthMockIam{}
+}
+
+func (m *DetachRolePoliciesErrorAfterZeroLengthMockIam) DeleteRole(roleName *string, sleepTimeSec int) error {
+	return nil
+}
+
+func (m *DetachRolePoliciesErrorAfterZeroLengthMockIam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
+	output := []types.AttachedPolicy{}
+	return output, nil
+}
+
+func (m *DetachRolePoliciesErrorAfterZeroLengthMockIam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
+	return fmt.Errorf("DetachRolePoliciesErrorAfterZeroLength")
+}
+
+func (m *DetachRolePoliciesErrorAfterZeroLengthMockIam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
+	return nil
+}
+
+func (m *DetachRolePoliciesErrorAfterZeroLengthMockIam) CheckRoleExists(repositoryName *string) (bool, error) {
+	return true, nil
+}
+
 type CheckRoleExistsErrorMockRole struct{}
 
 func NewCheckRoleExistsErrorMockRole() *CheckRoleExistsErrorMockRole {
@@ -267,6 +295,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 	deleteRoleErrorMock := NewDeleteRoleErrorMockIam()
 	listAttachedRolePoliciesErrorMock := NewListAttachedRolePoliciesErrorMockIam()
 	detachRolePoliciesErrorMock := NewDetachRolePoliciesErrorMockIam()
+	detachRolePoliciesErrorAfterZeroLengthMock := NewDetachRolePoliciesErrorAfterZeroLengthMockIam()
 	checkRoleExistsErrorMock := NewCheckRoleExistsErrorMockRole()
 	checkRoleNotExistsMock := NewCheckRoleNotExistsMockRole()
 
@@ -323,16 +352,6 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete role failure for delete role errors",
-			args: args{
-				ctx:      ctx,
-				roleName: aws.String("test"),
-				client:   deleteRoleErrorMock,
-			},
-			want:    fmt.Errorf("DeleteRoleError"),
-			wantErr: true,
-		},
-		{
 			name: "delete role failure for list attached role policies errors",
 			args: args{
 				ctx:      ctx,
@@ -350,6 +369,26 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 				client:   detachRolePoliciesErrorMock,
 			},
 			want:    fmt.Errorf("DetachRolePoliciesError"),
+			wantErr: true,
+		},
+		{
+			name: "delete role successfully for detach role errors after zero length",
+			args: args{
+				ctx:      ctx,
+				roleName: aws.String("test"),
+				client:   detachRolePoliciesErrorAfterZeroLengthMock,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete role failure for delete role errors",
+			args: args{
+				ctx:      ctx,
+				roleName: aws.String("test"),
+				client:   deleteRoleErrorMock,
+			},
+			want:    fmt.Errorf("DeleteRoleError"),
 			wantErr: true,
 		},
 	}
