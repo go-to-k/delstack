@@ -183,7 +183,7 @@ func (m *ListObjectVersionsErrorMockS3) ListObjectVersions(bucketName *string) (
 	Test Cases
 */
 func TestBucketOperator_DeleteBucket(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockS3()
 	allErrorMock := NewAllErrorMockS3()
@@ -284,7 +284,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 }
 
 func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockS3()
 	allErrorMock := NewAllErrorMockS3()

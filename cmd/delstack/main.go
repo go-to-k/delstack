@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	logger.NewLogger()
+	logger.NewLogger(isDebug())
 	ctx := context.TODO()
 	app := app.NewApp(getVersion())
 
@@ -19,6 +19,13 @@ func main() {
 		logger.Logger.Error().Msg(err.Error())
 		os.Exit(1)
 	}
+}
+
+func isDebug() bool {
+	if option.Version == "" || option.Revision != "" {
+		return true
+	}
+	return false
 }
 
 func getVersion() string {

@@ -146,7 +146,7 @@ func (m *DeleteBackupVaultErrorMockBackup) DeleteBackupVault(backupVaultName *st
 	Test Cases
 */
 func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockBackup()
 	allErrorMock := NewAllErrorMockBackup()
@@ -236,7 +236,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 }
 
 func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
-	logger.NewLogger()
+	logger.NewLogger(true)
 	ctx := context.TODO()
 	mock := NewMockBackup()
 	allErrorMock := NewAllErrorMockBackup()
