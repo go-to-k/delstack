@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -16,7 +17,13 @@ func WaitForRetry(retryCount int, sleepTimeSec int, targetResourceType *string, 
 	}
 
 	logger.Logger.Warn().Msg(err.Error() + "\nRetrying...")
-	time.Sleep(time.Duration(sleepTimeSec) * time.Second)
+
+	rand.Seed(time.Now().UnixNano())
+	waitTime := 1
+	if sleepTimeSec > 1 {
+		waitTime += rand.Intn(sleepTimeSec)
+	}
+	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	return nil
 }
