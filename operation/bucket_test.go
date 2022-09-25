@@ -16,7 +16,9 @@ import (
 var _ client.IS3 = (*MockS3)(nil)
 var _ client.IS3 = (*AllErrorMockS3)(nil)
 var _ client.IS3 = (*DeleteObjectsErrorMockS3)(nil)
+var _ client.IS3 = (*DeleteObjectsErrorAfterZeroLengthMockS3)(nil)
 var _ client.IS3 = (*DeleteObjectsOutputErrorMockS3)(nil)
+var _ client.IS3 = (*DeleteObjectsOutputErrorAfterZeroLengthMockS3)(nil)
 var _ client.IS3 = (*ListObjectVersionsErrorMockS3)(nil)
 var _ client.IS3 = (*DeleteBucketErrorMockS3)(nil)
 var _ client.IS3 = (*CheckBucketExistsErrorMockS3)(nil)
@@ -143,6 +145,29 @@ func (m *DeleteObjectsErrorMockS3) CheckBucketExists(bucketName *string) (bool, 
 	return true, nil
 }
 
+type DeleteObjectsErrorAfterZeroLengthMockS3 struct{}
+
+func NewDeleteObjectsErrorAfterZeroLengthMockS3() *DeleteObjectsErrorAfterZeroLengthMockS3 {
+	return &DeleteObjectsErrorAfterZeroLengthMockS3{}
+}
+
+func (m *DeleteObjectsErrorAfterZeroLengthMockS3) DeleteBucket(bucketName *string) error {
+	return nil
+}
+
+func (m *DeleteObjectsErrorAfterZeroLengthMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	return []types.Error{}, fmt.Errorf("DeleteObjectsErrorAfterZeroLength")
+}
+
+func (m *DeleteObjectsErrorAfterZeroLengthMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{}
+	return output, nil
+}
+
+func (m *DeleteObjectsErrorAfterZeroLengthMockS3) CheckBucketExists(bucketName *string) (bool, error) {
+	return true, nil
+}
+
 type DeleteObjectsOutputErrorMockS3 struct{}
 
 func NewDeleteObjectsOutputErrorMockS3() *DeleteObjectsOutputErrorMockS3 {
@@ -180,6 +205,37 @@ func (m *DeleteObjectsOutputErrorMockS3) ListObjectVersions(bucketName *string) 
 }
 
 func (m *DeleteObjectsOutputErrorMockS3) CheckBucketExists(bucketName *string) (bool, error) {
+	return true, nil
+}
+
+type DeleteObjectsOutputErrorAfterZeroLengthMockS3 struct{}
+
+func NewDeleteObjectsOutputErrorAfterZeroLengthMockS3() *DeleteObjectsOutputErrorAfterZeroLengthMockS3 {
+	return &DeleteObjectsOutputErrorAfterZeroLengthMockS3{}
+}
+
+func (m *DeleteObjectsOutputErrorAfterZeroLengthMockS3) DeleteBucket(bucketName *string) error {
+	return nil
+}
+
+func (m *DeleteObjectsOutputErrorAfterZeroLengthMockS3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	output := []types.Error{
+		{
+			Key:       aws.String("Key"),
+			Code:      aws.String("Code"),
+			Message:   aws.String("Message"),
+			VersionId: aws.String("VersionId"),
+		},
+	}
+	return output, nil
+}
+
+func (m *DeleteObjectsOutputErrorAfterZeroLengthMockS3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{}
+	return output, nil
+}
+
+func (m *DeleteObjectsOutputErrorAfterZeroLengthMockS3) CheckBucketExists(bucketName *string) (bool, error) {
 	return true, nil
 }
 
@@ -279,7 +335,9 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 	allErrorMock := NewAllErrorMockS3()
 	deleteBucketErrorMock := NewDeleteBucketErrorMockS3()
 	deleteObjectsErrorMock := NewDeleteObjectsErrorMockS3()
+	deleteObjectsErrorAfterZeroLengthMock := NewDeleteObjectsErrorAfterZeroLengthMockS3()
 	deleteObjectsOutputErrorMock := NewDeleteObjectsOutputErrorMockS3()
+	deleteObjectsOutputErrorAfterZeroLengthMock := NewDeleteObjectsOutputErrorAfterZeroLengthMockS3()
 	listObjectVersionsErrorMock := NewListObjectVersionsErrorMockS3()
 	checkBucketExistsErrorMock := NewCheckBucketExistsErrorMockS3()
 	checkBucketNotExistsMock := NewCheckBucketNotExistsMockS3()
@@ -337,7 +395,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete bucket failure for check bucket exists errors",
+			name: "delete bucket failure for list object versions errors",
 			args: args{
 				ctx:        ctx,
 				bucketName: aws.String("test"),
@@ -357,6 +415,16 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "delete bucket successfully for delete objects errors after zero length",
+			args: args{
+				ctx:        ctx,
+				bucketName: aws.String("test"),
+				client:     deleteObjectsErrorAfterZeroLengthMock,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
 			name: "delete bucket failure for delete objects output errors",
 			args: args{
 				ctx:        ctx,
@@ -365,6 +433,16 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 			},
 			want:    fmt.Errorf("DeleteObjectsError: followings \nCode: Code\nKey: Key\nVersionId: VersionId\nMessage: Message\n"),
 			wantErr: true,
+		},
+		{
+			name: "delete bucket failure for delete objects output errors after zero length",
+			args: args{
+				ctx:        ctx,
+				bucketName: aws.String("test"),
+				client:     deleteObjectsOutputErrorAfterZeroLengthMock,
+			},
+			want:    nil,
+			wantErr: false,
 		},
 		{
 			name: "delete bucket failure for delete bucket errors",

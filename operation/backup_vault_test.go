@@ -17,6 +17,7 @@ var _ client.IBackup = (*MockBackup)(nil)
 var _ client.IBackup = (*AllErrorMockBackup)(nil)
 var _ client.IBackup = (*ListRecoveryPointsErrorMockBackup)(nil)
 var _ client.IBackup = (*DeleteRecoveryPointsErrorMockBackup)(nil)
+var _ client.IBackup = (*DeleteRecoveryPointsErrorAfterZeroLengthMockBackup)(nil)
 var _ client.IBackup = (*DeleteBackupVaultErrorMockBackup)(nil)
 var _ client.IBackup = (*CheckBackupVaultExistsErrorMockBackup)(nil)
 var _ client.IBackup = (*CheckBackupVaultNotExistsMockBackup)(nil)
@@ -148,6 +149,33 @@ func (m *DeleteRecoveryPointsErrorMockBackup) CheckBackupVaultExists(backupVault
 	return true, nil
 }
 
+type DeleteRecoveryPointsErrorAfterZeroLengthMockBackup struct{}
+
+func NewDeleteRecoveryPointsErrorAfterZeroLengthMockBackup() *DeleteRecoveryPointsErrorAfterZeroLengthMockBackup {
+	return &DeleteRecoveryPointsErrorAfterZeroLengthMockBackup{}
+}
+
+func (m *DeleteRecoveryPointsErrorAfterZeroLengthMockBackup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
+	output := []types.RecoveryPointByBackupVault{}
+	return output, nil
+}
+
+func (m *DeleteRecoveryPointsErrorAfterZeroLengthMockBackup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
+	return fmt.Errorf("DeleteRecoveryPointsErrorAfterZeroLength")
+}
+
+func (m *DeleteRecoveryPointsErrorAfterZeroLengthMockBackup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
+	return nil
+}
+
+func (m *DeleteRecoveryPointsErrorAfterZeroLengthMockBackup) DeleteBackupVault(backupVaultName *string) error {
+	return nil
+}
+
+func (m *DeleteRecoveryPointsErrorAfterZeroLengthMockBackup) CheckBackupVaultExists(backupVaultName *string) (bool, error) {
+	return true, nil
+}
+
 type DeleteBackupVaultErrorMockBackup struct{}
 
 func NewDeleteBackupVaultErrorMockBackup() *DeleteBackupVaultErrorMockBackup {
@@ -266,6 +294,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 	allErrorMock := NewAllErrorMockBackup()
 	listRecoveryPointsErrorMock := NewListRecoveryPointsErrorMockBackup()
 	deleteRecoveryPointsErrorMock := NewDeleteRecoveryPointsErrorMockBackup()
+	deleteRecoveryPointsErrorAfterZeroLengthMock := NewDeleteRecoveryPointsErrorAfterZeroLengthMockBackup()
 	deleteBackupVaultErrorMock := NewDeleteBackupVaultErrorMockBackup()
 	checkBackupVaultExistsErrorMock := NewCheckBackupVaultExistsErrorMockBackup()
 	checkBackupVaultNotExistsMock := NewCheckBackupVaultNotExistsMockBackup()
@@ -341,6 +370,16 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 			},
 			want:    fmt.Errorf("DeleteRecoveryPointsError"),
 			wantErr: true,
+		},
+		{
+			name: "delete backup vault successfully for delete recovery points errors after zero length",
+			args: args{
+				ctx:             ctx,
+				backupVaultName: aws.String("test"),
+				client:          deleteRecoveryPointsErrorAfterZeroLengthMock,
+			},
+			want:    nil,
+			wantErr: false,
 		},
 		{
 			name: "delete backup vault failure for delete backup vault errors",
