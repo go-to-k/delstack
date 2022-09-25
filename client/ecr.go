@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 )
@@ -45,9 +46,15 @@ func (ecrClient *Ecr) CheckEcrExists(repositoryName *string) (bool, error) {
 	for {
 		input := &ecr.DescribeRepositoriesInput{
 			NextToken: nextToken,
+			RepositoryNames: []string{
+				*repositoryName,
+			},
 		}
 
 		output, err := ecrClient.client.DescribeRepositories(context.TODO(), input)
+		if err != nil && strings.Contains(err.Error(), "does not exist") {
+			return false, nil
+		}
 		if err != nil {
 			return false, err
 		}
