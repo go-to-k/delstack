@@ -63,8 +63,10 @@ func (operator *BackupVaultOperator) DeleteBackupVault(backupVaultName *string) 
 		return err
 	}
 
-	if err := operator.client.DeleteRecoveryPoints(backupVaultName, recoveryPoints); err != nil {
-		return err
+	if len(recoveryPoints) > 0 {
+		if err := operator.client.DeleteRecoveryPoints(backupVaultName, recoveryPoints); err != nil {
+			return err
+		}
 	}
 
 	if err := operator.client.DeleteBackupVault(backupVaultName); err != nil {
