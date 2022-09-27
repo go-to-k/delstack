@@ -208,11 +208,11 @@ Resources:
 
             try:
               # if event['RequestType'] == "Delete":
-              #   DeletePolicy(PolicyName)
+                # DeletePolicy(PolicyName)
               if event['RequestType'] == "Create":
                 PutPolicy(CloudWatchLogsLogGroupArns, PolicyName, ServiceName)
-              responseData['Data'] = "SUCCESS"
-              status=cfnresponse.SUCCESS
+                responseData['Data'] = "SUCCESS"
+                status=cfnresponse.SUCCESS
             except ClientError as e:
               responseData['Data'] = "FAILED"
               status=cfnresponse.FAILED
