@@ -1,0 +1,285 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Metadata: 
+  "AWS::CloudFormation::Interface": 
+    ParameterGroups: 
+      - Label: 
+          default: "Project Name Prefix"
+        Parameters: 
+          - PJPrefix
+
+Parameters:
+  PJPrefix:
+    Type: String
+
+Resources:
+  ECR:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${PJPrefix}-ecr"
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Delete more than 3 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 3
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-ECR"
+
+  ChildStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./test_child.yaml
+      Parameters:
+        PJPrefix: !Sub "${PJPrefix}"
+
+  ChildTwoStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./test_child2.yaml
+      Parameters:
+        PJPrefix: !Sub "${PJPrefix}"
+
+  RootS3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: LogDeliveryWrite
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      VersioningConfiguration:
+        Status: Enabled
+
+  RootLambdaRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${PJPrefix}-root-role-1"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+  RootLambdaRole2:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${PJPrefix}-root-role-2"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+  RootTwoLambdaRole3:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${PJPrefix}-root-role-3"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+  RootTwoLambdaRole4:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${PJPrefix}-root-role-4"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+  RootTwoLambdaRole5:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${PJPrefix}-root-role-5"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+  RootTwoLambdaRole6:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${PJPrefix}-root-role-6"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+  RootTwoLambdaRole7:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${PJPrefix}-root-role-7"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+  RootTwoLambdaRole8:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${PJPrefix}-root-role-8"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+  RootTwoLambdaRole9:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${PJPrefix}-root-role-9"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+
+  RootLambdaPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: !Sub "${PJPrefix}-root-policy"
+      Roles:
+        - !Ref RootLambdaRole
+        - !Ref RootLambdaRole2
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:PutResourcePolicy
+              - logs:DeleteResourcePolicy
+            Resource:
+              - "*"
+
+  RootResourcePolicyLambdaForLogs:
+    Type: "AWS::Lambda::Function"
+    DependsOn:
+      - RootLambdaPolicy
+    Properties:
+      Handler: "index.handler"
+      Role: !GetAtt RootLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import cfnresponse
+          import boto3
+          from botocore.exceptions import ClientError
+
+          client = boto3.client("logs")
+
+          def PutPolicy(arns, policyname, service):
+            arn_str = '","'.join(arns)
+            arn = "[\"" + arn_str + "\"]"
+
+            response = client.put_resource_policy(
+              policyName=policyname,
+              policyDocument="{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"" + service + "\"},\"Action\":[\"logs:CreateLogStream\",\"logs:PutLogEvents\"],\"Resource\":"+ arn + "}]}",
+            )
+            return
+
+          def DeletePolicy(policyname):
+            response = client.delete_resource_policy(
+              policyName=policyname
+            )
+            return
+
+          def handler(event, context):
+
+            CloudWatchLogsLogGroupArns = event['ResourceProperties']['CloudWatchLogsLogGroupArn']
+            PolicyName = event['ResourceProperties']['PolicyName']
+            ServiceName = event['ResourceProperties']['ServiceName']
+
+            responseData = {}
+
+            try:
+              # if event['RequestType'] == "Delete":
+                # DeletePolicy(PolicyName)
+              if event['RequestType'] == "Create":
+                PutPolicy(CloudWatchLogsLogGroupArns, PolicyName, ServiceName)
+              responseData['Data'] = "SUCCESS"
+              status=cfnresponse.SUCCESS
+            except ClientError as e:
+              responseData['Data'] = "FAILED"
+              status=cfnresponse.FAILED
+              print("Unexpected error: %s" % e)
+            cfnresponse.send(event, context, status, responseData, "CustomResourcePhysicalID")
+      Runtime: "python3.9"
+
+  RootAddResourcePolicy:
+    Type: Custom::RootAddResourcePolicy
+    Version: "1.0"
+    Properties:
+      ServiceToken: !GetAtt RootResourcePolicyLambdaForLogs.Arn
+      CloudWatchLogsLogGroupArn:
+        - !GetAtt RootLogGroup.Arn
+      PolicyName: !Sub "${PJPrefix}RootResourcePolicyForDNSLog"
+      ServiceName: "route53.amazonaws.com"
+
+  RootLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "${PJPrefix}-Root-log"
+      RetentionInDays: 14
+
+Outputs:
+  ECRArn:
+    Export:
+      Name: !Sub "${PJPrefix}-ECR-Arn"
+    Description: "ECR ARN"
+    Value: !GetAtt ECR.Arn
