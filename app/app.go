@@ -141,7 +141,6 @@ func doInteractiveMode() ([]string, bool) {
 			}
 			continue
 		}
-		logger.Logger.Info().Msgf("Your selected ResourceTypes: %s", strings.Join(checkboxes, ", "))
 
 		ok := getYesNo("OK?")
 		if ok {
@@ -151,7 +150,10 @@ func doInteractiveMode() ([]string, bool) {
 }
 
 func getCheckboxes() []string {
-	label := "Select ResourceTypes you wish to delete even if DELETE_FAILED."
+	label := "Select ResourceTypes you wish to delete even if DELETE_FAILED." +
+		"\n" +
+		"However, if resources of the selected ResourceTypes will not be DELETE_FAILED when the stack is deleted, the resources will be deleted even if you selected. " +
+		"\n"
 	opts := resourcetype.GetResourceTypes()
 	res := []string{}
 
