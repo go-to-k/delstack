@@ -137,7 +137,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 				client:         checkEcrNotExistsMock,
 			},
 			want:    nil,
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 
