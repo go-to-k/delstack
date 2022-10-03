@@ -15,7 +15,7 @@ GO_FILES:=$(shell find . -type f -name '*.go' -print)
 test:
 	go test -race -cover -v ./... -coverpkg=./... | $(COLORIZE_PASS) | $(COLORIZE_FAIL)
 test_view:
-	go test -race -cover -v ./... -coverprofile=cover_file.out -coverpkg=./... | $(COLORIZE_PASS) | $(COLORIZE_FAIL)
+	go test -race -cover -v ./... -coverprofile=cover_file.out -coverpkg=./...
 	go tool cover -html=cover_file.out -o cover_file.html
 run:
 	go mod tidy
