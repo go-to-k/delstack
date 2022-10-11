@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.5
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/rs/zerolog v1.28.0
-	github.com/urfave/cli/v2 v2.17.1
+	github.com/urfave/cli/v2 v2.19.2
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
 )
 
