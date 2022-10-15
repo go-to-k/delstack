@@ -8,8 +8,8 @@ COLORIZE_FAIL=sed ''/FAIL/s//$$(printf "$(RED)FAIL$(RESET)")/''
 VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
 LDFLAGS := -s -w \
-			-X 'github.com/go-to-k/delstack/option.Version=$(VERSION)' \
-			-X 'github.com/go-to-k/delstack/option.Revision=$(REVISION)'
+			-X 'github.com/go-to-k/delstack/internal/option.Version=$(VERSION)' \
+			-X 'github.com/go-to-k/delstack/internal/option.Revision=$(REVISION)'
 GO_FILES:=$(shell find . -type f -name '*.go' -print)
 
 test:
