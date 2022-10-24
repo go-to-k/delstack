@@ -435,7 +435,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete bucket failure for delete objects output errors after zero length",
+			name: "delete bucket successfully for delete objects output errors after zero length",
 			args: args{
 				ctx:        ctx,
 				bucketName: aws.String("test"),
