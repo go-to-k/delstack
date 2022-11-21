@@ -6,13 +6,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-to-k/delstack/internal/option"
 	"github.com/go-to-k/delstack/pkg/logger"
 )
 
+const maxRetryCount = 10
+
 func WaitForRetry(retryCount int, sleepTimeSec int, targetResource *string, err error) error {
-	if retryCount > option.MaxRetryCount {
-		errorDetail := err.Error() + "\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "
+	if retryCount > maxRetryCount {
+		errorDetail := err.Error() + "\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "
 		return fmt.Errorf("RetryCountOverError: %v, %v", *targetResource, errorDetail)
 	}
 

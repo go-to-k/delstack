@@ -2,9 +2,9 @@ package operation
 
 import (
 	"context"
+	"runtime"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/internal/option"
 	"github.com/go-to-k/delstack/pkg/client"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -34,7 +34,7 @@ func (operator *BackupVaultOperator) GetResourcesLength() int {
 
 func (operator *BackupVaultOperator) DeleteResources() error {
 	var eg errgroup.Group
-	sem := semaphore.NewWeighted(int64(option.ConcurrencyNum))
+	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, backupVault := range operator.resources {
 		backupVault := backupVault

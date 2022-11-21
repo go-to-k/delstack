@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/go-to-k/delstack/internal/option"
 	"github.com/go-to-k/delstack/pkg/logger"
 )
 
@@ -501,7 +500,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("RetryCountOverError: test, api error SlowDown\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "),
+				err:    fmt.Errorf("RetryCountOverError: test, api error SlowDown\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			},
 			wantErr: true,
 		},
