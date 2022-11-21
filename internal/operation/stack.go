@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"runtime"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/internal/option"
+	"github.com/go-to-k/delstack/internal/logger"
 	"github.com/go-to-k/delstack/pkg/client"
-	"github.com/go-to-k/delstack/pkg/logger"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 )
@@ -45,7 +45,7 @@ func (operator *StackOperator) GetResourcesLength() int {
 func (operator *StackOperator) DeleteResources() error {
 	var eg errgroup.Group
 	re := regexp.MustCompile(STACK_NAME_RULE)
-	sem := semaphore.NewWeighted(int64(option.ConcurrencyNum))
+	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, stack := range operator.resources {
 		stack := stack

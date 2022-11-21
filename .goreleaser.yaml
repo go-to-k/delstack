@@ -9,7 +9,7 @@ builds:
     binary: delstack
     ldflags:
       - -s -w
-      - -X github.com/go-to-k/delstack/internal/option.Version={{.Version}}
+      - -X github.com/go-to-k/delstack/internal/version.Version={{.Version}}
     env:
       - CGO_ENABLED=0
     goos:

@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
-	"github.com/go-to-k/delstack/pkg/logger"
 )
 
 var _ IBackupSDKClient = (*MockBackupSDKClient)(nil)
@@ -133,7 +132,6 @@ func (m *NotExistsMockForListBackupVaultsBackupSDKClient) ListBackupVaults(ctx c
 	Test Cases
 */
 func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
@@ -213,7 +211,6 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 }
 
 func TestBackup_DeleteRecoveryPoints(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
@@ -301,7 +298,6 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 }
 
 func TestBackup_DeleteRecoveryPoint(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
@@ -360,7 +356,6 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 }
 
 func TestBackup_DeleteBackupVault(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
@@ -416,7 +411,6 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 }
 
 func TestBackup_CheckBackupVaultExists(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()

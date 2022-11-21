@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
-	"github.com/go-to-k/delstack/pkg/logger"
 )
 
 var _ IEcrSDKClient = (*MockEcrSDKClient)(nil)
@@ -73,7 +72,6 @@ func (m *NotExistsMockForDescribeRepositoriesEcrSDKClient) DescribeRepositories(
 */
 
 func TestEcr_DeleteRepository(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockEcrSDKClient()
 	errorMock := NewErrorMockEcrSDKClient()
@@ -129,7 +127,6 @@ func TestEcr_DeleteRepository(t *testing.T) {
 }
 
 func TestEcr_CheckRepository(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockEcrSDKClient()
 	errorMock := NewErrorMockEcrSDKClient()
