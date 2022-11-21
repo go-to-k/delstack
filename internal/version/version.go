@@ -4,8 +4,6 @@ import (
 	"runtime/debug"
 )
 
-const AppName = "delstack"
-
 var Version = ""
 var Revision = ""
 
