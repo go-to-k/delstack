@@ -6,12 +6,9 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/go-to-k/delstack/internal/option"
-	"github.com/go-to-k/delstack/pkg/logger"
 )
 
 func TestWaitForRetry(t *testing.T) {
-	logger.NewLogger(false)
 
 	type args struct {
 		retryCount         int
@@ -51,7 +48,7 @@ func TestWaitForRetry(t *testing.T) {
 		{
 			name: "retryCount = MaxRetryCount - 1: not error",
 			args: args{
-				retryCount:         option.MaxRetryCount - 1,
+				retryCount:         maxRetryCount - 1,
 				sleepTimeSec:       1,
 				targetResourceType: aws.String("resource"),
 				err:                fmt.Errorf("API Error"),
@@ -62,7 +59,7 @@ func TestWaitForRetry(t *testing.T) {
 		{
 			name: "retryCount = MaxRetryCount: not error",
 			args: args{
-				retryCount:         option.MaxRetryCount,
+				retryCount:         maxRetryCount,
 				sleepTimeSec:       1,
 				targetResourceType: aws.String("resource"),
 				err:                fmt.Errorf("API Error"),
@@ -73,12 +70,12 @@ func TestWaitForRetry(t *testing.T) {
 		{
 			name: "retryCount = MaxRetryCount + 1: RetryCountOverError",
 			args: args{
-				retryCount:         option.MaxRetryCount + 1,
+				retryCount:         maxRetryCount + 1,
 				sleepTimeSec:       1,
 				targetResourceType: aws.String("resource"),
 				err:                fmt.Errorf("API Error"),
 			},
-			want:    fmt.Errorf("RetryCountOverError: resource, API Error\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: resource, API Error\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}

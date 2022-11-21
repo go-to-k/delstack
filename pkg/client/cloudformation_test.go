@@ -10,8 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/internal/resourcetype"
-	"github.com/go-to-k/delstack/pkg/logger"
 )
 
 /*
@@ -86,13 +84,13 @@ func (m *MockCloudFormationSDKClient) ListStackResources(ctx context.Context, pa
 			{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String(resourcetype.CLOUDFORMATION_STACK),
+				ResourceType:       aws.String("AWS::CloudFormation::Stack"),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			},
 			{
 				LogicalResourceId:  aws.String("LogicalResourceId2"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String(resourcetype.S3_BUCKET),
+				ResourceType:       aws.String("AWS::S3::Bucket"),
 				PhysicalResourceId: aws.String("PhysicalResourceId2"),
 			},
 		},
@@ -128,13 +126,13 @@ func (m *ErrorMockCloudFormationSDKClient) ListStackResources(ctx context.Contex
 			{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String(resourcetype.CLOUDFORMATION_STACK),
+				ResourceType:       aws.String("AWS::CloudFormation::Stack"),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			},
 			{
 				LogicalResourceId:  aws.String("LogicalResourceId2"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String(resourcetype.S3_BUCKET),
+				ResourceType:       aws.String("AWS::S3::Bucket"),
 				PhysicalResourceId: aws.String("PhysicalResourceId2"),
 			},
 		},
@@ -164,7 +162,6 @@ func (m *NotExistsMockCloudFormationSDKClient) ListStackResources(ctx context.Co
 	Test Cases
 */
 func TestCloudFormation_DeleteStack(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	failureErrorMockWaiter := NewFailureErrorMockCloudFormationSDKWaiter()
@@ -265,7 +262,6 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 }
 
 func TestCloudFormation_DescribeStacks(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	mock := NewMockCloudFormationSDKClient()
@@ -377,7 +373,6 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 }
 
 func TestCloudFormation_waitDeleteStack(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	failureErrorMockWaiter := NewFailureErrorMockCloudFormationSDKWaiter()
@@ -449,7 +444,6 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 }
 
 func TestCloudFormation_ListStackResources(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	mock := NewMockCloudFormationSDKClient()
@@ -486,13 +480,13 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId1"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String(resourcetype.CLOUDFORMATION_STACK),
+						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
 						PhysicalResourceId: aws.String("PhysicalResourceId1"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId2"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String(resourcetype.S3_BUCKET),
+						ResourceType:       aws.String("AWS::S3::Bucket"),
 						PhysicalResourceId: aws.String("PhysicalResourceId2"),
 					},
 				},
