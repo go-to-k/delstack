@@ -28,7 +28,7 @@ func NewApp(version string) *App {
 	app := App{}
 
 	app.Cli = &cli.App{
-		Name:  version.AppName,
+		Name:  "delstack",
 		Usage: "A CLI tool to force delete the entire CloudFormation stack.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
