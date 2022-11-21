@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/logger"
 )
 
 /*
@@ -163,7 +162,6 @@ func (m *NotExistsMockCloudFormationSDKClient) ListStackResources(ctx context.Co
 	Test Cases
 */
 func TestCloudFormation_DeleteStack(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	failureErrorMockWaiter := NewFailureErrorMockCloudFormationSDKWaiter()
@@ -264,7 +262,6 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 }
 
 func TestCloudFormation_DescribeStacks(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	mock := NewMockCloudFormationSDKClient()
@@ -376,7 +373,6 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 }
 
 func TestCloudFormation_waitDeleteStack(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	failureErrorMockWaiter := NewFailureErrorMockCloudFormationSDKWaiter()
@@ -448,7 +444,6 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 }
 
 func TestCloudFormation_ListStackResources(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	mock := NewMockCloudFormationSDKClient()

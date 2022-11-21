@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
-	"github.com/go-to-k/delstack/logger"
 )
 
 var _ IIamSDKClient = (*MockIamSDKClient)(nil)
@@ -144,7 +143,6 @@ func (m *NotExistsMockForGetRoleIamSDKClient) GetRole(ctx context.Context, param
 	Test Cases
 */
 func TestIam_DeleteRole(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
@@ -211,7 +209,6 @@ func TestIam_DeleteRole(t *testing.T) {
 }
 
 func TestIam_ListAttachedRolePolicies(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
@@ -291,7 +288,6 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicies(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
@@ -400,7 +396,6 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicy(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
@@ -471,7 +466,6 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 }
 
 func TestIam_CheckRoleExists(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
