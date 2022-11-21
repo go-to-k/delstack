@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
-	"github.com/go-to-k/delstack/internal/option"
 	"github.com/go-to-k/delstack/pkg/logger"
 )
 
@@ -190,7 +189,7 @@ func TestIam_DeleteRole(t *testing.T) {
 				roleName: aws.String("test"),
 				client:   apiErrorMock,
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
@@ -379,7 +378,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 				},
 				client: apiErrorMock,
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
@@ -450,7 +449,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 				PolicyArn: aws.String("test"),
 				client:    apiErrorMock,
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(option.MaxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}

@@ -2,12 +2,12 @@ package client
 
 import (
 	"context"
+	"runtime"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/go-to-k/delstack/internal/option"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 )
@@ -51,7 +51,7 @@ func (s3Client *S3) DeleteBucket(bucketName *string) error {
 func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
 	eg, ctx := errgroup.WithContext(context.Background())
 	outputsCh := make(chan *s3.DeleteObjectsOutput)
-	sem := semaphore.NewWeighted(int64(option.ConcurrencyNum))
+	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	errors := []types.Error{}
 	nextObjects := make([]types.ObjectIdentifier, len(objects))
