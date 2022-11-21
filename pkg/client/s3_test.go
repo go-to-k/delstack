@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/go-to-k/delstack/logger"
 )
 
 var _ IS3SDKClient = (*MockS3SDKClient)(nil)
@@ -344,7 +343,6 @@ func (m *NotExistsMockForListBucketsS3SDKClient) ListBuckets(ctx context.Context
 	Test Cases
 */
 func TestS3_DeleteBucket(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
@@ -400,7 +398,6 @@ func TestS3_DeleteBucket(t *testing.T) {
 }
 
 func TestS3_DeleteObjects(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
@@ -553,7 +550,6 @@ func TestS3_DeleteObjects(t *testing.T) {
 }
 
 func TestS3_ListObjectVersions(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
@@ -685,7 +681,6 @@ func TestS3_ListObjectVersions(t *testing.T) {
 }
 
 func TestS3_CheckBucketExists(t *testing.T) {
-	logger.NewLogger(false)
 	ctx := context.TODO()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
