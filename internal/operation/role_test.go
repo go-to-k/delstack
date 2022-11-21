@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
-	"github.com/go-to-k/delstack/internal/resourcetype"
 	"github.com/go-to-k/delstack/pkg/client"
 	"github.com/go-to-k/delstack/pkg/logger"
 )
@@ -453,7 +452,7 @@ func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
 			iamOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String(resourcetype.IAM_ROLE),
+				ResourceType:       aws.String("AWS::IAM::Role"),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			})
 

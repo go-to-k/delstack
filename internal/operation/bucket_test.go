@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/go-to-k/delstack/internal/resourcetype"
 	"github.com/go-to-k/delstack/pkg/client"
 	"github.com/go-to-k/delstack/pkg/logger"
 )
@@ -516,7 +515,7 @@ func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
 			bucketOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String(resourcetype.S3_BUCKET),
+				ResourceType:       aws.String("AWS::S3::Bucket"),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			})
 
