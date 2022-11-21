@@ -12,7 +12,8 @@ import (
 )
 
 var _ IOperator = (*BucketOperator)(nil)
-var sleepTimeSecForS3 = 10
+
+const sleepTimeSecForS3 = 10
 
 type BucketOperator struct {
 	client    client.IS3
