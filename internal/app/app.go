@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/go-to-k/delstack/internal/operation"
-	"github.com/go-to-k/delstack/internal/option"
 	"github.com/go-to-k/delstack/internal/resourcetype"
 	"github.com/go-to-k/delstack/pkg/logger"
 	"github.com/urfave/cli/v2"
@@ -29,7 +28,7 @@ func NewApp(version string) *App {
 	app := App{}
 
 	app.Cli = &cli.App{
-		Name:  option.AppName,
+		Name:  version.AppName,
 		Usage: "A CLI tool to force delete the entire CloudFormation stack.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
