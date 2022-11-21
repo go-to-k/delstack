@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/go-to-k/delstack/pkg/logger"
+	"github.com/go-to-k/delstack/logger"
 )
 
 func TestWaitForRetry(t *testing.T) {
