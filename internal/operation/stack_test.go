@@ -9,8 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	"github.com/go-to-k/delstack/logger"
 	"github.com/go-to-k/delstack/pkg/client"
-	"github.com/go-to-k/delstack/pkg/logger"
 )
 
 /*

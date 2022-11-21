@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-to-k/delstack/pkg/logger"
+	"github.com/go-to-k/delstack/logger"
 )
 
 const maxRetryCount = 10

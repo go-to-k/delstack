@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/go-to-k/delstack/internal/operation"
 	"github.com/go-to-k/delstack/internal/resourcetype"
-	"github.com/go-to-k/delstack/pkg/logger"
+	"github.com/go-to-k/delstack/logger"
 	"github.com/urfave/cli/v2"
 )
 
