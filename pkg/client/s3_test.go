@@ -21,7 +21,7 @@ var _ IS3SDKClient = (*VersionsMockForListObjectVersionsS3SDKClient)(nil)
 var _ IS3SDKClient = (*DeleteMarkersMockForListObjectVersionsS3SDKClient)(nil)
 var _ IS3SDKClient = (*NotExistsMockForListBucketsS3SDKClient)(nil)
 
-var sleepTimeSecForS3 = 1
+const sleepTimeSecForS3 = 1
 
 /*
 	Mocks for SDK Client

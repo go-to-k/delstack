@@ -17,7 +17,7 @@ var _ IIamSDKClient = (*ErrorMockIamSDKClient)(nil)
 var _ IIamSDKClient = (*ApiErrorMockIamSDKClient)(nil)
 var _ IIamSDKClient = (*NotExistsMockForGetRoleIamSDKClient)(nil)
 
-var sleepTimeSecForIam = 1
+const sleepTimeSecForIam = 1
 
 /*
 	Mocks for SDK Client
