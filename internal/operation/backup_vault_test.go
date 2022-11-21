@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/internal/resourcetype"
 	"github.com/go-to-k/delstack/pkg/client"
 	"github.com/go-to-k/delstack/pkg/logger"
 )
@@ -453,7 +452,7 @@ func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
 			backupOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
-				ResourceType:       aws.String(resourcetype.BACKUP_VAULT),
+				ResourceType:       aws.String("AWS::Backup::BackupVault"),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			})
 
