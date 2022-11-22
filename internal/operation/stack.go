@@ -16,7 +16,7 @@ import (
 
 var _ IOperator = (*StackOperator)(nil)
 
-const STACK_NAME_RULE = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
+const stackNameRule = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
 type StackOperator struct {
 	config              aws.Config
@@ -44,7 +44,7 @@ func (operator *StackOperator) GetResourcesLength() int {
 
 func (operator *StackOperator) DeleteResources() error {
 	var eg errgroup.Group
-	re := regexp.MustCompile(STACK_NAME_RULE)
+	re := regexp.MustCompile(stackNameRule)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, stack := range operator.resources {
