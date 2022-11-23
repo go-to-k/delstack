@@ -704,7 +704,7 @@ func TestS3_CheckBucketExists(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "check bucket for bucket exist",
+			name: "check bucket for bucket exists",
 			args: args{
 				ctx:        ctx,
 				bucketName: aws.String("test"),

@@ -98,14 +98,14 @@ func (operator *StackOperator) DeleteStackResources(stackName *string, isRootSta
 }
 
 func (operator *StackOperator) deleteStackNormally(stackName *string, isRootStack bool) (bool, error) {
-	stackOutputBeforeDelete, isExistBeforeDelete, err := operator.client.DescribeStacks(stackName)
+	stackOutputBeforeDelete, stackExistsBeforeDelete, err := operator.client.DescribeStacks(stackName)
 	if err != nil {
 		return false, err
 	}
-	if !isExistBeforeDelete && isRootStack {
+	if !stackExistsBeforeDelete && isRootStack {
 		return false, fmt.Errorf("NotExistsError: %v", *stackName)
 	}
-	if !isExistBeforeDelete {
+	if !stackExistsBeforeDelete {
 		return true, nil
 	}
 
@@ -121,11 +121,11 @@ func (operator *StackOperator) deleteStackNormally(stackName *string, isRootStac
 		return false, err
 	}
 
-	stackOutputAfterDelete, isExistAfterDelete, err := operator.client.DescribeStacks(stackName)
+	stackOutputAfterDelete, stackExistsAfterDelete, err := operator.client.DescribeStacks(stackName)
 	if err != nil {
 		return false, err
 	}
-	if !isExistAfterDelete {
+	if !stackExistsAfterDelete {
 		logger.Logger.Info().Msg("No resources were DELETE_FAILED.")
 		return true, nil
 	}
