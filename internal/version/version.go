@@ -8,10 +8,7 @@ var Version = ""
 var Revision = ""
 
 func IsDebug() bool {
-	if Version == "" || Revision != "" {
-		return true
-	}
-	return false
+	return Version == "" || Revision != ""
 }
 
 func GetVersion() string {
