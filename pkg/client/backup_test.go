@@ -434,7 +434,7 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "check backup vault for backup vault exist",
+			name: "check backup vault for backup vault exists",
 			args: args{
 				ctx:             ctx,
 				backupVaultName: aws.String("test"),
