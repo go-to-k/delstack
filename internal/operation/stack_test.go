@@ -547,7 +547,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete stack failure for root stack for describe stacks not exist",
+			name: "delete stack failure for root stack for describe stacks but not exists",
 			args: args{
 				ctx:                 ctx,
 				stackName:           aws.String("test"),
@@ -781,7 +781,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete stack failure for root stack for describe stacks not exist",
+			name: "delete stack failure for root stack for describe stacks but not exists",
 			args: args{
 				ctx:         ctx,
 				stackName:   aws.String("test"),
