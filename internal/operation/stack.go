@@ -113,10 +113,6 @@ func (operator *StackOperator) deleteStackNormally(stackName *string, isRootStac
 		return false, fmt.Errorf("TerminationProtectionIsEnabled: %v", *stackName)
 	}
 
-	if stackOutputBeforeDelete.Stacks[0].StackStatus == "DELETE_FAILED" {
-		return false, nil
-	}
-
 	if err := operator.client.DeleteStack(stackName, []string{}); err != nil {
 		return false, err
 	}
