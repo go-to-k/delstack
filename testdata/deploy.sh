@@ -10,14 +10,14 @@ profile_option=""
 REGION="ap-northeast-1"
 
 while getopts p:s: OPT; do
-    case $OPT in
-        p)
-            profile="$OPTARG"
-            ;;
-        s)
-            stage="$OPTARG"
-            ;;
-    esac
+	case $OPT in
+		p)
+			profile="$OPTARG"
+			;;
+		s)
+			stage="$OPTARG"
+			;;
+	esac
 done
 
 if [ -z "${stage}" ]; then
@@ -88,13 +88,13 @@ function attach_policy(){
 
 
 	if [ ${iam_role_resource_len} -gt 0 ]; then
-		for i in $( seq 0 $(($iam_role_resource_len - 1)) ); do 
+		for i in $( seq 0 $(($iam_role_resource_len - 1)) ); do
 			iam_role_name_array+=( $(echo $iam_role_resources | jq -r ".[$i]") )
 		done
 	fi
 
 	if [ ${nested_stack_resourceLen} -gt 0 ]; then
-		for i in $( seq 0 $(($nested_stack_resourceLen - 1)) ); do 
+		for i in $( seq 0 $(($nested_stack_resourceLen - 1)) ); do
 			nested_own_stackname_array+=( $(
 				echo $nested_stack_resources \
 				| jq -r ".[$i]" \
@@ -167,13 +167,13 @@ function object_upload(){
 
 
 	if [ ${bucket_resource_len} -gt 0 ]; then
-		for i in $( seq 0 $(($bucket_resource_len - 1)) ); do 
+		for i in $( seq 0 $(($bucket_resource_len - 1)) ); do
 			bucket_name_array+=( $(echo $bucket_resources | jq -r ".[$i]") )
 		done
 	fi
 
 	if [ ${nested_stack_resourceLen} -gt 0 ]; then
-		for i in $( seq 0 $(($nested_stack_resourceLen - 1)) ); do 
+		for i in $( seq 0 $(($nested_stack_resourceLen - 1)) ); do
 			nested_own_stackname_array+=( $(
 				echo $nested_stack_resources \
 				| jq -r ".[$i]" \
@@ -190,9 +190,9 @@ function object_upload(){
 		wait ${pids[@]}
 	fi
 
-    filename="./Dockerfile"
+	filename="./Dockerfile"
 	for i in ${!bucket_name_array[@]}; do
-        aws s3 cp ${filename} s3://${bucket_name_array[$i]} ${profile_option}
+		aws s3 cp ${filename} s3://${bucket_name_array[$i]} ${profile_option}
 	done
 }
 
