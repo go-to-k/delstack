@@ -41,8 +41,8 @@ func (operator *BucketOperator) DeleteResources() error {
 
 	for _, bucket := range operator.resources {
 		bucket := bucket
+		sem.Acquire(context.Background(), 1)
 		eg.Go(func() error {
-			sem.Acquire(context.Background(), 1)
 			defer sem.Release(1)
 
 			return operator.DeleteBucket(bucket.PhysicalResourceId)
