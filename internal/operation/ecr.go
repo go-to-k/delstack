@@ -38,8 +38,8 @@ func (operator *EcrOperator) DeleteResources() error {
 
 	for _, repository := range operator.resources {
 		repository := repository
+		sem.Acquire(context.Background(), 1)
 		eg.Go(func() (err error) {
-			sem.Acquire(context.Background(), 1)
 			defer sem.Release(1)
 
 			return operator.DeleteEcr(repository.PhysicalResourceId)

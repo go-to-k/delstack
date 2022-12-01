@@ -49,9 +49,9 @@ func (operator *StackOperator) DeleteResources() error {
 
 	for _, stack := range operator.resources {
 		stack := stack
+		sem.Acquire(context.Background(), 1)
 		eg.Go(func() error {
 			stackName := re.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
-			sem.Acquire(context.Background(), 1)
 			defer sem.Release(1)
 
 			isRootStack := false
