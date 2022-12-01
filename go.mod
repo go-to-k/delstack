@@ -6,7 +6,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/aws/aws-sdk-go-v2 v1.17.1
 	github.com/aws/aws-sdk-go-v2/config v1.18.0
-	github.com/aws/aws-sdk-go-v2/service/backup v1.17.9
+	github.com/aws/aws-sdk-go-v2/service/backup v1.18.0
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.24.0
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.17.18
 	github.com/aws/aws-sdk-go-v2/service/iam v1.18.15
