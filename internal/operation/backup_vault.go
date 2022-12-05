@@ -38,8 +38,8 @@ func (operator *BackupVaultOperator) DeleteResources() error {
 
 	for _, backupVault := range operator.resources {
 		backupVault := backupVault
+		sem.Acquire(context.Background(), 1)
 		eg.Go(func() error {
-			sem.Acquire(context.Background(), 1)
 			defer sem.Release(1)
 
 			return operator.DeleteBackupVault(backupVault.PhysicalResourceId)

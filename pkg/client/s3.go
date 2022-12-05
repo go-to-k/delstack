@@ -76,8 +76,8 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 			},
 		}
 
+		sem.Acquire(context.Background(), 1)
 		eg.Go(func() error {
-			sem.Acquire(context.Background(), 1)
 			defer sem.Release(1)
 
 			var (
