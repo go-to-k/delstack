@@ -18,6 +18,8 @@ var _ IOperator = (*StackOperator)(nil)
 
 const stackNameRule = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
+var stackNameRuleRegExp = regexp.MustCompile(stackNameRule)
+
 type StackOperator struct {
 	config              aws.Config
 	client              client.ICloudFormation
@@ -44,14 +46,13 @@ func (operator *StackOperator) GetResourcesLength() int {
 
 func (operator *StackOperator) DeleteResources() error {
 	var eg errgroup.Group
-	re := regexp.MustCompile(stackNameRule)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, stack := range operator.resources {
 		stack := stack
 		sem.Acquire(context.Background(), 1)
 		eg.Go(func() error {
-			stackName := re.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
+			stackName := stackNameRuleRegExp.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
 			defer sem.Release(1)
 
 			isRootStack := false
