@@ -40,8 +40,8 @@ func (operator *RoleOperator) DeleteResources() error {
 
 	for _, role := range operator.resources {
 		role := role
+		sem.Acquire(context.Background(), 1)
 		eg.Go(func() error {
-			sem.Acquire(context.Background(), 1)
 			defer sem.Release(1)
 
 			return operator.DeleteRole(role.PhysicalResourceId)
