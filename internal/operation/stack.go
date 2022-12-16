@@ -52,8 +52,8 @@ func (operator *StackOperator) DeleteResources() error {
 		stack := stack
 		sem.Acquire(context.Background(), 1)
 		eg.Go(func() error {
-			stackName := stackNameRuleRegExp.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
 			defer sem.Release(1)
+			stackName := stackNameRuleRegExp.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
 
 			isRootStack := false
 			operatorFactory := NewOperatorFactory(operator.config)
