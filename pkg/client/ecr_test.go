@@ -114,7 +114,7 @@ func TestEcr_DeleteRepository(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ecrClient := NewEcr(tt.args.client)
 
-			err := ecrClient.DeleteRepository(tt.args.repositoryName)
+			err := ecrClient.DeleteRepository(tt.args.ctx, tt.args.repositoryName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -194,7 +194,7 @@ func TestEcr_CheckRepository(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ecrClient := NewEcr(tt.args.client)
 
-			output, err := ecrClient.CheckEcrExists(tt.args.repositoryName)
+			output, err := ecrClient.CheckEcrExists(tt.args.ctx, tt.args.repositoryName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
