@@ -196,7 +196,7 @@ func TestIam_DeleteRole(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			iamClient := NewIam(tt.args.client)
 
-			err := iamClient.DeleteRole(tt.args.roleName, sleepTimeSecForIam)
+			err := iamClient.DeleteRole(tt.args.ctx, tt.args.roleName, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -271,7 +271,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			iamClient := NewIam(tt.args.client)
 
-			output, err := iamClient.ListAttachedRolePolicies(tt.args.roleName)
+			output, err := iamClient.ListAttachedRolePolicies(tt.args.ctx, tt.args.roleName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -383,7 +383,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			iamClient := NewIam(tt.args.client)
 
-			err := iamClient.DetachRolePolicies(tt.args.roleName, tt.args.policies, sleepTimeSecForIam)
+			err := iamClient.DetachRolePolicies(tt.args.ctx, tt.args.roleName, tt.args.policies, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -453,7 +453,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			iamClient := NewIam(tt.args.client)
 
-			err := iamClient.DetachRolePolicy(tt.args.roleName, tt.args.PolicyArn, sleepTimeSecForIam)
+			err := iamClient.DetachRolePolicy(tt.args.ctx, tt.args.roleName, tt.args.PolicyArn, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -533,7 +533,7 @@ func TestIam_CheckRoleExists(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ecrClient := NewIam(tt.args.client)
 
-			output, err := ecrClient.CheckRoleExists(tt.args.roleName)
+			output, err := ecrClient.CheckRoleExists(tt.args.ctx, tt.args.roleName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
