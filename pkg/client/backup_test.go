@@ -194,7 +194,7 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			backupClient := NewBackup(tt.args.client)
 
-			output, err := backupClient.ListRecoveryPointsByBackupVault(tt.args.backupVaultName)
+			output, err := backupClient.ListRecoveryPointsByBackupVault(tt.args.ctx, tt.args.backupVaultName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -285,7 +285,7 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			backupClient := NewBackup(tt.args.client)
 
-			err := backupClient.DeleteRecoveryPoints(tt.args.backupVaultName, tt.args.recoveryPoints)
+			err := backupClient.DeleteRecoveryPoints(tt.args.ctx, tt.args.backupVaultName, tt.args.recoveryPoints)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -343,7 +343,7 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			backupClient := NewBackup(tt.args.client)
 
-			err := backupClient.DeleteRecoveryPoint(tt.args.backupVaultName, tt.args.recoveryPointArn)
+			err := backupClient.DeleteRecoveryPoint(tt.args.ctx, tt.args.backupVaultName, tt.args.recoveryPointArn)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -398,7 +398,7 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			backupClient := NewBackup(tt.args.client)
 
-			err := backupClient.DeleteBackupVault(tt.args.backupVaultName)
+			err := backupClient.DeleteBackupVault(tt.args.ctx, tt.args.backupVaultName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -478,7 +478,7 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			backupClient := NewBackup(tt.args.client)
 
-			output, err := backupClient.CheckBackupVaultExists(tt.args.backupVaultName)
+			output, err := backupClient.CheckBackupVaultExists(tt.args.ctx, tt.args.backupVaultName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
