@@ -385,7 +385,7 @@ func TestS3_DeleteBucket(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s3Client := NewS3(tt.args.client)
 
-			err := s3Client.DeleteBucket(tt.args.bucketName)
+			err := s3Client.DeleteBucket(tt.args.ctx, tt.args.bucketName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -533,7 +533,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s3Client := NewS3(tt.args.client)
 
-			output, err := s3Client.DeleteObjects(tt.args.bucketName, tt.args.objects, sleepTimeSecForS3)
+			output, err := s3Client.DeleteObjects(tt.args.ctx, tt.args.bucketName, tt.args.objects, sleepTimeSecForS3)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -664,7 +664,7 @@ func TestS3_ListObjectVersions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s3Client := NewS3(tt.args.client)
 
-			output, err := s3Client.ListObjectVersions(tt.args.bucketName)
+			output, err := s3Client.ListObjectVersions(tt.args.ctx, tt.args.bucketName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -748,7 +748,7 @@ func TestS3_CheckBucketExists(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s3Client := NewS3(tt.args.client)
 
-			output, err := s3Client.CheckBucketExists(tt.args.bucketName)
+			output, err := s3Client.CheckBucketExists(tt.args.ctx, tt.args.bucketName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
