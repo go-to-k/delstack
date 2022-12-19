@@ -34,25 +34,25 @@ func (operator *RoleOperator) GetResourcesLength() int {
 	return len(operator.resources)
 }
 
-func (operator *RoleOperator) DeleteResources() error {
+func (operator *RoleOperator) DeleteResources(ctx context.Context) error {
 	var eg errgroup.Group
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, role := range operator.resources {
 		role := role
-		sem.Acquire(context.Background(), 1)
+		sem.Acquire(ctx, 1)
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			return operator.DeleteRole(role.PhysicalResourceId)
+			return operator.DeleteRole(ctx, role.PhysicalResourceId)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (operator *RoleOperator) DeleteRole(roleName *string) error {
-	exists, err := operator.client.CheckRoleExists(roleName)
+func (operator *RoleOperator) DeleteRole(ctx context.Context, roleName *string) error {
+	exists, err := operator.client.CheckRoleExists(ctx, roleName)
 	if err != nil {
 		return err
 	}
@@ -60,18 +60,18 @@ func (operator *RoleOperator) DeleteRole(roleName *string) error {
 		return nil
 	}
 
-	policies, err := operator.client.ListAttachedRolePolicies(roleName)
+	policies, err := operator.client.ListAttachedRolePolicies(ctx, roleName)
 	if err != nil {
 		return err
 	}
 
 	if len(policies) > 0 {
-		if err := operator.client.DetachRolePolicies(roleName, policies, sleepTimeSecForIam); err != nil {
+		if err := operator.client.DetachRolePolicies(ctx, roleName, policies, sleepTimeSecForIam); err != nil {
 			return err
 		}
 	}
 
-	if err := operator.client.DeleteRole(roleName, sleepTimeSecForIam); err != nil {
+	if err := operator.client.DeleteRole(ctx, roleName, sleepTimeSecForIam); err != nil {
 		return err
 	}
 
