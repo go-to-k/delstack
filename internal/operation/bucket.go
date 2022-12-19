@@ -35,25 +35,25 @@ func (operator *BucketOperator) GetResourcesLength() int {
 	return len(operator.resources)
 }
 
-func (operator *BucketOperator) DeleteResources() error {
+func (operator *BucketOperator) DeleteResources(ctx context.Context) error {
 	var eg errgroup.Group
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, bucket := range operator.resources {
 		bucket := bucket
-		sem.Acquire(context.Background(), 1)
+		sem.Acquire(ctx, 1)
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			return operator.DeleteBucket(bucket.PhysicalResourceId)
+			return operator.DeleteBucket(ctx, bucket.PhysicalResourceId)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (operator *BucketOperator) DeleteBucket(bucketName *string) error {
-	exists, err := operator.client.CheckBucketExists(bucketName)
+func (operator *BucketOperator) DeleteBucket(ctx context.Context, bucketName *string) error {
+	exists, err := operator.client.CheckBucketExists(ctx, bucketName)
 	if err != nil {
 		return err
 	}
@@ -61,13 +61,13 @@ func (operator *BucketOperator) DeleteBucket(bucketName *string) error {
 		return nil
 	}
 
-	versions, err := operator.client.ListObjectVersions(bucketName)
+	versions, err := operator.client.ListObjectVersions(ctx, bucketName)
 	if err != nil {
 		return err
 	}
 
 	if len(versions) > 0 {
-		errors, err := operator.client.DeleteObjects(bucketName, versions, sleepTimeSecForS3)
+		errors, err := operator.client.DeleteObjects(ctx, bucketName, versions, sleepTimeSecForS3)
 		if err != nil {
 			return err
 		}
@@ -82,7 +82,7 @@ func (operator *BucketOperator) DeleteBucket(bucketName *string) error {
 			return fmt.Errorf("DeleteObjectsError: followings %v", errorStr)
 		}
 	}
-	if err := operator.client.DeleteBucket(bucketName); err != nil {
+	if err := operator.client.DeleteBucket(ctx, bucketName); err != nil {
 		return err
 	}
 

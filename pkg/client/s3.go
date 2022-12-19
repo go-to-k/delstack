@@ -13,10 +13,10 @@ import (
 )
 
 type IS3 interface {
-	DeleteBucket(bucketName *string) error
-	DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error)
-	ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error)
-	CheckBucketExists(bucketName *string) (bool, error)
+	DeleteBucket(ctx context.Context, bucketName *string) error
+	DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error)
+	ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error)
+	CheckBucketExists(ctx context.Context, bucketName *string) (bool, error)
 }
 
 var _ IS3 = (*S3)(nil)
@@ -38,18 +38,18 @@ func NewS3(client IS3SDKClient) *S3 {
 	}
 }
 
-func (s3Client *S3) DeleteBucket(bucketName *string) error {
+func (s3Client *S3) DeleteBucket(ctx context.Context, bucketName *string) error {
 	input := &s3.DeleteBucketInput{
 		Bucket: bucketName,
 	}
 
-	_, err := s3Client.client.DeleteBucket(context.Background(), input)
+	_, err := s3Client.client.DeleteBucket(ctx, input)
 
 	return err
 }
 
-func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
-	eg, ctx := errgroup.WithContext(context.Background())
+func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	eg, ctx := errgroup.WithContext(ctx)
 	outputsCh := make(chan *s3.DeleteObjectsOutput)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
@@ -76,7 +76,7 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 			},
 		}
 
-		sem.Acquire(context.Background(), 1)
+		sem.Acquire(ctx, 1)
 		eg.Go(func() error {
 			defer sem.Release(1)
 
@@ -86,7 +86,7 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 				retryCount int
 			)
 			for {
-				output, err = s3Client.client.DeleteObjects(context.Background(), input)
+				output, err = s3Client.client.DeleteObjects(ctx, input)
 				if err != nil && strings.Contains(err.Error(), "api error SlowDown") {
 					retryCount++
 					if err := WaitForRetry(retryCount, sleepTimeSec, bucketName, err); err != nil {
@@ -132,7 +132,7 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 	return errors, nil
 }
 
-func (s3Client *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdentifier, error) {
+func (s3Client *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
 	var keyMarker *string
 	var versionIdMarker *string
 	objectIdentifiers := []types.ObjectIdentifier{}
@@ -144,7 +144,7 @@ func (s3Client *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdenti
 			VersionIdMarker: versionIdMarker,
 		}
 
-		output, err := s3Client.client.ListObjectVersions(context.Background(), input)
+		output, err := s3Client.client.ListObjectVersions(ctx, input)
 		if err != nil {
 			return nil, err
 		}
@@ -176,10 +176,10 @@ func (s3Client *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdenti
 	return objectIdentifiers, nil
 }
 
-func (s3Client *S3) CheckBucketExists(bucketName *string) (bool, error) {
+func (s3Client *S3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
 	input := &s3.ListBucketsInput{}
 
-	output, err := s3Client.client.ListBuckets(context.Background(), input)
+	output, err := s3Client.client.ListBuckets(ctx, input)
 	if err != nil {
 		return false, err
 	}
