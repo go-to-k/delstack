@@ -35,7 +35,7 @@ func (ecrClient *Ecr) DeleteRepository(repositoryName *string) error {
 		Force:          true,
 	}
 
-	_, err := ecrClient.client.DeleteRepository(context.TODO(), input)
+	_, err := ecrClient.client.DeleteRepository(context.Background(), input)
 
 	return err
 }
@@ -51,7 +51,7 @@ func (ecrClient *Ecr) CheckEcrExists(repositoryName *string) (bool, error) {
 			},
 		}
 
-		output, err := ecrClient.client.DescribeRepositories(context.TODO(), input)
+		output, err := ecrClient.client.DescribeRepositories(context.Background(), input)
 		if err != nil && strings.Contains(err.Error(), "does not exist") {
 			return false, nil
 		}

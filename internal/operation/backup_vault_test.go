@@ -288,7 +288,7 @@ func (m *CheckBackupVaultNotExistsMockBackup) CheckBackupVaultExists(backupVault
 */
 func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockBackup()
 	allErrorMock := NewAllErrorMockBackup()
 	listRecoveryPointsErrorMock := NewListRecoveryPointsErrorMockBackup()
@@ -411,7 +411,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 
 func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockBackup()
 	allErrorMock := NewAllErrorMockBackup()
 

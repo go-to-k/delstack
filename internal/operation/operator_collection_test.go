@@ -30,7 +30,7 @@ var targetResourceTypesForPartialServices = []string{
 */
 func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	type args struct {
 		ctx                    context.Context
@@ -485,7 +485,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 
 func TestOperatorCollection_containsResourceType(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	type args struct {
 		ctx                 context.Context

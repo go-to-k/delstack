@@ -80,7 +80,7 @@ func (m *CheckEcrNotExistsMockEcr) CheckEcrExists(repositoryName *string) (bool,
 */
 func TestEcrOperator_DeleteRepository(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockEcr()
 	DeleteRepositoryErrorMock := NewDeleteRepositoryErrorMockEcr()
 	checkEcrExistsErrorMock := NewCheckEcrExistsErrorMockEcr()
@@ -159,7 +159,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 
 func TestEcrOperator_DeleteResourcesForEcr(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockEcr()
 	errorMock := NewDeleteRepositoryErrorMockEcr()
 

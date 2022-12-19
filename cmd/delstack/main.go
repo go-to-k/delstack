@@ -11,7 +11,7 @@ import (
 
 func main() {
 	logger.NewLogger(version.IsDebug())
-	ctx := context.TODO()
+	ctx := context.Background()
 	app := app.NewApp(version.GetVersion())
 
 	if err := app.Run(ctx); err != nil {

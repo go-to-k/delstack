@@ -288,7 +288,7 @@ func (m *CheckRoleNotExistsMockRole) CheckRoleExists(repositoryName *string) (bo
 */
 func TestRoleOperator_DeleteRole(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockIam()
 	allErrorMock := NewAllErrorMockIam()
 	deleteRoleErrorMock := NewDeleteRoleErrorMockIam()
@@ -411,7 +411,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 
 func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockIam()
 	allErrorMock := NewAllErrorMockIam()
 

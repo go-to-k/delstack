@@ -408,7 +408,7 @@ func (m *ListStackResourcesErrorMockCloudFormation) ListStackResources(stackName
 */
 func TestStackOperator_DeleteStack(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	mock := NewMockCloudFormation()
 	terminationProtectionIsEnabledMock := NewTerminationProtectionIsEnabledMockCloudFormation()
@@ -683,7 +683,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 
 func TestStackOperator_deleteRootStack(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	mock := NewMockCloudFormation()
 	terminationProtectionIsEnabledMock := NewTerminationProtectionIsEnabledMockCloudFormation()

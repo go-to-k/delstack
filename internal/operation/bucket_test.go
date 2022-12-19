@@ -329,7 +329,7 @@ func (m *CheckBucketNotExistsMockS3) CheckBucketExists(bucketName *string) (bool
 */
 func TestBucketOperator_DeleteBucket(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockS3()
 	allErrorMock := NewAllErrorMockS3()
 	deleteBucketErrorMock := NewDeleteBucketErrorMockS3()
@@ -474,7 +474,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 
 func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockS3()
 	allErrorMock := NewAllErrorMockS3()
 
