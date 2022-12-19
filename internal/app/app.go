@@ -101,7 +101,7 @@ func (app *App) getAction() func(c *cli.Context) error {
 		operatorCollection := operation.NewOperatorCollection(config, operatorFactory, targetResourceTypes)
 		operatorManager := operation.NewOperatorManager(operatorCollection)
 
-		if err := stackOperator.DeleteStackResources(aws.String(app.StackName), isRootStack, operatorManager); err != nil {
+		if err := stackOperator.DeleteStackResources(c.Context, aws.String(app.StackName), isRootStack, operatorManager); err != nil {
 			return err
 		}
 

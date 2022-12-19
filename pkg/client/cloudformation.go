@@ -12,9 +12,9 @@ import (
 const cloudFormationWaitNanoSecTime = time.Duration(4500000000000)
 
 type ICloudFormation interface {
-	DeleteStack(stackName *string, retainResources []string) error
-	DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error)
-	ListStackResources(stackName *string) ([]types.StackResourceSummary, error)
+	DeleteStack(ctx context.Context, stackName *string, retainResources []string) error
+	DescribeStacks(ctx context.Context, stackName *string) (*cloudformation.DescribeStacksOutput, bool, error)
+	ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error)
 }
 
 var _ ICloudFormation = (*CloudFormation)(nil)
@@ -41,29 +41,29 @@ func NewCloudFormation(client ICloudFormationSDKClient, waiter ICloudFormationSD
 	}
 }
 
-func (cfnClient *CloudFormation) DeleteStack(stackName *string, retainResources []string) error {
+func (cfnClient *CloudFormation) DeleteStack(ctx context.Context, stackName *string, retainResources []string) error {
 	input := &cloudformation.DeleteStackInput{
 		StackName:       stackName,
 		RetainResources: retainResources,
 	}
 
-	if _, err := cfnClient.client.DeleteStack(context.Background(), input); err != nil {
+	if _, err := cfnClient.client.DeleteStack(ctx, input); err != nil {
 		return err
 	}
 
-	if err := cfnClient.waitDeleteStack(stackName); err != nil {
+	if err := cfnClient.waitDeleteStack(ctx, stackName); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (cfnClient *CloudFormation) DescribeStacks(stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
+func (cfnClient *CloudFormation) DescribeStacks(ctx context.Context, stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
 	input := &cloudformation.DescribeStacksInput{
 		StackName: stackName,
 	}
 
-	output, err := cfnClient.client.DescribeStacks(context.Background(), input)
+	output, err := cfnClient.client.DescribeStacks(ctx, input)
 	if err != nil && strings.Contains(err.Error(), "does not exist") {
 		return output, false, nil
 	}
@@ -71,12 +71,12 @@ func (cfnClient *CloudFormation) DescribeStacks(stackName *string) (*cloudformat
 	return output, true, err
 }
 
-func (cfnClient *CloudFormation) waitDeleteStack(stackName *string) error {
+func (cfnClient *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string) error {
 	input := &cloudformation.DescribeStacksInput{
 		StackName: stackName,
 	}
 
-	err := cfnClient.waiter.Wait(context.Background(), input, cloudFormationWaitNanoSecTime)
+	err := cfnClient.waiter.Wait(ctx, input, cloudFormationWaitNanoSecTime)
 	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
 		return err
 	}
@@ -84,7 +84,7 @@ func (cfnClient *CloudFormation) waitDeleteStack(stackName *string) error {
 	return nil
 }
 
-func (cfnClient *CloudFormation) ListStackResources(stackName *string) ([]types.StackResourceSummary, error) {
+func (cfnClient *CloudFormation) ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error) {
 	var nextToken *string
 	stackResourceSummaries := []types.StackResourceSummary{}
 
@@ -94,7 +94,7 @@ func (cfnClient *CloudFormation) ListStackResources(stackName *string) ([]types.
 			NextToken: nextToken,
 		}
 
-		output, err := cfnClient.client.ListStackResources(context.Background(), input)
+		output, err := cfnClient.client.ListStackResources(ctx, input)
 		if err != nil {
 			return stackResourceSummaries, err
 		}
