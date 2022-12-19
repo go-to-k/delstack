@@ -44,13 +44,13 @@ func (operator *StackOperator) GetResourcesLength() int {
 	return len(operator.resources)
 }
 
-func (operator *StackOperator) DeleteResources() error {
+func (operator *StackOperator) DeleteResources(ctx context.Context) error {
 	var eg errgroup.Group
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, stack := range operator.resources {
 		stack := stack
-		sem.Acquire(context.Background(), 1)
+		sem.Acquire(ctx, 1)
 		eg.Go(func() error {
 			defer sem.Release(1)
 			stackName := stackNameRuleRegExp.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
@@ -60,15 +60,15 @@ func (operator *StackOperator) DeleteResources() error {
 			operatorCollection := NewOperatorCollection(operator.config, operatorFactory, operator.targetResourceTypes)
 			operatorManager := NewOperatorManager(operatorCollection)
 
-			return operator.DeleteStackResources(aws.String(stackName), isRootStack, operatorManager)
+			return operator.DeleteStackResources(ctx, aws.String(stackName), isRootStack, operatorManager)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (operator *StackOperator) DeleteStackResources(stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
-	isSuccess, err := operator.deleteStackNormally(stackName, isRootStack)
+func (operator *StackOperator) DeleteStackResources(ctx context.Context, stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
+	isSuccess, err := operator.deleteStackNormally(ctx, stackName, isRootStack)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (operator *StackOperator) DeleteStackResources(stackName *string, isRootSta
 		return nil
 	}
 
-	stackResourceSummaries, err := operator.client.ListStackResources(stackName)
+	stackResourceSummaries, err := operator.client.ListStackResources(ctx, stackName)
 	if err != nil {
 		return err
 	}
@@ -91,15 +91,15 @@ func (operator *StackOperator) DeleteStackResources(stackName *string, isRootSta
 		return err
 	}
 
-	if err := operator.client.DeleteStack(stackName, operatorManager.GetLogicalResourceIds()); err != nil {
+	if err := operator.client.DeleteStack(ctx, stackName, operatorManager.GetLogicalResourceIds()); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (operator *StackOperator) deleteStackNormally(stackName *string, isRootStack bool) (bool, error) {
-	stackOutputBeforeDelete, stackExistsBeforeDelete, err := operator.client.DescribeStacks(stackName)
+func (operator *StackOperator) deleteStackNormally(ctx context.Context, stackName *string, isRootStack bool) (bool, error) {
+	stackOutputBeforeDelete, stackExistsBeforeDelete, err := operator.client.DescribeStacks(ctx, stackName)
 	if err != nil {
 		return false, err
 	}
@@ -114,11 +114,11 @@ func (operator *StackOperator) deleteStackNormally(stackName *string, isRootStac
 		return false, fmt.Errorf("TerminationProtectionIsEnabled: %v", *stackName)
 	}
 
-	if err := operator.client.DeleteStack(stackName, []string{}); err != nil {
+	if err := operator.client.DeleteStack(ctx, stackName, []string{}); err != nil {
 		return false, err
 	}
 
-	stackOutputAfterDelete, stackExistsAfterDelete, err := operator.client.DescribeStacks(stackName)
+	stackOutputAfterDelete, stackExistsAfterDelete, err := operator.client.DescribeStacks(ctx, stackName)
 	if err != nil {
 		return false, err
 	}
