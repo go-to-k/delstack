@@ -87,7 +87,7 @@ func (operator *StackOperator) DeleteStackResources(ctx context.Context, stackNa
 		return err
 	}
 
-	if err := operatorManager.DeleteResourceCollection(); err != nil {
+	if err := operatorManager.DeleteResourceCollection(ctx); err != nil {
 		return err
 	}
 
