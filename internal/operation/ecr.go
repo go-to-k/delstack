@@ -32,7 +32,7 @@ func (operator *EcrOperator) GetResourcesLength() int {
 	return len(operator.resources)
 }
 
-func (operator *EcrOperator) DeleteResources() error {
+func (operator *EcrOperator) DeleteResources(context.Context) error {
 	var eg errgroup.Group
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
