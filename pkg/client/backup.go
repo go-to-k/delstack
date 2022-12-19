@@ -44,7 +44,7 @@ func (backupClient *Backup) ListRecoveryPointsByBackupVault(backupVaultName *str
 			NextToken:       nextToken,
 		}
 
-		output, err := backupClient.client.ListRecoveryPointsByBackupVault(context.TODO(), input)
+		output, err := backupClient.client.ListRecoveryPointsByBackupVault(context.Background(), input)
 		if err != nil {
 			return nil, err
 		}
@@ -74,7 +74,7 @@ func (backupClient *Backup) DeleteRecoveryPoint(backupVaultName *string, recover
 		RecoveryPointArn: recoveryPointArn,
 	}
 
-	_, err := backupClient.client.DeleteRecoveryPoint(context.TODO(), input)
+	_, err := backupClient.client.DeleteRecoveryPoint(context.Background(), input)
 
 	return err
 }
@@ -84,7 +84,7 @@ func (backupClient *Backup) DeleteBackupVault(backupVaultName *string) error {
 		BackupVaultName: backupVaultName,
 	}
 
-	_, err := backupClient.client.DeleteBackupVault(context.TODO(), input)
+	_, err := backupClient.client.DeleteBackupVault(context.Background(), input)
 
 	return err
 }
@@ -97,7 +97,7 @@ func (backupClient *Backup) CheckBackupVaultExists(backupVaultName *string) (boo
 			NextToken: nextToken,
 		}
 
-		output, err := backupClient.client.ListBackupVaults(context.TODO(), input)
+		output, err := backupClient.client.ListBackupVaults(context.Background(), input)
 		if err != nil {
 			return false, err
 		}

@@ -72,7 +72,7 @@ func (m *NotExistsMockForDescribeRepositoriesEcrSDKClient) DescribeRepositories(
 */
 
 func TestEcr_DeleteRepository(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockEcrSDKClient()
 	errorMock := NewErrorMockEcrSDKClient()
 
@@ -127,7 +127,7 @@ func TestEcr_DeleteRepository(t *testing.T) {
 }
 
 func TestEcr_CheckRepository(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockEcrSDKClient()
 	errorMock := NewErrorMockEcrSDKClient()
 	notExitsMock := NewNotExistsMockForDescribeRepositoriesEcrSDKClient()

@@ -42,7 +42,7 @@ func (iamClient *Iam) DeleteRole(roleName *string, sleepTimeSec int) error {
 
 	retryCount := 0
 	for {
-		_, err := iamClient.client.DeleteRole(context.TODO(), input)
+		_, err := iamClient.client.DeleteRole(context.Background(), input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
 			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
@@ -69,7 +69,7 @@ func (iamClient *Iam) ListAttachedRolePolicies(roleName *string) ([]types.Attach
 			Marker:   marker,
 		}
 
-		output, err := iamClient.client.ListAttachedRolePolicies(context.TODO(), input)
+		output, err := iamClient.client.ListAttachedRolePolicies(context.Background(), input)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +103,7 @@ func (iamClient *Iam) DetachRolePolicy(roleName *string, PolicyArn *string, slee
 
 	retryCount := 0
 	for {
-		_, err := iamClient.client.DetachRolePolicy(context.TODO(), input)
+		_, err := iamClient.client.DetachRolePolicy(context.Background(), input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
 			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
@@ -125,7 +125,7 @@ func (iamClient *Iam) CheckRoleExists(roleName *string) (bool, error) {
 		RoleName: roleName,
 	}
 
-	_, err := iamClient.client.GetRole(context.TODO(), input)
+	_, err := iamClient.client.GetRole(context.Background(), input)
 	if err != nil && strings.Contains(err.Error(), "NoSuchEntity") {
 		return false, nil
 	}

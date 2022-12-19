@@ -143,7 +143,7 @@ func (m *NotExistsMockForGetRoleIamSDKClient) GetRole(ctx context.Context, param
 	Test Cases
 */
 func TestIam_DeleteRole(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -209,7 +209,7 @@ func TestIam_DeleteRole(t *testing.T) {
 }
 
 func TestIam_ListAttachedRolePolicies(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 
@@ -288,7 +288,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicies(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -396,7 +396,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicy(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -466,7 +466,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 }
 
 func TestIam_CheckRoleExists(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	notExitsMock := NewNotExistsMockForGetRoleIamSDKClient()

@@ -343,7 +343,7 @@ func (m *NotExistsMockForListBucketsS3SDKClient) ListBuckets(ctx context.Context
 	Test Cases
 */
 func TestS3_DeleteBucket(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 
@@ -398,7 +398,7 @@ func TestS3_DeleteBucket(t *testing.T) {
 }
 
 func TestS3_DeleteObjects(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 	apiErrorMock := NewApiErrorMockS3SDKClient()
@@ -550,7 +550,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 }
 
 func TestS3_ListObjectVersions(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 	emptyMock := NewEmptyMockForListObjectVersionsS3SDKClient()
@@ -681,7 +681,7 @@ func TestS3_ListObjectVersions(t *testing.T) {
 }
 
 func TestS3_CheckBucketExists(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 	notExitsMock := NewNotExistsMockForListBucketsS3SDKClient()

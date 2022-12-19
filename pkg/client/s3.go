@@ -43,7 +43,7 @@ func (s3Client *S3) DeleteBucket(bucketName *string) error {
 		Bucket: bucketName,
 	}
 
-	_, err := s3Client.client.DeleteBucket(context.TODO(), input)
+	_, err := s3Client.client.DeleteBucket(context.Background(), input)
 
 	return err
 }
@@ -86,7 +86,7 @@ func (s3Client *S3) DeleteObjects(bucketName *string, objects []types.ObjectIden
 				retryCount int
 			)
 			for {
-				output, err = s3Client.client.DeleteObjects(context.TODO(), input)
+				output, err = s3Client.client.DeleteObjects(context.Background(), input)
 				if err != nil && strings.Contains(err.Error(), "api error SlowDown") {
 					retryCount++
 					if err := WaitForRetry(retryCount, sleepTimeSec, bucketName, err); err != nil {
@@ -144,7 +144,7 @@ func (s3Client *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdenti
 			VersionIdMarker: versionIdMarker,
 		}
 
-		output, err := s3Client.client.ListObjectVersions(context.TODO(), input)
+		output, err := s3Client.client.ListObjectVersions(context.Background(), input)
 		if err != nil {
 			return nil, err
 		}
@@ -179,7 +179,7 @@ func (s3Client *S3) ListObjectVersions(bucketName *string) ([]types.ObjectIdenti
 func (s3Client *S3) CheckBucketExists(bucketName *string) (bool, error) {
 	input := &s3.ListBucketsInput{}
 
-	output, err := s3Client.client.ListBuckets(context.TODO(), input)
+	output, err := s3Client.client.ListBuckets(context.Background(), input)
 	if err != nil {
 		return false, err
 	}

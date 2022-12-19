@@ -132,7 +132,7 @@ func (m *NotExistsMockForListBackupVaultsBackupSDKClient) ListBackupVaults(ctx c
 	Test Cases
 */
 func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -211,7 +211,7 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 }
 
 func TestBackup_DeleteRecoveryPoints(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -298,7 +298,7 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 }
 
 func TestBackup_DeleteRecoveryPoint(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -356,7 +356,7 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 }
 
 func TestBackup_DeleteBackupVault(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -411,7 +411,7 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 }
 
 func TestBackup_CheckBackupVaultExists(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 	notExitsMock := NewNotExistsMockForListBackupVaultsBackupSDKClient()
