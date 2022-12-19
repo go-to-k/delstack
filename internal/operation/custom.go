@@ -27,6 +27,6 @@ func (operator *CustomOperator) GetResourcesLength() int {
 }
 
 // Implicit implements (these resources will be deleted on its own)
-func (operator *CustomOperator) DeleteResources(context.Context) error {
+func (operator *CustomOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
