@@ -54,7 +54,7 @@ func (operatorManager *OperatorManager) GetLogicalResourceIds() []string {
 }
 
 func (operatorManager *OperatorManager) DeleteResourceCollection(ctx context.Context) error {
-	var eg errgroup.Group
+	eg, ctx := errgroup.WithContext(ctx)
 
 	for _, operator := range operatorManager.operatorCollection.GetOperators() {
 		operator := operator

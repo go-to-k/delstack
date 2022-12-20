@@ -33,7 +33,7 @@ func (operator *EcrOperator) GetResourcesLength() int {
 }
 
 func (operator *EcrOperator) DeleteResources(ctx context.Context) error {
-	var eg errgroup.Group
+	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, repository := range operator.resources {
