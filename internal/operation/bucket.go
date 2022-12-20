@@ -36,7 +36,7 @@ func (operator *BucketOperator) GetResourcesLength() int {
 }
 
 func (operator *BucketOperator) DeleteResources(ctx context.Context) error {
-	var eg errgroup.Group
+	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, bucket := range operator.resources {

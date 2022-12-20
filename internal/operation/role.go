@@ -35,7 +35,7 @@ func (operator *RoleOperator) GetResourcesLength() int {
 }
 
 func (operator *RoleOperator) DeleteResources(ctx context.Context) error {
-	var eg errgroup.Group
+	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, role := range operator.resources {

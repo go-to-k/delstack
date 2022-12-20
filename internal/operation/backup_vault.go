@@ -33,7 +33,7 @@ func (operator *BackupVaultOperator) GetResourcesLength() int {
 }
 
 func (operator *BackupVaultOperator) DeleteResources(ctx context.Context) error {
-	var eg errgroup.Group
+	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, backupVault := range operator.resources {
