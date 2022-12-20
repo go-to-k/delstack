@@ -33,7 +33,7 @@ func (m *MockStackOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockStackOperator) DeleteResources() error {
+func (m *MockStackOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
@@ -49,7 +49,7 @@ func (m *ErrorMockStackOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *ErrorMockStackOperator) DeleteResources() error {
+func (m *ErrorMockStackOperator) DeleteResources(ctx context.Context) error {
 	return fmt.Errorf("ErrorDeleteResources")
 }
 
@@ -65,7 +65,7 @@ func (m *MockBucketOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockBucketOperator) DeleteResources() error {
+func (m *MockBucketOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
@@ -81,7 +81,7 @@ func (m *MockRoleOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockRoleOperator) DeleteResources() error {
+func (m *MockRoleOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
@@ -97,7 +97,7 @@ func (m *MockEcrOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockEcrOperator) DeleteResources() error {
+func (m *MockEcrOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
@@ -113,7 +113,7 @@ func (m *MockBackupVaultOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockBackupVaultOperator) DeleteResources() error {
+func (m *MockBackupVaultOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
@@ -129,7 +129,7 @@ func (m *MockCustomOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockCustomOperator) DeleteResources() error {
+func (m *MockCustomOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
@@ -273,7 +273,7 @@ func (m *OperatorDeleteResourcesMockOperatorCollection) RaiseUnsupportedResource
 */
 func TestOperatorManager_getOperatorResourcesLength(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	mock := NewMockOperatorCollection()
 
@@ -312,7 +312,7 @@ func TestOperatorManager_getOperatorResourcesLength(t *testing.T) {
 
 func TestOperatorManager_CheckResourceCounts(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	mock := NewMockOperatorCollection()
 	incorrectResourceCountsMock := NewIncorrectResourceCountsMockOperatorCollection()
@@ -367,7 +367,7 @@ func TestOperatorManager_CheckResourceCounts(t *testing.T) {
 
 func TestOperatorManager_DeleteResourceCollection(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	mock := NewMockOperatorCollection()
 	operatorDeleteResourcesMock := NewOperatorDeleteResourcesMockOperatorCollection()
@@ -407,7 +407,7 @@ func TestOperatorManager_DeleteResourceCollection(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			operatorManager := NewOperatorManager(tt.args.mock)
 
-			err := operatorManager.DeleteResourceCollection()
+			err := operatorManager.DeleteResourceCollection(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return

@@ -162,7 +162,7 @@ func (m *NotExistsMockCloudFormationSDKClient) ListStackResources(ctx context.Co
 	Test Cases
 */
 func TestCloudFormation_DeleteStack(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	failureErrorMockWaiter := NewFailureErrorMockCloudFormationSDKWaiter()
 	otherErrorMockWaiter := NewOtherErrorMockCloudFormationSDKWaiter()
@@ -249,7 +249,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cloudformationClient := NewCloudFormation(tt.args.mockClient, tt.args.mockWaiter)
 
-			err := cloudformationClient.DeleteStack(tt.args.stackName, tt.args.retainResources)
+			err := cloudformationClient.DeleteStack(tt.args.ctx, tt.args.stackName, tt.args.retainResources)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -262,7 +262,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 }
 
 func TestCloudFormation_DescribeStacks(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	mock := NewMockCloudFormationSDKClient()
 	errorMock := NewErrorMockCloudFormationSDKClient()
@@ -352,7 +352,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cloudformationClient := NewCloudFormation(tt.args.mockClient, tt.args.mockWaiter)
 
-			output, exists, err := cloudformationClient.DescribeStacks(tt.args.stackName)
+			output, exists, err := cloudformationClient.DescribeStacks(tt.args.ctx, tt.args.stackName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -373,7 +373,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 }
 
 func TestCloudFormation_waitDeleteStack(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	failureErrorMockWaiter := NewFailureErrorMockCloudFormationSDKWaiter()
 	otherErrorMockWaiter := NewOtherErrorMockCloudFormationSDKWaiter()
@@ -431,7 +431,7 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cloudformationClient := NewCloudFormation(tt.args.mockClient, tt.args.mockWaiter)
 
-			err := cloudformationClient.waitDeleteStack(tt.args.stackName)
+			err := cloudformationClient.waitDeleteStack(tt.args.ctx, tt.args.stackName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -444,7 +444,7 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 }
 
 func TestCloudFormation_ListStackResources(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	mock := NewMockCloudFormationSDKClient()
 	errorMock := NewErrorMockCloudFormationSDKClient()
@@ -514,7 +514,7 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cloudformationClient := NewCloudFormation(tt.args.mockClient, tt.args.mockWaiter)
 
-			output, err := cloudformationClient.ListStackResources(tt.args.stackName)
+			output, err := cloudformationClient.ListStackResources(tt.args.ctx, tt.args.stackName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return

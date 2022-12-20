@@ -1,6 +1,8 @@
 package operation
 
 import (
+	"context"
+
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 )
 
@@ -25,6 +27,6 @@ func (operator *CustomOperator) GetResourcesLength() int {
 }
 
 // Implicit implements (these resources will be deleted on its own)
-func (operator *CustomOperator) DeleteResources() error {
+func (operator *CustomOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }

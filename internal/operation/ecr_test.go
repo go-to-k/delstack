@@ -25,11 +25,11 @@ func NewMockEcr() *MockEcr {
 	return &MockEcr{}
 }
 
-func (m *MockEcr) DeleteRepository(repositoryName *string) error {
+func (m *MockEcr) DeleteRepository(ctx context.Context, repositoryName *string) error {
 	return nil
 }
 
-func (m *MockEcr) CheckEcrExists(repositoryName *string) (bool, error) {
+func (m *MockEcr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
 	return true, nil
 }
 
@@ -39,11 +39,11 @@ func NewDeleteRepositoryErrorMockEcr() *DeleteRepositoryErrorMockEcr {
 	return &DeleteRepositoryErrorMockEcr{}
 }
 
-func (m *DeleteRepositoryErrorMockEcr) DeleteRepository(repositoryName *string) error {
+func (m *DeleteRepositoryErrorMockEcr) DeleteRepository(ctx context.Context, repositoryName *string) error {
 	return fmt.Errorf("DeleteRepositoryError")
 }
 
-func (m *DeleteRepositoryErrorMockEcr) CheckEcrExists(repositoryName *string) (bool, error) {
+func (m *DeleteRepositoryErrorMockEcr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
 	return true, nil
 }
 
@@ -53,11 +53,11 @@ func NewCheckEcrExistsErrorMockEcr() *CheckEcrExistsErrorMockEcr {
 	return &CheckEcrExistsErrorMockEcr{}
 }
 
-func (m *CheckEcrExistsErrorMockEcr) DeleteRepository(repositoryName *string) error {
+func (m *CheckEcrExistsErrorMockEcr) DeleteRepository(ctx context.Context, repositoryName *string) error {
 	return nil
 }
 
-func (m *CheckEcrExistsErrorMockEcr) CheckEcrExists(repositoryName *string) (bool, error) {
+func (m *CheckEcrExistsErrorMockEcr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
 	return false, fmt.Errorf("DescribeRepositoriesError")
 }
 
@@ -67,11 +67,11 @@ func NewCheckEcrNotExistsMockEcr() *CheckEcrNotExistsMockEcr {
 	return &CheckEcrNotExistsMockEcr{}
 }
 
-func (m *CheckEcrNotExistsMockEcr) DeleteRepository(repositoryName *string) error {
+func (m *CheckEcrNotExistsMockEcr) DeleteRepository(ctx context.Context, repositoryName *string) error {
 	return nil
 }
 
-func (m *CheckEcrNotExistsMockEcr) CheckEcrExists(repositoryName *string) (bool, error) {
+func (m *CheckEcrNotExistsMockEcr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
 	return false, nil
 }
 
@@ -80,7 +80,7 @@ func (m *CheckEcrNotExistsMockEcr) CheckEcrExists(repositoryName *string) (bool,
 */
 func TestEcrOperator_DeleteRepository(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockEcr()
 	DeleteRepositoryErrorMock := NewDeleteRepositoryErrorMockEcr()
 	checkEcrExistsErrorMock := NewCheckEcrExistsErrorMockEcr()
@@ -144,7 +144,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ecrOperator := NewEcrOperator(tt.args.client)
 
-			err := ecrOperator.DeleteEcr(tt.args.repositoryName)
+			err := ecrOperator.DeleteEcr(tt.args.ctx, tt.args.repositoryName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -159,7 +159,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 
 func TestEcrOperator_DeleteResourcesForEcr(t *testing.T) {
 	logger.NewLogger(false)
-	ctx := context.TODO()
+	ctx := context.Background()
 	mock := NewMockEcr()
 	errorMock := NewDeleteRepositoryErrorMockEcr()
 
@@ -204,7 +204,7 @@ func TestEcrOperator_DeleteResourcesForEcr(t *testing.T) {
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			})
 
-			err := ecrOperator.DeleteResources()
+			err := ecrOperator.DeleteResources(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return

@@ -8,11 +8,11 @@ import (
 )
 
 type IBackup interface {
-	ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error)
-	DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error
-	DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error
-	DeleteBackupVault(backupVaultName *string) error
-	CheckBackupVaultExists(backupVaultName *string) (bool, error)
+	ListRecoveryPointsByBackupVault(ctx context.Context, backupVaultName *string) ([]types.RecoveryPointByBackupVault, error)
+	DeleteRecoveryPoints(ctx context.Context, backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error
+	DeleteRecoveryPoint(ctx context.Context, backupVaultName *string, recoveryPointArn *string) error
+	DeleteBackupVault(ctx context.Context, backupVaultName *string) error
+	CheckBackupVaultExists(ctx context.Context, backupVaultName *string) (bool, error)
 }
 
 var _ IBackup = (*Backup)(nil)
@@ -34,7 +34,7 @@ func NewBackup(client IBackupSDKClient) *Backup {
 	}
 }
 
-func (backupClient *Backup) ListRecoveryPointsByBackupVault(backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
+func (backupClient *Backup) ListRecoveryPointsByBackupVault(ctx context.Context, backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
 	var nextToken *string
 	recoveryPoints := []types.RecoveryPointByBackupVault{}
 
@@ -44,7 +44,7 @@ func (backupClient *Backup) ListRecoveryPointsByBackupVault(backupVaultName *str
 			NextToken:       nextToken,
 		}
 
-		output, err := backupClient.client.ListRecoveryPointsByBackupVault(context.TODO(), input)
+		output, err := backupClient.client.ListRecoveryPointsByBackupVault(ctx, input)
 		if err != nil {
 			return nil, err
 		}
@@ -59,37 +59,37 @@ func (backupClient *Backup) ListRecoveryPointsByBackupVault(backupVaultName *str
 	return recoveryPoints, nil
 }
 
-func (backupClient *Backup) DeleteRecoveryPoints(backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
+func (backupClient *Backup) DeleteRecoveryPoints(ctx context.Context, backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
 	for _, recoveryPoint := range recoveryPoints {
-		if err := backupClient.DeleteRecoveryPoint(backupVaultName, recoveryPoint.RecoveryPointArn); err != nil {
+		if err := backupClient.DeleteRecoveryPoint(ctx, backupVaultName, recoveryPoint.RecoveryPointArn); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (backupClient *Backup) DeleteRecoveryPoint(backupVaultName *string, recoveryPointArn *string) error {
+func (backupClient *Backup) DeleteRecoveryPoint(ctx context.Context, backupVaultName *string, recoveryPointArn *string) error {
 	input := &backup.DeleteRecoveryPointInput{
 		BackupVaultName:  backupVaultName,
 		RecoveryPointArn: recoveryPointArn,
 	}
 
-	_, err := backupClient.client.DeleteRecoveryPoint(context.TODO(), input)
+	_, err := backupClient.client.DeleteRecoveryPoint(ctx, input)
 
 	return err
 }
 
-func (backupClient *Backup) DeleteBackupVault(backupVaultName *string) error {
+func (backupClient *Backup) DeleteBackupVault(ctx context.Context, backupVaultName *string) error {
 	input := &backup.DeleteBackupVaultInput{
 		BackupVaultName: backupVaultName,
 	}
 
-	_, err := backupClient.client.DeleteBackupVault(context.TODO(), input)
+	_, err := backupClient.client.DeleteBackupVault(ctx, input)
 
 	return err
 }
 
-func (backupClient *Backup) CheckBackupVaultExists(backupVaultName *string) (bool, error) {
+func (backupClient *Backup) CheckBackupVaultExists(ctx context.Context, backupVaultName *string) (bool, error) {
 	var nextToken *string
 
 	for {
@@ -97,7 +97,7 @@ func (backupClient *Backup) CheckBackupVaultExists(backupVaultName *string) (boo
 			NextToken: nextToken,
 		}
 
-		output, err := backupClient.client.ListBackupVaults(context.TODO(), input)
+		output, err := backupClient.client.ListBackupVaults(ctx, input)
 		if err != nil {
 			return false, err
 		}
