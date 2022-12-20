@@ -32,17 +32,17 @@ func (operator *EcrOperator) GetResourcesLength() int {
 	return len(operator.resources)
 }
 
-func (operator *EcrOperator) DeleteResources() error {
-	var eg errgroup.Group
+func (operator *EcrOperator) DeleteResources(ctx context.Context) error {
+	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, repository := range operator.resources {
 		repository := repository
-		sem.Acquire(context.Background(), 1)
+		sem.Acquire(ctx, 1)
 		eg.Go(func() (err error) {
 			defer sem.Release(1)
 
-			return operator.DeleteEcr(repository.PhysicalResourceId)
+			return operator.DeleteEcr(ctx, repository.PhysicalResourceId)
 		})
 	}
 
@@ -50,8 +50,8 @@ func (operator *EcrOperator) DeleteResources() error {
 	return err
 }
 
-func (operator *EcrOperator) DeleteEcr(repositoryName *string) error {
-	exists, err := operator.client.CheckEcrExists(repositoryName)
+func (operator *EcrOperator) DeleteEcr(ctx context.Context, repositoryName *string) error {
+	exists, err := operator.client.CheckEcrExists(ctx, repositoryName)
 	if err != nil {
 		return err
 	}
@@ -59,5 +59,5 @@ func (operator *EcrOperator) DeleteEcr(repositoryName *string) error {
 		return nil
 	}
 
-	return operator.client.DeleteRepository(repositoryName)
+	return operator.client.DeleteRepository(ctx, repositoryName)
 }

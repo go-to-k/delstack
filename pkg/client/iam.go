@@ -9,11 +9,11 @@ import (
 )
 
 type IIam interface {
-	DeleteRole(roleName *string, sleepTimeSec int) error
-	ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error)
-	DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error
-	DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error
-	CheckRoleExists(roleName *string) (bool, error)
+	DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int) error
+	ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error)
+	DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error
+	DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn *string, sleepTimeSec int) error
+	CheckRoleExists(ctx context.Context, roleName *string) (bool, error)
 }
 
 var _ IIam = (*Iam)(nil)
@@ -35,14 +35,14 @@ func NewIam(client IIamSDKClient) *Iam {
 	}
 }
 
-func (iamClient *Iam) DeleteRole(roleName *string, sleepTimeSec int) error {
+func (iamClient *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int) error {
 	input := &iam.DeleteRoleInput{
 		RoleName: roleName,
 	}
 
 	retryCount := 0
 	for {
-		_, err := iamClient.client.DeleteRole(context.TODO(), input)
+		_, err := iamClient.client.DeleteRole(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
 			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
@@ -59,7 +59,7 @@ func (iamClient *Iam) DeleteRole(roleName *string, sleepTimeSec int) error {
 	return nil
 }
 
-func (iamClient *Iam) ListAttachedRolePolicies(roleName *string) ([]types.AttachedPolicy, error) {
+func (iamClient *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error) {
 	var marker *string
 	policies := []types.AttachedPolicy{}
 
@@ -69,7 +69,7 @@ func (iamClient *Iam) ListAttachedRolePolicies(roleName *string) ([]types.Attach
 			Marker:   marker,
 		}
 
-		output, err := iamClient.client.ListAttachedRolePolicies(context.TODO(), input)
+		output, err := iamClient.client.ListAttachedRolePolicies(ctx, input)
 		if err != nil {
 			return nil, err
 		}
@@ -85,9 +85,9 @@ func (iamClient *Iam) ListAttachedRolePolicies(roleName *string) ([]types.Attach
 	return policies, nil
 }
 
-func (iamClient *Iam) DetachRolePolicies(roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
+func (iamClient *Iam) DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
 	for _, policy := range policies {
-		if err := iamClient.DetachRolePolicy(roleName, policy.PolicyArn, sleepTimeSec); err != nil {
+		if err := iamClient.DetachRolePolicy(ctx, roleName, policy.PolicyArn, sleepTimeSec); err != nil {
 			return err
 		}
 	}
@@ -95,7 +95,7 @@ func (iamClient *Iam) DetachRolePolicies(roleName *string, policies []types.Atta
 	return nil
 }
 
-func (iamClient *Iam) DetachRolePolicy(roleName *string, PolicyArn *string, sleepTimeSec int) error {
+func (iamClient *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn *string, sleepTimeSec int) error {
 	input := &iam.DetachRolePolicyInput{
 		PolicyArn: PolicyArn,
 		RoleName:  roleName,
@@ -103,7 +103,7 @@ func (iamClient *Iam) DetachRolePolicy(roleName *string, PolicyArn *string, slee
 
 	retryCount := 0
 	for {
-		_, err := iamClient.client.DetachRolePolicy(context.TODO(), input)
+		_, err := iamClient.client.DetachRolePolicy(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
 			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
@@ -120,12 +120,12 @@ func (iamClient *Iam) DetachRolePolicy(roleName *string, PolicyArn *string, slee
 	return nil
 }
 
-func (iamClient *Iam) CheckRoleExists(roleName *string) (bool, error) {
+func (iamClient *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
 	input := &iam.GetRoleInput{
 		RoleName: roleName,
 	}
 
-	_, err := iamClient.client.GetRole(context.TODO(), input)
+	_, err := iamClient.client.GetRole(ctx, input)
 	if err != nil && strings.Contains(err.Error(), "NoSuchEntity") {
 		return false, nil
 	}

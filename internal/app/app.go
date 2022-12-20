@@ -74,7 +74,7 @@ func (app *App) Run(ctx context.Context) error {
 
 func (app *App) getAction() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		config, err := app.loadAwsConfig()
+		config, err := app.loadAwsConfig(c.Context)
 		if err != nil {
 			return err
 		}
@@ -101,7 +101,7 @@ func (app *App) getAction() func(c *cli.Context) error {
 		operatorCollection := operation.NewOperatorCollection(config, operatorFactory, targetResourceTypes)
 		operatorManager := operation.NewOperatorManager(operatorCollection)
 
-		if err := stackOperator.DeleteStackResources(aws.String(app.StackName), isRootStack, operatorManager); err != nil {
+		if err := stackOperator.DeleteStackResources(c.Context, aws.String(app.StackName), isRootStack, operatorManager); err != nil {
 			return err
 		}
 
@@ -110,16 +110,16 @@ func (app *App) getAction() func(c *cli.Context) error {
 	}
 }
 
-func (app *App) loadAwsConfig() (aws.Config, error) {
+func (app *App) loadAwsConfig(ctx context.Context) (aws.Config, error) {
 	var (
 		cfg aws.Config
 		err error
 	)
 
 	if app.Profile != "" {
-		cfg, err = config.LoadDefaultConfig(context.TODO(), config.WithRegion(app.Region), config.WithSharedConfigProfile(app.Profile))
+		cfg, err = config.LoadDefaultConfig(ctx, config.WithRegion(app.Region), config.WithSharedConfigProfile(app.Profile))
 	} else {
-		cfg, err = config.LoadDefaultConfig(context.TODO(), config.WithRegion(app.Region))
+		cfg, err = config.LoadDefaultConfig(ctx, config.WithRegion(app.Region))
 	}
 
 	return cfg, err

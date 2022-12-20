@@ -8,8 +8,8 @@ import (
 )
 
 type IEcr interface {
-	DeleteRepository(repositoryName *string) error
-	CheckEcrExists(repositoryName *string) (bool, error)
+	DeleteRepository(ctx context.Context, repositoryName *string) error
+	CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error)
 }
 
 var _ IEcr = (*Ecr)(nil)
@@ -29,18 +29,18 @@ func NewEcr(client IEcrSDKClient) *Ecr {
 	}
 }
 
-func (ecrClient *Ecr) DeleteRepository(repositoryName *string) error {
+func (ecrClient *Ecr) DeleteRepository(ctx context.Context, repositoryName *string) error {
 	input := &ecr.DeleteRepositoryInput{
 		RepositoryName: repositoryName,
 		Force:          true,
 	}
 
-	_, err := ecrClient.client.DeleteRepository(context.TODO(), input)
+	_, err := ecrClient.client.DeleteRepository(ctx, input)
 
 	return err
 }
 
-func (ecrClient *Ecr) CheckEcrExists(repositoryName *string) (bool, error) {
+func (ecrClient *Ecr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
 	var nextToken *string
 
 	for {
@@ -51,7 +51,7 @@ func (ecrClient *Ecr) CheckEcrExists(repositoryName *string) (bool, error) {
 			},
 		}
 
-		output, err := ecrClient.client.DescribeRepositories(context.TODO(), input)
+		output, err := ecrClient.client.DescribeRepositories(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "does not exist") {
 			return false, nil
 		}
