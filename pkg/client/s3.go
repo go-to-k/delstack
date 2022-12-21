@@ -138,6 +138,7 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 		return nil, err
 	}
 
+	// wait errors set before access an errors var at below return
 	wg.Wait()
 
 	return errors, nil
