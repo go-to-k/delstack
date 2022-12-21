@@ -4,6 +4,7 @@ import (
 	"context"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -54,13 +55,17 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 	eg, ctx := errgroup.WithContext(ctx)
 	outputsCh := make(chan *s3.DeleteObjectsOutput, int64(runtime.NumCPU()))
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
+	wg := sync.WaitGroup{}
 
 	errors := []types.Error{}
 	nextObjects := make([]types.ObjectIdentifier, len(objects))
 	copy(nextObjects, objects)
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for outputErrors := range outputsCh {
+			outputErrors := outputErrors
 			if len(outputErrors.Errors) > 0 {
 				errors = append(errors, outputErrors.Errors...)
 			}
@@ -132,6 +137,8 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
+
+	wg.Wait()
 
 	return errors, nil
 }
