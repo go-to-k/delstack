@@ -4,6 +4,7 @@ import (
 	"context"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -11,6 +12,8 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 )
+
+const s3DeleteObjectsSizeLimit = 1000
 
 type IS3 interface {
 	DeleteBucket(ctx context.Context, bucketName *string) error
@@ -50,19 +53,31 @@ func (s3Client *S3) DeleteBucket(ctx context.Context, bucketName *string) error 
 
 func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
 	eg, ctx := errgroup.WithContext(ctx)
-	outputsCh := make(chan *s3.DeleteObjectsOutput)
+	outputsCh := make(chan *s3.DeleteObjectsOutput, int64(runtime.NumCPU()))
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
+	wg := sync.WaitGroup{}
 
 	errors := []types.Error{}
 	nextObjects := make([]types.ObjectIdentifier, len(objects))
 	copy(nextObjects, objects)
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for outputErrors := range outputsCh {
+			outputErrors := outputErrors
+			if len(outputErrors.Errors) > 0 {
+				errors = append(errors, outputErrors.Errors...)
+			}
+		}
+	}()
+
 	for {
 		inputObjects := []types.ObjectIdentifier{}
 
-		if len(nextObjects) > 1000 {
-			inputObjects = append(inputObjects, nextObjects[:1000]...)
-			nextObjects = nextObjects[1000:]
+		if len(nextObjects) > s3DeleteObjectsSizeLimit {
+			inputObjects = append(inputObjects, nextObjects[:s3DeleteObjectsSizeLimit]...)
+			nextObjects = nextObjects[s3DeleteObjectsSizeLimit:]
 		} else {
 			inputObjects = append(inputObjects, nextObjects...)
 			nextObjects = nil
@@ -119,15 +134,12 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 		close(outputsCh)
 	}()
 
-	for outputErrors := range outputsCh {
-		if len(outputErrors.Errors) > 0 {
-			errors = append(errors, outputErrors.Errors...)
-		}
-	}
-
 	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
+
+	// wait errors set before access an errors var at below return
+	wg.Wait()
 
 	return errors, nil
 }
