@@ -209,14 +209,15 @@ Resources:
             try:
               # if event['RequestType'] == "Delete":
                 # DeletePolicy(PolicyName)
-              if event['RequestType'] == "Create":
-                PutPolicy(CloudWatchLogsLogGroupArns, PolicyName, ServiceName)
-                responseData['Data'] = "SUCCESS"
-                status=cfnresponse.SUCCESS
+              # if event['RequestType'] == "Create":
+                # PutPolicy(CloudWatchLogsLogGroupArns, PolicyName, ServiceName)
+              responseData['Data'] = "SUCCESS"
+              status=cfnresponse.SUCCESS
             except ClientError as e:
               responseData['Data'] = "FAILED"
               status=cfnresponse.FAILED
               print("Unexpected error: %s" % e)
+
             cfnresponse.send(event, context, status, responseData, "CustomResourcePhysicalID")
       Runtime: "python3.9"
 
