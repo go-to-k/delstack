@@ -12,6 +12,8 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+const s3DeleteObjectsSizeLimit = 1000
+
 type IS3 interface {
 	DeleteBucket(ctx context.Context, bucketName *string) error
 	DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error)
@@ -68,9 +70,9 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 	for {
 		inputObjects := []types.ObjectIdentifier{}
 
-		if len(nextObjects) > 1000 {
-			inputObjects = append(inputObjects, nextObjects[:1000]...)
-			nextObjects = nextObjects[1000:]
+		if len(nextObjects) > s3DeleteObjectsSizeLimit {
+			inputObjects = append(inputObjects, nextObjects[:s3DeleteObjectsSizeLimit]...)
+			nextObjects = nextObjects[s3DeleteObjectsSizeLimit:]
 		} else {
 			inputObjects = append(inputObjects, nextObjects...)
 			nextObjects = nil
