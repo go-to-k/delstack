@@ -407,7 +407,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 
 	objectsOverLimit := []types.ObjectIdentifier{}
 	s3DeleteObjectsSizeOverLimit := s3DeleteObjectsSizeLimit*int(runtime.NumCPU())*2 + 1 // loop over cpu core size for channel waiting when next loop
-	for i := 0; i <= s3DeleteObjectsSizeOverLimit; i++ {
+	for i := 0; i < s3DeleteObjectsSizeOverLimit; i++ {
 		objectsOverLimit = append(objectsOverLimit, types.ObjectIdentifier{
 			Key:       aws.String("Key"),
 			VersionId: aws.String("VersionId"),
