@@ -12,5 +12,10 @@
         "Unshallow",
         "unshallow",
         "gomod",
-    ]
+    ],
+    "gopls": {
+        "analyses": {
+            "shadow": true
+        }
+    },
 }
