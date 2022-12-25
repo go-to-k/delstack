@@ -43,6 +43,10 @@ account_id=$(aws sts get-caller-identity \
 	--output text \
 	${profile_option})
 
+dir="./testfiles"
+mkdir -p ${dir}
+touch ${dir}/{1..10000}.txt
+
 function attach_policy(){
 	local own_stackname="${1}"
 
@@ -190,9 +194,8 @@ function object_upload(){
 		wait ${pids[@]}
 	fi
 
-	filename="./Dockerfile"
 	for i in ${!bucket_name_array[@]}; do
-		aws s3 cp ${filename} s3://${bucket_name_array[$i]} ${profile_option}
+		aws s3 cp ${dir} s3://${bucket_name_array[$i]}/ --recursive ${profile_option} > /dev/null
 	done
 }
 
@@ -223,3 +226,5 @@ object_upload "${CFN_STACK_NAME}"
 object_upload "${CFN_STACK_NAME}" # update version
 
 build_upload
+
+rm -rf ${dir}
