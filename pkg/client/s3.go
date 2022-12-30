@@ -95,7 +95,13 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			return s3Client.deleteObjectsWithRetry(ctx, input, outputsCh, sleepTimeSec, bucketName)
+			output, err := s3Client.deleteObjectsWithRetry(ctx, input, bucketName, sleepTimeSec)
+			if err != nil {
+				return err
+			}
+
+			outputsCh <- output
+			return nil
 		})
 
 		if len(nextObjects) == 0 {
@@ -121,40 +127,32 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 func (s3Client *S3) deleteObjectsWithRetry(
 	ctx context.Context,
 	input *s3.DeleteObjectsInput,
-	outputsCh chan *s3.DeleteObjectsOutput,
-	sleepTimeSec int,
 	bucketName *string,
-) error {
-	var (
-		output     *s3.DeleteObjectsOutput
-		err        error
-		retryCount int
-	)
+	sleepTimeSec int,
+) (*s3.DeleteObjectsOutput, error) {
+	retryCount := 0
 
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil, ctx.Err()
 		default:
 		}
 
-		output, err = s3Client.client.DeleteObjects(ctx, input)
+		output, err := s3Client.client.DeleteObjects(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "api error SlowDown") {
 			retryCount++
 			if err := WaitForRetry(retryCount, sleepTimeSec, bucketName, err); err != nil {
-				return err
+				return nil, err
 			}
 			continue
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		outputsCh <- output
-		break
+		return output, nil
 	}
-
-	return nil
 }
 
 func (s3Client *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
