@@ -452,6 +452,20 @@ func TestS3_DeleteObjects(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "delete objects successfully if zero objects",
+			args: args{
+				ctx:        ctx,
+				bucketName: aws.String("test"),
+				objects:    []types.ObjectIdentifier{},
+				client:     mock,
+			},
+			want: want{
+				output: []types.Error{},
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
 			name: "delete objects over limit successfully",
 			args: args{
 				ctx:        ctx,
