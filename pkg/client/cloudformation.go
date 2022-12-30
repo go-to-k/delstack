@@ -89,6 +89,12 @@ func (cfnClient *CloudFormation) ListStackResources(ctx context.Context, stackNa
 	stackResourceSummaries := []types.StackResourceSummary{}
 
 	for {
+		select {
+		case <-ctx.Done():
+			return stackResourceSummaries, ctx.Err()
+		default:
+		}
+
 		input := &cloudformation.ListStackResourcesInput{
 			StackName: stackName,
 			NextToken: nextToken,

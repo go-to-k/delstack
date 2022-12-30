@@ -42,6 +42,12 @@ func (iamClient *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTim
 
 	retryCount := 0
 	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
 		_, err := iamClient.client.DeleteRole(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
@@ -64,6 +70,12 @@ func (iamClient *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *st
 	policies := []types.AttachedPolicy{}
 
 	for {
+		select {
+		case <-ctx.Done():
+			return policies, ctx.Err()
+		default:
+		}
+
 		input := &iam.ListAttachedRolePoliciesInput{
 			RoleName: roleName,
 			Marker:   marker,
@@ -103,6 +115,12 @@ func (iamClient *Iam) DetachRolePolicy(ctx context.Context, roleName *string, Po
 
 	retryCount := 0
 	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
 		_, err := iamClient.client.DetachRolePolicy(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
