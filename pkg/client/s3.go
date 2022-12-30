@@ -52,12 +52,16 @@ func (s3Client *S3) DeleteBucket(ctx context.Context, bucketName *string) error 
 }
 
 func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	errors := []types.Error{}
+	if len(objects) == 0 {
+		return errors, nil
+	}
+
 	eg, ctx := errgroup.WithContext(ctx)
 	outputsCh := make(chan *s3.DeleteObjectsOutput, int64(runtime.NumCPU()))
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 	wg := sync.WaitGroup{}
 
-	errors := []types.Error{}
 	nextObjects := make([]types.ObjectIdentifier, len(objects))
 	copy(nextObjects, objects)
 
