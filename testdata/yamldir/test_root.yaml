@@ -278,6 +278,61 @@ Resources:
       LogGroupName: !Sub "${PJPrefix}-Root-log"
       RetentionInDays: 14
 
+  AWSBackupServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${PJPrefix}-AWSBackupServiceRole"
+      Description: "for AWS Backup"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "backup.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/service-role/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForBackup"
+        - "arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForRestores"
+
+  BackupVaultWithThinBackups:
+    Type: AWS::Backup::BackupVault
+    Properties:
+      BackupVaultName: !Sub "${PJPrefix}-Backup-Vault"
+
+  BackupPlanWithThinBackups:
+    Type: AWS::Backup::BackupPlan
+    DependsOn: BackupVaultWithThinBackups
+    Properties:
+      BackupPlan:
+        BackupPlanName: !Sub "${PJPrefix}-Backup-Plan"
+        BackupPlanRule:
+          -
+            RuleName: "RuleForDailyBackups"
+            TargetBackupVault: !Ref BackupVaultWithThinBackups
+            ScheduleExpression: "cron(00 18 * * ? *)"
+            Lifecycle:
+              DeleteAfterDays: 3
+            StartWindowMinutes: 60
+            RecoveryPointTags: 
+              BackupRestored : !Sub "${PJPrefix}-Backup"
+
+  TagBasedBackupSelection:
+    Type: AWS::Backup::BackupSelection
+    DependsOn: BackupPlanWithThinBackups
+    Properties:
+      BackupSelection:
+        SelectionName: !Sub "${PJPrefix}-Backup-Selection"
+        IamRoleArn: !GetAtt AWSBackupServiceRole.Arn
+        ListOfTags:
+          -
+            ConditionType: "STRINGEQUALS"
+            ConditionKey: "Test"
+            ConditionValue: "Test"
+      BackupPlanId: !Ref BackupPlanWithThinBackups
+
 Outputs:
   ECRArn:
     Export:
