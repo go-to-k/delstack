@@ -95,33 +95,7 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			var (
-				output     *s3.DeleteObjectsOutput
-				err        error
-				retryCount int
-			)
-			for {
-				output, err = s3Client.client.DeleteObjects(ctx, input)
-				if err != nil && strings.Contains(err.Error(), "api error SlowDown") {
-					retryCount++
-					if err := WaitForRetry(retryCount, sleepTimeSec, bucketName, err); err != nil {
-						return err
-					}
-					continue
-				}
-				if err != nil {
-					return err
-				}
-				break
-			}
-
-			select {
-			case outputsCh <- output:
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-
-			return nil
+			return s3Client.deleteObjectsWithRetry(ctx, input, outputsCh, sleepTimeSec, bucketName)
 		})
 
 		if len(nextObjects) == 0 {
@@ -138,10 +112,49 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 		return nil, err
 	}
 
-	// wait errors set before access an errors var at below return
+	// wait errors set before access an errors var at below return (for race)
 	wg.Wait()
 
 	return errors, nil
+}
+
+func (s3Client *S3) deleteObjectsWithRetry(
+	ctx context.Context,
+	input *s3.DeleteObjectsInput,
+	outputsCh chan *s3.DeleteObjectsOutput,
+	sleepTimeSec int,
+	bucketName *string,
+) error {
+	var (
+		output     *s3.DeleteObjectsOutput
+		err        error
+		retryCount int
+	)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		output, err = s3Client.client.DeleteObjects(ctx, input)
+		if err != nil && strings.Contains(err.Error(), "api error SlowDown") {
+			retryCount++
+			if err := WaitForRetry(retryCount, sleepTimeSec, bucketName, err); err != nil {
+				return err
+			}
+			continue
+		}
+		if err != nil {
+			return err
+		}
+
+		outputsCh <- output
+		break
+	}
+
+	return nil
 }
 
 func (s3Client *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
