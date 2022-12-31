@@ -40,29 +40,39 @@ func (iamClient *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTim
 		RoleName: roleName,
 	}
 
+	_, err := iamClient.deleteRoleWithRetry(ctx, input, roleName, sleepTimeSec)
+	return err
+}
+
+func (iamClient *Iam) deleteRoleWithRetry(
+	ctx context.Context,
+	input *iam.DeleteRoleInput,
+	roleName *string,
+	sleepTimeSec int,
+) (*iam.DeleteRoleOutput, error) {
 	retryCount := 0
+
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil, ctx.Err()
 		default:
 		}
 
-		_, err := iamClient.client.DeleteRole(ctx, input)
+		output, err := iamClient.client.DeleteRole(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
 			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
-				return err
+				return nil, err
 			}
 			continue
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
-		break
-	}
 
-	return nil
+		return output, nil
+	}
 }
 
 func (iamClient *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error) {
@@ -113,29 +123,39 @@ func (iamClient *Iam) DetachRolePolicy(ctx context.Context, roleName *string, Po
 		RoleName:  roleName,
 	}
 
+	_, err := iamClient.detachRolePolicyWithRetry(ctx, input, roleName, sleepTimeSec)
+	return err
+}
+
+func (iamClient *Iam) detachRolePolicyWithRetry(
+	ctx context.Context,
+	input *iam.DetachRolePolicyInput,
+	roleName *string,
+	sleepTimeSec int,
+) (*iam.DetachRolePolicyOutput, error) {
 	retryCount := 0
+
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil, ctx.Err()
 		default:
 		}
 
-		_, err := iamClient.client.DetachRolePolicy(ctx, input)
+		output, err := iamClient.client.DetachRolePolicy(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
 			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
-				return err
+				return nil, err
 			}
 			continue
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
-		break
-	}
 
-	return nil
+		return output, nil
+	}
 }
 
 func (iamClient *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
