@@ -77,7 +77,7 @@ func (app *App) getAction() func(c *cli.Context) error {
 		var targetResourceTypes []string
 		continuation := true
 		if app.InteractiveMode {
-			targetResourceTypes, continuation = io.DoInteractiveMode()
+			targetResourceTypes, continuation = app.doInteractiveMode()
 		} else {
 			targetResourceTypes = resourcetype.GetResourceTypes()
 		}
@@ -102,5 +102,34 @@ func (app *App) getAction() func(c *cli.Context) error {
 
 		io.Logger.Info().Msgf("Successfully deleted, %v", app.StackName)
 		return nil
+	}
+}
+
+func (app *App) doInteractiveMode() ([]string, bool) {
+	var checkboxes []string
+
+	label := "Select ResourceTypes you wish to delete even if DELETE_FAILED." +
+		"\n" +
+		"However, if resources of the selected ResourceTypes will not be DELETE_FAILED when the stack is deleted, the resources will be deleted even if you selected. " +
+		"\n"
+	opts := resourcetype.GetResourceTypes()
+
+	for {
+		checkboxes = io.GetCheckboxes(label, opts)
+
+		if len(checkboxes) == 0 {
+			io.Logger.Warn().Msg("Select ResourceTypes!")
+			ok := io.GetYesNo("Do you want to finish?")
+			if ok {
+				io.Logger.Info().Msg("Finished...")
+				return checkboxes, false
+			}
+			continue
+		}
+
+		ok := io.GetYesNo("OK?")
+		if ok {
+			return checkboxes, true
+		}
 	}
 }

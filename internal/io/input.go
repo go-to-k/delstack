@@ -7,38 +7,9 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/go-to-k/delstack/internal/resourcetype"
 )
 
-func DoInteractiveMode() ([]string, bool) {
-	var checkboxes []string
-
-	for {
-		checkboxes = getCheckboxes()
-
-		if len(checkboxes) == 0 {
-			Logger.Warn().Msg("Select ResourceTypes!")
-			ok := getYesNo("Do you want to finish?")
-			if ok {
-				Logger.Info().Msg("Finished...")
-				return checkboxes, false
-			}
-			continue
-		}
-
-		ok := getYesNo("OK?")
-		if ok {
-			return checkboxes, true
-		}
-	}
-}
-
-func getCheckboxes() []string {
-	label := "Select ResourceTypes you wish to delete even if DELETE_FAILED." +
-		"\n" +
-		"However, if resources of the selected ResourceTypes will not be DELETE_FAILED when the stack is deleted, the resources will be deleted even if you selected. " +
-		"\n"
-	opts := resourcetype.GetResourceTypes()
+func GetCheckboxes(label string, opts []string) []string {
 	res := []string{}
 
 	prompt := &survey.MultiSelect{
@@ -50,7 +21,7 @@ func getCheckboxes() []string {
 	return res
 }
 
-func getYesNo(label string) bool {
+func GetYesNo(label string) bool {
 	choices := "Y/n"
 	r := bufio.NewReader(os.Stdin)
 	var s string
