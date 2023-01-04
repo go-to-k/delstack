@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/internal/logger"
+	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
@@ -407,7 +407,7 @@ func (m *ListStackResourcesErrorMockCloudFormation) ListStackResources(ctx conte
 	Test Cases
 */
 func TestStackOperator_DeleteStack(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 
 	mock := NewMockCloudFormation()
@@ -682,7 +682,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 }
 
 func TestStackOperator_deleteRootStack(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 
 	mock := NewMockCloudFormation()

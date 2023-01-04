@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/go-to-k/delstack/internal/logger"
+	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
@@ -328,7 +328,7 @@ func (m *CheckBucketNotExistsMockS3) CheckBucketExists(ctx context.Context, buck
 	Test Cases
 */
 func TestBucketOperator_DeleteBucket(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 	mock := NewMockS3()
 	allErrorMock := NewAllErrorMockS3()
@@ -473,7 +473,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 }
 
 func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 	mock := NewMockS3()
 	allErrorMock := NewAllErrorMockS3()

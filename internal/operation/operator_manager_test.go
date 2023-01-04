@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/internal/logger"
+	"github.com/go-to-k/delstack/internal/io"
 )
 
 /*
@@ -272,7 +272,7 @@ func (m *OperatorDeleteResourcesMockOperatorCollection) RaiseUnsupportedResource
 	Test Cases
 */
 func TestOperatorManager_getOperatorResourcesLength(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 
 	mock := NewMockOperatorCollection()
@@ -311,7 +311,7 @@ func TestOperatorManager_getOperatorResourcesLength(t *testing.T) {
 }
 
 func TestOperatorManager_CheckResourceCounts(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 
 	mock := NewMockOperatorCollection()
@@ -366,7 +366,7 @@ func TestOperatorManager_CheckResourceCounts(t *testing.T) {
 }
 
 func TestOperatorManager_DeleteResourceCollection(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 
 	mock := NewMockOperatorCollection()

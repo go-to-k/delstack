@@ -6,7 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/internal/logger"
+	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/internal/resourcetype"
 )
 
@@ -107,7 +107,7 @@ func (operatorCollection *OperatorCollection) RaiseUnsupportedResourceError() er
 	for _, resource := range operatorCollection.unsupportedStackResources {
 		unsupportedStackResourcesData = append(unsupportedStackResourcesData, []string{*resource.ResourceType, *resource.LogicalResourceId})
 	}
-	unsupportedStackResources := "\nThese are the resources unsupported (or you did not selected in the interactive prompt), so failed delete:\n" + *logger.ToStringAsTableFormat(unsupportedStackResourcesHeader, unsupportedStackResourcesData)
+	unsupportedStackResources := "\nThese are the resources unsupported (or you did not selected in the interactive prompt), so failed delete:\n" + *io.ToStringAsTableFormat(unsupportedStackResourcesHeader, unsupportedStackResourcesData)
 
 	supportedStackResourcesHeader := []string{"ResourceType", "Description"}
 	supportedStackResourcesData := [][]string{
@@ -118,7 +118,7 @@ func (operatorCollection *OperatorCollection) RaiseUnsupportedResourceError() er
 		{resourcetype.CLOUDFORMATION_STACK, "Nested Child Stacks that failed to delete."},
 		{"Custom::Xxx", "Custom Resources, but they will be deleted on its own."},
 	}
-	supportedStackResources := "\nSupported resources for force deletion of DELETE_FAILED resources are followings.\n" + *logger.ToStringAsTableFormat(supportedStackResourcesHeader, supportedStackResourcesData)
+	supportedStackResources := "\nSupported resources for force deletion of DELETE_FAILED resources are followings.\n" + *io.ToStringAsTableFormat(supportedStackResourcesHeader, supportedStackResourcesData)
 
 	unsupportedResourceError := title + unsupportedStackResources + supportedStackResources
 

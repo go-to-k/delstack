@@ -7,7 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/internal/logger"
+	"github.com/go-to-k/delstack/internal/io"
 )
 
 var targetResourceTypesForAllServices = []string{
@@ -29,7 +29,7 @@ var targetResourceTypesForPartialServices = []string{
 	Test Cases
 */
 func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 
 	type args struct {
@@ -484,7 +484,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 }
 
 func TestOperatorCollection_containsResourceType(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 
 	type args struct {
