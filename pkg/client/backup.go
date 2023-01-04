@@ -39,6 +39,12 @@ func (backupClient *Backup) ListRecoveryPointsByBackupVault(ctx context.Context,
 	recoveryPoints := []types.RecoveryPointByBackupVault{}
 
 	for {
+		select {
+		case <-ctx.Done():
+			return recoveryPoints, ctx.Err()
+		default:
+		}
+
 		input := &backup.ListRecoveryPointsByBackupVaultInput{
 			BackupVaultName: backupVaultName,
 			NextToken:       nextToken,
@@ -93,6 +99,12 @@ func (backupClient *Backup) CheckBackupVaultExists(ctx context.Context, backupVa
 	var nextToken *string
 
 	for {
+		select {
+		case <-ctx.Done():
+			return false, ctx.Err()
+		default:
+		}
+
 		input := &backup.ListBackupVaultsInput{
 			NextToken: nextToken,
 		}
