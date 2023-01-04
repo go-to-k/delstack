@@ -44,6 +44,12 @@ func (ecrClient *Ecr) CheckEcrExists(ctx context.Context, repositoryName *string
 	var nextToken *string
 
 	for {
+		select {
+		case <-ctx.Done():
+			return false, ctx.Err()
+		default:
+		}
+
 		input := &ecr.DescribeRepositoriesInput{
 			NextToken: nextToken,
 			RepositoryNames: []string{
