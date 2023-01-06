@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
-	"github.com/go-to-k/delstack/internal/logger"
+	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
@@ -287,7 +287,7 @@ func (m *CheckRoleNotExistsMockRole) CheckRoleExists(ctx context.Context, reposi
 	Test Cases
 */
 func TestRoleOperator_DeleteRole(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 	mock := NewMockIam()
 	allErrorMock := NewAllErrorMockIam()
@@ -410,7 +410,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 }
 
 func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 	mock := NewMockIam()
 	allErrorMock := NewAllErrorMockIam()
