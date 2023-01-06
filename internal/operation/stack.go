@@ -8,7 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/internal/logger"
+	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -123,7 +123,7 @@ func (operator *StackOperator) deleteStackNormally(ctx context.Context, stackNam
 		return false, err
 	}
 	if !stackExistsAfterDelete {
-		logger.Logger.Info().Msg("No resources were DELETE_FAILED.")
+		io.Logger.Info().Msg("No resources were DELETE_FAILED.")
 		return true, nil
 	}
 	if stackOutputAfterDelete.Stacks[0].StackStatus != "DELETE_FAILED" {

@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/internal/logger"
+	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
@@ -287,7 +287,7 @@ func (m *CheckBackupVaultNotExistsMockBackup) CheckBackupVaultExists(ctx context
 	Test Cases
 */
 func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 	mock := NewMockBackup()
 	allErrorMock := NewAllErrorMockBackup()
@@ -410,7 +410,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 }
 
 func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 	mock := NewMockBackup()
 	allErrorMock := NewAllErrorMockBackup()
