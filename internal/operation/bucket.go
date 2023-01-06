@@ -41,7 +41,9 @@ func (operator *BucketOperator) DeleteResources(ctx context.Context) error {
 
 	for _, bucket := range operator.resources {
 		bucket := bucket
-		sem.Acquire(ctx, 1)
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		eg.Go(func() error {
 			defer sem.Release(1)
 

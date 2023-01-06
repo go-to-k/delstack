@@ -38,7 +38,9 @@ func (operator *BackupVaultOperator) DeleteResources(ctx context.Context) error 
 
 	for _, backupVault := range operator.resources {
 		backupVault := backupVault
-		sem.Acquire(ctx, 1)
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		eg.Go(func() error {
 			defer sem.Release(1)
 
