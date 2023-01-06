@@ -7,7 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/go-to-k/delstack/internal/logger"
+	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
@@ -79,7 +79,7 @@ func (m *CheckEcrNotExistsMockEcr) CheckEcrExists(ctx context.Context, repositor
 	Test Cases
 */
 func TestEcrOperator_DeleteRepository(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 	mock := NewMockEcr()
 	DeleteRepositoryErrorMock := NewDeleteRepositoryErrorMockEcr()
@@ -158,7 +158,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 }
 
 func TestEcrOperator_DeleteResourcesForEcr(t *testing.T) {
-	logger.NewLogger(false)
+	io.NewLogger(false)
 	ctx := context.Background()
 	mock := NewMockEcr()
 	errorMock := NewDeleteRepositoryErrorMockEcr()
