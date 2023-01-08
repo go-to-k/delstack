@@ -143,6 +143,8 @@ func (m *NotExistsMockForGetRoleIamSDKClient) GetRole(ctx context.Context, param
 	Test Cases
 */
 func TestIam_DeleteRole(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -193,6 +195,8 @@ func TestIam_DeleteRole(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			iamClient := NewIam(tt.args.client)
 
 			err := iamClient.DeleteRole(tt.args.ctx, tt.args.roleName, sleepTimeSecForIam)
@@ -208,6 +212,8 @@ func TestIam_DeleteRole(t *testing.T) {
 }
 
 func TestIam_deleteRoleWithRetry(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -268,6 +274,8 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			iamClient := NewIam(tt.args.client)
 
 			_, err := iamClient.deleteRoleWithRetry(tt.args.ctx, tt.args.input, tt.args.roleName, sleepTimeSecForIam)
@@ -283,6 +291,8 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 }
 
 func TestIam_ListAttachedRolePolicies(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 
@@ -342,6 +352,8 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			iamClient := NewIam(tt.args.client)
 
 			output, err := iamClient.ListAttachedRolePolicies(tt.args.ctx, tt.args.roleName)
@@ -361,6 +373,8 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicies(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -453,6 +467,8 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			iamClient := NewIam(tt.args.client)
 
 			err := iamClient.DetachRolePolicies(tt.args.ctx, tt.args.roleName, tt.args.policies, sleepTimeSecForIam)
@@ -468,6 +484,8 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicy(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -522,6 +540,8 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			iamClient := NewIam(tt.args.client)
 
 			err := iamClient.DetachRolePolicy(tt.args.ctx, tt.args.roleName, tt.args.PolicyArn, sleepTimeSecForIam)
@@ -537,6 +557,8 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 }
 
 func TestIam_detachRolePolicyWithRetry(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -600,6 +622,8 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			iamClient := NewIam(tt.args.client)
 
 			_, err := iamClient.detachRolePolicyWithRetry(tt.args.ctx, tt.args.input, tt.args.roleName, sleepTimeSecForIam)
@@ -615,6 +639,8 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 }
 
 func TestIam_CheckRoleExists(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	notExitsMock := NewNotExistsMockForGetRoleIamSDKClient()
@@ -679,6 +705,8 @@ func TestIam_CheckRoleExists(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ecrClient := NewIam(tt.args.client)
 
 			output, err := ecrClient.CheckRoleExists(tt.args.ctx, tt.args.roleName)

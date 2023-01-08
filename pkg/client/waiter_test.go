@@ -9,6 +9,7 @@ import (
 )
 
 func TestWaitForRetry(t *testing.T) {
+	t.Parallel()
 
 	type args struct {
 		retryCount         int
@@ -82,6 +83,8 @@ func TestWaitForRetry(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			err := WaitForRetry(
 				tt.args.retryCount,
 				tt.args.sleepTimeSec,

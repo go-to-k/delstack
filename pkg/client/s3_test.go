@@ -344,6 +344,8 @@ func (m *NotExistsMockForListBucketsS3SDKClient) ListBuckets(ctx context.Context
 	Test Cases
 */
 func TestS3_DeleteBucket(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 
@@ -383,6 +385,8 @@ func TestS3_DeleteBucket(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			s3Client := NewS3(tt.args.client)
 
 			err := s3Client.DeleteBucket(tt.args.ctx, tt.args.bucketName)
@@ -398,6 +402,8 @@ func TestS3_DeleteBucket(t *testing.T) {
 }
 
 func TestS3_DeleteObjects(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 	apiErrorMock := NewApiErrorMockS3SDKClient()
@@ -545,6 +551,8 @@ func TestS3_DeleteObjects(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			s3Client := NewS3(tt.args.client)
 
 			output, err := s3Client.DeleteObjects(tt.args.ctx, tt.args.bucketName, tt.args.objects, sleepTimeSecForS3)
@@ -564,6 +572,8 @@ func TestS3_DeleteObjects(t *testing.T) {
 }
 
 func TestS3_deleteObjectsWithRetry(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 	apiErrorMock := NewApiErrorMockS3SDKClient()
@@ -728,6 +738,8 @@ func TestS3_deleteObjectsWithRetry(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			s3Client := NewS3(tt.args.client)
 
 			output, err := s3Client.deleteObjectsWithRetry(tt.args.ctx, tt.args.input, tt.args.bucketName, sleepTimeSecForS3)
@@ -747,6 +759,8 @@ func TestS3_deleteObjectsWithRetry(t *testing.T) {
 }
 
 func TestS3_ListObjectVersions(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 	emptyMock := NewEmptyMockForListObjectVersionsS3SDKClient()
@@ -858,6 +872,8 @@ func TestS3_ListObjectVersions(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			s3Client := NewS3(tt.args.client)
 
 			output, err := s3Client.ListObjectVersions(tt.args.ctx, tt.args.bucketName)
@@ -877,6 +893,8 @@ func TestS3_ListObjectVersions(t *testing.T) {
 }
 
 func TestS3_CheckBucketExists(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 	notExitsMock := NewNotExistsMockForListBucketsS3SDKClient()
@@ -941,6 +959,8 @@ func TestS3_CheckBucketExists(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			s3Client := NewS3(tt.args.client)
 
 			output, err := s3Client.CheckBucketExists(tt.args.ctx, tt.args.bucketName)

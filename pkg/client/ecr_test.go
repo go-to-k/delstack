@@ -72,6 +72,8 @@ func (m *NotExistsMockForDescribeRepositoriesEcrSDKClient) DescribeRepositories(
 */
 
 func TestEcr_DeleteRepository(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockEcrSDKClient()
 	errorMock := NewErrorMockEcrSDKClient()
 
@@ -111,6 +113,8 @@ func TestEcr_DeleteRepository(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ecrClient := NewEcr(tt.args.client)
 
 			err := ecrClient.DeleteRepository(tt.args.ctx, tt.args.repositoryName)
@@ -126,6 +130,8 @@ func TestEcr_DeleteRepository(t *testing.T) {
 }
 
 func TestEcr_CheckRepository(t *testing.T) {
+	t.Parallel()
+
 	mock := NewMockEcrSDKClient()
 	errorMock := NewErrorMockEcrSDKClient()
 	notExitsMock := NewNotExistsMockForDescribeRepositoriesEcrSDKClient()
@@ -190,6 +196,8 @@ func TestEcr_CheckRepository(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ecrClient := NewEcr(tt.args.client)
 
 			output, err := ecrClient.CheckEcrExists(tt.args.ctx, tt.args.repositoryName)
