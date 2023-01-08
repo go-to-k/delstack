@@ -287,7 +287,7 @@ func (m *CheckRoleNotExistsMockRole) CheckRoleExists(ctx context.Context, reposi
 	Test Cases
 */
 func TestRoleOperator_DeleteRole(t *testing.T) {
-	io.NewLogger(false)
+	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
 	mock := NewMockIam()
 	allErrorMock := NewAllErrorMockIam()
 	deleteRoleErrorMock := NewDeleteRoleErrorMockIam()
@@ -409,7 +409,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 }
 
 func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
-	io.NewLogger(false)
+	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
 	mock := NewMockIam()
 	allErrorMock := NewAllErrorMockIam()
 

@@ -328,7 +328,7 @@ func (m *CheckBucketNotExistsMockS3) CheckBucketExists(ctx context.Context, buck
 	Test Cases
 */
 func TestBucketOperator_DeleteBucket(t *testing.T) {
-	io.NewLogger(false)
+	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
 	mock := NewMockS3()
 	allErrorMock := NewAllErrorMockS3()
 	deleteBucketErrorMock := NewDeleteBucketErrorMockS3()
@@ -472,7 +472,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 }
 
 func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
-	io.NewLogger(false)
+	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
 	mock := NewMockS3()
 	allErrorMock := NewAllErrorMockS3()
 

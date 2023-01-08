@@ -79,7 +79,7 @@ func (m *CheckEcrNotExistsMockEcr) CheckEcrExists(ctx context.Context, repositor
 	Test Cases
 */
 func TestEcrOperator_DeleteRepository(t *testing.T) {
-	io.NewLogger(false)
+	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
 	mock := NewMockEcr()
 	DeleteRepositoryErrorMock := NewDeleteRepositoryErrorMockEcr()
 	checkEcrExistsErrorMock := NewCheckEcrExistsErrorMockEcr()
@@ -157,7 +157,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 }
 
 func TestEcrOperator_DeleteResourcesForEcr(t *testing.T) {
-	io.NewLogger(false)
+	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
 	mock := NewMockEcr()
 	errorMock := NewDeleteRepositoryErrorMockEcr()
 

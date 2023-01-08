@@ -272,7 +272,7 @@ func (m *OperatorDeleteResourcesMockOperatorCollection) RaiseUnsupportedResource
 	Test Cases
 */
 func TestOperatorManager_getOperatorResourcesLength(t *testing.T) {
-	io.NewLogger(false)
+	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
 
 	mock := NewMockOperatorCollection()
 
@@ -310,7 +310,7 @@ func TestOperatorManager_getOperatorResourcesLength(t *testing.T) {
 }
 
 func TestOperatorManager_CheckResourceCounts(t *testing.T) {
-	io.NewLogger(false)
+	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
 
 	mock := NewMockOperatorCollection()
 	incorrectResourceCountsMock := NewIncorrectResourceCountsMockOperatorCollection()
@@ -364,7 +364,7 @@ func TestOperatorManager_CheckResourceCounts(t *testing.T) {
 }
 
 func TestOperatorManager_DeleteResourceCollection(t *testing.T) {
-	io.NewLogger(false)
+	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
 
 	mock := NewMockOperatorCollection()
 	operatorDeleteResourcesMock := NewOperatorDeleteResourcesMockOperatorCollection()

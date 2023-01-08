@@ -287,7 +287,7 @@ func (m *CheckBackupVaultNotExistsMockBackup) CheckBackupVaultExists(ctx context
 	Test Cases
 */
 func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
-	io.NewLogger(false)
+	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
 	mock := NewMockBackup()
 	allErrorMock := NewAllErrorMockBackup()
 	listRecoveryPointsErrorMock := NewListRecoveryPointsErrorMockBackup()
@@ -409,7 +409,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 }
 
 func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
-	io.NewLogger(false)
+	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
 	mock := NewMockBackup()
 	allErrorMock := NewAllErrorMockBackup()
 
