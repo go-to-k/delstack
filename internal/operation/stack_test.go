@@ -407,7 +407,7 @@ func (m *ListStackResourcesErrorMockCloudFormation) ListStackResources(ctx conte
 	Test Cases
 */
 func TestStackOperator_DeleteStack(t *testing.T) {
-	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
+	io.NewLogger(false)
 
 	mock := NewMockCloudFormation()
 	terminationProtectionIsEnabledMock := NewTerminationProtectionIsEnabledMockCloudFormation()
@@ -681,7 +681,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 }
 
 func TestStackOperator_deleteRootStack(t *testing.T) {
-	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
+	io.NewLogger(false)
 
 	mock := NewMockCloudFormation()
 	terminationProtectionIsEnabledMock := NewTerminationProtectionIsEnabledMockCloudFormation()

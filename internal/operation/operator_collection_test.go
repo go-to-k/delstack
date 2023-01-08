@@ -29,7 +29,7 @@ var targetResourceTypesForPartialServices = []string{
 	Test Cases
 */
 func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
-	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
+	io.NewLogger(false)
 
 	type args struct {
 		ctx                    context.Context
@@ -483,7 +483,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 }
 
 func TestOperatorCollection_containsResourceType(t *testing.T) {
-	io.NewLogger(false) // this test cannot do in parallel because this is a global variable
+	io.NewLogger(false)
 
 	type args struct {
 		ctx                 context.Context

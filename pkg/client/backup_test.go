@@ -132,8 +132,6 @@ func (m *NotExistsMockForListBackupVaultsBackupSDKClient) ListBackupVaults(ctx c
 	Test Cases
 */
 func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
-	t.Parallel()
-
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -193,8 +191,6 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			backupClient := NewBackup(tt.args.client)
 
 			output, err := backupClient.ListRecoveryPointsByBackupVault(tt.args.ctx, tt.args.backupVaultName)
@@ -214,8 +210,6 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 }
 
 func TestBackup_DeleteRecoveryPoints(t *testing.T) {
-	t.Parallel()
-
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -287,8 +281,6 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			backupClient := NewBackup(tt.args.client)
 
 			err := backupClient.DeleteRecoveryPoints(tt.args.ctx, tt.args.backupVaultName, tt.args.recoveryPoints)
@@ -304,8 +296,6 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 }
 
 func TestBackup_DeleteRecoveryPoint(t *testing.T) {
-	t.Parallel()
-
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -348,8 +338,6 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			backupClient := NewBackup(tt.args.client)
 
 			err := backupClient.DeleteRecoveryPoint(tt.args.ctx, tt.args.backupVaultName, tt.args.recoveryPointArn)
@@ -365,8 +353,6 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 }
 
 func TestBackup_DeleteBackupVault(t *testing.T) {
-	t.Parallel()
-
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -406,8 +392,6 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			backupClient := NewBackup(tt.args.client)
 
 			err := backupClient.DeleteBackupVault(tt.args.ctx, tt.args.backupVaultName)
@@ -423,8 +407,6 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 }
 
 func TestBackup_CheckBackupVaultExists(t *testing.T) {
-	t.Parallel()
-
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 	notExitsMock := NewNotExistsMockForListBackupVaultsBackupSDKClient()
@@ -489,8 +471,6 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			backupClient := NewBackup(tt.args.client)
 
 			output, err := backupClient.CheckBackupVaultExists(tt.args.ctx, tt.args.backupVaultName)

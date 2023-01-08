@@ -5,8 +5,6 @@ import (
 )
 
 func Test_IsDebug(t *testing.T) {
-	// this test cannot do in parallel because this use global variables(Version, Revision)
-
 	type args struct {
 		Version  string
 		Revision string
@@ -70,8 +68,6 @@ func Test_IsDebug(t *testing.T) {
 }
 
 func Test_GetVersion(t *testing.T) {
-	// this test cannot do in parallel because this use global variables(Version, Revision)
-
 	type args struct {
 		Version  string
 		Revision string
