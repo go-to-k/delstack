@@ -408,7 +408,6 @@ func (m *ListStackResourcesErrorMockCloudFormation) ListStackResources(ctx conte
 */
 func TestStackOperator_DeleteStack(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 
 	mock := NewMockCloudFormation()
 	terminationProtectionIsEnabledMock := NewTerminationProtectionIsEnabledMockCloudFormation()
@@ -441,7 +440,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack successfully for root stack",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          mock,
@@ -453,7 +452,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack successfully for child stack",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          mock,
@@ -465,7 +464,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for TerminationProtection is enabled stack",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          terminationProtectionIsEnabledMock,
@@ -477,7 +476,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for not DELETE_FAILED stack",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          notDeleteFailedMock,
@@ -489,7 +488,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for all errors",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          allErrorMock,
@@ -501,7 +500,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for child stack for all errors",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          allErrorMock,
@@ -513,7 +512,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for delete Stack",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          deleteStackErrorMock,
@@ -525,7 +524,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for child stack for delete Stack",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          deleteStackErrorMock,
@@ -537,7 +536,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for describe stacks",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          describeStacksErrorMock,
@@ -549,7 +548,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for describe stacks but not exists",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          describeStacksNotExistsErrorMock,
@@ -561,7 +560,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for list stack resources",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          listStackResourcesErrorMock,
@@ -573,7 +572,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for child stack for list stack resources",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          listStackResourcesErrorMock,
@@ -585,7 +584,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for operator manager all errors",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          mock,
@@ -597,7 +596,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for child stack for operator manager all errors",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          mock,
@@ -609,7 +608,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for operator manager check resource counts",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          mock,
@@ -621,7 +620,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for child stack for operator manager check resource counts",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          mock,
@@ -633,7 +632,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for operator manager delete resource collection",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         true,
 				clientMock:          mock,
@@ -645,7 +644,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for child stack for operator manager delete resource collection",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				isRootStack:         false,
 				clientMock:          mock,
@@ -683,7 +682,6 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 
 func TestStackOperator_deleteRootStack(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 
 	mock := NewMockCloudFormation()
 	terminationProtectionIsEnabledMock := NewTerminationProtectionIsEnabledMockCloudFormation()
@@ -713,7 +711,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack successfully for root stack",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: true,
 				clientMock:  mock,
@@ -727,7 +725,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for TerminationProtection is enabled stack",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: true,
 				clientMock:  terminationProtectionIsEnabledMock,
@@ -741,7 +739,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for not DELETE_FAILED stack",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: true,
 				clientMock:  notDeleteFailedMock,
@@ -755,7 +753,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for all errors",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: true,
 				clientMock:  allErrorMock,
@@ -769,7 +767,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for describe stacks",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: true,
 				clientMock:  describeStacksErrorMock,
@@ -783,7 +781,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack failure for root stack for describe stacks but not exists",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: true,
 				clientMock:  describeStacksNotExistsErrorMock,
@@ -797,7 +795,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack successfully for child stack",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: false,
 				clientMock:  mock,
@@ -811,7 +809,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack failure for child stack for TerminationProtection is enabled stack",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: false,
 				clientMock:  terminationProtectionIsEnabledMock,
@@ -825,7 +823,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack failure for child stack for not DELETE_FAILED stack",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: false,
 				clientMock:  notDeleteFailedMock,
@@ -839,7 +837,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack failure for child stack for all errors",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: false,
 				clientMock:  allErrorMock,
@@ -853,7 +851,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack failure for child stack for describe stacks",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: false,
 				clientMock:  describeStacksErrorMock,
@@ -867,7 +865,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 		{
 			name: "delete stack successfully for child stack for the stack already deleted",
 			args: args{
-				ctx:         ctx,
+				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: false,
 				clientMock:  describeStacksNotExistsErrorMock,

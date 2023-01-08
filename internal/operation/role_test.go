@@ -288,7 +288,6 @@ func (m *CheckRoleNotExistsMockRole) CheckRoleExists(ctx context.Context, reposi
 */
 func TestRoleOperator_DeleteRole(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 	mock := NewMockIam()
 	allErrorMock := NewAllErrorMockIam()
 	deleteRoleErrorMock := NewDeleteRoleErrorMockIam()
@@ -313,7 +312,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 		{
 			name: "delete role successfully",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   mock,
 			},
@@ -323,7 +322,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 		{
 			name: "delete role failure for all errors",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   allErrorMock,
 			},
@@ -333,7 +332,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 		{
 			name: "delete role failure for check role exists errors",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   checkRoleExistsErrorMock,
 			},
@@ -343,7 +342,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 		{
 			name: "delete role failure for check role not exists",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   checkRoleNotExistsMock,
 			},
@@ -353,7 +352,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 		{
 			name: "delete role failure for list attached role policies errors",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   listAttachedRolePoliciesErrorMock,
 			},
@@ -363,7 +362,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 		{
 			name: "delete role failure for detach role errors",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   detachRolePoliciesErrorMock,
 			},
@@ -373,7 +372,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 		{
 			name: "delete role successfully for detach role errors after zero length",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   detachRolePoliciesErrorAfterZeroLengthMock,
 			},
@@ -383,7 +382,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 		{
 			name: "delete role failure for delete role errors",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   deleteRoleErrorMock,
 			},
@@ -411,7 +410,6 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 
 func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 	mock := NewMockIam()
 	allErrorMock := NewAllErrorMockIam()
 
@@ -429,7 +427,7 @@ func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
 		{
 			name: "delete resources successfully",
 			args: args{
-				ctx:    ctx,
+				ctx:    context.Background(),
 				client: mock,
 			},
 			want:    nil,
@@ -438,7 +436,7 @@ func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
 		{
 			name: "delete resources failure",
 			args: args{
-				ctx:    ctx,
+				ctx:    context.Background(),
 				client: allErrorMock,
 			},
 			want:    fmt.Errorf("GetRoleError"),
