@@ -38,7 +38,9 @@ func (operator *EcrOperator) DeleteResources(ctx context.Context) error {
 
 	for _, repository := range operator.resources {
 		repository := repository
-		sem.Acquire(ctx, 1)
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		eg.Go(func() (err error) {
 			defer sem.Release(1)
 
