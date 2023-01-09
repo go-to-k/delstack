@@ -33,7 +33,6 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
 
 - Homebrew
   ```
-  brew tap go-to-k/tap
   brew install go-to-k/tap/delstack
   ```
 - Binary
