@@ -77,12 +77,6 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 	}()
 
 	for {
-		select {
-		case <-ctx.Done():
-			return errors, ctx.Err()
-		default:
-		}
-
 		inputObjects := []types.ObjectIdentifier{}
 
 		if len(nextObjects) > s3DeleteObjectsSizeLimit {
@@ -101,7 +95,9 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 			},
 		}
 
-		sem.Acquire(ctx, 1)
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return errors, err
+		}
 		eg.Go(func() error {
 			defer sem.Release(1)
 
