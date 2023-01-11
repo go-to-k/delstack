@@ -52,7 +52,7 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
 - -s, --stackName: optional
   - CloudFormation stack name
     - Must be specified in **not** interactive mode
-    - Otherwise you will specify it in the interactive mode
+    - Otherwise you can specify it in the interactive mode
 - -p, --profile: optional
   - AWS profile name
 - -r, --region: optional(default: `ap-northeast-1`)
