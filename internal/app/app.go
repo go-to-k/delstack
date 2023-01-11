@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -31,7 +32,6 @@ func NewApp(version string) *App {
 				Name:        "stackName",
 				Aliases:     []string{"s"},
 				Usage:       "CloudFormation stack name",
-				Required:    true,
 				Destination: &app.StackName,
 			},
 			&cli.StringFlag{
@@ -69,15 +69,21 @@ func (app *App) Run(ctx context.Context) error {
 
 func (app *App) getAction() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
+		if !app.InteractiveMode && app.StackName == "" {
+			errMsg := fmt.Sprintln("The stack name must be specified in command options (-s) or a flow of the interactive mode.")
+			return fmt.Errorf("StackNameNotSpecifiedError: %v", errMsg)
+		}
+
 		config, err := client.LoadAWSConfig(c.Context, app.Region, app.Profile)
 		if err != nil {
 			return err
 		}
 
 		var targetResourceTypes []string
+		var keyword string
 		continuation := true
 		if app.InteractiveMode {
-			targetResourceTypes, continuation = app.doInteractiveMode()
+			targetResourceTypes, keyword, continuation = app.doInteractiveMode()
 		} else {
 			targetResourceTypes = resourcetype.GetResourceTypes()
 		}
@@ -86,15 +92,33 @@ func (app *App) getAction() func(c *cli.Context) error {
 			return nil
 		}
 
-		io.Logger.Info().Msgf("Start deletion, %v", app.StackName)
-
 		stackOperatorFactory := operation.NewStackOperatorFactory(config)
 		stackOperator := stackOperatorFactory.CreateStackOperator(targetResourceTypes)
+
+		if app.InteractiveMode && app.StackName == "" {
+			stackNames, err := stackOperator.ListStacksFilteredByKeyword(c.Context, aws.String(keyword))
+			if err != nil {
+				return err
+			}
+			if len(stackNames) == 0 {
+				errMsg := fmt.Sprintf("No stacks matching the keyword %s.", keyword)
+				return fmt.Errorf("NotExistsError: %v", errMsg)
+			}
+
+			stackName := app.selectStackName(stackNames)
+			if stackName == "" {
+				return nil
+			}
+
+			app.StackName = stackName
+		}
 
 		isRootStack := true
 		operatorFactory := operation.NewOperatorFactory(config)
 		operatorCollection := operation.NewOperatorCollection(config, operatorFactory, targetResourceTypes)
 		operatorManager := operation.NewOperatorManager(operatorCollection)
+
+		io.Logger.Info().Msgf("Start deletion, %v", app.StackName)
 
 		if err := stackOperator.DeleteStackResources(c.Context, aws.String(app.StackName), isRootStack, operatorManager); err != nil {
 			return err
@@ -105,14 +129,20 @@ func (app *App) getAction() func(c *cli.Context) error {
 	}
 }
 
-func (app *App) doInteractiveMode() ([]string, bool) {
+func (app *App) doInteractiveMode() ([]string, string, bool) {
 	var checkboxes []string
+	var keyword string
 
 	label := "Select ResourceTypes you wish to delete even if DELETE_FAILED." +
 		"\n" +
 		"However, if resources of the selected ResourceTypes will not be DELETE_FAILED when the stack is deleted, the resources will be deleted even if you selected. " +
 		"\n"
 	opts := resourcetype.GetResourceTypes()
+
+	if app.StackName == "" {
+		stackNameLabel := "Filter a keyword of stack names: "
+		keyword = io.InputKeywordForFilter(stackNameLabel)
+	}
 
 	for {
 		checkboxes = io.GetCheckboxes(label, opts)
@@ -122,14 +152,39 @@ func (app *App) doInteractiveMode() ([]string, bool) {
 			ok := io.GetYesNo("Do you want to finish?")
 			if ok {
 				io.Logger.Info().Msg("Finished...")
-				return checkboxes, false
+				return checkboxes, keyword, false
 			}
 			continue
 		}
 
 		ok := io.GetYesNo("OK?")
 		if ok {
-			return checkboxes, true
+			return checkboxes, keyword, true
+		}
+	}
+}
+
+func (app *App) selectStackName(stackNames []string) string {
+	var stackName string
+
+	label := "Select StackName." + "\n"
+
+	for {
+		stackName = io.GetSelection(label, stackNames)
+
+		if stackName == "" {
+			io.Logger.Warn().Msg("Select StackName!")
+			ok := io.GetYesNo("Do you want to finish?")
+			if ok {
+				io.Logger.Info().Msg("Finished...")
+				return stackName
+			}
+			continue
+		}
+
+		ok := io.GetYesNo("OK?")
+		if ok {
+			return stackName
 		}
 	}
 }
