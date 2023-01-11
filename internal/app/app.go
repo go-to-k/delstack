@@ -80,9 +80,10 @@ func (app *App) getAction() func(c *cli.Context) error {
 		}
 
 		var targetResourceTypes []string
+		var keyword string
 		continuation := true
 		if app.InteractiveMode {
-			targetResourceTypes, continuation = app.doInteractiveMode()
+			targetResourceTypes, keyword, continuation = app.doInteractiveMode()
 		} else {
 			targetResourceTypes = resourcetype.GetResourceTypes()
 		}
@@ -91,15 +92,23 @@ func (app *App) getAction() func(c *cli.Context) error {
 			return nil
 		}
 
-		io.Logger.Info().Msgf("Start deletion, %v", app.StackName)
-
 		stackOperatorFactory := operation.NewStackOperatorFactory(config)
 		stackOperator := stackOperatorFactory.CreateStackOperator(targetResourceTypes)
+
+		if app.InteractiveMode {
+			stackNames, err := stackOperator.ListStacksFilteredByKeyword(c.Context, aws.String(keyword))
+			if err != nil {
+				return err
+			}
+			app.StackName = app.selectStackName(stackNames)
+		}
 
 		isRootStack := true
 		operatorFactory := operation.NewOperatorFactory(config)
 		operatorCollection := operation.NewOperatorCollection(config, operatorFactory, targetResourceTypes)
 		operatorManager := operation.NewOperatorManager(operatorCollection)
+
+		io.Logger.Info().Msgf("Start deletion, %v", app.StackName)
 
 		if err := stackOperator.DeleteStackResources(c.Context, aws.String(app.StackName), isRootStack, operatorManager); err != nil {
 			return err
@@ -110,8 +119,9 @@ func (app *App) getAction() func(c *cli.Context) error {
 	}
 }
 
-func (app *App) doInteractiveMode() ([]string, bool) {
+func (app *App) doInteractiveMode() ([]string, string, bool) {
 	var checkboxes []string
+	var keyword string
 
 	label := "Select ResourceTypes you wish to delete even if DELETE_FAILED." +
 		"\n" +
@@ -120,22 +130,8 @@ func (app *App) doInteractiveMode() ([]string, bool) {
 	opts := resourcetype.GetResourceTypes()
 
 	if app.StackName == "" {
-		stackNameLabel := "Input a stack name: "
-		for {
-			stackName := io.InputKeywordForFilter(stackNameLabel)
-
-			if stackName == "" {
-				io.Logger.Warn().Msg("Select a stack name!")
-				ok := io.GetYesNo("Do you want to finish?")
-				if ok {
-					io.Logger.Info().Msg("Finished...")
-					return checkboxes, false
-				}
-				continue
-			}
-			app.StackName = stackName
-			break
-		}
+		stackNameLabel := "Filter a keyword of stack names: "
+		keyword = io.InputKeywordForFilter(stackNameLabel)
 	}
 
 	for {
@@ -146,14 +142,29 @@ func (app *App) doInteractiveMode() ([]string, bool) {
 			ok := io.GetYesNo("Do you want to finish?")
 			if ok {
 				io.Logger.Info().Msg("Finished...")
-				return checkboxes, false
+				return checkboxes, keyword, false
 			}
 			continue
 		}
 
 		ok := io.GetYesNo("OK?")
 		if ok {
-			return checkboxes, true
+			return checkboxes, keyword, true
+		}
+	}
+}
+
+func (app *App) selectStackName(stackNames []string) string {
+	var stackName string
+
+	label := "Select StackName." + "\n"
+
+	for {
+		stackName = io.GetSelection(label, stackNames)
+
+		ok := io.GetYesNo("OK?")
+		if ok {
+			return stackName
 		}
 	}
 }

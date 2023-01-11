@@ -130,6 +130,30 @@ func (cfnClient *CloudFormation) ListStacks(ctx context.Context) ([]types.StackS
 		}
 
 		input := &cloudformation.ListStacksInput{
+			StackStatusFilter: []types.StackStatus{
+				types.StackStatusCreateInProgress,
+				types.StackStatusCreateFailed,
+				types.StackStatusCreateComplete,
+				types.StackStatusRollbackInProgress,
+				types.StackStatusRollbackFailed,
+				types.StackStatusRollbackComplete,
+				types.StackStatusDeleteInProgress,
+				types.StackStatusDeleteFailed,
+				types.StackStatusUpdateInProgress,
+				types.StackStatusUpdateCompleteCleanupInProgress,
+				types.StackStatusUpdateComplete,
+				types.StackStatusUpdateFailed,
+				types.StackStatusUpdateRollbackInProgress,
+				types.StackStatusUpdateRollbackFailed,
+				types.StackStatusUpdateRollbackCompleteCleanupInProgress,
+				types.StackStatusUpdateRollbackComplete,
+				types.StackStatusReviewInProgress,
+				types.StackStatusImportInProgress,
+				types.StackStatusImportComplete,
+				types.StackStatusImportRollbackInProgress,
+				types.StackStatusImportRollbackFailed,
+				types.StackStatusImportRollbackComplete,
+			},
 			NextToken: nextToken,
 		}
 
