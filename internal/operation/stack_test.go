@@ -42,10 +42,6 @@ func (m *MockOperatorManager) DeleteResourceCollection(ctx context.Context) erro
 	return nil
 }
 
-func (m *MockOperatorManager) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
-	return []string{}, nil
-}
-
 type AllErrorMockOperatorManager struct{}
 
 func NewAllErrorMockOperatorManager() *AllErrorMockOperatorManager {
@@ -65,10 +61,6 @@ func (m *AllErrorMockOperatorManager) GetLogicalResourceIds() []string {
 
 func (m *AllErrorMockOperatorManager) DeleteResourceCollection(ctx context.Context) error {
 	return fmt.Errorf("DeleteResourceCollectionError")
-}
-
-func (m *AllErrorMockOperatorManager) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
-	return []string{}, fmt.Errorf("ListStacksFilteredByKeywordError")
 }
 
 type CheckResourceCountsErrorMockOperatorManager struct{}
@@ -92,10 +84,6 @@ func (m *CheckResourceCountsErrorMockOperatorManager) DeleteResourceCollection(c
 	return nil
 }
 
-func (m *CheckResourceCountsErrorMockOperatorManager) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
-	return []string{}, nil
-}
-
 type DeleteResourceCollectionErrorMockOperatorManager struct{}
 
 func NewDeleteResourceCollectionErrorMockOperatorManager() *DeleteResourceCollectionErrorMockOperatorManager {
@@ -115,10 +103,6 @@ func (m *DeleteResourceCollectionErrorMockOperatorManager) GetLogicalResourceIds
 
 func (m *DeleteResourceCollectionErrorMockOperatorManager) DeleteResourceCollection(ctx context.Context) error {
 	return fmt.Errorf("DeleteResourceCollectionError")
-}
-
-func (m *DeleteResourceCollectionErrorMockOperatorManager) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
-	return []string{}, nil
 }
 
 /*
