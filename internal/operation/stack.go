@@ -138,7 +138,7 @@ func (operator *StackOperator) deleteStackNormally(ctx context.Context, stackNam
 }
 
 func (operator *StackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
-	var filteredStacks []string
+	filteredStacks := []string{}
 
 	stackSummaries, err := operator.client.ListStacks(ctx)
 	if err != nil {
