@@ -95,7 +95,7 @@ func (app *App) getAction() func(c *cli.Context) error {
 		stackOperatorFactory := operation.NewStackOperatorFactory(config)
 		stackOperator := stackOperatorFactory.CreateStackOperator(targetResourceTypes)
 
-		if app.InteractiveMode {
+		if app.InteractiveMode && app.StackName == "" {
 			stackNames, err := stackOperator.ListStacksFilteredByKeyword(c.Context, aws.String(keyword))
 			if err != nil {
 				return err
