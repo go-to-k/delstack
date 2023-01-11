@@ -87,6 +87,8 @@ However, if resources of the selected ResourceTypes will not be DELETE_FAILED wh
 
 If you do not specify a stack name in command options in the interactive mode, you can input a keyword for filtering stack names and select a stack.
 
+It can be **empty**.
+
 ```sh
 ❯ delstack -i
 Filter a keyword of stack names: test-goto

@@ -104,7 +104,13 @@ func (app *App) getAction() func(c *cli.Context) error {
 				errMsg := fmt.Sprintf("No stacks matching the keyword %s.", keyword)
 				return fmt.Errorf("NotExistsError: %v", errMsg)
 			}
-			app.StackName = app.selectStackName(stackNames)
+
+			stackName := app.selectStackName(stackNames)
+			if stackName == "" {
+				return nil
+			}
+
+			app.StackName = stackName
 		}
 
 		isRootStack := true
