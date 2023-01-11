@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"runtime"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
@@ -106,7 +107,8 @@ func (operator *StackOperator) deleteStackNormally(ctx context.Context, stackNam
 		return false, err
 	}
 	if !stackExistsBeforeDelete && isRootStack {
-		return false, fmt.Errorf("NotExistsError: %v", *stackName)
+		errMsg := fmt.Sprintf("%s stack not found.", *stackName)
+		return false, fmt.Errorf("NotExistsError: %v", errMsg)
 	}
 	if !stackExistsBeforeDelete {
 		return true, nil
@@ -133,4 +135,21 @@ func (operator *StackOperator) deleteStackNormally(ctx context.Context, stackNam
 	}
 
 	return false, nil
+}
+
+func (operator *StackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
+	filteredStacks := []string{}
+
+	stackSummaries, err := operator.client.ListStacks(ctx)
+	if err != nil {
+		return filteredStacks, err
+	}
+
+	for _, stackSummary := range stackSummaries {
+		if strings.Contains(*stackSummary.StackName, *keyword) {
+			filteredStacks = append(filteredStacks, *stackSummary.StackName)
+		}
+	}
+
+	return filteredStacks, nil
 }

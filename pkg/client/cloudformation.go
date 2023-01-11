@@ -15,6 +15,7 @@ type ICloudFormation interface {
 	DeleteStack(ctx context.Context, stackName *string, retainResources []string) error
 	DescribeStacks(ctx context.Context, stackName *string) (*cloudformation.DescribeStacksOutput, bool, error)
 	ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error)
+	ListStacks(ctx context.Context) ([]types.StackSummary, error)
 }
 
 var _ ICloudFormation = (*CloudFormation)(nil)
@@ -23,6 +24,7 @@ type ICloudFormationSDKClient interface {
 	DeleteStack(ctx context.Context, params *cloudformation.DeleteStackInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DeleteStackOutput, error)
 	DescribeStacks(ctx context.Context, params *cloudformation.DescribeStacksInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DescribeStacksOutput, error)
 	ListStackResources(ctx context.Context, params *cloudformation.ListStackResourcesInput, optFns ...func(*cloudformation.Options)) (*cloudformation.ListStackResourcesOutput, error)
+	ListStacks(ctx context.Context, params *cloudformation.ListStacksInput, optFns ...func(*cloudformation.Options)) (*cloudformation.ListStacksOutput, error)
 }
 
 type ICloudFormationSDKWaiter interface {
@@ -114,4 +116,59 @@ func (cfnClient *CloudFormation) ListStackResources(ctx context.Context, stackNa
 	}
 
 	return stackResourceSummaries, nil
+}
+
+func (cfnClient *CloudFormation) ListStacks(ctx context.Context) ([]types.StackSummary, error) {
+	var nextToken *string
+	stackSummaries := []types.StackSummary{}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return stackSummaries, ctx.Err()
+		default:
+		}
+
+		input := &cloudformation.ListStacksInput{
+			StackStatusFilter: []types.StackStatus{
+				types.StackStatusCreateInProgress,
+				types.StackStatusCreateFailed,
+				types.StackStatusCreateComplete,
+				types.StackStatusRollbackInProgress,
+				types.StackStatusRollbackFailed,
+				types.StackStatusRollbackComplete,
+				types.StackStatusDeleteInProgress,
+				types.StackStatusDeleteFailed,
+				types.StackStatusUpdateInProgress,
+				types.StackStatusUpdateCompleteCleanupInProgress,
+				types.StackStatusUpdateComplete,
+				types.StackStatusUpdateFailed,
+				types.StackStatusUpdateRollbackInProgress,
+				types.StackStatusUpdateRollbackFailed,
+				types.StackStatusUpdateRollbackCompleteCleanupInProgress,
+				types.StackStatusUpdateRollbackComplete,
+				types.StackStatusReviewInProgress,
+				types.StackStatusImportInProgress,
+				types.StackStatusImportComplete,
+				types.StackStatusImportRollbackInProgress,
+				types.StackStatusImportRollbackFailed,
+				types.StackStatusImportRollbackComplete,
+			},
+			NextToken: nextToken,
+		}
+
+		output, err := cfnClient.client.ListStacks(ctx, input)
+		if err != nil {
+			return stackSummaries, err
+		}
+
+		stackSummaries = append(stackSummaries, output.StackSummaries...)
+		nextToken = output.NextToken
+
+		if nextToken == nil {
+			break
+		}
+	}
+
+	return stackSummaries, nil
 }
