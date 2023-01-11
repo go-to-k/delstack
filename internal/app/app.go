@@ -100,6 +100,10 @@ func (app *App) getAction() func(c *cli.Context) error {
 			if err != nil {
 				return err
 			}
+			if len(stackNames) == 0 {
+				errMsg := fmt.Sprintf("%s stack not found.", keyword)
+				return fmt.Errorf("NotExistsError: %v", errMsg)
+			}
 			app.StackName = app.selectStackName(stackNames)
 		}
 
