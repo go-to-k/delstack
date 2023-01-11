@@ -119,6 +119,24 @@ func (app *App) doInteractiveMode() ([]string, bool) {
 		"\n"
 	opts := resourcetype.GetResourceTypes()
 
+	if app.StackName == "" {
+		stackNameLabel := "Input a stack name: "
+		for {
+			stackName := io.InputKeywordForFilter(stackNameLabel)
+
+			if stackName == "" {
+				io.Logger.Warn().Msg("Select a stack name!")
+				ok := io.GetYesNo("Do you want to finish?")
+				if ok {
+					io.Logger.Info().Msg("Finished...")
+					return checkboxes, false
+				}
+				continue
+			}
+			app.StackName = stackName
+		}
+	}
+
 	for {
 		checkboxes = io.GetCheckboxes(label, opts)
 

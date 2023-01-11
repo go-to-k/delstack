@@ -21,6 +21,18 @@ func GetCheckboxes(label string, opts []string) []string {
 	return res
 }
 
+func InputKeywordForFilter(label string) string {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Fprintf(os.Stderr, "%s", label)
+	s, _ := reader.ReadString('\n')
+	fmt.Fprintln(os.Stderr)
+
+	s = strings.TrimSpace(s)
+
+	return s
+}
+
 func GetYesNo(label string) bool {
 	choices := "Y/n"
 	r := bufio.NewReader(os.Stdin)
