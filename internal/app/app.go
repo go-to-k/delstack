@@ -134,6 +134,7 @@ func (app *App) doInteractiveMode() ([]string, bool) {
 				continue
 			}
 			app.StackName = stackName
+			break
 		}
 	}
 
