@@ -49,8 +49,10 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
   delstack -s <stackName> [-p <profile>] [-r <region>] [-i]
   ```
 
-- -s, --stackName: **required**
+- -s, --stackName: optional
   - CloudFormation stack name
+    - Must be specified in **not** interactive mode
+    - Otherwise you will specify it in the interactive mode
 - -p, --profile: optional
   - AWS profile name
 - -r, --region: optional(default: `ap-northeast-1`)
@@ -60,6 +62,8 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
 
 ## Interactive Mode
 
+### ResourceTypes
+
 If you selected `-i, --interactive` option, **you can select** ResourceTypes **you wish to delete even if DELETE_FAILED** in a prompt. This allows you to protect resources you do not want to delete!!
 
 However, if resources of the selected ResourceTypes **will not be DELETE_FAILED when the stack is deleted**, the resources will be deleted **even if you selected**. The purpose of this tool is not to protect specific resources from CloudFormation's stack deletion feature, but simply to avoid forcing the deletion of something that really should not be deleted.
@@ -68,11 +72,32 @@ If the stack contains resources that will be DELETE_FAILED but is not selected, 
 
 ```sh
 ❯ delstack -s YourStack -i
-? Select ResourceTypes you wish to delete even if DELETE_FAILED.  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
+? Select ResourceTypes you wish to delete even if DELETE_FAILED.
+However, if resources of the selected ResourceTypes will not be DELETE_FAILED when the stack is deleted, the resources will be deleted even if you selected.
+  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
   [ ]  AWS::S3::Bucket
   [x]  AWS::IAM::Role
 > [x]  AWS::ECR::Repository
   [ ]  AWS::Backup::BackupVault
   [x]  AWS::CloudFormation::Stack
   [ ]  Custom::
+```
+
+### StackName Selection
+
+If you do not specify a stack name in command options in the interactive mode, you can input a keyword for filtering stack names and select a stack.
+
+```sh
+❯ delstack -i
+Filter a keyword of stack names: test-goto
+```
+
+Then you select stack names in the UI.
+
+```sh
+? Select StackName.
+  [Use arrows to move, type to filter]
+> test-goto-stack-1
+  test-goto-stack-2
+  test-goto-stack-3
 ```
