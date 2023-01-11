@@ -166,6 +166,16 @@ func (app *App) selectStackName(stackNames []string) string {
 	for {
 		stackName = io.GetSelection(label, stackNames)
 
+		if stackName == "" {
+			io.Logger.Warn().Msg("Select StackName!")
+			ok := io.GetYesNo("Do you want to finish?")
+			if ok {
+				io.Logger.Info().Msg("Finished...")
+				return stackName
+			}
+			continue
+		}
+
 		ok := io.GetYesNo("OK?")
 		if ok {
 			return stackName
