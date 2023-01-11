@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -31,7 +32,6 @@ func NewApp(version string) *App {
 				Name:        "stackName",
 				Aliases:     []string{"s"},
 				Usage:       "CloudFormation stack name",
-				Required:    true,
 				Destination: &app.StackName,
 			},
 			&cli.StringFlag{
@@ -69,6 +69,11 @@ func (app *App) Run(ctx context.Context) error {
 
 func (app *App) getAction() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
+		if !app.InteractiveMode && app.StackName == "" {
+			errMsg := fmt.Sprintln("The stack name must be specified in command options (-s) or a flow of the interactive mode.")
+			return fmt.Errorf("StackNameNotSpecifiedError: %v", errMsg)
+		}
+
 		config, err := client.LoadAWSConfig(c.Context, app.Region, app.Profile)
 		if err != nil {
 			return err
