@@ -7,14 +7,14 @@ import (
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
+/*
+	Mocks for client
+*/
+
 var _ client.IEcr = (*MockEcr)(nil)
 var _ client.IEcr = (*DeleteRepositoryErrorMockEcr)(nil)
 var _ client.IEcr = (*CheckEcrExistsErrorMockEcr)(nil)
 var _ client.IEcr = (*CheckEcrNotExistsMockEcr)(nil)
-
-/*
-	Mocks for client
-*/
 
 type MockEcr struct{}
 

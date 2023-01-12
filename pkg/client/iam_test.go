@@ -12,6 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 )
 
+const sleepTimeSecForIam = 1
+
 /*
 	Test Cases
 */

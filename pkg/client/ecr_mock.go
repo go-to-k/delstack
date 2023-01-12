@@ -9,13 +9,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 )
 
-var _ IEcrSDKClient = (*MockEcrSDKClient)(nil)
-var _ IEcrSDKClient = (*ErrorMockEcrSDKClient)(nil)
-var _ IEcrSDKClient = (*NotExistsMockForDescribeRepositoriesEcrSDKClient)(nil)
-
 /*
 	Mocks for SDK Client
 */
+
+var _ IEcrSDKClient = (*MockEcrSDKClient)(nil)
+var _ IEcrSDKClient = (*ErrorMockEcrSDKClient)(nil)
+var _ IEcrSDKClient = (*NotExistsMockForDescribeRepositoriesEcrSDKClient)(nil)
 
 type MockEcrSDKClient struct{}
 

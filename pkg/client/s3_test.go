@@ -13,15 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-var _ IS3SDKClient = (*MockS3SDKClient)(nil)
-var _ IS3SDKClient = (*ErrorMockS3SDKClient)(nil)
-var _ IS3SDKClient = (*ApiErrorMockS3SDKClient)(nil)
-var _ IS3SDKClient = (*OutputErrorForDeleteObjectsMockS3SDKClient)(nil)
-var _ IS3SDKClient = (*EmptyMockForListObjectVersionsS3SDKClient)(nil)
-var _ IS3SDKClient = (*VersionsMockForListObjectVersionsS3SDKClient)(nil)
-var _ IS3SDKClient = (*DeleteMarkersMockForListObjectVersionsS3SDKClient)(nil)
-var _ IS3SDKClient = (*NotExistsMockForListBucketsS3SDKClient)(nil)
-
 const sleepTimeSecForS3 = 1
 
 /*
