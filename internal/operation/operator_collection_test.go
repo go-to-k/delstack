@@ -28,6 +28,7 @@ var targetResourceTypesForPartialServices = []string{
 /*
 	Test Cases
 */
+
 func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 	io.NewLogger(false)
 	ctx := context.Background()
