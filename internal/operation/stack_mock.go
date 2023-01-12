@@ -104,8 +104,9 @@ func (m *DeleteResourceCollectionErrorMockOperatorManager) DeleteResourceCollect
 }
 
 /*
-Mocks for client
+	Mocks for client
 */
+
 var _ client.ICloudFormation = (*MockCloudFormation)(nil)
 var _ client.ICloudFormation = (*TerminationProtectionIsEnabledMockCloudFormation)(nil)
 var _ client.ICloudFormation = (*NotDeleteFailedMockCloudFormation)(nil)
@@ -114,8 +115,8 @@ var _ client.ICloudFormation = (*DeleteStackErrorMockCloudFormation)(nil)
 var _ client.ICloudFormation = (*DescribeStacksErrorMockCloudFormation)(nil)
 var _ client.ICloudFormation = (*DescribeStacksNotExistsErrorMockCloudFormation)(nil)
 var _ client.ICloudFormation = (*ListStackResourcesErrorMockCloudFormation)(nil)
-var _ client.ICloudFormation = (*ListStacksEmptyMockCloudFormation)(nil)
 var _ client.ICloudFormation = (*ListStacksErrorMockCloudFormation)(nil)
+var _ client.ICloudFormation = (*ListStacksEmptyMockCloudFormation)(nil)
 
 type MockCloudFormation struct{}
 

@@ -11,17 +11,6 @@ import (
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
-var _ client.IS3 = (*MockS3)(nil)
-var _ client.IS3 = (*AllErrorMockS3)(nil)
-var _ client.IS3 = (*DeleteObjectsErrorMockS3)(nil)
-var _ client.IS3 = (*DeleteObjectsErrorAfterZeroLengthMockS3)(nil)
-var _ client.IS3 = (*DeleteObjectsOutputErrorMockS3)(nil)
-var _ client.IS3 = (*DeleteObjectsOutputErrorAfterZeroLengthMockS3)(nil)
-var _ client.IS3 = (*ListObjectVersionsErrorMockS3)(nil)
-var _ client.IS3 = (*DeleteBucketErrorMockS3)(nil)
-var _ client.IS3 = (*CheckBucketExistsErrorMockS3)(nil)
-var _ client.IS3 = (*CheckBucketNotExistsMockS3)(nil)
-
 /*
 	Test Cases
 */

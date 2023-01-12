@@ -11,11 +11,6 @@ import (
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
-var _ client.IEcr = (*MockEcr)(nil)
-var _ client.IEcr = (*DeleteRepositoryErrorMockEcr)(nil)
-var _ client.IEcr = (*CheckEcrExistsErrorMockEcr)(nil)
-var _ client.IEcr = (*CheckEcrNotExistsMockEcr)(nil)
-
 /*
 	Test Cases
 */
