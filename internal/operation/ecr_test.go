@@ -22,7 +22,6 @@ var _ client.IEcr = (*CheckEcrNotExistsMockEcr)(nil)
 
 func TestEcrOperator_DeleteRepository(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 	mock := NewMockEcr()
 	DeleteRepositoryErrorMock := NewDeleteRepositoryErrorMockEcr()
 	checkEcrExistsErrorMock := NewCheckEcrExistsErrorMockEcr()
@@ -43,7 +42,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 		{
 			name: "delete ecr successfully",
 			args: args{
-				ctx:            ctx,
+				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
 				client:         mock,
 			},
@@ -53,7 +52,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 		{
 			name: "delete ecr repository failure",
 			args: args{
-				ctx:            ctx,
+				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
 				client:         DeleteRepositoryErrorMock,
 			},
@@ -63,7 +62,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 		{
 			name: "delete bucket failure for check bucket exists errors",
 			args: args{
-				ctx:            ctx,
+				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
 				client:         checkEcrExistsErrorMock,
 			},
@@ -73,7 +72,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 		{
 			name: "delete bucket successfully for bucket not exists",
 			args: args{
-				ctx:            ctx,
+				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
 				client:         checkEcrNotExistsMock,
 			},
@@ -101,7 +100,6 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 
 func TestEcrOperator_DeleteResourcesForEcr(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 	mock := NewMockEcr()
 	errorMock := NewDeleteRepositoryErrorMockEcr()
 
@@ -119,7 +117,7 @@ func TestEcrOperator_DeleteResourcesForEcr(t *testing.T) {
 		{
 			name: "delete resources successfully",
 			args: args{
-				ctx:    ctx,
+				ctx:    context.Background(),
 				client: mock,
 			},
 			want:    nil,
@@ -128,7 +126,7 @@ func TestEcrOperator_DeleteResourcesForEcr(t *testing.T) {
 		{
 			name: "delete resources failure",
 			args: args{
-				ctx:    ctx,
+				ctx:    context.Background(),
 				client: errorMock,
 			},
 			want:    fmt.Errorf("DeleteRepositoryError"),

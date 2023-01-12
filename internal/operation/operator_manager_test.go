@@ -14,7 +14,6 @@ import (
 
 func TestOperatorManager_getOperatorResourcesLength(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 
 	mock := NewMockOperatorCollection()
 
@@ -31,7 +30,7 @@ func TestOperatorManager_getOperatorResourcesLength(t *testing.T) {
 		{
 			name: "get operator resources length successfully",
 			args: args{
-				ctx:  ctx,
+				ctx:  context.Background(),
 				mock: mock,
 			},
 			want: 6,
@@ -53,7 +52,6 @@ func TestOperatorManager_getOperatorResourcesLength(t *testing.T) {
 
 func TestOperatorManager_CheckResourceCounts(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 
 	mock := NewMockOperatorCollection()
 	incorrectResourceCountsMock := NewIncorrectResourceCountsMockOperatorCollection()
@@ -72,7 +70,7 @@ func TestOperatorManager_CheckResourceCounts(t *testing.T) {
 		{
 			name: "check resource counts successfully",
 			args: args{
-				ctx:  ctx,
+				ctx:  context.Background(),
 				mock: mock,
 			},
 			want:    nil,
@@ -81,7 +79,7 @@ func TestOperatorManager_CheckResourceCounts(t *testing.T) {
 		{
 			name: "check resource counts failure",
 			args: args{
-				ctx:  ctx,
+				ctx:  context.Background(),
 				mock: incorrectResourceCountsMock,
 			},
 			want:    fmt.Errorf("UnsupportedResourceError"),
@@ -108,7 +106,6 @@ func TestOperatorManager_CheckResourceCounts(t *testing.T) {
 
 func TestOperatorManager_DeleteResourceCollection(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 
 	mock := NewMockOperatorCollection()
 	operatorDeleteResourcesMock := NewOperatorDeleteResourcesMockOperatorCollection()
@@ -127,7 +124,7 @@ func TestOperatorManager_DeleteResourceCollection(t *testing.T) {
 		{
 			name: "delete resource collection successfully",
 			args: args{
-				ctx:  ctx,
+				ctx:  context.Background(),
 				mock: mock,
 			},
 			want:    nil,
@@ -136,7 +133,7 @@ func TestOperatorManager_DeleteResourceCollection(t *testing.T) {
 		{
 			name: "delete resource collection failure",
 			args: args{
-				ctx:  ctx,
+				ctx:  context.Background(),
 				mock: operatorDeleteResourcesMock,
 			},
 			want:    fmt.Errorf("ErrorDeleteResources"),

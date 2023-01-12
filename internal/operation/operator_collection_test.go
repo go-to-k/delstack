@@ -31,7 +31,6 @@ var targetResourceTypesForPartialServices = []string{
 
 func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 
 	type args struct {
 		ctx                    context.Context
@@ -53,7 +52,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 1 for all target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -103,7 +102,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 2 for all target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -129,7 +128,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 3 for all target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -155,7 +154,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 4 for all target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -181,7 +180,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 1 for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -231,7 +230,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 2 for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -257,7 +256,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 3 for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -283,7 +282,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 4 for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -309,7 +308,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 5 for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -335,7 +334,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 6 for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -361,7 +360,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 7 for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -387,7 +386,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 8 for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -413,7 +412,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 9 for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -439,7 +438,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		{
 			name: "resource counts check 10 for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				stackResourceSummaries: []types.StackResourceSummary{
@@ -486,7 +485,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 
 func TestOperatorCollection_containsResourceType(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 
 	type args struct {
 		ctx                 context.Context
@@ -503,7 +501,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 		{
 			name: "S3 Bucket for all target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				resource:            "AWS::S3::Bucket",
@@ -513,7 +511,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 		{
 			name: "IAM Role for all target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				resource:            "AWS::IAM::Role",
@@ -523,7 +521,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 		{
 			name: "ECR Repository for all target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				resource:            "AWS::ECR::Repository",
@@ -533,7 +531,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 		{
 			name: "BACKUP VAULT for all target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				resource:            "AWS::Backup::BackupVault",
@@ -543,7 +541,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 		{
 			name: "CloudFormation Stack for all target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				resource:            "AWS::CloudFormation::Stack",
@@ -553,7 +551,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 		{
 			name: "custom resource for all target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				resource:            "Custom::Abc",
@@ -563,7 +561,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 		{
 			name: "unsupported resource for all target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				resource:            "AWS::DynamoDB::Table",
@@ -573,7 +571,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 		{
 			name: "exists in partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				resource:            "AWS::S3::Bucket",
@@ -583,7 +581,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 		{
 			name: "not exists in partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				resource:            "AWS::Backup::BackupVault",
@@ -593,7 +591,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 		{
 			name: "custom resource exists in for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				resource:            "Custom::Abc",
@@ -603,7 +601,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 		{
 			name: "unsupported resource for partial target resource types",
 			args: args{
-				ctx:                 ctx,
+				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForPartialServices,
 				resource:            "AWS::DynamoDB::Table",

@@ -28,7 +28,6 @@ var _ client.IS3 = (*CheckBucketNotExistsMockS3)(nil)
 
 func TestBucketOperator_DeleteBucket(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 	mock := NewMockS3()
 	allErrorMock := NewAllErrorMockS3()
 	deleteBucketErrorMock := NewDeleteBucketErrorMockS3()
@@ -55,7 +54,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket successfully",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     mock,
 			},
@@ -65,7 +64,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket failure for all errors",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     allErrorMock,
 			},
@@ -75,7 +74,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket failure for check bucket exists errors",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     checkBucketExistsErrorMock,
 			},
@@ -85,7 +84,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket successfully for bucket not exists",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     checkBucketNotExistsMock,
 			},
@@ -95,7 +94,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket failure for list object versions errors",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     listObjectVersionsErrorMock,
 			},
@@ -105,7 +104,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket failure for delete objects errors",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     deleteObjectsErrorMock,
 			},
@@ -115,7 +114,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket successfully for delete objects errors after zero length",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     deleteObjectsErrorAfterZeroLengthMock,
 			},
@@ -125,7 +124,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket failure for delete objects output errors",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     deleteObjectsOutputErrorMock,
 			},
@@ -135,7 +134,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket successfully for delete objects output errors after zero length",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     deleteObjectsOutputErrorAfterZeroLengthMock,
 			},
@@ -145,7 +144,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket failure for delete bucket errors",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     deleteBucketErrorMock,
 			},
@@ -173,7 +172,6 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 
 func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 	mock := NewMockS3()
 	allErrorMock := NewAllErrorMockS3()
 
@@ -191,7 +189,7 @@ func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
 		{
 			name: "delete resources successfully",
 			args: args{
-				ctx:    ctx,
+				ctx:    context.Background(),
 				client: mock,
 			},
 			want:    nil,
@@ -200,7 +198,7 @@ func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
 		{
 			name: "delete resources failure",
 			args: args{
-				ctx:    ctx,
+				ctx:    context.Background(),
 				client: allErrorMock,
 			},
 			want:    fmt.Errorf("ListBucketsError"),

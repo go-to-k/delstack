@@ -26,7 +26,6 @@ var _ client.IBackup = (*CheckBackupVaultNotExistsMockBackup)(nil)
 
 func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 	mock := NewMockBackup()
 	allErrorMock := NewAllErrorMockBackup()
 	listRecoveryPointsErrorMock := NewListRecoveryPointsErrorMockBackup()
@@ -51,7 +50,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 		{
 			name: "delete backup vault successfully",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          mock,
 			},
@@ -61,7 +60,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 		{
 			name: "delete backup vault failure for all errors",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          allErrorMock,
 			},
@@ -71,7 +70,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 		{
 			name: "delete bucket failure for check bucket exists errors",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          checkBackupVaultExistsErrorMock,
 			},
@@ -81,7 +80,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 		{
 			name: "delete bucket successfully for bucket not exists",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          checkBackupVaultNotExistsMock,
 			},
@@ -91,7 +90,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 		{
 			name: "delete backup vault failure for list recovery points errors",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          listRecoveryPointsErrorMock,
 			},
@@ -101,7 +100,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 		{
 			name: "delete backup vault failure for delete recovery points errors",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          deleteRecoveryPointsErrorMock,
 			},
@@ -111,7 +110,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 		{
 			name: "delete backup vault successfully for delete recovery points errors after zero length",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          deleteRecoveryPointsErrorAfterZeroLengthMock,
 			},
@@ -121,7 +120,7 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 		{
 			name: "delete backup vault failure for delete backup vault errors",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          deleteBackupVaultErrorMock,
 			},
@@ -149,7 +148,6 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 
 func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
 	io.NewLogger(false)
-	ctx := context.Background()
 	mock := NewMockBackup()
 	allErrorMock := NewAllErrorMockBackup()
 
@@ -167,7 +165,7 @@ func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
 		{
 			name: "delete resources successfully",
 			args: args{
-				ctx:    ctx,
+				ctx:    context.Background(),
 				client: mock,
 			},
 			want:    nil,
@@ -176,7 +174,7 @@ func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
 		{
 			name: "delete resources failure",
 			args: args{
-				ctx:    ctx,
+				ctx:    context.Background(),
 				client: allErrorMock,
 			},
 			want:    fmt.Errorf("ListBackupVaultsError"),

@@ -16,7 +16,6 @@ import (
 */
 
 func TestCloudFormation_DeleteStack(t *testing.T) {
-	ctx := context.Background()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	failureErrorMockWaiter := NewFailureErrorMockCloudFormationSDKWaiter()
 	otherErrorMockWaiter := NewOtherErrorMockCloudFormationSDKWaiter()
@@ -40,7 +39,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack successfully",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				stackName:       aws.String("test"),
 				retainResources: []string{"test1", "test2"},
 				mockClient:      mock,
@@ -52,7 +51,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack successfully including non retainResources",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				stackName:       aws.String("test"),
 				retainResources: []string{},
 				mockClient:      mock,
@@ -64,7 +63,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack successfully for transitioned to Failure",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				stackName:       aws.String("test"),
 				retainResources: []string{"test1", "test2"},
 				mockClient:      mock,
@@ -76,7 +75,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				stackName:       aws.String("test"),
 				retainResources: []string{"test1", "test2"},
 				mockClient:      errorMock,
@@ -88,7 +87,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 		{
 			name: "delete stack failure for other errors",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				stackName:       aws.String("test"),
 				retainResources: []string{"test1", "test2"},
 				mockClient:      mock,
@@ -116,7 +115,6 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 }
 
 func TestCloudFormation_DescribeStacks(t *testing.T) {
-	ctx := context.Background()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	mock := NewMockCloudFormationSDKClient()
 	errorMock := NewErrorMockCloudFormationSDKClient()
@@ -144,7 +142,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 		{
 			name: "describe stacks successfully",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				stackName:  aws.String("test"),
 				mockClient: mock,
 				mockWaiter: mockWaiter,
@@ -166,7 +164,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 		{
 			name: "describe stacks failure",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				stackName:  aws.String("test"),
 				mockClient: errorMock,
 				mockWaiter: mockWaiter,
@@ -188,7 +186,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 		{
 			name: "describe stacks but not exist",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				stackName:  aws.String("test"),
 				mockClient: notExistsMock,
 				mockWaiter: mockWaiter,
@@ -227,7 +225,6 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 }
 
 func TestCloudFormation_waitDeleteStack(t *testing.T) {
-	ctx := context.Background()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	failureErrorMockWaiter := NewFailureErrorMockCloudFormationSDKWaiter()
 	otherErrorMockWaiter := NewOtherErrorMockCloudFormationSDKWaiter()
@@ -249,7 +246,7 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 		{
 			name: "wait successfully",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				stackName:  aws.String("test"),
 				mockClient: mock,
 				mockWaiter: mockWaiter,
@@ -260,7 +257,7 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 		{
 			name: "wait failure for other error",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				stackName:  aws.String("test"),
 				mockClient: mock,
 				mockWaiter: otherErrorMockWaiter,
@@ -271,7 +268,7 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 		{
 			name: "wait failure for transitioned to Failure",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				stackName:  aws.String("test"),
 				mockClient: mock,
 				mockWaiter: failureErrorMockWaiter,
@@ -298,7 +295,6 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 }
 
 func TestCloudFormation_ListStackResources(t *testing.T) {
-	ctx := context.Background()
 	mockWaiter := NewMockCloudFormationSDKWaiter()
 	mock := NewMockCloudFormationSDKClient()
 	errorMock := NewErrorMockCloudFormationSDKClient()
@@ -324,7 +320,7 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 		{
 			name: "list stack resources successfully",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				stackName:  aws.String("test"),
 				mockClient: mock,
 				mockWaiter: mockWaiter,
@@ -351,7 +347,7 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 		{
 			name: "list stack resources failure",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				stackName:  aws.String("test"),
 				mockClient: errorMock,
 				mockWaiter: mockWaiter,
