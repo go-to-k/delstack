@@ -344,7 +344,6 @@ func (m *NotExistsMockForListBucketsS3SDKClient) ListBuckets(ctx context.Context
 	Test Cases
 */
 func TestS3_DeleteBucket(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 
@@ -363,7 +362,7 @@ func TestS3_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket successfully",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     mock,
 			},
@@ -373,7 +372,7 @@ func TestS3_DeleteBucket(t *testing.T) {
 		{
 			name: "delete bucket failure",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     errorMock,
 			},
@@ -399,7 +398,6 @@ func TestS3_DeleteBucket(t *testing.T) {
 }
 
 func TestS3_DeleteObjects(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 	apiErrorMock := NewApiErrorMockS3SDKClient()
@@ -435,7 +433,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 		{
 			name: "delete objects successfully",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				objects: []types.ObjectIdentifier{
 					{
@@ -454,7 +452,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 		{
 			name: "delete objects successfully if zero objects",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				objects:    []types.ObjectIdentifier{},
 				client:     mock,
@@ -468,7 +466,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 		{
 			name: "delete objects over limit successfully",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				objects:    objectsOverLimit,
 				client:     mock,
@@ -482,7 +480,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 		{
 			name: "delete objects failure",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				objects: []types.ObjectIdentifier{
 					{
@@ -501,7 +499,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 		{
 			name: "delete objects failure for api error",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				objects: []types.ObjectIdentifier{
 					{
@@ -520,7 +518,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 		{
 			name: "delete objects failure for output errors",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				objects: []types.ObjectIdentifier{
 					{
@@ -566,7 +564,6 @@ func TestS3_DeleteObjects(t *testing.T) {
 }
 
 func TestS3_deleteObjectsWithRetry(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 	apiErrorMock := NewApiErrorMockS3SDKClient()
@@ -602,7 +599,7 @@ func TestS3_deleteObjectsWithRetry(t *testing.T) {
 		{
 			name: "delete objects successfully",
 			args: args{
-				ctx: ctx,
+				ctx: context.Background(),
 				input: &s3.DeleteObjectsInput{
 					Bucket: aws.String("test"),
 					Delete: &types.Delete{
@@ -628,7 +625,7 @@ func TestS3_deleteObjectsWithRetry(t *testing.T) {
 		{
 			name: "delete objects over limit successfully",
 			args: args{
-				ctx: ctx,
+				ctx: context.Background(),
 				input: &s3.DeleteObjectsInput{
 					Bucket: aws.String("test"),
 					Delete: &types.Delete{
@@ -651,7 +648,7 @@ func TestS3_deleteObjectsWithRetry(t *testing.T) {
 		{
 			name: "delete objects failure",
 			args: args{
-				ctx: ctx,
+				ctx: context.Background(),
 				input: &s3.DeleteObjectsInput{
 					Bucket: aws.String("test"),
 					Delete: &types.Delete{
@@ -674,7 +671,7 @@ func TestS3_deleteObjectsWithRetry(t *testing.T) {
 		{
 			name: "delete objects failure for api error",
 			args: args{
-				ctx: ctx,
+				ctx: context.Background(),
 				input: &s3.DeleteObjectsInput{
 					Bucket: aws.String("test"),
 					Delete: &types.Delete{
@@ -697,7 +694,7 @@ func TestS3_deleteObjectsWithRetry(t *testing.T) {
 		{
 			name: "delete objects failure for output errors",
 			args: args{
-				ctx: ctx,
+				ctx: context.Background(),
 				input: &s3.DeleteObjectsInput{
 					Bucket: aws.String("test"),
 					Delete: &types.Delete{
@@ -750,7 +747,6 @@ func TestS3_deleteObjectsWithRetry(t *testing.T) {
 }
 
 func TestS3_ListObjectVersions(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 	emptyMock := NewEmptyMockForListObjectVersionsS3SDKClient()
@@ -777,7 +773,7 @@ func TestS3_ListObjectVersions(t *testing.T) {
 		{
 			name: "list objects versions successfully",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     mock,
 			},
@@ -799,7 +795,7 @@ func TestS3_ListObjectVersions(t *testing.T) {
 		{
 			name: "list objects versions failure",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     errorMock,
 			},
@@ -812,7 +808,7 @@ func TestS3_ListObjectVersions(t *testing.T) {
 		{
 			name: "list objects versions successfully(empty)",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     emptyMock,
 			},
@@ -825,7 +821,7 @@ func TestS3_ListObjectVersions(t *testing.T) {
 		{
 			name: "list objects versions successfully(versions only)",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     versionsMock,
 			},
@@ -843,7 +839,7 @@ func TestS3_ListObjectVersions(t *testing.T) {
 		{
 			name: "list objects versions successfully(delete markers only)",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     deleteMarkersMock,
 			},
@@ -881,7 +877,6 @@ func TestS3_ListObjectVersions(t *testing.T) {
 }
 
 func TestS3_CheckBucketExists(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockS3SDKClient()
 	errorMock := NewErrorMockS3SDKClient()
 	notExitsMock := NewNotExistsMockForListBucketsS3SDKClient()
@@ -906,7 +901,7 @@ func TestS3_CheckBucketExists(t *testing.T) {
 		{
 			name: "check bucket for bucket exists",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     mock,
 			},
@@ -919,7 +914,7 @@ func TestS3_CheckBucketExists(t *testing.T) {
 		{
 			name: "check bucket for bucket do not exist",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     notExitsMock,
 			},
@@ -932,7 +927,7 @@ func TestS3_CheckBucketExists(t *testing.T) {
 		{
 			name: "check bucket exists failure",
 			args: args{
-				ctx:        ctx,
+				ctx:        context.Background(),
 				bucketName: aws.String("test"),
 				client:     errorMock,
 			},
