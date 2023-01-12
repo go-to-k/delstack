@@ -9,6 +9,10 @@ import (
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
+/*
+	Mocks for client
+*/
+
 var _ client.IBackup = (*MockBackup)(nil)
 var _ client.IBackup = (*AllErrorMockBackup)(nil)
 var _ client.IBackup = (*ListRecoveryPointsErrorMockBackup)(nil)
@@ -17,10 +21,6 @@ var _ client.IBackup = (*DeleteRecoveryPointsErrorAfterZeroLengthMockBackup)(nil
 var _ client.IBackup = (*DeleteBackupVaultErrorMockBackup)(nil)
 var _ client.IBackup = (*CheckBackupVaultExistsErrorMockBackup)(nil)
 var _ client.IBackup = (*CheckBackupVaultNotExistsMockBackup)(nil)
-
-/*
-	Mocks for client
-*/
 
 type MockBackup struct{}
 

@@ -9,16 +9,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 )
 
+/*
+	Mocks for SDK Client
+*/
+
 var _ IIamSDKClient = (*MockIamSDKClient)(nil)
 var _ IIamSDKClient = (*ErrorMockIamSDKClient)(nil)
 var _ IIamSDKClient = (*ApiErrorMockIamSDKClient)(nil)
 var _ IIamSDKClient = (*NotExistsMockForGetRoleIamSDKClient)(nil)
-
-const sleepTimeSecForIam = 1
-
-/*
-	Mocks for SDK Client
-*/
 
 type MockIamSDKClient struct{}
 

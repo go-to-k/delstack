@@ -9,13 +9,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 )
 
-var _ IBackupSDKClient = (*MockBackupSDKClient)(nil)
-var _ IBackupSDKClient = (*ErrorMockBackupSDKClient)(nil)
-var _ IBackupSDKClient = (*NotExistsMockForListBackupVaultsBackupSDKClient)(nil)
-
 /*
 	Mocks for SDK Client
 */
+
+var _ IBackupSDKClient = (*MockBackupSDKClient)(nil)
+var _ IBackupSDKClient = (*ErrorMockBackupSDKClient)(nil)
+var _ IBackupSDKClient = (*NotExistsMockForListBackupVaultsBackupSDKClient)(nil)
 
 type MockBackupSDKClient struct{}
 

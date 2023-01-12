@@ -18,7 +18,6 @@ var _ IOperator = (*MockRoleOperator)(nil)
 var _ IOperator = (*MockEcrOperator)(nil)
 var _ IOperator = (*MockBackupVaultOperator)(nil)
 var _ IOperator = (*MockCustomOperator)(nil)
-var _ IOperator = (*MockStackOperator)(nil)
 
 type MockStackOperator struct{}
 
@@ -133,8 +132,9 @@ func (m *MockCustomOperator) DeleteResources(ctx context.Context) error {
 }
 
 /*
-Mocks for OperatorCollection
+	Mocks for OperatorCollection
 */
+
 var _ IOperatorCollection = (*MockOperatorCollection)(nil)
 var _ IOperatorCollection = (*IncorrectResourceCountsMockOperatorCollection)(nil)
 var _ IOperatorCollection = (*OperatorDeleteResourcesMockOperatorCollection)(nil)

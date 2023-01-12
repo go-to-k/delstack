@@ -11,15 +11,6 @@ import (
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
-var _ client.IIam = (*MockIam)(nil)
-var _ client.IIam = (*AllErrorMockIam)(nil)
-var _ client.IIam = (*DeleteRoleErrorMockIam)(nil)
-var _ client.IIam = (*ListAttachedRolePoliciesErrorMockIam)(nil)
-var _ client.IIam = (*DetachRolePoliciesErrorMockIam)(nil)
-var _ client.IIam = (*DetachRolePoliciesErrorAfterZeroLengthMockIam)(nil)
-var _ client.IIam = (*CheckRoleExistsErrorMockRole)(nil)
-var _ client.IIam = (*CheckRoleNotExistsMockRole)(nil)
-
 /*
 	Test Cases
 */
