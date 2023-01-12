@@ -46,7 +46,7 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
 
 ## How to use
   ```
-  delstack -s <stackName> [-p <profile>] [-r <region>] [-i]
+  delstack [-s <stackName>] [-p <profile>] [-r <region>] [-i]
   ```
 
 - -s, --stackName: optional
