@@ -72,7 +72,6 @@ func (m *NotExistsMockForDescribeRepositoriesEcrSDKClient) DescribeRepositories(
 */
 
 func TestEcr_DeleteRepository(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockEcrSDKClient()
 	errorMock := NewErrorMockEcrSDKClient()
 
@@ -91,7 +90,7 @@ func TestEcr_DeleteRepository(t *testing.T) {
 		{
 			name: "delete repository successfully",
 			args: args{
-				ctx:            ctx,
+				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
 				client:         mock,
 			},
@@ -101,7 +100,7 @@ func TestEcr_DeleteRepository(t *testing.T) {
 		{
 			name: "delete repository failure",
 			args: args{
-				ctx:            ctx,
+				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
 				client:         errorMock,
 			},
@@ -127,7 +126,6 @@ func TestEcr_DeleteRepository(t *testing.T) {
 }
 
 func TestEcr_CheckRepository(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockEcrSDKClient()
 	errorMock := NewErrorMockEcrSDKClient()
 	notExitsMock := NewNotExistsMockForDescribeRepositoriesEcrSDKClient()
@@ -152,7 +150,7 @@ func TestEcr_CheckRepository(t *testing.T) {
 		{
 			name: "check repository exists successfully",
 			args: args{
-				ctx:            ctx,
+				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
 				client:         mock,
 			},
@@ -165,7 +163,7 @@ func TestEcr_CheckRepository(t *testing.T) {
 		{
 			name: "check repository not exists successfully",
 			args: args{
-				ctx:            ctx,
+				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
 				client:         notExitsMock,
 			},
@@ -178,7 +176,7 @@ func TestEcr_CheckRepository(t *testing.T) {
 		{
 			name: "check repository exists failure",
 			args: args{
-				ctx:            ctx,
+				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
 				client:         errorMock,
 			},

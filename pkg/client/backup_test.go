@@ -132,7 +132,6 @@ func (m *NotExistsMockForListBackupVaultsBackupSDKClient) ListBackupVaults(ctx c
 	Test Cases
 */
 func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -156,7 +155,7 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 		{
 			name: "check backup vault exists successfully",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          mock,
 			},
@@ -178,7 +177,7 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 		{
 			name: "check backup vault exists failure",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          errorMock,
 			},
@@ -211,7 +210,6 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 }
 
 func TestBackup_DeleteRecoveryPoints(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -231,7 +229,7 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 		{
 			name: "delete recovery points successfully",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				recoveryPoints: []types.RecoveryPointByBackupVault{
 					{
@@ -251,7 +249,7 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 		{
 			name: "delete empty recovery points successfully",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				recoveryPoints:  []types.RecoveryPointByBackupVault{},
 				client:          mock,
@@ -262,7 +260,7 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 		{
 			name: "delete recovery points failure",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				recoveryPoints: []types.RecoveryPointByBackupVault{
 					{
@@ -298,7 +296,6 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 }
 
 func TestBackup_DeleteRecoveryPoint(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -318,7 +315,7 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 		{
 			name: "delete recovery point successfully",
 			args: args{
-				ctx:              ctx,
+				ctx:              context.Background(),
 				backupVaultName:  aws.String("test"),
 				recoveryPointArn: aws.String("test"),
 				client:           mock,
@@ -329,7 +326,7 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 		{
 			name: "delete recovery point failure",
 			args: args{
-				ctx:              ctx,
+				ctx:              context.Background(),
 				backupVaultName:  aws.String("test"),
 				recoveryPointArn: aws.String("test"),
 				client:           errorMock,
@@ -356,7 +353,6 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 }
 
 func TestBackup_DeleteBackupVault(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 
@@ -375,7 +371,7 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 		{
 			name: "delete backup vault successfully",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          mock,
 			},
@@ -385,7 +381,7 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 		{
 			name: "delete backup vault failure",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          errorMock,
 			},
@@ -411,7 +407,6 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 }
 
 func TestBackup_CheckBackupVaultExists(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockBackupSDKClient()
 	errorMock := NewErrorMockBackupSDKClient()
 	notExitsMock := NewNotExistsMockForListBackupVaultsBackupSDKClient()
@@ -436,7 +431,7 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 		{
 			name: "check backup vault for backup vault exists",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          mock,
 			},
@@ -449,7 +444,7 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 		{
 			name: "check backup vault for backup vault do not exist",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          notExitsMock,
 			},
@@ -462,7 +457,7 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 		{
 			name: "check bucket exists failure",
 			args: args{
-				ctx:             ctx,
+				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				client:          errorMock,
 			},

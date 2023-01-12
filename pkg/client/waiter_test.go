@@ -9,7 +9,6 @@ import (
 )
 
 func TestWaitForRetry(t *testing.T) {
-
 	type args struct {
 		retryCount         int
 		sleepTimeSec       int

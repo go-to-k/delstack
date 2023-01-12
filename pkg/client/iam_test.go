@@ -143,7 +143,6 @@ func (m *NotExistsMockForGetRoleIamSDKClient) GetRole(ctx context.Context, param
 	Test Cases
 */
 func TestIam_DeleteRole(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -163,7 +162,7 @@ func TestIam_DeleteRole(t *testing.T) {
 		{
 			name: "delete role successfully",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   mock,
 			},
@@ -173,7 +172,7 @@ func TestIam_DeleteRole(t *testing.T) {
 		{
 			name: "delete role failure",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   errorMock,
 			},
@@ -183,7 +182,7 @@ func TestIam_DeleteRole(t *testing.T) {
 		{
 			name: "delete role failure for api error",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   apiErrorMock,
 			},
@@ -209,7 +208,6 @@ func TestIam_DeleteRole(t *testing.T) {
 }
 
 func TestIam_deleteRoleWithRetry(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -230,7 +228,7 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 		{
 			name: "delete role successfully",
 			args: args{
-				ctx: ctx,
+				ctx: context.Background(),
 				input: &iam.DeleteRoleInput{
 					RoleName: aws.String("test"),
 				},
@@ -243,7 +241,7 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 		{
 			name: "delete role failure",
 			args: args{
-				ctx: ctx,
+				ctx: context.Background(),
 				input: &iam.DeleteRoleInput{
 					RoleName: aws.String("test"),
 				},
@@ -256,7 +254,7 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 		{
 			name: "delete role failure for api error",
 			args: args{
-				ctx: ctx,
+				ctx: context.Background(),
 				input: &iam.DeleteRoleInput{
 					RoleName: aws.String("test"),
 				},
@@ -285,7 +283,6 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 }
 
 func TestIam_ListAttachedRolePolicies(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 
@@ -309,7 +306,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 		{
 			name: "list attached role policies successfully",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   mock,
 			},
@@ -331,7 +328,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 		{
 			name: "list attached role policies failure",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   errorMock,
 			},
@@ -364,7 +361,6 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicies(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -385,7 +381,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 		{
 			name: "detach role policies successfully",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				policies: []types.AttachedPolicy{
 					{
@@ -405,7 +401,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 		{
 			name: "detach empty role policies successfully",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				policies: []types.AttachedPolicy{},
 				client:   mock,
@@ -416,7 +412,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 		{
 			name: "detach role policies failure",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				policies: []types.AttachedPolicy{
 					{
@@ -436,7 +432,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 		{
 			name: "detach role policies failure for api error",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				policies: []types.AttachedPolicy{
 					{
@@ -472,7 +468,6 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicy(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -493,7 +488,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 		{
 			name: "detach role policy successfully",
 			args: args{
-				ctx:       ctx,
+				ctx:       context.Background(),
 				roleName:  aws.String("test"),
 				PolicyArn: aws.String("test"),
 				client:    mock,
@@ -504,7 +499,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 		{
 			name: "detach role policy failure",
 			args: args{
-				ctx:       ctx,
+				ctx:       context.Background(),
 				roleName:  aws.String("test"),
 				PolicyArn: aws.String("test"),
 				client:    errorMock,
@@ -515,7 +510,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 		{
 			name: "detach role policy failure for api error",
 			args: args{
-				ctx:       ctx,
+				ctx:       context.Background(),
 				roleName:  aws.String("test"),
 				PolicyArn: aws.String("test"),
 				client:    apiErrorMock,
@@ -542,7 +537,6 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 }
 
 func TestIam_detachRolePolicyWithRetry(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	apiErrorMock := NewApiErrorMockIamSDKClient()
@@ -563,7 +557,7 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 		{
 			name: "detach role policy successfully",
 			args: args{
-				ctx: ctx,
+				ctx: context.Background(),
 				input: &iam.DetachRolePolicyInput{
 					PolicyArn: aws.String("test"),
 					RoleName:  aws.String("test"),
@@ -577,7 +571,7 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 		{
 			name: "detach role policy failure",
 			args: args{
-				ctx: ctx,
+				ctx: context.Background(),
 				input: &iam.DetachRolePolicyInput{
 					PolicyArn: aws.String("test"),
 					RoleName:  aws.String("test"),
@@ -591,7 +585,7 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 		{
 			name: "detach role policy failure for api error",
 			args: args{
-				ctx: ctx,
+				ctx: context.Background(),
 				input: &iam.DetachRolePolicyInput{
 					PolicyArn: aws.String("test"),
 					RoleName:  aws.String("test"),
@@ -621,7 +615,6 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 }
 
 func TestIam_CheckRoleExists(t *testing.T) {
-	ctx := context.Background()
 	mock := NewMockIamSDKClient()
 	errorMock := NewErrorMockIamSDKClient()
 	notExitsMock := NewNotExistsMockForGetRoleIamSDKClient()
@@ -646,7 +639,7 @@ func TestIam_CheckRoleExists(t *testing.T) {
 		{
 			name: "check role exists successfully",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   mock,
 			},
@@ -659,7 +652,7 @@ func TestIam_CheckRoleExists(t *testing.T) {
 		{
 			name: "check role not exists successfully",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   notExitsMock,
 			},
@@ -672,7 +665,7 @@ func TestIam_CheckRoleExists(t *testing.T) {
 		{
 			name: "check role exists failure",
 			args: args{
-				ctx:      ctx,
+				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				client:   errorMock,
 			},
