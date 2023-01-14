@@ -35,16 +35,16 @@ func NewIam(client IIamSDKClient) *Iam {
 	}
 }
 
-func (iamClient *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int) error {
+func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int) error {
 	input := &iam.DeleteRoleInput{
 		RoleName: roleName,
 	}
 
-	_, err := iamClient.deleteRoleWithRetry(ctx, input, roleName, sleepTimeSec)
+	_, err := i.deleteRoleWithRetry(ctx, input, roleName, sleepTimeSec)
 	return err
 }
 
-func (iamClient *Iam) deleteRoleWithRetry(
+func (i *Iam) deleteRoleWithRetry(
 	ctx context.Context,
 	input *iam.DeleteRoleInput,
 	roleName *string,
@@ -59,7 +59,7 @@ func (iamClient *Iam) deleteRoleWithRetry(
 		default:
 		}
 
-		output, err := iamClient.client.DeleteRole(ctx, input)
+		output, err := i.client.DeleteRole(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
 			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
