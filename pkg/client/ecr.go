@@ -29,18 +29,18 @@ func NewEcr(client IEcrSDKClient) *Ecr {
 	}
 }
 
-func (ecrClient *Ecr) DeleteRepository(ctx context.Context, repositoryName *string) error {
+func (e *Ecr) DeleteRepository(ctx context.Context, repositoryName *string) error {
 	input := &ecr.DeleteRepositoryInput{
 		RepositoryName: repositoryName,
 		Force:          true,
 	}
 
-	_, err := ecrClient.client.DeleteRepository(ctx, input)
+	_, err := e.client.DeleteRepository(ctx, input)
 
 	return err
 }
 
-func (ecrClient *Ecr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
+func (e *Ecr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
 	var nextToken *string
 
 	for {
@@ -57,7 +57,7 @@ func (ecrClient *Ecr) CheckEcrExists(ctx context.Context, repositoryName *string
 			},
 		}
 
-		output, err := ecrClient.client.DescribeRepositories(ctx, input)
+		output, err := e.client.DescribeRepositories(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "does not exist") {
 			return false, nil
 		}

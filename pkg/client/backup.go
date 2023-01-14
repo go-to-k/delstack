@@ -34,7 +34,7 @@ func NewBackup(client IBackupSDKClient) *Backup {
 	}
 }
 
-func (backupClient *Backup) ListRecoveryPointsByBackupVault(ctx context.Context, backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
+func (b *Backup) ListRecoveryPointsByBackupVault(ctx context.Context, backupVaultName *string) ([]types.RecoveryPointByBackupVault, error) {
 	var nextToken *string
 	recoveryPoints := []types.RecoveryPointByBackupVault{}
 
@@ -50,7 +50,7 @@ func (backupClient *Backup) ListRecoveryPointsByBackupVault(ctx context.Context,
 			NextToken:       nextToken,
 		}
 
-		output, err := backupClient.client.ListRecoveryPointsByBackupVault(ctx, input)
+		output, err := b.client.ListRecoveryPointsByBackupVault(ctx, input)
 		if err != nil {
 			return nil, err
 		}
@@ -65,37 +65,37 @@ func (backupClient *Backup) ListRecoveryPointsByBackupVault(ctx context.Context,
 	return recoveryPoints, nil
 }
 
-func (backupClient *Backup) DeleteRecoveryPoints(ctx context.Context, backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
+func (b *Backup) DeleteRecoveryPoints(ctx context.Context, backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
 	for _, recoveryPoint := range recoveryPoints {
-		if err := backupClient.DeleteRecoveryPoint(ctx, backupVaultName, recoveryPoint.RecoveryPointArn); err != nil {
+		if err := b.DeleteRecoveryPoint(ctx, backupVaultName, recoveryPoint.RecoveryPointArn); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (backupClient *Backup) DeleteRecoveryPoint(ctx context.Context, backupVaultName *string, recoveryPointArn *string) error {
+func (b *Backup) DeleteRecoveryPoint(ctx context.Context, backupVaultName *string, recoveryPointArn *string) error {
 	input := &backup.DeleteRecoveryPointInput{
 		BackupVaultName:  backupVaultName,
 		RecoveryPointArn: recoveryPointArn,
 	}
 
-	_, err := backupClient.client.DeleteRecoveryPoint(ctx, input)
+	_, err := b.client.DeleteRecoveryPoint(ctx, input)
 
 	return err
 }
 
-func (backupClient *Backup) DeleteBackupVault(ctx context.Context, backupVaultName *string) error {
+func (b *Backup) DeleteBackupVault(ctx context.Context, backupVaultName *string) error {
 	input := &backup.DeleteBackupVaultInput{
 		BackupVaultName: backupVaultName,
 	}
 
-	_, err := backupClient.client.DeleteBackupVault(ctx, input)
+	_, err := b.client.DeleteBackupVault(ctx, input)
 
 	return err
 }
 
-func (backupClient *Backup) CheckBackupVaultExists(ctx context.Context, backupVaultName *string) (bool, error) {
+func (b *Backup) CheckBackupVaultExists(ctx context.Context, backupVaultName *string) (bool, error) {
 	var nextToken *string
 
 	for {
@@ -109,7 +109,7 @@ func (backupClient *Backup) CheckBackupVaultExists(ctx context.Context, backupVa
 			NextToken: nextToken,
 		}
 
-		output, err := backupClient.client.ListBackupVaults(ctx, input)
+		output, err := b.client.ListBackupVaults(ctx, input)
 		if err != nil {
 			return false, err
 		}

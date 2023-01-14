@@ -24,19 +24,19 @@ func NewEcrOperator(client client.IEcr) *EcrOperator {
 	}
 }
 
-func (operator *EcrOperator) AddResource(resource *types.StackResourceSummary) {
-	operator.resources = append(operator.resources, resource)
+func (o *EcrOperator) AddResource(resource *types.StackResourceSummary) {
+	o.resources = append(o.resources, resource)
 }
 
-func (operator *EcrOperator) GetResourcesLength() int {
-	return len(operator.resources)
+func (o *EcrOperator) GetResourcesLength() int {
+	return len(o.resources)
 }
 
-func (operator *EcrOperator) DeleteResources(ctx context.Context) error {
+func (o *EcrOperator) DeleteResources(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
-	for _, repository := range operator.resources {
+	for _, repository := range o.resources {
 		repository := repository
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return err
@@ -44,7 +44,7 @@ func (operator *EcrOperator) DeleteResources(ctx context.Context) error {
 		eg.Go(func() (err error) {
 			defer sem.Release(1)
 
-			return operator.DeleteEcr(ctx, repository.PhysicalResourceId)
+			return o.DeleteEcr(ctx, repository.PhysicalResourceId)
 		})
 	}
 
@@ -52,8 +52,8 @@ func (operator *EcrOperator) DeleteResources(ctx context.Context) error {
 	return err
 }
 
-func (operator *EcrOperator) DeleteEcr(ctx context.Context, repositoryName *string) error {
-	exists, err := operator.client.CheckEcrExists(ctx, repositoryName)
+func (o *EcrOperator) DeleteEcr(ctx context.Context, repositoryName *string) error {
+	exists, err := o.client.CheckEcrExists(ctx, repositoryName)
 	if err != nil {
 		return err
 	}
@@ -61,5 +61,5 @@ func (operator *EcrOperator) DeleteEcr(ctx context.Context, repositoryName *stri
 		return nil
 	}
 
-	return operator.client.DeleteRepository(ctx, repositoryName)
+	return o.client.DeleteRepository(ctx, repositoryName)
 }

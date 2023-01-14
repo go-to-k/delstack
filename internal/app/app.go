@@ -63,18 +63,18 @@ func NewApp(version string) *App {
 	return &app
 }
 
-func (app *App) Run(ctx context.Context) error {
-	return app.Cli.RunContext(ctx, os.Args)
+func (a *App) Run(ctx context.Context) error {
+	return a.Cli.RunContext(ctx, os.Args)
 }
 
-func (app *App) getAction() func(c *cli.Context) error {
+func (a *App) getAction() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		if !app.InteractiveMode && app.StackName == "" {
+		if !a.InteractiveMode && a.StackName == "" {
 			errMsg := fmt.Sprintln("The stack name must be specified in command options (-s) or a flow of the interactive mode.")
 			return fmt.Errorf("StackNameNotSpecifiedError: %v", errMsg)
 		}
 
-		config, err := client.LoadAWSConfig(c.Context, app.Region, app.Profile)
+		config, err := client.LoadAWSConfig(c.Context, a.Region, a.Profile)
 		if err != nil {
 			return err
 		}
@@ -82,8 +82,8 @@ func (app *App) getAction() func(c *cli.Context) error {
 		var targetResourceTypes []string
 		var keyword string
 		continuation := true
-		if app.InteractiveMode {
-			targetResourceTypes, keyword, continuation = app.doInteractiveMode()
+		if a.InteractiveMode {
+			targetResourceTypes, keyword, continuation = a.doInteractiveMode()
 		} else {
 			targetResourceTypes = resourcetype.GetResourceTypes()
 		}
@@ -95,7 +95,7 @@ func (app *App) getAction() func(c *cli.Context) error {
 		stackOperatorFactory := operation.NewStackOperatorFactory(config)
 		stackOperator := stackOperatorFactory.CreateStackOperator(targetResourceTypes)
 
-		if app.InteractiveMode && app.StackName == "" {
+		if a.InteractiveMode && a.StackName == "" {
 			stackNames, err := stackOperator.ListStacksFilteredByKeyword(c.Context, aws.String(keyword))
 			if err != nil {
 				return err
@@ -105,12 +105,12 @@ func (app *App) getAction() func(c *cli.Context) error {
 				return fmt.Errorf("NotExistsError: %v", errMsg)
 			}
 
-			stackName := app.selectStackName(stackNames)
+			stackName := a.selectStackName(stackNames)
 			if stackName == "" {
 				return nil
 			}
 
-			app.StackName = stackName
+			a.StackName = stackName
 		}
 
 		isRootStack := true
@@ -118,18 +118,18 @@ func (app *App) getAction() func(c *cli.Context) error {
 		operatorCollection := operation.NewOperatorCollection(config, operatorFactory, targetResourceTypes)
 		operatorManager := operation.NewOperatorManager(operatorCollection)
 
-		io.Logger.Info().Msgf("Start deletion, %v", app.StackName)
+		io.Logger.Info().Msgf("Start deletion, %v", a.StackName)
 
-		if err := stackOperator.DeleteStackResources(c.Context, aws.String(app.StackName), isRootStack, operatorManager); err != nil {
+		if err := stackOperator.DeleteStackResources(c.Context, aws.String(a.StackName), isRootStack, operatorManager); err != nil {
 			return err
 		}
 
-		io.Logger.Info().Msgf("Successfully deleted, %v", app.StackName)
+		io.Logger.Info().Msgf("Successfully deleted, %v", a.StackName)
 		return nil
 	}
 }
 
-func (app *App) doInteractiveMode() ([]string, string, bool) {
+func (a *App) doInteractiveMode() ([]string, string, bool) {
 	var checkboxes []string
 	var keyword string
 
@@ -139,7 +139,7 @@ func (app *App) doInteractiveMode() ([]string, string, bool) {
 		"\n"
 	opts := resourcetype.GetResourceTypes()
 
-	if app.StackName == "" {
+	if a.StackName == "" {
 		stackNameLabel := "Filter a keyword of stack names: "
 		keyword = io.InputKeywordForFilter(stackNameLabel)
 	}
@@ -164,7 +164,7 @@ func (app *App) doInteractiveMode() ([]string, string, bool) {
 	}
 }
 
-func (app *App) selectStackName(stackNames []string) string {
+func (a *App) selectStackName(stackNames []string) string {
 	var stackName string
 
 	label := "Select StackName." + "\n"

@@ -75,7 +75,7 @@ func (iamClient *Iam) deleteRoleWithRetry(
 	}
 }
 
-func (iamClient *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error) {
+func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error) {
 	var marker *string
 	policies := []types.AttachedPolicy{}
 
@@ -91,7 +91,7 @@ func (iamClient *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *st
 			Marker:   marker,
 		}
 
-		output, err := iamClient.client.ListAttachedRolePolicies(ctx, input)
+		output, err := i.client.ListAttachedRolePolicies(ctx, input)
 		if err != nil {
 			return nil, err
 		}
@@ -107,9 +107,9 @@ func (iamClient *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *st
 	return policies, nil
 }
 
-func (iamClient *Iam) DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
+func (i *Iam) DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
 	for _, policy := range policies {
-		if err := iamClient.DetachRolePolicy(ctx, roleName, policy.PolicyArn, sleepTimeSec); err != nil {
+		if err := i.DetachRolePolicy(ctx, roleName, policy.PolicyArn, sleepTimeSec); err != nil {
 			return err
 		}
 	}
@@ -117,17 +117,17 @@ func (iamClient *Iam) DetachRolePolicies(ctx context.Context, roleName *string, 
 	return nil
 }
 
-func (iamClient *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn *string, sleepTimeSec int) error {
+func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn *string, sleepTimeSec int) error {
 	input := &iam.DetachRolePolicyInput{
 		PolicyArn: PolicyArn,
 		RoleName:  roleName,
 	}
 
-	_, err := iamClient.detachRolePolicyWithRetry(ctx, input, roleName, sleepTimeSec)
+	_, err := i.detachRolePolicyWithRetry(ctx, input, roleName, sleepTimeSec)
 	return err
 }
 
-func (iamClient *Iam) detachRolePolicyWithRetry(
+func (i *Iam) detachRolePolicyWithRetry(
 	ctx context.Context,
 	input *iam.DetachRolePolicyInput,
 	roleName *string,
@@ -142,7 +142,7 @@ func (iamClient *Iam) detachRolePolicyWithRetry(
 		default:
 		}
 
-		output, err := iamClient.client.DetachRolePolicy(ctx, input)
+		output, err := i.client.DetachRolePolicy(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
 			retryCount++
 			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
@@ -158,12 +158,12 @@ func (iamClient *Iam) detachRolePolicyWithRetry(
 	}
 }
 
-func (iamClient *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
+func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
 	input := &iam.GetRoleInput{
 		RoleName: roleName,
 	}
 
-	_, err := iamClient.client.GetRole(ctx, input)
+	_, err := i.client.GetRole(ctx, input)
 	if err != nil && strings.Contains(err.Error(), "NoSuchEntity") {
 		return false, nil
 	}
