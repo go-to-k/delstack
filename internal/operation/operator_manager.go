@@ -26,37 +26,37 @@ func NewOperatorManager(operatorCollection IOperatorCollection) *OperatorManager
 	}
 }
 
-func (operatorManager *OperatorManager) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
-	operatorManager.operatorCollection.SetOperatorCollection(stackName, stackResourceSummaries)
+func (m *OperatorManager) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
+	m.operatorCollection.SetOperatorCollection(stackName, stackResourceSummaries)
 }
 
-func (operatorManager *OperatorManager) getOperatorResourcesLength() int {
+func (m *OperatorManager) getOperatorResourcesLength() int {
 	var length int
-	for _, operator := range operatorManager.operatorCollection.GetOperators() {
+	for _, operator := range m.operatorCollection.GetOperators() {
 		length += operator.GetResourcesLength()
 	}
 	return length
 }
 
-func (operatorManager *OperatorManager) CheckResourceCounts() error {
-	logicalResourceIdsLength := len(operatorManager.operatorCollection.GetLogicalResourceIds())
-	operatorResourcesLength := operatorManager.getOperatorResourcesLength()
+func (m *OperatorManager) CheckResourceCounts() error {
+	logicalResourceIdsLength := len(m.operatorCollection.GetLogicalResourceIds())
+	operatorResourcesLength := m.getOperatorResourcesLength()
 
 	if logicalResourceIdsLength != operatorResourcesLength {
-		return operatorManager.operatorCollection.RaiseUnsupportedResourceError()
+		return m.operatorCollection.RaiseUnsupportedResourceError()
 	}
 
 	return nil
 }
 
-func (operatorManager *OperatorManager) GetLogicalResourceIds() []string {
-	return operatorManager.operatorCollection.GetLogicalResourceIds()
+func (m *OperatorManager) GetLogicalResourceIds() []string {
+	return m.operatorCollection.GetLogicalResourceIds()
 }
 
-func (operatorManager *OperatorManager) DeleteResourceCollection(ctx context.Context) error {
+func (m *OperatorManager) DeleteResourceCollection(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 
-	for _, operator := range operatorManager.operatorCollection.GetOperators() {
+	for _, operator := range m.operatorCollection.GetOperators() {
 		operator := operator
 		eg.Go(func() error {
 			return operator.DeleteResources(ctx)

@@ -41,17 +41,17 @@ func NewS3(client IS3SDKClient) *S3 {
 	}
 }
 
-func (s3Client *S3) DeleteBucket(ctx context.Context, bucketName *string) error {
+func (s *S3) DeleteBucket(ctx context.Context, bucketName *string) error {
 	input := &s3.DeleteBucketInput{
 		Bucket: bucketName,
 	}
 
-	_, err := s3Client.client.DeleteBucket(ctx, input)
+	_, err := s.client.DeleteBucket(ctx, input)
 
 	return err
 }
 
-func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
 	errors := []types.Error{}
 	if len(objects) == 0 {
 		return errors, nil
@@ -101,7 +101,7 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			output, err := s3Client.deleteObjectsWithRetry(ctx, input, bucketName, sleepTimeSec)
+			output, err := s.deleteObjectsWithRetry(ctx, input, bucketName, sleepTimeSec)
 			if err != nil {
 				return err
 			}
@@ -130,7 +130,7 @@ func (s3Client *S3) DeleteObjects(ctx context.Context, bucketName *string, objec
 	return errors, nil
 }
 
-func (s3Client *S3) deleteObjectsWithRetry(
+func (s *S3) deleteObjectsWithRetry(
 	ctx context.Context,
 	input *s3.DeleteObjectsInput,
 	bucketName *string,
@@ -145,7 +145,7 @@ func (s3Client *S3) deleteObjectsWithRetry(
 		default:
 		}
 
-		output, err := s3Client.client.DeleteObjects(ctx, input)
+		output, err := s.client.DeleteObjects(ctx, input)
 		if err != nil && strings.Contains(err.Error(), "api error SlowDown") {
 			retryCount++
 			if err := WaitForRetry(retryCount, sleepTimeSec, bucketName, err); err != nil {
@@ -161,7 +161,7 @@ func (s3Client *S3) deleteObjectsWithRetry(
 	}
 }
 
-func (s3Client *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
+func (s *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
 	var keyMarker *string
 	var versionIdMarker *string
 	objectIdentifiers := []types.ObjectIdentifier{}
@@ -179,7 +179,7 @@ func (s3Client *S3) ListObjectVersions(ctx context.Context, bucketName *string) 
 			VersionIdMarker: versionIdMarker,
 		}
 
-		output, err := s3Client.client.ListObjectVersions(ctx, input)
+		output, err := s.client.ListObjectVersions(ctx, input)
 		if err != nil {
 			return nil, err
 		}
@@ -211,10 +211,10 @@ func (s3Client *S3) ListObjectVersions(ctx context.Context, bucketName *string) 
 	return objectIdentifiers, nil
 }
 
-func (s3Client *S3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
 	input := &s3.ListBucketsInput{}
 
-	output, err := s3Client.client.ListBuckets(ctx, input)
+	output, err := s.client.ListBuckets(ctx, input)
 	if err != nil {
 		return false, err
 	}

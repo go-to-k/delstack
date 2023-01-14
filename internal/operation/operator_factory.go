@@ -37,26 +37,26 @@ func NewOperatorFactory(config aws.Config) *OperatorFactory {
 	}
 }
 
-func (factory *OperatorFactory) CreateStackOperator(targetResourceTypes []string) *StackOperator {
-	return factory.stackOperatorFactory.CreateStackOperator(targetResourceTypes)
+func (f *OperatorFactory) CreateStackOperator(targetResourceTypes []string) *StackOperator {
+	return f.stackOperatorFactory.CreateStackOperator(targetResourceTypes)
 }
 
-func (factory *OperatorFactory) CreateBackupVaultOperator() *BackupVaultOperator {
-	return factory.backupVaultOperatorFactory.CreateBackupVaultOperator()
+func (f *OperatorFactory) CreateBackupVaultOperator() *BackupVaultOperator {
+	return f.backupVaultOperatorFactory.CreateBackupVaultOperator()
 }
 
-func (factory *OperatorFactory) CreateEcrOperator() *EcrOperator {
-	return factory.ecrOperatorFactory.CreateEcrOperator()
+func (f *OperatorFactory) CreateEcrOperator() *EcrOperator {
+	return f.ecrOperatorFactory.CreateEcrOperator()
 }
 
-func (factory *OperatorFactory) CreateRoleOperator() *RoleOperator {
-	return factory.roleOperatorFactory.CreateRoleOperator()
+func (f *OperatorFactory) CreateRoleOperator() *RoleOperator {
+	return f.roleOperatorFactory.CreateRoleOperator()
 }
 
-func (factory *OperatorFactory) CreateBucketOperator() *BucketOperator {
-	return factory.bucketOperatorFactory.CreateBucketOperator()
+func (f *OperatorFactory) CreateBucketOperator() *BucketOperator {
+	return f.bucketOperatorFactory.CreateBucketOperator()
 }
 
-func (factory *OperatorFactory) CreateCustomOperator() *CustomOperator {
-	return factory.customOperatorFactory.CreateCustomOperator()
+func (f *OperatorFactory) CreateCustomOperator() *CustomOperator {
+	return f.customOperatorFactory.CreateCustomOperator()
 }

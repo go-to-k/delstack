@@ -37,19 +37,19 @@ func NewStackOperator(config aws.Config, client client.ICloudFormation, targetRe
 	}
 }
 
-func (operator *StackOperator) AddResource(resource *types.StackResourceSummary) {
-	operator.resources = append(operator.resources, resource)
+func (o *StackOperator) AddResource(resource *types.StackResourceSummary) {
+	o.resources = append(o.resources, resource)
 }
 
-func (operator *StackOperator) GetResourcesLength() int {
-	return len(operator.resources)
+func (o *StackOperator) GetResourcesLength() int {
+	return len(o.resources)
 }
 
-func (operator *StackOperator) DeleteResources(ctx context.Context) error {
+func (o *StackOperator) DeleteResources(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
-	for _, stack := range operator.resources {
+	for _, stack := range o.resources {
 		stack := stack
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return err
@@ -59,19 +59,19 @@ func (operator *StackOperator) DeleteResources(ctx context.Context) error {
 			stackName := stackNameRuleRegExp.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
 
 			isRootStack := false
-			operatorFactory := NewOperatorFactory(operator.config)
-			operatorCollection := NewOperatorCollection(operator.config, operatorFactory, operator.targetResourceTypes)
+			operatorFactory := NewOperatorFactory(o.config)
+			operatorCollection := NewOperatorCollection(o.config, operatorFactory, o.targetResourceTypes)
 			operatorManager := NewOperatorManager(operatorCollection)
 
-			return operator.DeleteStackResources(ctx, aws.String(stackName), isRootStack, operatorManager)
+			return o.DeleteStackResources(ctx, aws.String(stackName), isRootStack, operatorManager)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (operator *StackOperator) DeleteStackResources(ctx context.Context, stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
-	isSuccess, err := operator.deleteStackNormally(ctx, stackName, isRootStack)
+func (o *StackOperator) DeleteStackResources(ctx context.Context, stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
+	isSuccess, err := o.deleteStackNormally(ctx, stackName, isRootStack)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (operator *StackOperator) DeleteStackResources(ctx context.Context, stackNa
 		return nil
 	}
 
-	stackResourceSummaries, err := operator.client.ListStackResources(ctx, stackName)
+	stackResourceSummaries, err := o.client.ListStackResources(ctx, stackName)
 	if err != nil {
 		return err
 	}
@@ -94,15 +94,15 @@ func (operator *StackOperator) DeleteStackResources(ctx context.Context, stackNa
 		return err
 	}
 
-	if err := operator.client.DeleteStack(ctx, stackName, operatorManager.GetLogicalResourceIds()); err != nil {
+	if err := o.client.DeleteStack(ctx, stackName, operatorManager.GetLogicalResourceIds()); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (operator *StackOperator) deleteStackNormally(ctx context.Context, stackName *string, isRootStack bool) (bool, error) {
-	stackOutputBeforeDelete, stackExistsBeforeDelete, err := operator.client.DescribeStacks(ctx, stackName)
+func (o *StackOperator) deleteStackNormally(ctx context.Context, stackName *string, isRootStack bool) (bool, error) {
+	stackOutputBeforeDelete, stackExistsBeforeDelete, err := o.client.DescribeStacks(ctx, stackName)
 	if err != nil {
 		return false, err
 	}
@@ -118,11 +118,11 @@ func (operator *StackOperator) deleteStackNormally(ctx context.Context, stackNam
 		return false, fmt.Errorf("TerminationProtectionIsEnabled: %v", *stackName)
 	}
 
-	if err := operator.client.DeleteStack(ctx, stackName, []string{}); err != nil {
+	if err := o.client.DeleteStack(ctx, stackName, []string{}); err != nil {
 		return false, err
 	}
 
-	stackOutputAfterDelete, stackExistsAfterDelete, err := operator.client.DescribeStacks(ctx, stackName)
+	stackOutputAfterDelete, stackExistsAfterDelete, err := o.client.DescribeStacks(ctx, stackName)
 	if err != nil {
 		return false, err
 	}
@@ -137,10 +137,10 @@ func (operator *StackOperator) deleteStackNormally(ctx context.Context, stackNam
 	return false, nil
 }
 
-func (operator *StackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
+func (o *StackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
 	filteredStacks := []string{}
 
-	stackSummaries, err := operator.client.ListStacks(ctx)
+	stackSummaries, err := o.client.ListStacks(ctx)
 	if err != nil {
 		return filteredStacks, err
 	}

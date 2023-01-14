@@ -14,14 +14,14 @@ func NewEcrOperatorFactory(config aws.Config) *EcrOperatorFactory {
 	return &EcrOperatorFactory{config}
 }
 
-func (factory *EcrOperatorFactory) CreateEcrOperator() *EcrOperator {
+func (f *EcrOperatorFactory) CreateEcrOperator() *EcrOperator {
 	return NewEcrOperator(
-		factory.createEcrClient(),
+		f.createEcrClient(),
 	)
 }
 
-func (factory *EcrOperatorFactory) createEcrClient() *client.Ecr {
-	sdkEcrClient := ecr.NewFromConfig(factory.config)
+func (f *EcrOperatorFactory) createEcrClient() *client.Ecr {
+	sdkEcrClient := ecr.NewFromConfig(f.config)
 
 	return client.NewEcr(
 		sdkEcrClient,

@@ -14,14 +14,14 @@ func NewRoleOperatorFactory(config aws.Config) *RoleOperatorFactory {
 	return &RoleOperatorFactory{config}
 }
 
-func (factory *RoleOperatorFactory) CreateRoleOperator() *RoleOperator {
+func (f *RoleOperatorFactory) CreateRoleOperator() *RoleOperator {
 	return NewRoleOperator(
-		factory.createIamClient(),
+		f.createIamClient(),
 	)
 }
 
-func (factory *RoleOperatorFactory) createIamClient() *client.Iam {
-	sdkIamClient := iam.NewFromConfig(factory.config)
+func (f *RoleOperatorFactory) createIamClient() *client.Iam {
+	sdkIamClient := iam.NewFromConfig(f.config)
 
 	return client.NewIam(
 		sdkIamClient,
