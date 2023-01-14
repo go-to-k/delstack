@@ -24,19 +24,19 @@ func NewBackupVaultOperator(client client.IBackup) *BackupVaultOperator {
 	}
 }
 
-func (operator *BackupVaultOperator) AddResource(resource *types.StackResourceSummary) {
-	operator.resources = append(operator.resources, resource)
+func (o *BackupVaultOperator) AddResource(resource *types.StackResourceSummary) {
+	o.resources = append(o.resources, resource)
 }
 
-func (operator *BackupVaultOperator) GetResourcesLength() int {
-	return len(operator.resources)
+func (o *BackupVaultOperator) GetResourcesLength() int {
+	return len(o.resources)
 }
 
-func (operator *BackupVaultOperator) DeleteResources(ctx context.Context) error {
+func (o *BackupVaultOperator) DeleteResources(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
-	for _, backupVault := range operator.resources {
+	for _, backupVault := range o.resources {
 		backupVault := backupVault
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return err
@@ -44,15 +44,15 @@ func (operator *BackupVaultOperator) DeleteResources(ctx context.Context) error 
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			return operator.DeleteBackupVault(ctx, backupVault.PhysicalResourceId)
+			return o.DeleteBackupVault(ctx, backupVault.PhysicalResourceId)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (operator *BackupVaultOperator) DeleteBackupVault(ctx context.Context, backupVaultName *string) error {
-	exists, err := operator.client.CheckBackupVaultExists(ctx, backupVaultName)
+func (o *BackupVaultOperator) DeleteBackupVault(ctx context.Context, backupVaultName *string) error {
+	exists, err := o.client.CheckBackupVaultExists(ctx, backupVaultName)
 	if err != nil {
 		return err
 	}
@@ -60,18 +60,18 @@ func (operator *BackupVaultOperator) DeleteBackupVault(ctx context.Context, back
 		return nil
 	}
 
-	recoveryPoints, err := operator.client.ListRecoveryPointsByBackupVault(ctx, backupVaultName)
+	recoveryPoints, err := o.client.ListRecoveryPointsByBackupVault(ctx, backupVaultName)
 	if err != nil {
 		return err
 	}
 
 	if len(recoveryPoints) > 0 {
-		if err := operator.client.DeleteRecoveryPoints(ctx, backupVaultName, recoveryPoints); err != nil {
+		if err := o.client.DeleteRecoveryPoints(ctx, backupVaultName, recoveryPoints); err != nil {
 			return err
 		}
 	}
 
-	if err := operator.client.DeleteBackupVault(ctx, backupVaultName); err != nil {
+	if err := o.client.DeleteBackupVault(ctx, backupVaultName); err != nil {
 		return err
 	}
 

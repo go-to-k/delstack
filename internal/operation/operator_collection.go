@@ -35,23 +35,23 @@ func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, 
 	}
 }
 
-func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
-	operatorCollection.stackName = aws.ToString(stackName)
+func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
+	c.stackName = aws.ToString(stackName)
 
-	bucketOperator := operatorCollection.operatorFactory.CreateBucketOperator()
-	roleOperator := operatorCollection.operatorFactory.CreateRoleOperator()
-	ecrOperator := operatorCollection.operatorFactory.CreateEcrOperator()
-	backupVaultOperator := operatorCollection.operatorFactory.CreateBackupVaultOperator()
-	stackOperator := operatorCollection.operatorFactory.CreateStackOperator(operatorCollection.targetResourceTypes)
-	customOperator := operatorCollection.operatorFactory.CreateCustomOperator()
+	bucketOperator := c.operatorFactory.CreateBucketOperator()
+	roleOperator := c.operatorFactory.CreateRoleOperator()
+	ecrOperator := c.operatorFactory.CreateEcrOperator()
+	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
+	stackOperator := c.operatorFactory.CreateStackOperator(c.targetResourceTypes)
+	customOperator := c.operatorFactory.CreateCustomOperator()
 
 	for _, v := range stackResourceSummaries {
 		if v.ResourceStatus == "DELETE_FAILED" {
 			stackResource := v // Copy for pointer used below
-			operatorCollection.logicalResourceIds = append(operatorCollection.logicalResourceIds, aws.ToString(stackResource.LogicalResourceId))
+			c.logicalResourceIds = append(c.logicalResourceIds, aws.ToString(stackResource.LogicalResourceId))
 
-			if !operatorCollection.containsResourceType(*stackResource.ResourceType) {
-				operatorCollection.unsupportedStackResources = append(operatorCollection.unsupportedStackResources, stackResource)
+			if !c.containsResourceType(*stackResource.ResourceType) {
+				c.unsupportedStackResources = append(c.unsupportedStackResources, stackResource)
 			} else {
 				switch *stackResource.ResourceType {
 				case resourcetype.S3_BUCKET:
@@ -73,16 +73,16 @@ func (operatorCollection *OperatorCollection) SetOperatorCollection(stackName *s
 		}
 	}
 
-	operatorCollection.operators = append(operatorCollection.operators, bucketOperator)
-	operatorCollection.operators = append(operatorCollection.operators, roleOperator)
-	operatorCollection.operators = append(operatorCollection.operators, ecrOperator)
-	operatorCollection.operators = append(operatorCollection.operators, backupVaultOperator)
-	operatorCollection.operators = append(operatorCollection.operators, stackOperator)
-	operatorCollection.operators = append(operatorCollection.operators, customOperator)
+	c.operators = append(c.operators, bucketOperator)
+	c.operators = append(c.operators, roleOperator)
+	c.operators = append(c.operators, ecrOperator)
+	c.operators = append(c.operators, backupVaultOperator)
+	c.operators = append(c.operators, stackOperator)
+	c.operators = append(c.operators, customOperator)
 }
 
-func (operatorCollection *OperatorCollection) containsResourceType(resource string) bool {
-	for _, t := range operatorCollection.targetResourceTypes {
+func (c *OperatorCollection) containsResourceType(resource string) bool {
+	for _, t := range c.targetResourceTypes {
 		if t == resource || (t == resourcetype.CUSTOM_RESOURCE && strings.Contains(resource, resourcetype.CUSTOM_RESOURCE)) {
 			return true
 		}
@@ -90,21 +90,21 @@ func (operatorCollection *OperatorCollection) containsResourceType(resource stri
 	return false
 }
 
-func (operatorCollection *OperatorCollection) GetLogicalResourceIds() []string {
-	return operatorCollection.logicalResourceIds
+func (c *OperatorCollection) GetLogicalResourceIds() []string {
+	return c.logicalResourceIds
 }
 
-func (operatorCollection *OperatorCollection) GetOperators() []IOperator {
-	return operatorCollection.operators
+func (c *OperatorCollection) GetOperators() []IOperator {
+	return c.operators
 }
 
-func (operatorCollection *OperatorCollection) RaiseUnsupportedResourceError() error {
-	title := fmt.Sprintf("%v deletion is FAILED !!!\n", operatorCollection.stackName)
+func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
+	title := fmt.Sprintf("%v deletion is FAILED !!!\n", c.stackName)
 
 	unsupportedStackResourcesHeader := []string{"ResourceType", "Resource"}
 	unsupportedStackResourcesData := [][]string{}
 
-	for _, resource := range operatorCollection.unsupportedStackResources {
+	for _, resource := range c.unsupportedStackResources {
 		unsupportedStackResourcesData = append(unsupportedStackResourcesData, []string{*resource.ResourceType, *resource.LogicalResourceId})
 	}
 	unsupportedStackResources := "\nThese are the resources unsupported (or you did not selected in the interactive prompt), so failed delete:\n" + *io.ToStringAsTableFormat(unsupportedStackResourcesHeader, unsupportedStackResourcesData)

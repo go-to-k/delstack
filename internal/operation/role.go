@@ -26,19 +26,19 @@ func NewRoleOperator(client client.IIam) *RoleOperator {
 	}
 }
 
-func (operator *RoleOperator) AddResource(resource *types.StackResourceSummary) {
-	operator.resources = append(operator.resources, resource)
+func (o *RoleOperator) AddResource(resource *types.StackResourceSummary) {
+	o.resources = append(o.resources, resource)
 }
 
-func (operator *RoleOperator) GetResourcesLength() int {
-	return len(operator.resources)
+func (o *RoleOperator) GetResourcesLength() int {
+	return len(o.resources)
 }
 
-func (operator *RoleOperator) DeleteResources(ctx context.Context) error {
+func (o *RoleOperator) DeleteResources(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
-	for _, role := range operator.resources {
+	for _, role := range o.resources {
 		role := role
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return err
@@ -46,15 +46,15 @@ func (operator *RoleOperator) DeleteResources(ctx context.Context) error {
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			return operator.DeleteRole(ctx, role.PhysicalResourceId)
+			return o.DeleteRole(ctx, role.PhysicalResourceId)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (operator *RoleOperator) DeleteRole(ctx context.Context, roleName *string) error {
-	exists, err := operator.client.CheckRoleExists(ctx, roleName)
+func (o *RoleOperator) DeleteRole(ctx context.Context, roleName *string) error {
+	exists, err := o.client.CheckRoleExists(ctx, roleName)
 	if err != nil {
 		return err
 	}
@@ -62,18 +62,18 @@ func (operator *RoleOperator) DeleteRole(ctx context.Context, roleName *string) 
 		return nil
 	}
 
-	policies, err := operator.client.ListAttachedRolePolicies(ctx, roleName)
+	policies, err := o.client.ListAttachedRolePolicies(ctx, roleName)
 	if err != nil {
 		return err
 	}
 
 	if len(policies) > 0 {
-		if err := operator.client.DetachRolePolicies(ctx, roleName, policies, sleepTimeSecForIam); err != nil {
+		if err := o.client.DetachRolePolicies(ctx, roleName, policies, sleepTimeSecForIam); err != nil {
 			return err
 		}
 	}
 
-	if err := operator.client.DeleteRole(ctx, roleName, sleepTimeSecForIam); err != nil {
+	if err := o.client.DeleteRole(ctx, roleName, sleepTimeSecForIam); err != nil {
 		return err
 	}
 

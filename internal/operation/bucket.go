@@ -27,19 +27,19 @@ func NewBucketOperator(client client.IS3) *BucketOperator {
 	}
 }
 
-func (operator *BucketOperator) AddResource(resource *types.StackResourceSummary) {
-	operator.resources = append(operator.resources, resource)
+func (o *BucketOperator) AddResource(resource *types.StackResourceSummary) {
+	o.resources = append(o.resources, resource)
 }
 
-func (operator *BucketOperator) GetResourcesLength() int {
-	return len(operator.resources)
+func (o *BucketOperator) GetResourcesLength() int {
+	return len(o.resources)
 }
 
-func (operator *BucketOperator) DeleteResources(ctx context.Context) error {
+func (o *BucketOperator) DeleteResources(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
-	for _, bucket := range operator.resources {
+	for _, bucket := range o.resources {
 		bucket := bucket
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return err
@@ -47,15 +47,15 @@ func (operator *BucketOperator) DeleteResources(ctx context.Context) error {
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			return operator.DeleteBucket(ctx, bucket.PhysicalResourceId)
+			return o.DeleteBucket(ctx, bucket.PhysicalResourceId)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (operator *BucketOperator) DeleteBucket(ctx context.Context, bucketName *string) error {
-	exists, err := operator.client.CheckBucketExists(ctx, bucketName)
+func (o *BucketOperator) DeleteBucket(ctx context.Context, bucketName *string) error {
+	exists, err := o.client.CheckBucketExists(ctx, bucketName)
 	if err != nil {
 		return err
 	}
@@ -63,13 +63,13 @@ func (operator *BucketOperator) DeleteBucket(ctx context.Context, bucketName *st
 		return nil
 	}
 
-	versions, err := operator.client.ListObjectVersions(ctx, bucketName)
+	versions, err := o.client.ListObjectVersions(ctx, bucketName)
 	if err != nil {
 		return err
 	}
 
 	if len(versions) > 0 {
-		errors, err := operator.client.DeleteObjects(ctx, bucketName, versions, sleepTimeSecForS3)
+		errors, err := o.client.DeleteObjects(ctx, bucketName, versions, sleepTimeSecForS3)
 		if err != nil {
 			return err
 		}
@@ -84,7 +84,7 @@ func (operator *BucketOperator) DeleteBucket(ctx context.Context, bucketName *st
 			return fmt.Errorf("DeleteObjectsError: followings %v", errorStr)
 		}
 	}
-	if err := operator.client.DeleteBucket(ctx, bucketName); err != nil {
+	if err := o.client.DeleteBucket(ctx, bucketName); err != nil {
 		return err
 	}
 

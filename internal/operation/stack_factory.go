@@ -14,16 +14,16 @@ func NewStackOperatorFactory(config aws.Config) *StackOperatorFactory {
 	return &StackOperatorFactory{config}
 }
 
-func (factory *StackOperatorFactory) CreateStackOperator(targetResourceTypes []string) *StackOperator {
+func (f *StackOperatorFactory) CreateStackOperator(targetResourceTypes []string) *StackOperator {
 	return NewStackOperator(
-		factory.config,
-		factory.createCloudFormationClient(),
+		f.config,
+		f.createCloudFormationClient(),
 		targetResourceTypes,
 	)
 }
 
-func (factory *StackOperatorFactory) createCloudFormationClient() *client.CloudFormation {
-	sdkCfnClient := cloudformation.NewFromConfig(factory.config)
+func (f *StackOperatorFactory) createCloudFormationClient() *client.CloudFormation {
+	sdkCfnClient := cloudformation.NewFromConfig(f.config)
 	sdkCfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
 
 	return client.NewCloudFormation(

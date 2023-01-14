@@ -18,15 +18,15 @@ func NewCustomOperator() *CustomOperator {
 	}
 }
 
-func (operator *CustomOperator) AddResource(resource *types.StackResourceSummary) {
-	operator.resources = append(operator.resources, resource)
+func (o *CustomOperator) AddResource(resource *types.StackResourceSummary) {
+	o.resources = append(o.resources, resource)
 }
 
-func (operator *CustomOperator) GetResourcesLength() int {
-	return len(operator.resources)
+func (o *CustomOperator) GetResourcesLength() int {
+	return len(o.resources)
 }
 
 // Implicit implements (these resources will be deleted on its own)
-func (operator *CustomOperator) DeleteResources(ctx context.Context) error {
+func (o *CustomOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
