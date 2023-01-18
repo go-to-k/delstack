@@ -7,7 +7,10 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/backup"
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
+	"github.com/aws/smithy-go/middleware"
 )
 
 /*
@@ -15,13 +18,10 @@ import (
 */
 
 func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
-	mock := NewMockBackupSDKClient()
-	errorMock := NewErrorMockBackupSDKClient()
-
 	type args struct {
-		ctx             context.Context
-		backupVaultName *string
-		client          IBackupSDKClient
+		ctx                context.Context
+		backupVaultName    *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	type want struct {
@@ -40,7 +40,30 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListRecoveryPointsByBackupVaultMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.ListRecoveryPointsByBackupVaultOutput{
+										RecoveryPoints: []types.RecoveryPointByBackupVault{
+											{
+												BackupVaultName: aws.String("BackupVaultName1"),
+												BackupVaultArn:  aws.String("BackupVaultArn1"),
+											},
+											{
+												BackupVaultName: aws.String("BackupVaultName2"),
+												BackupVaultArn:  aws.String("BackupVaultArn2"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				output: []types.RecoveryPointByBackupVault{
@@ -62,11 +85,23 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListRecoveryPointsByBackupVaultErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.ListRecoveryPointsByBackupVaultOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("ListRecoveryPointsByBackupVaultError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("ListRecoveryPointsByBackupVaultError"),
+				err:    fmt.Errorf("operation error Backup: ListRecoveryPointsByBackupVault, ListRecoveryPointsByBackupVaultError"),
 			},
 			wantErr: true,
 		},
@@ -74,7 +109,17 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			backupClient := NewBackup(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := backup.NewFromConfig(cfg)
+			backupClient := NewBackup(client)
 
 			output, err := backupClient.ListRecoveryPointsByBackupVault(tt.args.ctx, tt.args.backupVaultName)
 			if (err != nil) != tt.wantErr {
@@ -93,14 +138,11 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 }
 
 func TestBackup_DeleteRecoveryPoints(t *testing.T) {
-	mock := NewMockBackupSDKClient()
-	errorMock := NewErrorMockBackupSDKClient()
-
 	type args struct {
-		ctx             context.Context
-		backupVaultName *string
-		recoveryPoints  []types.RecoveryPointByBackupVault
-		client          IBackupSDKClient
+		ctx                context.Context
+		backupVaultName    *string
+		recoveryPoints     []types.RecoveryPointByBackupVault
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	cases := []struct {
@@ -116,15 +158,25 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 				backupVaultName: aws.String("test"),
 				recoveryPoints: []types.RecoveryPointByBackupVault{
 					{
-						BackupVaultArn:  aws.String("BackupVaultArn1"),
-						BackupVaultName: aws.String("BackupVaultName1"),
+						RecoveryPointArn: aws.String("RecoveryPointArn1"),
 					},
 					{
-						BackupVaultArn:  aws.String("BackupVaultArn2"),
-						BackupVaultName: aws.String("BackupVaultName2"),
+						RecoveryPointArn: aws.String("RecoveryPointArn2"),
 					},
 				},
-				client: mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRecoveryPointMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.DeleteRecoveryPointOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want:    nil,
 			wantErr: false,
@@ -135,7 +187,19 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
 				recoveryPoints:  []types.RecoveryPointByBackupVault{},
-				client:          mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRecoveryPointEmptyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.DeleteRecoveryPointOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want:    nil,
 			wantErr: false,
@@ -147,26 +211,46 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 				backupVaultName: aws.String("test"),
 				recoveryPoints: []types.RecoveryPointByBackupVault{
 					{
-						BackupVaultArn:  aws.String("BackupVaultArn1"),
-						BackupVaultName: aws.String("BackupVaultName1"),
+						RecoveryPointArn: aws.String("RecoveryPointArn1"),
 					},
 					{
-						BackupVaultArn:  aws.String("BackupVaultArn2"),
-						BackupVaultName: aws.String("BackupVaultName2"),
+						RecoveryPointArn: aws.String("RecoveryPointArn2"),
 					},
 				},
-				client: errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRecoveryPointErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.DeleteRecoveryPointOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteRecoveryPointError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("DeleteRecoveryPointError"),
+			want:    fmt.Errorf("operation error Backup: DeleteRecoveryPoint, DeleteRecoveryPointError"),
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			backupClient := NewBackup(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			err := backupClient.DeleteRecoveryPoints(tt.args.ctx, tt.args.backupVaultName, tt.args.recoveryPoints)
+			client := backup.NewFromConfig(cfg)
+			backupClient := NewBackup(client)
+
+			err = backupClient.DeleteRecoveryPoints(tt.args.ctx, tt.args.backupVaultName, tt.args.recoveryPoints)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -179,14 +263,11 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 }
 
 func TestBackup_DeleteRecoveryPoint(t *testing.T) {
-	mock := NewMockBackupSDKClient()
-	errorMock := NewErrorMockBackupSDKClient()
-
 	type args struct {
-		ctx              context.Context
-		backupVaultName  *string
-		recoveryPointArn *string
-		client           IBackupSDKClient
+		ctx                context.Context
+		backupVaultName    *string
+		recoveryPointArn   *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	cases := []struct {
@@ -201,7 +282,19 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 				ctx:              context.Background(),
 				backupVaultName:  aws.String("test"),
 				recoveryPointArn: aws.String("test"),
-				client:           mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRecoveryPointMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.DeleteRecoveryPointOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want:    nil,
 			wantErr: false,
@@ -212,18 +305,40 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 				ctx:              context.Background(),
 				backupVaultName:  aws.String("test"),
 				recoveryPointArn: aws.String("test"),
-				client:           errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRecoveryPointErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.DeleteRecoveryPointOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteRecoveryPointError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("DeleteRecoveryPointError"),
+			want:    fmt.Errorf("operation error Backup: DeleteRecoveryPoint, DeleteRecoveryPointError"),
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			backupClient := NewBackup(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			err := backupClient.DeleteRecoveryPoint(tt.args.ctx, tt.args.backupVaultName, tt.args.recoveryPointArn)
+			client := backup.NewFromConfig(cfg)
+			backupClient := NewBackup(client)
+
+			err = backupClient.DeleteRecoveryPoint(tt.args.ctx, tt.args.backupVaultName, tt.args.recoveryPointArn)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -236,13 +351,10 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 }
 
 func TestBackup_DeleteBackupVault(t *testing.T) {
-	mock := NewMockBackupSDKClient()
-	errorMock := NewErrorMockBackupSDKClient()
-
 	type args struct {
-		ctx             context.Context
-		backupVaultName *string
-		client          IBackupSDKClient
+		ctx                context.Context
+		backupVaultName    *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	cases := []struct {
@@ -256,7 +368,19 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteBackupVaultMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.DeleteBackupVaultOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want:    nil,
 			wantErr: false,
@@ -266,18 +390,40 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteBackupVaultErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.DeleteBackupVaultOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteBackupVaultError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("DeleteBackupVaultError"),
+			want:    fmt.Errorf("operation error Backup: DeleteBackupVault, DeleteBackupVaultError"),
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			backupClient := NewBackup(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			err := backupClient.DeleteBackupVault(tt.args.ctx, tt.args.backupVaultName)
+			client := backup.NewFromConfig(cfg)
+			backupClient := NewBackup(client)
+
+			err = backupClient.DeleteBackupVault(tt.args.ctx, tt.args.backupVaultName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -290,14 +436,11 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 }
 
 func TestBackup_CheckBackupVaultExists(t *testing.T) {
-	mock := NewMockBackupSDKClient()
-	errorMock := NewErrorMockBackupSDKClient()
-	notExitsMock := NewNotExistsMockForListBackupVaultsBackupSDKClient()
 
 	type args struct {
-		ctx             context.Context
-		backupVaultName *string
-		client          IBackupSDKClient
+		ctx                context.Context
+		backupVaultName    *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	type want struct {
@@ -316,7 +459,28 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListBackupVaultsMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.ListBackupVaultsOutput{
+										BackupVaultList: []types.BackupVaultListMember{
+											{
+												BackupVaultName: aws.String("test"),
+											},
+											{
+												BackupVaultName: aws.String("test2"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: true,
@@ -329,7 +493,28 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          notExitsMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListBackupVaultsNotExistMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.ListBackupVaultsOutput{
+										BackupVaultList: []types.BackupVaultListMember{
+											{
+												BackupVaultName: aws.String("test0"),
+											},
+											{
+												BackupVaultName: aws.String("test2"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: false,
@@ -342,11 +527,23 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListBackupVaultsErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &backup.ListBackupVaultsOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("ListBackupVaultsError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: false,
-				err:    fmt.Errorf("ListBackupVaultsError"),
+				err:    fmt.Errorf("operation error Backup: ListBackupVaults, ListBackupVaultsError"),
 			},
 			wantErr: true,
 		},
@@ -354,7 +551,17 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			backupClient := NewBackup(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := backup.NewFromConfig(cfg)
+			backupClient := NewBackup(client)
 
 			output, err := backupClient.CheckBackupVaultExists(tt.args.ctx, tt.args.backupVaultName)
 			if (err != nil) != tt.wantErr {

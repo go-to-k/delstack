@@ -17,14 +17,14 @@ import (
 
 func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 	io.NewLogger(false)
-	mock := NewMockBackup()
-	allErrorMock := NewAllErrorMockBackup()
-	listRecoveryPointsErrorMock := NewListRecoveryPointsErrorMockBackup()
-	deleteRecoveryPointsErrorMock := NewDeleteRecoveryPointsErrorMockBackup()
-	deleteRecoveryPointsErrorAfterZeroLengthMock := NewDeleteRecoveryPointsErrorAfterZeroLengthMockBackup()
-	deleteBackupVaultErrorMock := NewDeleteBackupVaultErrorMockBackup()
-	checkBackupVaultExistsErrorMock := NewCheckBackupVaultExistsErrorMockBackup()
-	checkBackupVaultNotExistsMock := NewCheckBackupVaultNotExistsMockBackup()
+	mock := client.NewMockBackup()
+	allErrorMock := client.NewAllErrorMockBackup()
+	listRecoveryPointsErrorMock := client.NewListRecoveryPointsErrorMockBackup()
+	deleteRecoveryPointsErrorMock := client.NewDeleteRecoveryPointsErrorMockBackup()
+	deleteRecoveryPointsErrorAfterZeroLengthMock := client.NewDeleteRecoveryPointsErrorAfterZeroLengthMockBackup()
+	deleteBackupVaultErrorMock := client.NewDeleteBackupVaultErrorMockBackup()
+	checkBackupVaultExistsErrorMock := client.NewCheckBackupVaultExistsErrorMockBackup()
+	checkBackupVaultNotExistsMock := client.NewCheckBackupVaultNotExistsMockBackup()
 
 	type args struct {
 		ctx             context.Context
@@ -139,8 +139,8 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 
 func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
 	io.NewLogger(false)
-	mock := NewMockBackup()
-	allErrorMock := NewAllErrorMockBackup()
+	mock := client.NewMockBackup()
+	allErrorMock := client.NewAllErrorMockBackup()
 
 	type args struct {
 		ctx    context.Context
