@@ -374,275 +374,289 @@ func TestS3_DeleteObjects(t *testing.T) {
 	}
 }
 
-// func TestS3_deleteObjectsWithRetry(t *testing.T) {
-// 	objectsOverLimit := []types.ObjectIdentifier{}
-// 	s3DeleteObjectsSizeOverLimit := s3DeleteObjectsSizeLimit*int(runtime.NumCPU())*2 + 1 // loop over cpu core size for channel waiting when next loop
-// 	for i := 0; i < s3DeleteObjectsSizeOverLimit; i++ {
-// 		objectsOverLimit = append(objectsOverLimit, types.ObjectIdentifier{
-// 			Key:       aws.String("Key"),
-// 			VersionId: aws.String("VersionId"),
-// 		})
-// 	}
+func TestS3_deleteObjectsWithRetry(t *testing.T) {
+	objectsOverLimit := []types.ObjectIdentifier{}
+	s3DeleteObjectsSizeOverLimit := s3DeleteObjectsSizeLimit*int(runtime.NumCPU())*2 + 1 // loop over cpu core size for channel waiting when next loop
+	for i := 0; i < s3DeleteObjectsSizeOverLimit; i++ {
+		objectsOverLimit = append(objectsOverLimit, types.ObjectIdentifier{
+			Key:       aws.String("Key"),
+			VersionId: aws.String("VersionId"),
+		})
+	}
 
-// 	type args struct {
-// 		ctx                context.Context
-// 		input              *s3.DeleteObjectsInput
-// 		bucketName         *string
-// 		withAPIOptionsFunc func(*middleware.Stack) error
-// 	}
+	type args struct {
+		ctx                context.Context
+		input              *s3.DeleteObjectsInput
+		bucketName         *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
 
-// 	type want struct {
-// 		output *s3.DeleteObjectsOutput
-// 		err    error
-// 	}
+	type partialOutput struct {
+		deleted []types.DeletedObject
+		errors  []types.Error
+	}
 
-// 	cases := []struct {
-// 		name    string
-// 		args    args
-// 		want    want
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "delete objects successfully",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				input: &s3.DeleteObjectsInput{
-// 					Bucket: aws.String("test"),
-// 					Delete: &types.Delete{
-// 						Objects: []types.ObjectIdentifier{{
-// 							Key:       aws.String("Key"),
-// 							VersionId: aws.String("VersionId")},
-// 						},
-// 						Quiet: *aws.Bool(true),
-// 					},
-// 				},
-// 				bucketName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"PrivateDeleteObjectsMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &s3.DeleteObjectsOutput{
-// 										Deleted: []types.DeletedObject{},
-// 										Errors:  []types.Error{},
-// 									},
-// 								}, middleware.Metadata{}, nil
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: &s3.DeleteObjectsOutput{
-// 					Deleted: []types.DeletedObject{},
-// 					Errors:  []types.Error{},
-// 				},
-// 				err: nil,
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "delete objects over limit successfully",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				input: &s3.DeleteObjectsInput{
-// 					Bucket: aws.String("test"),
-// 					Delete: &types.Delete{
-// 						Objects: objectsOverLimit,
-// 						Quiet:   *aws.Bool(true),
-// 					},
-// 				},
-// 				bucketName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"PrivateDeleteObjectsOverLimitMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &s3.DeleteObjectsOutput{
-// 										Deleted: []types.DeletedObject{},
-// 										Errors:  []types.Error{},
-// 									},
-// 								}, middleware.Metadata{}, nil
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: &s3.DeleteObjectsOutput{
-// 					Deleted: []types.DeletedObject{},
-// 					Errors:  []types.Error{},
-// 				},
-// 				err: nil,
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "delete objects failure",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				input: &s3.DeleteObjectsInput{
-// 					Bucket: aws.String("test"),
-// 					Delete: &types.Delete{
-// 						Objects: []types.ObjectIdentifier{{
-// 							Key:       aws.String("Key"),
-// 							VersionId: aws.String("VersionId")},
-// 						},
-// 						Quiet: *aws.Bool(true),
-// 					},
-// 				},
-// 				bucketName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"PrivateDeleteObjectsErrorMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &s3.DeleteObjectsOutput{
-// 										Deleted: []types.DeletedObject{},
-// 										Errors:  []types.Error{},
-// 									},
-// 								}, middleware.Metadata{}, fmt.Errorf("DeleteObjectsError")
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: nil,
-// 				err:    fmt.Errorf("operation error S3: DeleteObjects, DeleteObjectsError"),
-// 			},
-// 			wantErr: true,
-// 		},
-// 		{
-// 			name: "delete objects failure for api error",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				input: &s3.DeleteObjectsInput{
-// 					Bucket: aws.String("test"),
-// 					Delete: &types.Delete{
-// 						Objects: []types.ObjectIdentifier{{
-// 							Key:       aws.String("Key"),
-// 							VersionId: aws.String("VersionId")},
-// 						},
-// 						Quiet: *aws.Bool(true),
-// 					},
-// 				},
-// 				bucketName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"PrivateDeleteObjectsErrorForApiErrorMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &s3.DeleteObjectsOutput{
-// 										Deleted: []types.DeletedObject{},
-// 										Errors:  []types.Error{},
-// 									},
-// 								}, middleware.Metadata{}, fmt.Errorf("api error SlowDown")
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: nil,
-// 				err:    fmt.Errorf("RetryCountOverError: test, operation error S3: DeleteObjects, api error SlowDown\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
-// 			},
-// 			wantErr: true,
-// 		},
-// 		{
-// 			name: "delete objects failure for output errors",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				input: &s3.DeleteObjectsInput{
-// 					Bucket: aws.String("test"),
-// 					Delete: &types.Delete{
-// 						Objects: []types.ObjectIdentifier{{
-// 							Key:       aws.String("Key"),
-// 							VersionId: aws.String("VersionId")},
-// 						},
-// 						Quiet: *aws.Bool(true),
-// 					},
-// 				},
-// 				bucketName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"PrivateDeleteObjectsErrorForOutputErrorsMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &s3.DeleteObjectsOutput{
-// 										Deleted: []types.DeletedObject{},
-// 										Errors: []types.Error{
-// 											{
-// 												Key:       aws.String("Key"),
-// 												Code:      aws.String("Code"),
-// 												Message:   aws.String("Message"),
-// 												VersionId: aws.String("VersionId"),
-// 											},
-// 										},
-// 									},
-// 								}, middleware.Metadata{}, nil
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: &s3.DeleteObjectsOutput{
-// 					Deleted: []types.DeletedObject{},
-// 					Errors: []types.Error{
-// 						{
-// 							Key:       aws.String("Key"),
-// 							Code:      aws.String("Code"),
-// 							Message:   aws.String("Message"),
-// 							VersionId: aws.String("VersionId"),
-// 						},
-// 					},
-// 				},
-// 				err: nil,
-// 			},
-// 			wantErr: false,
-// 		},
-// 	}
+	type want struct {
+		output *partialOutput
+		err    error
+	}
 
-// 	for _, tt := range cases {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			cfg, err := config.LoadDefaultConfig(
-// 				tt.args.ctx,
-// 				config.WithRegion("ap-northeast-1"),
-// 				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
-// 			)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "delete objects successfully",
+			args: args{
+				ctx: context.Background(),
+				input: &s3.DeleteObjectsInput{
+					Bucket: aws.String("test"),
+					Delete: &types.Delete{
+						Objects: []types.ObjectIdentifier{{
+							Key:       aws.String("Key"),
+							VersionId: aws.String("VersionId")},
+						},
+						Quiet: *aws.Bool(true),
+					},
+				},
+				bucketName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"PrivateDeleteObjectsMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.DeleteObjectsOutput{
+										Deleted: []types.DeletedObject{},
+										Errors:  []types.Error{},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: &partialOutput{
+					deleted: []types.DeletedObject{},
+					errors:  []types.Error{},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "delete objects over limit successfully",
+			args: args{
+				ctx: context.Background(),
+				input: &s3.DeleteObjectsInput{
+					Bucket: aws.String("test"),
+					Delete: &types.Delete{
+						Objects: objectsOverLimit,
+						Quiet:   *aws.Bool(true),
+					},
+				},
+				bucketName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"PrivateDeleteObjectsOverLimitMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.DeleteObjectsOutput{
+										Deleted: []types.DeletedObject{},
+										Errors:  []types.Error{},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: &partialOutput{
+					deleted: []types.DeletedObject{},
+					errors:  []types.Error{},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "delete objects failure",
+			args: args{
+				ctx: context.Background(),
+				input: &s3.DeleteObjectsInput{
+					Bucket: aws.String("test"),
+					Delete: &types.Delete{
+						Objects: []types.ObjectIdentifier{{
+							Key:       aws.String("Key"),
+							VersionId: aws.String("VersionId")},
+						},
+						Quiet: *aws.Bool(true),
+					},
+				},
+				bucketName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"PrivateDeleteObjectsErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.DeleteObjectsOutput{
+										Deleted: []types.DeletedObject{},
+										Errors:  []types.Error{},
+									},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteObjectsError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: nil,
+				err:    fmt.Errorf("operation error S3: DeleteObjects, DeleteObjectsError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "delete objects failure for api error",
+			args: args{
+				ctx: context.Background(),
+				input: &s3.DeleteObjectsInput{
+					Bucket: aws.String("test"),
+					Delete: &types.Delete{
+						Objects: []types.ObjectIdentifier{{
+							Key:       aws.String("Key"),
+							VersionId: aws.String("VersionId")},
+						},
+						Quiet: *aws.Bool(true),
+					},
+				},
+				bucketName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"PrivateDeleteObjectsErrorForApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.DeleteObjectsOutput{
+										Deleted: []types.DeletedObject{},
+										Errors:  []types.Error{},
+									},
+								}, middleware.Metadata{}, fmt.Errorf("api error SlowDown")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: nil,
+				err:    fmt.Errorf("RetryCountOverError: test, operation error S3: DeleteObjects, api error SlowDown\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			},
+			wantErr: true,
+		},
+		{
+			name: "delete objects failure for output errors",
+			args: args{
+				ctx: context.Background(),
+				input: &s3.DeleteObjectsInput{
+					Bucket: aws.String("test"),
+					Delete: &types.Delete{
+						Objects: []types.ObjectIdentifier{{
+							Key:       aws.String("Key"),
+							VersionId: aws.String("VersionId")},
+						},
+						Quiet: *aws.Bool(true),
+					},
+				},
+				bucketName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"PrivateDeleteObjectsErrorForOutputErrorsMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.DeleteObjectsOutput{
+										Deleted: []types.DeletedObject{},
+										Errors: []types.Error{
+											{
+												Key:       aws.String("Key"),
+												Code:      aws.String("Code"),
+												Message:   aws.String("Message"),
+												VersionId: aws.String("VersionId"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: &partialOutput{
+					deleted: []types.DeletedObject{},
+					errors: []types.Error{
+						{
+							Key:       aws.String("Key"),
+							Code:      aws.String("Code"),
+							Message:   aws.String("Message"),
+							VersionId: aws.String("VersionId"),
+						},
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+	}
 
-// 			client := s3.NewFromConfig(cfg)
-// 			s3Client := NewS3(client)
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-// 			output, err := s3Client.deleteObjectsWithRetry(tt.args.ctx, tt.args.input, tt.args.bucketName, sleepTimeSecForS3)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
-// 				return
-// 			}
-// 			if tt.wantErr && err.Error() != tt.want.err.Error() {
-// 				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(output, tt.want.output) {
-// 				t.Errorf("output = %#v, want %#v", output, tt.want.output)
-// 			}
-// 		})
-// 	}
-// }
+			client := s3.NewFromConfig(cfg)
+			s3Client := NewS3(client)
+
+			output, err := s3Client.deleteObjectsWithRetry(tt.args.ctx, tt.args.input, tt.args.bucketName, sleepTimeSecForS3)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if (output == nil) != (tt.want.output == nil) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.output)
+			}
+			if (output != nil) && (tt.want.output != nil) {
+				got := &partialOutput{
+					deleted: output.Deleted,
+					errors:  output.Errors,
+				}
+				if !reflect.DeepEqual(got, tt.want.output) {
+					t.Errorf("output = %#v, want %#v", got, tt.want.output)
+				}
+			}
+		})
+	}
+}
 
 func TestS3_ListObjectVersions(t *testing.T) {
 	type args struct {
