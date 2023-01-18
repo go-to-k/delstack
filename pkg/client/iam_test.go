@@ -8,8 +8,10 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"github.com/aws/smithy-go/middleware"
 )
 
 const sleepTimeSecForIam = 1
@@ -19,14 +21,10 @@ const sleepTimeSecForIam = 1
 */
 
 func TestIam_DeleteRole(t *testing.T) {
-	mock := NewMockIamSDKClient()
-	errorMock := NewErrorMockIamSDKClient()
-	apiErrorMock := NewApiErrorMockIamSDKClient()
-
 	type args struct {
-		ctx      context.Context
-		roleName *string
-		client   IIamSDKClient
+		ctx                context.Context
+		roleName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	cases := []struct {
@@ -40,7 +38,19 @@ func TestIam_DeleteRole(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRoleMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteRoleOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want:    nil,
 			wantErr: false,
@@ -50,9 +60,21 @@ func TestIam_DeleteRole(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRoleErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteRoleOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteRoleError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("DeleteRoleError"),
+			want:    fmt.Errorf("operation error IAM: DeleteRole, DeleteRoleError"),
 			wantErr: true,
 		},
 		{
@@ -60,18 +82,40 @@ func TestIam_DeleteRole(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   apiErrorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRoleApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteRoleOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DeleteRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			iamClient := NewIam(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			err := iamClient.DeleteRole(tt.args.ctx, tt.args.roleName, sleepTimeSecForIam)
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			err = iamClient.DeleteRole(tt.args.ctx, tt.args.roleName, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -84,15 +128,11 @@ func TestIam_DeleteRole(t *testing.T) {
 }
 
 func TestIam_deleteRoleWithRetry(t *testing.T) {
-	mock := NewMockIamSDKClient()
-	errorMock := NewErrorMockIamSDKClient()
-	apiErrorMock := NewApiErrorMockIamSDKClient()
-
 	type args struct {
-		ctx      context.Context
-		input    *iam.DeleteRoleInput
-		roleName *string
-		client   IIamSDKClient
+		ctx                context.Context
+		input              *iam.DeleteRoleInput
+		roleName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	cases := []struct {
@@ -109,7 +149,19 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 					RoleName: aws.String("test"),
 				},
 				roleName: aws.String("test"),
-				client:   mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRoleWithRetryMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteRoleOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want:    nil,
 			wantErr: false,
@@ -122,9 +174,21 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 					RoleName: aws.String("test"),
 				},
 				roleName: aws.String("test"),
-				client:   errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRoleWithRetryErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteRoleOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteRoleError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("DeleteRoleError"),
+			want:    fmt.Errorf("operation error IAM: DeleteRole, DeleteRoleError"),
 			wantErr: true,
 		},
 		{
@@ -135,18 +199,40 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 					RoleName: aws.String("test"),
 				},
 				roleName: aws.String("test"),
-				client:   apiErrorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRoleWithRetryApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteRoleOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DeleteRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			iamClient := NewIam(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			_, err := iamClient.deleteRoleWithRetry(tt.args.ctx, tt.args.input, tt.args.roleName, sleepTimeSecForIam)
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			_, err = iamClient.deleteRoleWithRetry(tt.args.ctx, tt.args.input, tt.args.roleName, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -159,13 +245,10 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 }
 
 func TestIam_ListAttachedRolePolicies(t *testing.T) {
-	mock := NewMockIamSDKClient()
-	errorMock := NewErrorMockIamSDKClient()
-
 	type args struct {
-		ctx      context.Context
-		roleName *string
-		client   IIamSDKClient
+		ctx                context.Context
+		roleName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	type want struct {
@@ -184,7 +267,30 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListAttachedRolePoliciesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListAttachedRolePoliciesOutput{
+										AttachedPolicies: []types.AttachedPolicy{
+											{
+												PolicyArn:  aws.String("PolicyArn1"),
+												PolicyName: aws.String("PolicyName1"),
+											},
+											{
+												PolicyArn:  aws.String("PolicyArn2"),
+												PolicyName: aws.String("PolicyName2"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				output: []types.AttachedPolicy{
@@ -206,11 +312,23 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListAttachedRolePoliciesErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListAttachedRolePoliciesOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("ListAttachedRolePoliciesError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("ListAttachedRolePoliciesError"),
+				err:    fmt.Errorf("operation error IAM: ListAttachedRolePolicies, ListAttachedRolePoliciesError"),
 			},
 			wantErr: true,
 		},
@@ -218,7 +336,17 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			iamClient := NewIam(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
 
 			output, err := iamClient.ListAttachedRolePolicies(tt.args.ctx, tt.args.roleName)
 			if (err != nil) != tt.wantErr {
@@ -237,15 +365,11 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicies(t *testing.T) {
-	mock := NewMockIamSDKClient()
-	errorMock := NewErrorMockIamSDKClient()
-	apiErrorMock := NewApiErrorMockIamSDKClient()
-
 	type args struct {
-		ctx      context.Context
-		roleName *string
-		policies []types.AttachedPolicy
-		client   IIamSDKClient
+		ctx                context.Context
+		roleName           *string
+		policies           []types.AttachedPolicy
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	cases := []struct {
@@ -269,7 +393,19 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 						PolicyName: aws.String("PolicyName2"),
 					},
 				},
-				client: mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DetachRolePolicyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DetachRolePolicyOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want:    nil,
 			wantErr: false,
@@ -280,7 +416,19 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
 				policies: []types.AttachedPolicy{},
-				client:   mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DetachRolePolicyEmptyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DetachRolePolicyOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want:    nil,
 			wantErr: false,
@@ -300,9 +448,21 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 						PolicyName: aws.String("PolicyName2"),
 					},
 				},
-				client: errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DetachRolePolicyErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DetachRolePolicyOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DetachRolePolicyError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("DetachRolePolicyError"),
+			want:    fmt.Errorf("operation error IAM: DetachRolePolicy, DetachRolePolicyError"),
 			wantErr: true,
 		},
 		{
@@ -320,18 +480,40 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 						PolicyName: aws.String("PolicyName2"),
 					},
 				},
-				client: apiErrorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DetachRolePolicyApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DetachRolePolicyOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			iamClient := NewIam(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			err := iamClient.DetachRolePolicies(tt.args.ctx, tt.args.roleName, tt.args.policies, sleepTimeSecForIam)
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			err = iamClient.DetachRolePolicies(tt.args.ctx, tt.args.roleName, tt.args.policies, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -344,15 +526,11 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicy(t *testing.T) {
-	mock := NewMockIamSDKClient()
-	errorMock := NewErrorMockIamSDKClient()
-	apiErrorMock := NewApiErrorMockIamSDKClient()
-
 	type args struct {
-		ctx       context.Context
-		roleName  *string
-		PolicyArn *string
-		client    IIamSDKClient
+		ctx                context.Context
+		roleName           *string
+		PolicyArn          *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	cases := []struct {
@@ -367,7 +545,19 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 				ctx:       context.Background(),
 				roleName:  aws.String("test"),
 				PolicyArn: aws.String("test"),
-				client:    mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DetachRolePolicyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DetachRolePolicyOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want:    nil,
 			wantErr: false,
@@ -378,9 +568,21 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 				ctx:       context.Background(),
 				roleName:  aws.String("test"),
 				PolicyArn: aws.String("test"),
-				client:    errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DetachRolePolicyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DetachRolePolicyOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DetachRolePolicyError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("DetachRolePolicyError"),
+			want:    fmt.Errorf("operation error IAM: DetachRolePolicy, DetachRolePolicyError"),
 			wantErr: true,
 		},
 		{
@@ -389,18 +591,40 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 				ctx:       context.Background(),
 				roleName:  aws.String("test"),
 				PolicyArn: aws.String("test"),
-				client:    apiErrorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DetachRolePolicyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DetachRolePolicyOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			iamClient := NewIam(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			err := iamClient.DetachRolePolicy(tt.args.ctx, tt.args.roleName, tt.args.PolicyArn, sleepTimeSecForIam)
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			err = iamClient.DetachRolePolicy(tt.args.ctx, tt.args.roleName, tt.args.PolicyArn, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -413,15 +637,11 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 }
 
 func TestIam_detachRolePolicyWithRetry(t *testing.T) {
-	mock := NewMockIamSDKClient()
-	errorMock := NewErrorMockIamSDKClient()
-	apiErrorMock := NewApiErrorMockIamSDKClient()
-
 	type args struct {
-		ctx      context.Context
-		input    *iam.DetachRolePolicyInput
-		roleName *string
-		client   IIamSDKClient
+		ctx                context.Context
+		input              *iam.DetachRolePolicyInput
+		roleName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	cases := []struct {
@@ -439,7 +659,19 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 					RoleName:  aws.String("test"),
 				},
 				roleName: aws.String("test"),
-				client:   mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DetachRolePolicyWithRetryMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DetachRolePolicyOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want:    nil,
 			wantErr: false,
@@ -453,9 +685,21 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 					RoleName:  aws.String("test"),
 				},
 				roleName: aws.String("test"),
-				client:   errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DetachRolePolicyWithRetryErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DetachRolePolicyOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DetachRolePolicyError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("DetachRolePolicyError"),
+			want:    fmt.Errorf("operation error IAM: DetachRolePolicy, DetachRolePolicyError"),
 			wantErr: true,
 		},
 		{
@@ -467,18 +711,40 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 					RoleName:  aws.String("test"),
 				},
 				roleName: aws.String("test"),
-				client:   apiErrorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DetachRolePolicyWithRetryMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DetachRolePolicyOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			iamClient := NewIam(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			_, err := iamClient.detachRolePolicyWithRetry(tt.args.ctx, tt.args.input, tt.args.roleName, sleepTimeSecForIam)
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			_, err = iamClient.detachRolePolicyWithRetry(tt.args.ctx, tt.args.input, tt.args.roleName, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -491,14 +757,10 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 }
 
 func TestIam_CheckRoleExists(t *testing.T) {
-	mock := NewMockIamSDKClient()
-	errorMock := NewErrorMockIamSDKClient()
-	notExitsMock := NewNotExistsMockForGetRoleIamSDKClient()
-
 	type args struct {
-		ctx      context.Context
-		roleName *string
-		client   IIamSDKClient
+		ctx                context.Context
+		roleName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	type want struct {
@@ -517,7 +779,23 @@ func TestIam_CheckRoleExists(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"GetRoleMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.GetRoleOutput{
+										Role: &types.Role{
+											RoleName: aws.String("RoleName"),
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: true,
@@ -530,7 +808,19 @@ func TestIam_CheckRoleExists(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   notExitsMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"GetRoleNotExistsMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.GetRoleOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("NoSuchEntity")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: false,
@@ -543,11 +833,23 @@ func TestIam_CheckRoleExists(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"GetRoleErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.GetRoleOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("GetRoleError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: false,
-				err:    fmt.Errorf("GetRoleError"),
+				err:    fmt.Errorf("operation error IAM: GetRole, GetRoleError"),
 			},
 			wantErr: true,
 		},
@@ -555,9 +857,19 @@ func TestIam_CheckRoleExists(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			ecrClient := NewIam(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			output, err := ecrClient.CheckRoleExists(tt.args.ctx, tt.args.roleName)
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			output, err := iamClient.CheckRoleExists(tt.args.ctx, tt.args.roleName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
