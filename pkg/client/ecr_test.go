@@ -7,6 +7,10 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
+	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	"github.com/aws/smithy-go/middleware"
 )
 
 /*
@@ -14,13 +18,10 @@ import (
 */
 
 func TestEcr_DeleteRepository(t *testing.T) {
-	mock := NewMockEcrSDKClient()
-	errorMock := NewErrorMockEcrSDKClient()
-
 	type args struct {
-		ctx            context.Context
-		repositoryName *string
-		client         IEcrSDKClient
+		ctx                context.Context
+		repositoryName     *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	cases := []struct {
@@ -34,7 +35,19 @@ func TestEcr_DeleteRepository(t *testing.T) {
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
-				client:         mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRepositoryMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &ecr.DeleteRepositoryOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want:    nil,
 			wantErr: false,
@@ -44,18 +57,40 @@ func TestEcr_DeleteRepository(t *testing.T) {
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
-				client:         errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteRepositoryErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &ecr.DeleteRepositoryOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteRepositoryError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
-			want:    fmt.Errorf("DeleteRepositoryError"),
+			want:    fmt.Errorf("operation error ECR: DeleteRepository, DeleteRepositoryError"),
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			ecrClient := NewEcr(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			err := ecrClient.DeleteRepository(tt.args.ctx, tt.args.repositoryName)
+			client := ecr.NewFromConfig(cfg)
+			ecrClient := NewEcr(client)
+
+			err = ecrClient.DeleteRepository(tt.args.ctx, tt.args.repositoryName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -68,14 +103,10 @@ func TestEcr_DeleteRepository(t *testing.T) {
 }
 
 func TestEcr_CheckRepository(t *testing.T) {
-	mock := NewMockEcrSDKClient()
-	errorMock := NewErrorMockEcrSDKClient()
-	notExitsMock := NewNotExistsMockForDescribeRepositoriesEcrSDKClient()
-
 	type args struct {
-		ctx            context.Context
-		repositoryName *string
-		client         IEcrSDKClient
+		ctx                context.Context
+		repositoryName     *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	type want struct {
@@ -94,7 +125,25 @@ func TestEcr_CheckRepository(t *testing.T) {
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
-				client:         mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DescribeRepositoriesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &ecr.DescribeRepositoriesOutput{
+										Repositories: []types.Repository{
+											{
+												RepositoryName: aws.String("test"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: true,
@@ -107,7 +156,21 @@ func TestEcr_CheckRepository(t *testing.T) {
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
-				client:         notExitsMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DescribeRepositoriesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &ecr.DescribeRepositoriesOutput{
+										Repositories: []types.Repository{},
+									},
+								}, middleware.Metadata{}, fmt.Errorf("does not exist")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: false,
@@ -120,11 +183,25 @@ func TestEcr_CheckRepository(t *testing.T) {
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
-				client:         errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DescribeRepositoriesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &ecr.DescribeRepositoriesOutput{
+										Repositories: []types.Repository{},
+									},
+								}, middleware.Metadata{}, fmt.Errorf("DescribeRepositoriesError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: false,
-				err:    fmt.Errorf("DescribeRepositoriesError"),
+				err:    fmt.Errorf("operation error ECR: DescribeRepositories, DescribeRepositoriesError"),
 			},
 			wantErr: true,
 		},
@@ -132,7 +209,17 @@ func TestEcr_CheckRepository(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			ecrClient := NewEcr(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := ecr.NewFromConfig(cfg)
+			ecrClient := NewEcr(client)
 
 			output, err := ecrClient.CheckEcrExists(tt.args.ctx, tt.args.repositoryName)
 			if (err != nil) != tt.wantErr {
