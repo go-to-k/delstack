@@ -24,18 +24,11 @@ type IS3 interface {
 
 var _ IS3 = (*S3)(nil)
 
-type IS3SDKClient interface {
-	DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error)
-	DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error)
-	ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error)
-	ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error)
-}
-
 type S3 struct {
-	client IS3SDKClient
+	client *s3.Client
 }
 
-func NewS3(client IS3SDKClient) *S3 {
+func NewS3(client *s3.Client) *S3 {
 	return &S3{
 		client,
 	}
