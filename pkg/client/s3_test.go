@@ -9,8 +9,10 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go/middleware"
 )
 
 const sleepTimeSecForS3 = 1
@@ -553,14 +555,10 @@ func TestS3_ListObjectVersions(t *testing.T) {
 }
 
 func TestS3_CheckBucketExists(t *testing.T) {
-	mock := NewMockS3SDKClient()
-	errorMock := NewErrorMockS3SDKClient()
-	notExitsMock := NewNotExistsMockForListBucketsS3SDKClient()
-
 	type args struct {
-		ctx        context.Context
-		bucketName *string
-		client     IS3SDKClient
+		ctx                context.Context
+		bucketName         *string
+		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
 	type want struct {
@@ -579,7 +577,28 @@ func TestS3_CheckBucketExists(t *testing.T) {
 			args: args{
 				ctx:        context.Background(),
 				bucketName: aws.String("test"),
-				client:     mock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListBucketsMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListBucketsOutput{
+										Buckets: []types.Bucket{
+											{
+												Name: aws.String("test"),
+											},
+											{
+												Name: aws.String("test2"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: true,
@@ -592,7 +611,28 @@ func TestS3_CheckBucketExists(t *testing.T) {
 			args: args{
 				ctx:        context.Background(),
 				bucketName: aws.String("test"),
-				client:     notExitsMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListBucketsNotExistMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListBucketsOutput{
+										Buckets: []types.Bucket{
+											{
+												Name: aws.String("test0"),
+											},
+											{
+												Name: aws.String("test2"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: false,
@@ -605,11 +645,23 @@ func TestS3_CheckBucketExists(t *testing.T) {
 			args: args{
 				ctx:        context.Background(),
 				bucketName: aws.String("test"),
-				client:     errorMock,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListBucketsErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: nil,
+								}, middleware.Metadata{}, fmt.Errorf("ListBucketsError")
+							},
+						),
+						middleware.Before,
+					)
+				},
 			},
 			want: want{
 				exists: false,
-				err:    fmt.Errorf("ListBucketsError"),
+				err:    fmt.Errorf("operation error S3: ListBuckets, ListBucketsError"),
 			},
 			wantErr: true,
 		},
@@ -617,7 +669,16 @@ func TestS3_CheckBucketExists(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			s3Client := NewS3(tt.args.client)
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			client := s3.NewFromConfig(cfg)
+			s3Client := NewS3(client)
 
 			output, err := s3Client.CheckBucketExists(tt.args.ctx, tt.args.bucketName)
 			if (err != nil) != tt.wantErr {
