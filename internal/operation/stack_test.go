@@ -18,14 +18,14 @@ import (
 func TestStackOperator_DeleteStack(t *testing.T) {
 	io.NewLogger(false)
 
-	mock := NewMockCloudFormation()
-	terminationProtectionIsEnabledMock := NewTerminationProtectionIsEnabledMockCloudFormation()
-	notDeleteFailedMock := NewNotDeleteFailedMockCloudFormation()
-	allErrorMock := NewAllErrorMockCloudFormation()
-	deleteStackErrorMock := NewDeleteStackErrorMockCloudFormation()
-	describeStacksErrorMock := NewDescribeStacksErrorMockCloudFormation()
-	describeStacksNotExistsErrorMock := NewDescribeStacksNotExistsErrorMockCloudFormation()
-	listStackResourcesErrorMock := NewListStackResourcesErrorMockCloudFormation()
+	mock := client.NewMockCloudFormation()
+	terminationProtectionIsEnabledMock := client.NewTerminationProtectionIsEnabledMockCloudFormation()
+	notDeleteFailedMock := client.NewNotDeleteFailedMockCloudFormation()
+	allErrorMock := client.NewAllErrorMockCloudFormation()
+	deleteStackErrorMock := client.NewDeleteStackErrorMockCloudFormation()
+	describeStacksErrorMock := client.NewDescribeStacksErrorMockCloudFormation()
+	describeStacksNotExistsErrorMock := client.NewDescribeStacksNotExistsErrorMockCloudFormation()
+	listStackResourcesErrorMock := client.NewListStackResourcesErrorMockCloudFormation()
 
 	mockOperatorManager := NewMockOperatorManager()
 	allErrorMockOperatorManager := NewAllErrorMockOperatorManager()
@@ -292,12 +292,12 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 func TestStackOperator_deleteRootStack(t *testing.T) {
 	io.NewLogger(false)
 
-	mock := NewMockCloudFormation()
-	terminationProtectionIsEnabledMock := NewTerminationProtectionIsEnabledMockCloudFormation()
-	notDeleteFailedMock := NewNotDeleteFailedMockCloudFormation()
-	allErrorMock := NewAllErrorMockCloudFormation()
-	describeStacksErrorMock := NewDescribeStacksErrorMockCloudFormation()
-	describeStacksNotExistsErrorMock := NewDescribeStacksNotExistsErrorMockCloudFormation()
+	mock := client.NewMockCloudFormation()
+	terminationProtectionIsEnabledMock := client.NewTerminationProtectionIsEnabledMockCloudFormation()
+	notDeleteFailedMock := client.NewNotDeleteFailedMockCloudFormation()
+	allErrorMock := client.NewAllErrorMockCloudFormation()
+	describeStacksErrorMock := client.NewDescribeStacksErrorMockCloudFormation()
+	describeStacksNotExistsErrorMock := client.NewDescribeStacksNotExistsErrorMockCloudFormation()
 
 	type args struct {
 		ctx         context.Context
@@ -519,10 +519,10 @@ func TestStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 	io.NewLogger(false)
 	ctx := context.Background()
 
-	mock := NewMockCloudFormation()
-	allErrorMock := NewAllErrorMockCloudFormation()
-	listStacksErrorMock := NewListStacksErrorMockCloudFormation()
-	listStacksEmptyMock := NewListStacksEmptyMockCloudFormation()
+	mock := client.NewMockCloudFormation()
+	allErrorMock := client.NewAllErrorMockCloudFormation()
+	listStacksErrorMock := client.NewListStacksErrorMockCloudFormation()
+	listStacksEmptyMock := client.NewListStacksEmptyMockCloudFormation()
 
 	type args struct {
 		ctx        context.Context
