@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -228,156 +229,156 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 	}
 }
 
-// func TestCloudFormation_DescribeStacks(t *testing.T) {
-// 	type args struct {
-// 		ctx                context.Context
-// 		stackName          *string
-// 		withAPIOptionsFunc func(*middleware.Stack) error
-// 	}
+func TestCloudFormation_DescribeStacks(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		stackName          *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
 
-// 	type want struct {
-// 		output *cloudformation.DescribeStacksOutput
-// 		exists bool
-// 		err    error
-// 	}
+	type want struct {
+		output *cloudformation.DescribeStacksOutput
+		exists bool
+		err    error
+	}
 
-// 	cases := []struct {
-// 		name    string
-// 		args    args
-// 		want    want
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "describe stacks successfully",
-// 			args: args{
-// 				ctx:       context.Background(),
-// 				stackName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"DescribeStacksMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &cloudformation.DescribeStacksOutput{
-// 										Stacks: []types.Stack{
-// 											{
-// 												StackName:   aws.String("StackName"),
-// 												StackStatus: "DELETE_FAILED",
-// 											},
-// 										},
-// 									},
-// 								}, middleware.Metadata{}, nil
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: &cloudformation.DescribeStacksOutput{
-// 					Stacks: []types.Stack{
-// 						{
-// 							StackName:   aws.String("StackName"),
-// 							StackStatus: "DELETE_FAILED",
-// 						},
-// 					},
-// 				},
-// 				exists: true,
-// 				err:    nil,
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "describe stacks failure",
-// 			args: args{
-// 				ctx:       context.Background(),
-// 				stackName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"DescribeStacksErrorMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &cloudformation.DescribeStacksOutput{},
-// 								}, middleware.Metadata{}, fmt.Errorf("DescribeStacksError")
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: &cloudformation.DescribeStacksOutput{},
-// 				exists: true,
-// 				err:    fmt.Errorf("operation error CloudFormation: DescribeStacks, DescribeStacksError"),
-// 			},
-// 			wantErr: true,
-// 		},
-// 		{
-// 			name: "describe stacks but not exist",
-// 			args: args{
-// 				ctx:       context.Background(),
-// 				stackName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"DescribeStacksMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &cloudformation.DescribeStacksOutput{},
-// 								}, middleware.Metadata{}, fmt.Errorf("does not exist")
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: &cloudformation.DescribeStacksOutput{},
-// 				exists: false,
-// 				err:    nil,
-// 			},
-// 			wantErr: false,
-// 		},
-// 	}
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "describe stacks successfully",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DescribeStacksMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.DescribeStacksOutput{
+										Stacks: []types.Stack{
+											{
+												StackName:   aws.String("StackName"),
+												StackStatus: "DELETE_FAILED",
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: &cloudformation.DescribeStacksOutput{
+					Stacks: []types.Stack{
+						{
+							StackName:   aws.String("StackName"),
+							StackStatus: "DELETE_FAILED",
+						},
+					},
+				},
+				exists: true,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "describe stacks failure",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DescribeStacksErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.DescribeStacksOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DescribeStacksError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: &cloudformation.DescribeStacksOutput{},
+				exists: true,
+				err:    fmt.Errorf("operation error CloudFormation: DescribeStacks, DescribeStacksError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "describe stacks but not exist",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DescribeStacksMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.DescribeStacksOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("does not exist")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: &cloudformation.DescribeStacksOutput{},
+				exists: false,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+	}
 
-// 	for _, tt := range cases {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			cfg, err := config.LoadDefaultConfig(
-// 				tt.args.ctx,
-// 				config.WithRegion("ap-northeast-1"),
-// 				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
-// 			)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-// 			client := cloudformation.NewFromConfig(cfg)
-// 			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
-// 			cfnClient := NewCloudFormation(
-// 				client,
-// 				cfnWaiter,
-// 			)
+			client := cloudformation.NewFromConfig(cfg)
+			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnClient := NewCloudFormation(
+				client,
+				cfnWaiter,
+			)
 
-// 			output, exists, err := cfnClient.DescribeStacks(tt.args.ctx, tt.args.stackName)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if tt.wantErr && err.Error() != tt.want.err.Error() {
-// 				t.Errorf("err = %#v, want %#v", err, tt.want)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(output, tt.want.output) {
-// 				t.Errorf("output = %#v, want %#v", output, tt.want.output)
-// 				return
-// 			}
-// 			if exists != tt.want.exists {
-// 				t.Errorf("exists = %#v, want %#v", exists, tt.want.exists)
-// 			}
-// 		})
-// 	}
-// }
+			output, exists, err := cfnClient.DescribeStacks(tt.args.ctx, tt.args.stackName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+				return
+			}
+			if !tt.wantErr && exists != tt.want.exists {
+				t.Errorf("exists = %#v, want %#v", exists, tt.want.exists)
+			}
+			if !tt.wantErr && exists && !reflect.DeepEqual(output, tt.want.output) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.output)
+				return
+			}
+		})
+	}
+}
 
 // func TestCloudFormation_waitDeleteStack(t *testing.T) {
 // 	type args struct {
