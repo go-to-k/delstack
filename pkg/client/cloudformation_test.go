@@ -498,137 +498,137 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 	}
 }
 
-// func TestCloudFormation_ListStackResources(t *testing.T) {
-// 	type args struct {
-// 		ctx                context.Context
-// 		stackName          *string
-// 		withAPIOptionsFunc func(*middleware.Stack) error
-// 	}
+func TestCloudFormation_ListStackResources(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		stackName          *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
 
-// 	type want struct {
-// 		output []types.StackResourceSummary
-// 		err    error
-// 	}
+	type want struct {
+		output []types.StackResourceSummary
+		err    error
+	}
 
-// 	cases := []struct {
-// 		name    string
-// 		args    args
-// 		want    want
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "list stack resources successfully",
-// 			args: args{
-// 				ctx:       context.Background(),
-// 				stackName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"ListStackResourcesMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &cloudformation.ListStackResourcesOutput{
-// 										StackResourceSummaries: []types.StackResourceSummary{
-// 											{
-// 												LogicalResourceId:  aws.String("LogicalResourceId1"),
-// 												ResourceStatus:     "DELETE_FAILED",
-// 												ResourceType:       aws.String("AWS::CloudFormation::Stack"),
-// 												PhysicalResourceId: aws.String("PhysicalResourceId1"),
-// 											},
-// 											{
-// 												LogicalResourceId:  aws.String("LogicalResourceId2"),
-// 												ResourceStatus:     "DELETE_FAILED",
-// 												ResourceType:       aws.String("AWS::S3::Bucket"),
-// 												PhysicalResourceId: aws.String("PhysicalResourceId2"),
-// 											},
-// 										},
-// 									},
-// 								}, middleware.Metadata{}, nil
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: []types.StackResourceSummary{
-// 					{
-// 						LogicalResourceId:  aws.String("LogicalResourceId1"),
-// 						ResourceStatus:     "DELETE_FAILED",
-// 						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
-// 						PhysicalResourceId: aws.String("PhysicalResourceId1"),
-// 					},
-// 					{
-// 						LogicalResourceId:  aws.String("LogicalResourceId2"),
-// 						ResourceStatus:     "DELETE_FAILED",
-// 						ResourceType:       aws.String("AWS::S3::Bucket"),
-// 						PhysicalResourceId: aws.String("PhysicalResourceId2"),
-// 					},
-// 				},
-// 				err: nil,
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "list stack resources failure",
-// 			args: args{
-// 				ctx:       context.Background(),
-// 				stackName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"ListStackResourcesMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &cloudformation.ListStackResourcesOutput{},
-// 								}, middleware.Metadata{}, fmt.Errorf("ListStackResourcesError")
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: []types.StackResourceSummary{},
-// 				err:    fmt.Errorf("operation error CloudFormation: ListStackResources, ListStackResourcesError"),
-// 			},
-// 			wantErr: true,
-// 		},
-// 	}
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "list stack resources successfully",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListStackResourcesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.ListStackResourcesOutput{
+										StackResourceSummaries: []types.StackResourceSummary{
+											{
+												LogicalResourceId:  aws.String("LogicalResourceId1"),
+												ResourceStatus:     "DELETE_FAILED",
+												ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+												PhysicalResourceId: aws.String("PhysicalResourceId1"),
+											},
+											{
+												LogicalResourceId:  aws.String("LogicalResourceId2"),
+												ResourceStatus:     "DELETE_FAILED",
+												ResourceType:       aws.String("AWS::S3::Bucket"),
+												PhysicalResourceId: aws.String("PhysicalResourceId2"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: []types.StackResourceSummary{
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId1"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						PhysicalResourceId: aws.String("PhysicalResourceId1"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId2"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::S3::Bucket"),
+						PhysicalResourceId: aws.String("PhysicalResourceId2"),
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list stack resources failure",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListStackResourcesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.ListStackResourcesOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("ListStackResourcesError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: []types.StackResourceSummary{},
+				err:    fmt.Errorf("operation error CloudFormation: ListStackResources, ListStackResourcesError"),
+			},
+			wantErr: true,
+		},
+	}
 
-// 	for _, tt := range cases {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			cfg, err := config.LoadDefaultConfig(
-// 				tt.args.ctx,
-// 				config.WithRegion("ap-northeast-1"),
-// 				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
-// 			)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-// 			client := cloudformation.NewFromConfig(cfg)
-// 			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
-// 			cfnClient := NewCloudFormation(
-// 				client,
-// 				cfnWaiter,
-// 			)
+			client := cloudformation.NewFromConfig(cfg)
+			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnClient := NewCloudFormation(
+				client,
+				cfnWaiter,
+			)
 
-// 			output, err := cfnClient.ListStackResources(tt.args.ctx, tt.args.stackName)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if tt.wantErr && err.Error() != tt.want.err.Error() {
-// 				t.Errorf("err = %#v, want %#v", err, tt.want)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(output, tt.want.output) {
-// 				t.Errorf("output = %#v, want %#v", output, tt.want.output)
-// 			}
-// 		})
-// 	}
-// }
+			output, err := cfnClient.ListStackResources(tt.args.ctx, tt.args.stackName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.output) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.output)
+			}
+		})
+	}
+}
 
 // func TestCloudFormation_ListStacks(t *testing.T) {
 // 	type args struct {
