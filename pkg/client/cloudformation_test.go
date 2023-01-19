@@ -380,116 +380,123 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 	}
 }
 
-// func TestCloudFormation_waitDeleteStack(t *testing.T) {
-// 	type args struct {
-// 		ctx                context.Context
-// 		stackName          *string
-// 		withAPIOptionsFunc func(*middleware.Stack) error
-// 	}
+func TestCloudFormation_waitDeleteStack(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		stackName          *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
 
-// 	cases := []struct {
-// 		name    string
-// 		args    args
-// 		want    error
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "wait successfully",
-// 			args: args{
-// 				ctx:       context.Background(),
-// 				stackName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"WaitMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: nil,
-// 								}, middleware.Metadata{}, nil
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want:    nil,
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "wait failure for wait error",
-// 			args: args{
-// 				ctx:       context.Background(),
-// 				stackName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"WaitErrorMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: nil,
-// 								}, middleware.Metadata{}, fmt.Errorf("WaitError")
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want:    fmt.Errorf("operation error CloudFormation: Wait, WaitError"),
-// 			wantErr: true,
-// 		},
-// 		{
-// 			name: "wait failure for transitioned to Failure",
-// 			args: args{
-// 				ctx:       context.Background(),
-// 				stackName: aws.String("test"),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"WaiterStateTransitionedToFailureMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: nil,
-// 								}, middleware.Metadata{}, fmt.Errorf("waiter state transitioned to Failure")
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want:    nil,
-// 			wantErr: false,
-// 		},
-// 	}
+	cases := []struct {
+		name    string
+		args    args
+		want    error
+		wantErr bool
+	}{
+		{
+			name: "wait successfully",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DescribeStacksForWaiterMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.DescribeStacksOutput{
+										Stacks: []types.Stack{
+											{
+												StackName:   aws.String("StackName"),
+												StackStatus: "DELETE_COMPLETE",
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "wait failure for wait error",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DescribeStacksForWaiterErrorMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.DescribeStacksOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("WaitError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error CloudFormation: DescribeStacks, WaitError")),
+			wantErr: true,
+		},
+		{
+			name: "wait failure for transitioned to Failure",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DescribeStacksForWaiterStateTransitionedToFailureMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.DescribeStacksOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("waiter state transitioned to Failure")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+	}
 
-// 	for _, tt := range cases {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			cfg, err := config.LoadDefaultConfig(
-// 				tt.args.ctx,
-// 				config.WithRegion("ap-northeast-1"),
-// 				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
-// 			)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-// 			client := cloudformation.NewFromConfig(cfg)
-// 			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
-// 			cfnClient := NewCloudFormation(
-// 				client,
-// 				cfnWaiter,
-// 			)
+			client := cloudformation.NewFromConfig(cfg)
+			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnClient := NewCloudFormation(
+				client,
+				cfnWaiter,
+			)
 
-// 			err = cfnClient.waitDeleteStack(tt.args.ctx, tt.args.stackName)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if tt.wantErr && err.Error() != tt.want.Error() {
-// 				t.Errorf("err = %#v, want %#v", err, tt.want)
-// 			}
-// 		})
-// 	}
-// }
+			err = cfnClient.waitDeleteStack(tt.args.ctx, tt.args.stackName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
 
 // func TestCloudFormation_ListStackResources(t *testing.T) {
 // 	type args struct {
