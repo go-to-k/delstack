@@ -186,7 +186,7 @@ func TestEcr_CheckRepository(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DescribeRepositoriesMock",
+							"DescribeRepositoriesErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &ecr.DescribeRepositoriesOutput{
