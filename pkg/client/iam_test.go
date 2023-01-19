@@ -152,7 +152,7 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteRoleWithRetryMock",
+							"DeleteRoleMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.DeleteRoleOutput{},
@@ -177,7 +177,7 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteRoleWithRetryErrorMock",
+							"DeleteRoleErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.DeleteRoleOutput{},
@@ -202,7 +202,7 @@ func TestIam_deleteRoleWithRetry(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteRoleWithRetryApiErrorMock",
+							"DeleteRoleApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.DeleteRoleOutput{},
@@ -571,7 +571,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DetachRolePolicyMock",
+							"DetachRolePolicyErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.DetachRolePolicyOutput{},
@@ -594,7 +594,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DetachRolePolicyMock",
+							"DetachRolePolicyApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.DetachRolePolicyOutput{},
@@ -662,7 +662,7 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DetachRolePolicyWithRetryMock",
+							"DetachRolePolicyMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.DetachRolePolicyOutput{},
@@ -688,7 +688,7 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DetachRolePolicyWithRetryErrorMock",
+							"DetachRolePolicyErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.DetachRolePolicyOutput{},
@@ -714,7 +714,7 @@ func TestIam_detachRolePolicyWithRetry(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DetachRolePolicyWithRetryMock",
+							"DetachRolePolicyMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.DetachRolePolicyOutput{},
