@@ -630,149 +630,149 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 	}
 }
 
-// func TestCloudFormation_ListStacks(t *testing.T) {
-// 	type args struct {
-// 		ctx                context.Context
-// 		withAPIOptionsFunc func(*middleware.Stack) error
-// 	}
+func TestCloudFormation_ListStacks(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
 
-// 	type want struct {
-// 		output []types.StackSummary
-// 		err    error
-// 	}
+	type want struct {
+		output []types.StackSummary
+		err    error
+	}
 
-// 	cases := []struct {
-// 		name    string
-// 		args    args
-// 		want    want
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "list stacks successfully",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"ListStacksMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &cloudformation.ListStacksOutput{
-// 										StackSummaries: []types.StackSummary{
-// 											{
-// 												StackName:   aws.String("TestStack1"),
-// 												StackStatus: types.StackStatusCreateComplete,
-// 											},
-// 											{
-// 												StackName:   aws.String("TestStack2"),
-// 												StackStatus: types.StackStatusCreateComplete,
-// 											},
-// 										},
-// 									},
-// 								}, middleware.Metadata{}, nil
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: []types.StackSummary{
-// 					{
-// 						StackName:   aws.String("TestStack1"),
-// 						StackStatus: types.StackStatusCreateComplete,
-// 					},
-// 					{
-// 						StackName:   aws.String("TestStack2"),
-// 						StackStatus: types.StackStatusCreateComplete,
-// 					},
-// 				},
-// 				err: nil,
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "list stacks but empty successfully",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"ListStacksEmptyMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &cloudformation.ListStacksOutput{
-// 										StackSummaries: []types.StackSummary{},
-// 									},
-// 								}, middleware.Metadata{}, nil
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: []types.StackSummary{},
-// 				err:    nil,
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "list stacks failure",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-// 					return stack.Finalize.Add(
-// 						middleware.FinalizeMiddlewareFunc(
-// 							"ListStacksErrorMock",
-// 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-// 								return middleware.FinalizeOutput{
-// 									Result: &cloudformation.ListStacksOutput{},
-// 								}, middleware.Metadata{}, fmt.Errorf("ListStacksError")
-// 							},
-// 						),
-// 						middleware.Before,
-// 					)
-// 				},
-// 			},
-// 			want: want{
-// 				output: []types.StackSummary{},
-// 				err:    fmt.Errorf("operation error CloudFormation: ListStacks, DeleteRoleError"),
-// 			},
-// 			wantErr: true,
-// 		},
-// 	}
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "list stacks successfully",
+			args: args{
+				ctx: context.Background(),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListStacksMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.ListStacksOutput{
+										StackSummaries: []types.StackSummary{
+											{
+												StackName:   aws.String("TestStack1"),
+												StackStatus: types.StackStatusCreateComplete,
+											},
+											{
+												StackName:   aws.String("TestStack2"),
+												StackStatus: types.StackStatusCreateComplete,
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: []types.StackSummary{
+					{
+						StackName:   aws.String("TestStack1"),
+						StackStatus: types.StackStatusCreateComplete,
+					},
+					{
+						StackName:   aws.String("TestStack2"),
+						StackStatus: types.StackStatusCreateComplete,
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list stacks but empty successfully",
+			args: args{
+				ctx: context.Background(),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListStacksEmptyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.ListStacksOutput{
+										StackSummaries: []types.StackSummary{},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: []types.StackSummary{},
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list stacks failure",
+			args: args{
+				ctx: context.Background(),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListStacksErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.ListStacksOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("ListStacksError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: []types.StackSummary{},
+				err:    fmt.Errorf("operation error CloudFormation: ListStacks, ListStacksError"),
+			},
+			wantErr: true,
+		},
+	}
 
-// 	for _, tt := range cases {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			cfg, err := config.LoadDefaultConfig(
-// 				tt.args.ctx,
-// 				config.WithRegion("ap-northeast-1"),
-// 				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
-// 			)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-// 			client := cloudformation.NewFromConfig(cfg)
-// 			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
-// 			cfnClient := NewCloudFormation(
-// 				client,
-// 				cfnWaiter,
-// 			)
+			client := cloudformation.NewFromConfig(cfg)
+			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnClient := NewCloudFormation(
+				client,
+				cfnWaiter,
+			)
 
-// 			output, err := cfnClient.ListStacks(tt.args.ctx)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if tt.wantErr && err.Error() != tt.want.err.Error() {
-// 				t.Errorf("err = %#v, want %#v", err, tt.want)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(output, tt.want.output) {
-// 				t.Errorf("output = %#v, want %#v", output, tt.want.output)
-// 			}
-// 		})
-// 	}
-// }
+			output, err := cfnClient.ListStacks(tt.args.ctx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.output) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.output)
+			}
+		})
+	}
+}
