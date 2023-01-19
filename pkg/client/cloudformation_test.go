@@ -322,7 +322,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DescribeStacksMock",
+							"DescribeStacksNotExistMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &cloudformation.DescribeStacksOutput{},
