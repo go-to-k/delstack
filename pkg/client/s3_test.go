@@ -274,7 +274,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteObjectsErrorForApiErrorMock",
+							"DeleteObjectsApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &s3.DeleteObjectsOutput{
@@ -308,7 +308,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteObjectsErrorForOutputErrorsMock",
+							"DeleteObjectsOutputErrorsMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &s3.DeleteObjectsOutput{
@@ -542,7 +542,7 @@ func TestS3_deleteObjectsWithRetry(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"PrivateDeleteObjectsErrorForApiErrorMock",
+							"PrivateDeleteObjectsApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &s3.DeleteObjectsOutput{
@@ -580,7 +580,7 @@ func TestS3_deleteObjectsWithRetry(t *testing.T) {
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"PrivateDeleteObjectsErrorForOutputErrorsMock",
+							"PrivateDeleteObjectsOutputErrorsMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &s3.DeleteObjectsOutput{
