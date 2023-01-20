@@ -17,10 +17,10 @@ import (
 
 func TestEcrOperator_DeleteRepository(t *testing.T) {
 	io.NewLogger(false)
-	mock := NewMockEcr()
-	DeleteRepositoryErrorMock := NewDeleteRepositoryErrorMockEcr()
-	checkEcrExistsErrorMock := NewCheckEcrExistsErrorMockEcr()
-	checkEcrNotExistsMock := NewCheckEcrNotExistsMockEcr()
+	mock := client.NewMockEcr()
+	DeleteRepositoryErrorMock := client.NewDeleteRepositoryErrorMockEcr()
+	checkEcrExistsErrorMock := client.NewCheckEcrExistsErrorMockEcr()
+	checkEcrNotExistsMock := client.NewCheckEcrNotExistsMockEcr()
 
 	type args struct {
 		ctx            context.Context
@@ -95,8 +95,8 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 
 func TestEcrOperator_DeleteResourcesForEcr(t *testing.T) {
 	io.NewLogger(false)
-	mock := NewMockEcr()
-	errorMock := NewDeleteRepositoryErrorMockEcr()
+	mock := client.NewMockEcr()
+	errorMock := client.NewDeleteRepositoryErrorMockEcr()
 
 	type args struct {
 		ctx    context.Context

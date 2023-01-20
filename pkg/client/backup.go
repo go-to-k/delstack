@@ -17,18 +17,11 @@ type IBackup interface {
 
 var _ IBackup = (*Backup)(nil)
 
-type IBackupSDKClient interface {
-	ListRecoveryPointsByBackupVault(ctx context.Context, params *backup.ListRecoveryPointsByBackupVaultInput, optFns ...func(*backup.Options)) (*backup.ListRecoveryPointsByBackupVaultOutput, error)
-	DeleteRecoveryPoint(ctx context.Context, params *backup.DeleteRecoveryPointInput, optFns ...func(*backup.Options)) (*backup.DeleteRecoveryPointOutput, error)
-	DeleteBackupVault(ctx context.Context, params *backup.DeleteBackupVaultInput, optFns ...func(*backup.Options)) (*backup.DeleteBackupVaultOutput, error)
-	ListBackupVaults(ctx context.Context, params *backup.ListBackupVaultsInput, optFns ...func(*backup.Options)) (*backup.ListBackupVaultsOutput, error)
-}
-
 type Backup struct {
-	client IBackupSDKClient
+	client *backup.Client
 }
 
-func NewBackup(client IBackupSDKClient) *Backup {
+func NewBackup(client *backup.Client) *Backup {
 	return &Backup{
 		client,
 	}

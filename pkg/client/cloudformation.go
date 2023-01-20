@@ -20,23 +20,12 @@ type ICloudFormation interface {
 
 var _ ICloudFormation = (*CloudFormation)(nil)
 
-type ICloudFormationSDKClient interface {
-	DeleteStack(ctx context.Context, params *cloudformation.DeleteStackInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DeleteStackOutput, error)
-	DescribeStacks(ctx context.Context, params *cloudformation.DescribeStacksInput, optFns ...func(*cloudformation.Options)) (*cloudformation.DescribeStacksOutput, error)
-	ListStackResources(ctx context.Context, params *cloudformation.ListStackResourcesInput, optFns ...func(*cloudformation.Options)) (*cloudformation.ListStackResourcesOutput, error)
-	ListStacks(ctx context.Context, params *cloudformation.ListStacksInput, optFns ...func(*cloudformation.Options)) (*cloudformation.ListStacksOutput, error)
-}
-
-type ICloudFormationSDKWaiter interface {
-	Wait(ctx context.Context, params *cloudformation.DescribeStacksInput, maxWaitDur time.Duration, optFns ...func(*cloudformation.StackDeleteCompleteWaiterOptions)) error
-}
-
 type CloudFormation struct {
-	client ICloudFormationSDKClient
-	waiter ICloudFormationSDKWaiter
+	client *cloudformation.Client
+	waiter *cloudformation.StackDeleteCompleteWaiter
 }
 
-func NewCloudFormation(client ICloudFormationSDKClient, waiter ICloudFormationSDKWaiter) *CloudFormation {
+func NewCloudFormation(client *cloudformation.Client, waiter *cloudformation.StackDeleteCompleteWaiter) *CloudFormation {
 	return &CloudFormation{
 		client,
 		waiter,
