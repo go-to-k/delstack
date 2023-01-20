@@ -18,18 +18,11 @@ type IIam interface {
 
 var _ IIam = (*Iam)(nil)
 
-type IIamSDKClient interface {
-	DeleteRole(ctx context.Context, params *iam.DeleteRoleInput, optFns ...func(*iam.Options)) (*iam.DeleteRoleOutput, error)
-	ListAttachedRolePolicies(ctx context.Context, params *iam.ListAttachedRolePoliciesInput, optFns ...func(*iam.Options)) (*iam.ListAttachedRolePoliciesOutput, error)
-	DetachRolePolicy(ctx context.Context, params *iam.DetachRolePolicyInput, optFns ...func(*iam.Options)) (*iam.DetachRolePolicyOutput, error)
-	GetRole(ctx context.Context, params *iam.GetRoleInput, optFns ...func(*iam.Options)) (*iam.GetRoleOutput, error)
-}
-
 type Iam struct {
-	client IIamSDKClient
+	client *iam.Client
 }
 
-func NewIam(client IIamSDKClient) *Iam {
+func NewIam(client *iam.Client) *Iam {
 	return &Iam{
 		client,
 	}

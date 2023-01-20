@@ -17,14 +17,14 @@ import (
 
 func TestRoleOperator_DeleteRole(t *testing.T) {
 	io.NewLogger(false)
-	mock := NewMockIam()
-	allErrorMock := NewAllErrorMockIam()
-	deleteRoleErrorMock := NewDeleteRoleErrorMockIam()
-	listAttachedRolePoliciesErrorMock := NewListAttachedRolePoliciesErrorMockIam()
-	detachRolePoliciesErrorMock := NewDetachRolePoliciesErrorMockIam()
-	detachRolePoliciesErrorAfterZeroLengthMock := NewDetachRolePoliciesErrorAfterZeroLengthMockIam()
-	checkRoleExistsErrorMock := NewCheckRoleExistsErrorMockRole()
-	checkRoleNotExistsMock := NewCheckRoleNotExistsMockRole()
+	mock := client.NewMockIam()
+	allErrorMock := client.NewAllErrorMockIam()
+	deleteRoleErrorMock := client.NewDeleteRoleErrorMockIam()
+	listAttachedRolePoliciesErrorMock := client.NewListAttachedRolePoliciesErrorMockIam()
+	detachRolePoliciesErrorMock := client.NewDetachRolePoliciesErrorMockIam()
+	detachRolePoliciesErrorAfterZeroLengthMock := client.NewDetachRolePoliciesErrorAfterZeroLengthMockIam()
+	checkRoleExistsErrorMock := client.NewCheckRoleExistsErrorMockRole()
+	checkRoleNotExistsMock := client.NewCheckRoleNotExistsMockRole()
 
 	type args struct {
 		ctx      context.Context
@@ -139,8 +139,8 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 
 func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
 	io.NewLogger(false)
-	mock := NewMockIam()
-	allErrorMock := NewAllErrorMockIam()
+	mock := client.NewMockIam()
+	allErrorMock := client.NewAllErrorMockIam()
 
 	type args struct {
 		ctx    context.Context

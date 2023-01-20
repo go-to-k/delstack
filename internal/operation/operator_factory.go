@@ -2,6 +2,12 @@ package operation
 
 import (
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/backup"
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/go-to-k/delstack/pkg/client"
 )
 
 type IOperatorFactory interface {
@@ -16,47 +22,69 @@ type IOperatorFactory interface {
 var _ IOperatorFactory = (*OperatorFactory)(nil)
 
 type OperatorFactory struct {
-	config                     aws.Config
-	stackOperatorFactory       *StackOperatorFactory
-	backupVaultOperatorFactory *BackupVaultOperatorFactory
-	ecrOperatorFactory         *EcrOperatorFactory
-	roleOperatorFactory        *RoleOperatorFactory
-	bucketOperatorFactory      *BucketOperatorFactory
-	customOperatorFactory      *CustomOperatorFactory
+	config aws.Config
 }
 
 func NewOperatorFactory(config aws.Config) *OperatorFactory {
 	return &OperatorFactory{
 		config,
-		NewStackOperatorFactory(config),
-		NewBackupVaultOperatorFactory(config),
-		NewEcrOperatorFactory(config),
-		NewRoleOperatorFactory(config),
-		NewBucketOperatorFactory(config),
-		NewCustomOperatorFactory(config),
 	}
 }
 
 func (f *OperatorFactory) CreateStackOperator(targetResourceTypes []string) *StackOperator {
-	return f.stackOperatorFactory.CreateStackOperator(targetResourceTypes)
+	sdkCfnClient := cloudformation.NewFromConfig(f.config)
+	sdkCfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
+
+	return NewStackOperator(
+		f.config,
+		client.NewCloudFormation(
+			sdkCfnClient,
+			sdkCfnWaiter,
+		),
+		targetResourceTypes,
+	)
 }
 
 func (f *OperatorFactory) CreateBackupVaultOperator() *BackupVaultOperator {
-	return f.backupVaultOperatorFactory.CreateBackupVaultOperator()
+	sdkBackupClient := backup.NewFromConfig(f.config)
+
+	return NewBackupVaultOperator(
+		client.NewBackup(
+			sdkBackupClient,
+		),
+	)
 }
 
 func (f *OperatorFactory) CreateEcrOperator() *EcrOperator {
-	return f.ecrOperatorFactory.CreateEcrOperator()
+	sdkEcrClient := ecr.NewFromConfig(f.config)
+
+	return NewEcrOperator(
+		client.NewEcr(
+			sdkEcrClient,
+		),
+	)
 }
 
 func (f *OperatorFactory) CreateRoleOperator() *RoleOperator {
-	return f.roleOperatorFactory.CreateRoleOperator()
+	sdkIamClient := iam.NewFromConfig(f.config)
+
+	return NewRoleOperator(
+		client.NewIam(
+			sdkIamClient,
+		),
+	)
 }
 
 func (f *OperatorFactory) CreateBucketOperator() *BucketOperator {
-	return f.bucketOperatorFactory.CreateBucketOperator()
+	sdkS3Client := s3.NewFromConfig(f.config)
+
+	return NewBucketOperator(
+		client.NewS3(
+			sdkS3Client,
+		),
+	)
 }
 
 func (f *OperatorFactory) CreateCustomOperator() *CustomOperator {
-	return f.customOperatorFactory.CreateCustomOperator()
+	return NewCustomOperator() // Implicit instances that do not actually delete resources
 }

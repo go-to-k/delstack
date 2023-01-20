@@ -14,16 +14,11 @@ type IEcr interface {
 
 var _ IEcr = (*Ecr)(nil)
 
-type IEcrSDKClient interface {
-	DeleteRepository(ctx context.Context, params *ecr.DeleteRepositoryInput, optFns ...func(*ecr.Options)) (*ecr.DeleteRepositoryOutput, error)
-	DescribeRepositories(ctx context.Context, params *ecr.DescribeRepositoriesInput, optFns ...func(*ecr.Options)) (*ecr.DescribeRepositoriesOutput, error)
-}
-
 type Ecr struct {
-	client IEcrSDKClient
+	client *ecr.Client
 }
 
-func NewEcr(client IEcrSDKClient) *Ecr {
+func NewEcr(client *ecr.Client) *Ecr {
 	return &Ecr{
 		client,
 	}

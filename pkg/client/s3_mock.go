@@ -5,332 +5,318 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 /*
-	Mocks for SDK Client
+	Mocks for client
 */
 
-var _ IS3SDKClient = (*MockS3SDKClient)(nil)
-var _ IS3SDKClient = (*ErrorMockS3SDKClient)(nil)
-var _ IS3SDKClient = (*ApiErrorMockS3SDKClient)(nil)
-var _ IS3SDKClient = (*OutputErrorForDeleteObjectsMockS3SDKClient)(nil)
-var _ IS3SDKClient = (*EmptyMockForListObjectVersionsS3SDKClient)(nil)
-var _ IS3SDKClient = (*VersionsMockForListObjectVersionsS3SDKClient)(nil)
-var _ IS3SDKClient = (*DeleteMarkersMockForListObjectVersionsS3SDKClient)(nil)
-var _ IS3SDKClient = (*NotExistsMockForListBucketsS3SDKClient)(nil)
+var _ IS3 = (*MockS3)(nil)
+var _ IS3 = (*AllErrorMockS3)(nil)
+var _ IS3 = (*DeleteObjectsErrorMockS3)(nil)
+var _ IS3 = (*DeleteObjectsErrorAfterZeroLengthMockS3)(nil)
+var _ IS3 = (*DeleteObjectsOutputErrorMockS3)(nil)
+var _ IS3 = (*DeleteObjectsOutputErrorAfterZeroLengthMockS3)(nil)
+var _ IS3 = (*ListObjectVersionsErrorMockS3)(nil)
+var _ IS3 = (*DeleteBucketErrorMockS3)(nil)
+var _ IS3 = (*CheckBucketExistsErrorMockS3)(nil)
+var _ IS3 = (*CheckBucketNotExistsMockS3)(nil)
 
-type MockS3SDKClient struct{}
+type MockS3 struct{}
 
-func NewMockS3SDKClient() *MockS3SDKClient {
-	return &MockS3SDKClient{}
+func NewMockS3() *MockS3 {
+	return &MockS3{}
 }
 
-func (m *MockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
-	return nil, nil
+func (m *MockS3) DeleteBucket(ctx context.Context, bucketName *string) error {
+	return nil
 }
 
-func (m *MockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
-	output := &s3.DeleteObjectsOutput{
-		Deleted: []types.DeletedObject{},
-		Errors:  []types.Error{},
-	}
-	return output, nil
+func (m *MockS3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	return []types.Error{}, nil
 }
 
-func (m *MockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
-	output := &s3.ListObjectVersionsOutput{
-		Versions: []types.ObjectVersion{
-			{
-				Key:       aws.String("KeyForVersions"),
-				VersionId: aws.String("VersionIdForVersions"),
-			},
+func (m *MockS3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{
+		{
+			Key:       aws.String("KeyForVersions"),
+			VersionId: aws.String("VersionIdForVersions"),
 		},
-		DeleteMarkers: []types.DeleteMarkerEntry{
-			{
-				Key:       aws.String("KeyForDeleteMarkers"),
-				VersionId: aws.String("VersionIdForDeleteMarkers"),
-			},
+		{
+			Key:       aws.String("KeyForDeleteMarkers"),
+			VersionId: aws.String("VersionIdForDeleteMarkers"),
 		},
 	}
 	return output, nil
 }
 
-func (m *MockS3SDKClient) ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error) {
-	output := &s3.ListBucketsOutput{
-		Buckets: []types.Bucket{
-			{
-				Name: aws.String("test"),
-			},
-			{
-				Name: aws.String("test2"),
-			},
-		},
-	}
-	return output, nil
+func (m *MockS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+	return true, nil
 }
 
-type ErrorMockS3SDKClient struct{}
+type AllErrorMockS3 struct{}
 
-func NewErrorMockS3SDKClient() *ErrorMockS3SDKClient {
-	return &ErrorMockS3SDKClient{}
+func NewAllErrorMockS3() *AllErrorMockS3 {
+	return &AllErrorMockS3{}
 }
 
-func (m *ErrorMockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
-	return nil, fmt.Errorf("DeleteBucketError")
+func (m *AllErrorMockS3) DeleteBucket(ctx context.Context, bucketName *string) error {
+	return fmt.Errorf("DeleteBucketError")
 }
 
-func (m *ErrorMockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
-	output := &s3.DeleteObjectsOutput{
-		Deleted: []types.DeletedObject{},
-		Errors:  []types.Error{},
-	}
-	return output, fmt.Errorf("DeleteObjectsError")
+func (m *AllErrorMockS3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	return []types.Error{}, fmt.Errorf("DeleteObjectsError")
 }
 
-func (m *ErrorMockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
+func (m *AllErrorMockS3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
 	return nil, fmt.Errorf("ListObjectVersionsError")
 }
 
-func (m *ErrorMockS3SDKClient) ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error) {
-	return nil, fmt.Errorf("ListBucketsError")
+func (m *AllErrorMockS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+	return false, fmt.Errorf("ListBucketsError")
 }
 
-type ApiErrorMockS3SDKClient struct{}
+type DeleteBucketErrorMockS3 struct{}
 
-func NewApiErrorMockS3SDKClient() *ApiErrorMockS3SDKClient {
-	return &ApiErrorMockS3SDKClient{}
+func NewDeleteBucketErrorMockS3() *DeleteBucketErrorMockS3 {
+	return &DeleteBucketErrorMockS3{}
 }
 
-func (m *ApiErrorMockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
-	return nil, fmt.Errorf("api error SlowDown")
+func (m *DeleteBucketErrorMockS3) DeleteBucket(ctx context.Context, bucketName *string) error {
+	return fmt.Errorf("DeleteBucketError")
 }
 
-func (m *ApiErrorMockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
-	output := &s3.DeleteObjectsOutput{
-		Deleted: []types.DeletedObject{},
-		Errors:  []types.Error{},
-	}
-	return output, fmt.Errorf("api error SlowDown")
+func (m *DeleteBucketErrorMockS3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	return []types.Error{}, nil
 }
 
-func (m *ApiErrorMockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
-	return nil, fmt.Errorf("api error SlowDown")
-}
-
-func (m *ApiErrorMockS3SDKClient) ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error) {
-	return nil, fmt.Errorf("api error SlowDown")
-}
-
-type OutputErrorForDeleteObjectsMockS3SDKClient struct{}
-
-func NewOutputErrorForDeleteObjectsMockS3SDKClient() *OutputErrorForDeleteObjectsMockS3SDKClient {
-	return &OutputErrorForDeleteObjectsMockS3SDKClient{}
-}
-
-func (m *OutputErrorForDeleteObjectsMockS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
-	return nil, nil
-}
-
-func (m *OutputErrorForDeleteObjectsMockS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
-	output := &s3.DeleteObjectsOutput{
-		Deleted: []types.DeletedObject{},
-		Errors: []types.Error{
-			{
-				Key:       aws.String("Key"),
-				Code:      aws.String("Code"),
-				Message:   aws.String("Message"),
-				VersionId: aws.String("VersionId"),
-			},
+func (m *DeleteBucketErrorMockS3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{
+		{
+			Key:       aws.String("KeyForVersions"),
+			VersionId: aws.String("VersionIdForVersions"),
+		},
+		{
+			Key:       aws.String("KeyForDeleteMarkers"),
+			VersionId: aws.String("VersionIdForDeleteMarkers"),
 		},
 	}
 	return output, nil
 }
 
-func (m *OutputErrorForDeleteObjectsMockS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
-	return nil, nil
+func (m *DeleteBucketErrorMockS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+	return true, nil
 }
 
-func (m *OutputErrorForDeleteObjectsMockS3SDKClient) ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error) {
-	output := &s3.ListBucketsOutput{
-		Buckets: []types.Bucket{
-			{
-				Name: aws.String("test"),
-			},
-			{
-				Name: aws.String("test2"),
-			},
+type DeleteObjectsErrorMockS3 struct{}
+
+func NewDeleteObjectsErrorMockS3() *DeleteObjectsErrorMockS3 {
+	return &DeleteObjectsErrorMockS3{}
+}
+
+func (m *DeleteObjectsErrorMockS3) DeleteBucket(ctx context.Context, bucketName *string) error {
+	return nil
+}
+
+func (m *DeleteObjectsErrorMockS3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	return []types.Error{}, fmt.Errorf("DeleteObjectsError")
+}
+
+func (m *DeleteObjectsErrorMockS3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{
+		{
+			Key:       aws.String("KeyForVersions"),
+			VersionId: aws.String("VersionIdForVersions"),
+		},
+		{
+			Key:       aws.String("KeyForDeleteMarkers"),
+			VersionId: aws.String("VersionIdForDeleteMarkers"),
 		},
 	}
 	return output, nil
 }
 
-type EmptyMockForListObjectVersionsS3SDKClient struct{}
-
-func NewEmptyMockForListObjectVersionsS3SDKClient() *EmptyMockForListObjectVersionsS3SDKClient {
-	return &EmptyMockForListObjectVersionsS3SDKClient{}
+func (m *DeleteObjectsErrorMockS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+	return true, nil
 }
 
-func (m *EmptyMockForListObjectVersionsS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
-	return nil, nil
+type DeleteObjectsErrorAfterZeroLengthMockS3 struct{}
+
+func NewDeleteObjectsErrorAfterZeroLengthMockS3() *DeleteObjectsErrorAfterZeroLengthMockS3 {
+	return &DeleteObjectsErrorAfterZeroLengthMockS3{}
 }
 
-func (m *EmptyMockForListObjectVersionsS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
-	return nil, nil
+func (m *DeleteObjectsErrorAfterZeroLengthMockS3) DeleteBucket(ctx context.Context, bucketName *string) error {
+	return nil
 }
 
-func (m *EmptyMockForListObjectVersionsS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
-	output := &s3.ListObjectVersionsOutput{
-		Versions:      []types.ObjectVersion{},
-		DeleteMarkers: []types.DeleteMarkerEntry{},
-	}
+func (m *DeleteObjectsErrorAfterZeroLengthMockS3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	return []types.Error{}, fmt.Errorf("DeleteObjectsErrorAfterZeroLength")
+}
+
+func (m *DeleteObjectsErrorAfterZeroLengthMockS3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{}
 	return output, nil
 }
 
-func (m *EmptyMockForListObjectVersionsS3SDKClient) ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error) {
-	output := &s3.ListBucketsOutput{
-		Buckets: []types.Bucket{
-			{
-				Name: aws.String("test"),
-			},
-			{
-				Name: aws.String("test2"),
-			},
+func (m *DeleteObjectsErrorAfterZeroLengthMockS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+	return true, nil
+}
+
+type DeleteObjectsOutputErrorMockS3 struct{}
+
+func NewDeleteObjectsOutputErrorMockS3() *DeleteObjectsOutputErrorMockS3 {
+	return &DeleteObjectsOutputErrorMockS3{}
+}
+
+func (m *DeleteObjectsOutputErrorMockS3) DeleteBucket(ctx context.Context, bucketName *string) error {
+	return nil
+}
+
+func (m *DeleteObjectsOutputErrorMockS3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	output := []types.Error{
+		{
+			Key:       aws.String("Key"),
+			Code:      aws.String("Code"),
+			Message:   aws.String("Message"),
+			VersionId: aws.String("VersionId"),
 		},
 	}
 	return output, nil
 }
 
-type VersionsMockForListObjectVersionsS3SDKClient struct{}
-
-func NewVersionsMockForListObjectVersionsS3SDKClient() *VersionsMockForListObjectVersionsS3SDKClient {
-	return &VersionsMockForListObjectVersionsS3SDKClient{}
-}
-
-func (m *VersionsMockForListObjectVersionsS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
-	return nil, nil
-}
-
-func (m *VersionsMockForListObjectVersionsS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
-	return nil, nil
-}
-
-func (m *VersionsMockForListObjectVersionsS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
-	output := &s3.ListObjectVersionsOutput{
-		Versions: []types.ObjectVersion{
-			{
-				Key:       aws.String("KeyForVersions"),
-				VersionId: aws.String("VersionIdForVersions"),
-			},
+func (m *DeleteObjectsOutputErrorMockS3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{
+		{
+			Key:       aws.String("KeyForVersions"),
+			VersionId: aws.String("VersionIdForVersions"),
 		},
-		DeleteMarkers: []types.DeleteMarkerEntry{},
-	}
-	return output, nil
-}
-
-func (m *VersionsMockForListObjectVersionsS3SDKClient) ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error) {
-	output := &s3.ListBucketsOutput{
-		Buckets: []types.Bucket{
-			{
-				Name: aws.String("test"),
-			},
-			{
-				Name: aws.String("test2"),
-			},
+		{
+			Key:       aws.String("KeyForDeleteMarkers"),
+			VersionId: aws.String("VersionIdForDeleteMarkers"),
 		},
 	}
 	return output, nil
 }
 
-type DeleteMarkersMockForListObjectVersionsS3SDKClient struct{}
-
-func NewDeleteMarkersMockForListObjectVersionsS3SDKClient() *DeleteMarkersMockForListObjectVersionsS3SDKClient {
-	return &DeleteMarkersMockForListObjectVersionsS3SDKClient{}
+func (m *DeleteObjectsOutputErrorMockS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+	return true, nil
 }
 
-func (m *DeleteMarkersMockForListObjectVersionsS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
-	return nil, nil
+type DeleteObjectsOutputErrorAfterZeroLengthMockS3 struct{}
+
+func NewDeleteObjectsOutputErrorAfterZeroLengthMockS3() *DeleteObjectsOutputErrorAfterZeroLengthMockS3 {
+	return &DeleteObjectsOutputErrorAfterZeroLengthMockS3{}
 }
 
-func (m *DeleteMarkersMockForListObjectVersionsS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
-	return nil, nil
+func (m *DeleteObjectsOutputErrorAfterZeroLengthMockS3) DeleteBucket(ctx context.Context, bucketName *string) error {
+	return nil
 }
 
-func (m *DeleteMarkersMockForListObjectVersionsS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
-	output := &s3.ListObjectVersionsOutput{
-		Versions: []types.ObjectVersion{},
-		DeleteMarkers: []types.DeleteMarkerEntry{
-			{
-				Key:       aws.String("KeyForDeleteMarkers"),
-				VersionId: aws.String("VersionIdForDeleteMarkers"),
-			},
+func (m *DeleteObjectsOutputErrorAfterZeroLengthMockS3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	output := []types.Error{
+		{
+			Key:       aws.String("Key"),
+			Code:      aws.String("Code"),
+			Message:   aws.String("Message"),
+			VersionId: aws.String("VersionId"),
 		},
 	}
 	return output, nil
 }
 
-func (m *DeleteMarkersMockForListObjectVersionsS3SDKClient) ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error) {
-	output := &s3.ListBucketsOutput{
-		Buckets: []types.Bucket{
-			{
-				Name: aws.String("test"),
-			},
-			{
-				Name: aws.String("test2"),
-			},
+func (m *DeleteObjectsOutputErrorAfterZeroLengthMockS3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{}
+	return output, nil
+}
+
+func (m *DeleteObjectsOutputErrorAfterZeroLengthMockS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+	return true, nil
+}
+
+type ListObjectVersionsErrorMockS3 struct{}
+
+func NewListObjectVersionsErrorMockS3() *ListObjectVersionsErrorMockS3 {
+	return &ListObjectVersionsErrorMockS3{}
+}
+
+func (m *ListObjectVersionsErrorMockS3) DeleteBucket(ctx context.Context, bucketName *string) error {
+	return nil
+}
+
+func (m *ListObjectVersionsErrorMockS3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	return []types.Error{}, nil
+}
+
+func (m *ListObjectVersionsErrorMockS3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
+	return nil, fmt.Errorf("ListObjectVersionsError")
+}
+
+func (m *ListObjectVersionsErrorMockS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+	return true, nil
+}
+
+type CheckBucketExistsErrorMockS3 struct{}
+
+func NewCheckBucketExistsErrorMockS3() *CheckBucketExistsErrorMockS3 {
+	return &CheckBucketExistsErrorMockS3{}
+}
+
+func (m *CheckBucketExistsErrorMockS3) DeleteBucket(ctx context.Context, bucketName *string) error {
+	return nil
+}
+
+func (m *CheckBucketExistsErrorMockS3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	return []types.Error{}, nil
+}
+
+func (m *CheckBucketExistsErrorMockS3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{
+		{
+			Key:       aws.String("KeyForVersions"),
+			VersionId: aws.String("VersionIdForVersions"),
+		},
+		{
+			Key:       aws.String("KeyForDeleteMarkers"),
+			VersionId: aws.String("VersionIdForDeleteMarkers"),
 		},
 	}
 	return output, nil
 }
 
-type NotExistsMockForListBucketsS3SDKClient struct{}
-
-func NewNotExistsMockForListBucketsS3SDKClient() *NotExistsMockForListBucketsS3SDKClient {
-	return &NotExistsMockForListBucketsS3SDKClient{}
+func (m *CheckBucketExistsErrorMockS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+	return false, fmt.Errorf("ListBucketsError")
 }
 
-func (m *NotExistsMockForListBucketsS3SDKClient) DeleteBucket(ctx context.Context, params *s3.DeleteBucketInput, optFns ...func(*s3.Options)) (*s3.DeleteBucketOutput, error) {
-	return nil, nil
+type CheckBucketNotExistsMockS3 struct{}
+
+func NewCheckBucketNotExistsMockS3() *CheckBucketNotExistsMockS3 {
+	return &CheckBucketNotExistsMockS3{}
 }
 
-func (m *NotExistsMockForListBucketsS3SDKClient) DeleteObjects(ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectsOutput, error) {
-	output := &s3.DeleteObjectsOutput{
-		Deleted: []types.DeletedObject{},
-		Errors:  []types.Error{},
-	}
-	return output, nil
+func (m *CheckBucketNotExistsMockS3) DeleteBucket(ctx context.Context, bucketName *string) error {
+	return nil
 }
 
-func (m *NotExistsMockForListBucketsS3SDKClient) ListObjectVersions(ctx context.Context, params *s3.ListObjectVersionsInput, optFns ...func(*s3.Options)) (*s3.ListObjectVersionsOutput, error) {
-	output := &s3.ListObjectVersionsOutput{
-		Versions: []types.ObjectVersion{
-			{
-				Key:       aws.String("KeyForVersions"),
-				VersionId: aws.String("VersionIdForVersions"),
-			},
+func (m *CheckBucketNotExistsMockS3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+	return []types.Error{}, nil
+}
+
+func (m *CheckBucketNotExistsMockS3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
+	output := []types.ObjectIdentifier{
+		{
+			Key:       aws.String("KeyForVersions"),
+			VersionId: aws.String("VersionIdForVersions"),
 		},
-		DeleteMarkers: []types.DeleteMarkerEntry{
-			{
-				Key:       aws.String("KeyForDeleteMarkers"),
-				VersionId: aws.String("VersionIdForDeleteMarkers"),
-			},
+		{
+			Key:       aws.String("KeyForDeleteMarkers"),
+			VersionId: aws.String("VersionIdForDeleteMarkers"),
 		},
 	}
 	return output, nil
 }
 
-func (m *NotExistsMockForListBucketsS3SDKClient) ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error) {
-	output := &s3.ListBucketsOutput{
-		Buckets: []types.Bucket{
-			{
-				Name: aws.String("test0"),
-			},
-			{
-				Name: aws.String("test2"),
-			},
-		},
-	}
-	return output, nil
+func (m *CheckBucketNotExistsMockS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+	return false, nil
 }

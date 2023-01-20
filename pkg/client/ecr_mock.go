@@ -3,65 +3,69 @@ package client
 import (
 	"context"
 	"fmt"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ecr"
-	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 )
 
 /*
-	Mocks for SDK Client
+	Mocks for client
 */
 
-var _ IEcrSDKClient = (*MockEcrSDKClient)(nil)
-var _ IEcrSDKClient = (*ErrorMockEcrSDKClient)(nil)
-var _ IEcrSDKClient = (*NotExistsMockForDescribeRepositoriesEcrSDKClient)(nil)
+var _ IEcr = (*MockEcr)(nil)
+var _ IEcr = (*DeleteRepositoryErrorMockEcr)(nil)
+var _ IEcr = (*CheckEcrExistsErrorMockEcr)(nil)
+var _ IEcr = (*CheckEcrNotExistsMockEcr)(nil)
 
-type MockEcrSDKClient struct{}
+type MockEcr struct{}
 
-func NewMockEcrSDKClient() *MockEcrSDKClient {
-	return &MockEcrSDKClient{}
+func NewMockEcr() *MockEcr {
+	return &MockEcr{}
 }
 
-func (m *MockEcrSDKClient) DeleteRepository(ctx context.Context, params *ecr.DeleteRepositoryInput, optFns ...func(*ecr.Options)) (*ecr.DeleteRepositoryOutput, error) {
-	return nil, nil
+func (m *MockEcr) DeleteRepository(ctx context.Context, repositoryName *string) error {
+	return nil
 }
 
-func (m *MockEcrSDKClient) DescribeRepositories(ctx context.Context, params *ecr.DescribeRepositoriesInput, optFns ...func(*ecr.Options)) (*ecr.DescribeRepositoriesOutput, error) {
-	output := &ecr.DescribeRepositoriesOutput{
-		Repositories: []types.Repository{
-			{
-				RepositoryName: aws.String("test"),
-			},
-		},
-	}
-	return output, nil
+func (m *MockEcr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
+	return true, nil
 }
 
-type ErrorMockEcrSDKClient struct{}
+type DeleteRepositoryErrorMockEcr struct{}
 
-func NewErrorMockEcrSDKClient() *ErrorMockEcrSDKClient {
-	return &ErrorMockEcrSDKClient{}
+func NewDeleteRepositoryErrorMockEcr() *DeleteRepositoryErrorMockEcr {
+	return &DeleteRepositoryErrorMockEcr{}
 }
 
-func (m *ErrorMockEcrSDKClient) DeleteRepository(ctx context.Context, params *ecr.DeleteRepositoryInput, optFns ...func(*ecr.Options)) (*ecr.DeleteRepositoryOutput, error) {
-	return nil, fmt.Errorf("DeleteRepositoryError")
+func (m *DeleteRepositoryErrorMockEcr) DeleteRepository(ctx context.Context, repositoryName *string) error {
+	return fmt.Errorf("DeleteRepositoryError")
 }
 
-func (m *ErrorMockEcrSDKClient) DescribeRepositories(ctx context.Context, params *ecr.DescribeRepositoriesInput, optFns ...func(*ecr.Options)) (*ecr.DescribeRepositoriesOutput, error) {
-	return nil, fmt.Errorf("DescribeRepositoriesError")
+func (m *DeleteRepositoryErrorMockEcr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
+	return true, nil
 }
 
-type NotExistsMockForDescribeRepositoriesEcrSDKClient struct{}
+type CheckEcrExistsErrorMockEcr struct{}
 
-func NewNotExistsMockForDescribeRepositoriesEcrSDKClient() *NotExistsMockForDescribeRepositoriesEcrSDKClient {
-	return &NotExistsMockForDescribeRepositoriesEcrSDKClient{}
+func NewCheckEcrExistsErrorMockEcr() *CheckEcrExistsErrorMockEcr {
+	return &CheckEcrExistsErrorMockEcr{}
 }
 
-func (m *NotExistsMockForDescribeRepositoriesEcrSDKClient) DeleteRepository(ctx context.Context, params *ecr.DeleteRepositoryInput, optFns ...func(*ecr.Options)) (*ecr.DeleteRepositoryOutput, error) {
-	return nil, nil
+func (m *CheckEcrExistsErrorMockEcr) DeleteRepository(ctx context.Context, repositoryName *string) error {
+	return nil
 }
 
-func (m *NotExistsMockForDescribeRepositoriesEcrSDKClient) DescribeRepositories(ctx context.Context, params *ecr.DescribeRepositoriesInput, optFns ...func(*ecr.Options)) (*ecr.DescribeRepositoriesOutput, error) {
-	return nil, fmt.Errorf("does not exist")
+func (m *CheckEcrExistsErrorMockEcr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
+	return false, fmt.Errorf("DescribeRepositoriesError")
+}
+
+type CheckEcrNotExistsMockEcr struct{}
+
+func NewCheckEcrNotExistsMockEcr() *CheckEcrNotExistsMockEcr {
+	return &CheckEcrNotExistsMockEcr{}
+}
+
+func (m *CheckEcrNotExistsMockEcr) DeleteRepository(ctx context.Context, repositoryName *string) error {
+	return nil
+}
+
+func (m *CheckEcrNotExistsMockEcr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
+	return false, nil
 }

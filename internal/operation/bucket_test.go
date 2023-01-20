@@ -17,16 +17,16 @@ import (
 
 func TestBucketOperator_DeleteBucket(t *testing.T) {
 	io.NewLogger(false)
-	mock := NewMockS3()
-	allErrorMock := NewAllErrorMockS3()
-	deleteBucketErrorMock := NewDeleteBucketErrorMockS3()
-	deleteObjectsErrorMock := NewDeleteObjectsErrorMockS3()
-	deleteObjectsErrorAfterZeroLengthMock := NewDeleteObjectsErrorAfterZeroLengthMockS3()
-	deleteObjectsOutputErrorMock := NewDeleteObjectsOutputErrorMockS3()
-	deleteObjectsOutputErrorAfterZeroLengthMock := NewDeleteObjectsOutputErrorAfterZeroLengthMockS3()
-	listObjectVersionsErrorMock := NewListObjectVersionsErrorMockS3()
-	checkBucketExistsErrorMock := NewCheckBucketExistsErrorMockS3()
-	checkBucketNotExistsMock := NewCheckBucketNotExistsMockS3()
+	mock := client.NewMockS3()
+	allErrorMock := client.NewAllErrorMockS3()
+	deleteBucketErrorMock := client.NewDeleteBucketErrorMockS3()
+	deleteObjectsErrorMock := client.NewDeleteObjectsErrorMockS3()
+	deleteObjectsErrorAfterZeroLengthMock := client.NewDeleteObjectsErrorAfterZeroLengthMockS3()
+	deleteObjectsOutputErrorMock := client.NewDeleteObjectsOutputErrorMockS3()
+	deleteObjectsOutputErrorAfterZeroLengthMock := client.NewDeleteObjectsOutputErrorAfterZeroLengthMockS3()
+	listObjectVersionsErrorMock := client.NewListObjectVersionsErrorMockS3()
+	checkBucketExistsErrorMock := client.NewCheckBucketExistsErrorMockS3()
+	checkBucketNotExistsMock := client.NewCheckBucketNotExistsMockS3()
 
 	type args struct {
 		ctx        context.Context
@@ -161,8 +161,8 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 
 func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
 	io.NewLogger(false)
-	mock := NewMockS3()
-	allErrorMock := NewAllErrorMockS3()
+	mock := client.NewMockS3()
+	allErrorMock := client.NewAllErrorMockS3()
 
 	type args struct {
 		ctx    context.Context

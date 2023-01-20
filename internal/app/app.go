@@ -92,8 +92,8 @@ func (a *App) getAction() func(c *cli.Context) error {
 			return nil
 		}
 
-		stackOperatorFactory := operation.NewStackOperatorFactory(config)
-		stackOperator := stackOperatorFactory.CreateStackOperator(targetResourceTypes)
+		operatorFactory := operation.NewOperatorFactory(config)
+		stackOperator := operatorFactory.CreateStackOperator(targetResourceTypes)
 
 		if a.InteractiveMode && a.StackName == "" {
 			stackNames, err := stackOperator.ListStacksFilteredByKeyword(c.Context, aws.String(keyword))
@@ -114,7 +114,6 @@ func (a *App) getAction() func(c *cli.Context) error {
 		}
 
 		isRootStack := true
-		operatorFactory := operation.NewOperatorFactory(config)
 		operatorCollection := operation.NewOperatorCollection(config, operatorFactory, targetResourceTypes)
 		operatorManager := operation.NewOperatorManager(operatorCollection)
 
