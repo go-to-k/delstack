@@ -14,6 +14,22 @@ import (
 	"github.com/aws/smithy-go/middleware"
 )
 
+type tokenKeyForCloudFormation struct{}
+
+func getNextTokenForCloudFormationInitialize(
+	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
+) (
+	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
+) {
+	switch v := in.Parameters.(type) {
+	case *cloudformation.ListStackResourcesInput:
+		ctx = middleware.WithStackValue(ctx, tokenKeyForCloudFormation{}, v.NextToken)
+	case *cloudformation.ListStacksInput:
+		ctx = middleware.WithStackValue(ctx, tokenKeyForCloudFormation{}, v.NextToken)
+	}
+	return next.HandleInitialize(ctx, in)
+}
+
 /*
 	Test Cases
 */
@@ -594,6 +610,189 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "list stack resources with next token successfully",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextToken",
+							getNextTokenForCloudFormationInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListStackResourcesWithNextTokenMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								token := middleware.GetStackValue(ctx, tokenKeyForCloudFormation{}).(*string)
+
+								var nextToken *string
+								var stackResourceSummaries []types.StackResourceSummary
+								if token == nil {
+									nextToken = aws.String("NextToken")
+									stackResourceSummaries = []types.StackResourceSummary{
+										{
+											LogicalResourceId:  aws.String("LogicalResourceId1"),
+											ResourceStatus:     "DELETE_FAILED",
+											ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+											PhysicalResourceId: aws.String("PhysicalResourceId1"),
+										},
+										{
+											LogicalResourceId:  aws.String("LogicalResourceId2"),
+											ResourceStatus:     "DELETE_FAILED",
+											ResourceType:       aws.String("AWS::S3::Bucket"),
+											PhysicalResourceId: aws.String("PhysicalResourceId2"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.ListStackResourcesOutput{
+											NextToken:              nextToken,
+											StackResourceSummaries: stackResourceSummaries,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									stackResourceSummaries = []types.StackResourceSummary{
+										{
+											LogicalResourceId:  aws.String("LogicalResourceId3"),
+											ResourceStatus:     "DELETE_FAILED",
+											ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+											PhysicalResourceId: aws.String("PhysicalResourceId3"),
+										},
+										{
+											LogicalResourceId:  aws.String("LogicalResourceId4"),
+											ResourceStatus:     "DELETE_FAILED",
+											ResourceType:       aws.String("AWS::S3::Bucket"),
+											PhysicalResourceId: aws.String("PhysicalResourceId4"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.ListStackResourcesOutput{
+											NextToken:              nextToken,
+											StackResourceSummaries: stackResourceSummaries,
+										},
+									}, middleware.Metadata{}, nil
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				output: []types.StackResourceSummary{
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId1"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						PhysicalResourceId: aws.String("PhysicalResourceId1"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId2"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::S3::Bucket"),
+						PhysicalResourceId: aws.String("PhysicalResourceId2"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId3"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						PhysicalResourceId: aws.String("PhysicalResourceId3"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId4"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::S3::Bucket"),
+						PhysicalResourceId: aws.String("PhysicalResourceId4"),
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list stack resources with next token failure",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextToken",
+							getNextTokenForCloudFormationInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListStackResourcesWithNextTokenErrorMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								token := middleware.GetStackValue(ctx, tokenKeyForCloudFormation{}).(*string)
+
+								var nextToken *string
+								var stackResourceSummaries []types.StackResourceSummary
+								if token == nil {
+									nextToken = aws.String("NextToken")
+									stackResourceSummaries = []types.StackResourceSummary{
+										{
+											LogicalResourceId:  aws.String("LogicalResourceId1"),
+											ResourceStatus:     "DELETE_FAILED",
+											ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+											PhysicalResourceId: aws.String("PhysicalResourceId1"),
+										},
+										{
+											LogicalResourceId:  aws.String("LogicalResourceId2"),
+											ResourceStatus:     "DELETE_FAILED",
+											ResourceType:       aws.String("AWS::S3::Bucket"),
+											PhysicalResourceId: aws.String("PhysicalResourceId2"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.ListStackResourcesOutput{
+											NextToken:              nextToken,
+											StackResourceSummaries: stackResourceSummaries,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.ListStackResourcesOutput{},
+									}, middleware.Metadata{}, fmt.Errorf("ListStackResourcesError")
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				output: []types.StackResourceSummary{
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId1"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						PhysicalResourceId: aws.String("PhysicalResourceId1"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId2"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::S3::Bucket"),
+						PhysicalResourceId: aws.String("PhysicalResourceId2"),
+					},
+				},
+				err: fmt.Errorf("operation error CloudFormation: ListStackResources, ListStackResourcesError"),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range cases {
@@ -738,6 +937,162 @@ func TestCloudFormation_ListStacks(t *testing.T) {
 			want: want{
 				output: []types.StackSummary{},
 				err:    fmt.Errorf("operation error CloudFormation: ListStacks, ListStacksError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "list stacks with next token successfully",
+			args: args{
+				ctx: context.Background(),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextToken",
+							getNextTokenForCloudFormationInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListStacksWithNextTokenMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								token := middleware.GetStackValue(ctx, tokenKeyForCloudFormation{}).(*string)
+
+								var nextToken *string
+								var stackSummaries []types.StackSummary
+								if token == nil {
+									nextToken = aws.String("NextToken")
+									stackSummaries = []types.StackSummary{
+										{
+											StackName:   aws.String("TestStack1"),
+											StackStatus: types.StackStatusCreateComplete,
+										},
+										{
+											StackName:   aws.String("TestStack2"),
+											StackStatus: types.StackStatusCreateComplete,
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.ListStacksOutput{
+											NextToken:      nextToken,
+											StackSummaries: stackSummaries,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									stackSummaries = []types.StackSummary{
+										{
+											StackName:   aws.String("TestStack3"),
+											StackStatus: types.StackStatusCreateComplete,
+										},
+										{
+											StackName:   aws.String("TestStack4"),
+											StackStatus: types.StackStatusCreateComplete,
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.ListStacksOutput{
+											NextToken:      nextToken,
+											StackSummaries: stackSummaries,
+										},
+									}, middleware.Metadata{}, nil
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				output: []types.StackSummary{
+					{
+						StackName:   aws.String("TestStack1"),
+						StackStatus: types.StackStatusCreateComplete,
+					},
+					{
+						StackName:   aws.String("TestStack2"),
+						StackStatus: types.StackStatusCreateComplete,
+					},
+					{
+						StackName:   aws.String("TestStack3"),
+						StackStatus: types.StackStatusCreateComplete,
+					},
+					{
+						StackName:   aws.String("TestStack4"),
+						StackStatus: types.StackStatusCreateComplete,
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list stacks with next token failure",
+			args: args{
+				ctx: context.Background(),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextToken",
+							getNextTokenForCloudFormationInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListStacksWithNextTokenErrorMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								token := middleware.GetStackValue(ctx, tokenKeyForCloudFormation{}).(*string)
+
+								var nextToken *string
+								var stackSummaries []types.StackSummary
+								if token == nil {
+									nextToken = aws.String("NextToken")
+									stackSummaries = []types.StackSummary{
+										{
+											StackName:   aws.String("TestStack1"),
+											StackStatus: types.StackStatusCreateComplete,
+										},
+										{
+											StackName:   aws.String("TestStack2"),
+											StackStatus: types.StackStatusCreateComplete,
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.ListStacksOutput{
+											NextToken:      nextToken,
+											StackSummaries: stackSummaries,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.ListStacksOutput{},
+									}, middleware.Metadata{}, fmt.Errorf("ListStacksError")
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				output: []types.StackSummary{
+					{
+						StackName:   aws.String("TestStack1"),
+						StackStatus: types.StackStatusCreateComplete,
+					},
+					{
+						StackName:   aws.String("TestStack2"),
+						StackStatus: types.StackStatusCreateComplete,
+					},
+				}, err: fmt.Errorf("operation error CloudFormation: ListStacks, ListStacksError"),
 			},
 			wantErr: true,
 		},
