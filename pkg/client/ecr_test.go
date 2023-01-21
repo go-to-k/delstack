@@ -13,20 +13,6 @@ import (
 	"github.com/aws/smithy-go/middleware"
 )
 
-type tokenKeyForEcr struct{}
-
-func getNextTokenForEcrInitialize(
-	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
-) (
-	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
-) {
-	switch v := in.Parameters.(type) {
-	case *ecr.DescribeRepositoriesInput:
-		ctx = middleware.WithStackValue(ctx, tokenKeyForIam{}, v.NextToken)
-	}
-	return next.HandleInitialize(ctx, in)
-}
-
 /*
 	Test Cases
 */
