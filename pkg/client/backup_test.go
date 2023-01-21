@@ -13,6 +13,22 @@ import (
 	"github.com/aws/smithy-go/middleware"
 )
 
+type tokenKey struct{}
+
+func getNextTokenForInitialize(
+	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
+) (
+	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
+) {
+	switch v := in.Parameters.(type) {
+	case *backup.ListRecoveryPointsByBackupVaultInput:
+		ctx = middleware.WithStackValue(ctx, tokenKey{}, v.NextToken)
+	case *backup.ListBackupVaultsInput:
+		ctx = middleware.WithStackValue(ctx, tokenKey{}, v.NextToken)
+	}
+	return next.HandleInitialize(ctx, in)
+}
+
 /*
 	Test Cases
 */
@@ -36,7 +52,7 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "check backup vault exists successfully",
+			name: "list recovery points by backup vault successfully",
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
@@ -81,7 +97,7 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "check backup vault exists failure",
+			name: "list recovery points by backup vault failure",
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
@@ -97,6 +113,156 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 						),
 						middleware.Before,
 					)
+				},
+			},
+			want: want{
+				output: nil,
+				err:    fmt.Errorf("operation error Backup: ListRecoveryPointsByBackupVault, ListRecoveryPointsByBackupVaultError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "list recovery points by backup vault with next token successfully",
+			args: args{
+				ctx:             context.Background(),
+				backupVaultName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextToken",
+							getNextTokenForInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListRecoveryPointsByBackupVaultWithNextTokenMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								token := middleware.GetStackValue(ctx, tokenKey{}).(*string)
+
+								var nextToken *string
+								var recoveryPoints []types.RecoveryPointByBackupVault
+								if token == nil {
+									nextToken = aws.String("NextToken")
+									recoveryPoints = []types.RecoveryPointByBackupVault{
+										{
+											BackupVaultName: aws.String("BackupVaultName1"),
+											BackupVaultArn:  aws.String("BackupVaultArn1"),
+										},
+										{
+											BackupVaultName: aws.String("BackupVaultName2"),
+											BackupVaultArn:  aws.String("BackupVaultArn2"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &backup.ListRecoveryPointsByBackupVaultOutput{
+											NextToken:      nextToken,
+											RecoveryPoints: recoveryPoints,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									recoveryPoints = []types.RecoveryPointByBackupVault{
+										{
+											BackupVaultName: aws.String("BackupVaultName3"),
+											BackupVaultArn:  aws.String("BackupVaultArn3"),
+										},
+										{
+											BackupVaultName: aws.String("BackupVaultName4"),
+											BackupVaultArn:  aws.String("BackupVaultArn4"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &backup.ListRecoveryPointsByBackupVaultOutput{
+											NextToken:      nextToken,
+											RecoveryPoints: recoveryPoints,
+										},
+									}, middleware.Metadata{}, nil
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				output: []types.RecoveryPointByBackupVault{
+					{
+						BackupVaultArn:  aws.String("BackupVaultArn1"),
+						BackupVaultName: aws.String("BackupVaultName1"),
+					},
+					{
+						BackupVaultArn:  aws.String("BackupVaultArn2"),
+						BackupVaultName: aws.String("BackupVaultName2"),
+					},
+					{
+						BackupVaultArn:  aws.String("BackupVaultArn3"),
+						BackupVaultName: aws.String("BackupVaultName3"),
+					},
+					{
+						BackupVaultArn:  aws.String("BackupVaultArn4"),
+						BackupVaultName: aws.String("BackupVaultName4"),
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list recovery points by backup vault with next token failure",
+			args: args{
+				ctx:             context.Background(),
+				backupVaultName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextToken",
+							getNextTokenForInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListRecoveryPointsByBackupVaultWithNextTokenErrorMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								token := middleware.GetStackValue(ctx, tokenKey{}).(*string)
+
+								var nextToken *string
+								var recoveryPoints []types.RecoveryPointByBackupVault
+								if token == nil {
+									nextToken = aws.String("NextToken")
+									recoveryPoints = []types.RecoveryPointByBackupVault{
+										{
+											BackupVaultName: aws.String("BackupVaultName1"),
+											BackupVaultArn:  aws.String("BackupVaultArn1"),
+										},
+										{
+											BackupVaultName: aws.String("BackupVaultName2"),
+											BackupVaultArn:  aws.String("BackupVaultArn2"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &backup.ListRecoveryPointsByBackupVaultOutput{
+											NextToken:      nextToken,
+											RecoveryPoints: recoveryPoints,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									return middleware.FinalizeOutput{
+										Result: &backup.ListRecoveryPointsByBackupVaultOutput{},
+									}, middleware.Metadata{}, fmt.Errorf("ListRecoveryPointsByBackupVaultError")
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
 				},
 			},
 			want: want{
@@ -455,7 +621,7 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "check backup vault for backup vault exists",
+			name: "check backup vault exists",
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
@@ -489,7 +655,7 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "check backup vault for backup vault do not exist",
+			name: "check backup vault does not exist",
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
@@ -523,7 +689,7 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "check bucket exists failure",
+			name: "check backup vault exists failure",
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
@@ -539,6 +705,202 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 						),
 						middleware.Before,
 					)
+				},
+			},
+			want: want{
+				exists: false,
+				err:    fmt.Errorf("operation error Backup: ListBackupVaults, ListBackupVaultsError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "check backup vault exists with next token",
+			args: args{
+				ctx:             context.Background(),
+				backupVaultName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextToken",
+							getNextTokenForInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListBackupVaultsWithNextTokenMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								token := middleware.GetStackValue(ctx, tokenKey{}).(*string)
+
+								var nextToken *string
+								var backupVaultListMember []types.BackupVaultListMember
+								if token == nil {
+									nextToken = aws.String("NextToken")
+									backupVaultListMember = []types.BackupVaultListMember{
+										{
+											BackupVaultName: aws.String("test0"),
+										},
+										{
+											BackupVaultName: aws.String("test2"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &backup.ListBackupVaultsOutput{
+											NextToken:       nextToken,
+											BackupVaultList: backupVaultListMember,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									backupVaultListMember = []types.BackupVaultListMember{
+										{
+											BackupVaultName: aws.String("test"),
+										},
+										{
+											BackupVaultName: aws.String("test3"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &backup.ListBackupVaultsOutput{
+											NextToken:       nextToken,
+											BackupVaultList: backupVaultListMember,
+										},
+									}, middleware.Metadata{}, nil
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				exists: true,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "check backup vault does not exist with next token",
+			args: args{
+				ctx:             context.Background(),
+				backupVaultName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextToken",
+							getNextTokenForInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListBackupVaultsWithNextTokenMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								token := middleware.GetStackValue(ctx, tokenKey{}).(*string)
+
+								var nextToken *string
+								var backupVaultListMember []types.BackupVaultListMember
+								if token == nil {
+									nextToken = aws.String("NextToken")
+									backupVaultListMember = []types.BackupVaultListMember{
+										{
+											BackupVaultName: aws.String("test0"),
+										},
+										{
+											BackupVaultName: aws.String("test2"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &backup.ListBackupVaultsOutput{
+											NextToken:       nextToken,
+											BackupVaultList: backupVaultListMember,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									backupVaultListMember = []types.BackupVaultListMember{
+										{
+											BackupVaultName: aws.String("test1"),
+										},
+										{
+											BackupVaultName: aws.String("test3"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &backup.ListBackupVaultsOutput{
+											NextToken:       nextToken,
+											BackupVaultList: backupVaultListMember,
+										},
+									}, middleware.Metadata{}, nil
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				exists: false,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "check backup vault exists failure",
+			args: args{
+				ctx:             context.Background(),
+				backupVaultName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextToken",
+							getNextTokenForInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListBackupVaultsWithNextTokenErrorMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								token := middleware.GetStackValue(ctx, tokenKey{}).(*string)
+
+								var nextToken *string
+								var backupVaultListMember []types.BackupVaultListMember
+								if token == nil {
+									nextToken = aws.String("NextToken")
+									backupVaultListMember = []types.BackupVaultListMember{
+										{
+											BackupVaultName: aws.String("test0"),
+										},
+										{
+											BackupVaultName: aws.String("test2"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &backup.ListBackupVaultsOutput{
+											NextToken:       nextToken,
+											BackupVaultList: backupVaultListMember,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									return middleware.FinalizeOutput{
+										Result: &backup.ListBackupVaultsOutput{},
+									}, middleware.Metadata{}, fmt.Errorf("ListBackupVaultsError")
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
 				},
 			},
 			want: want{
