@@ -17,6 +17,22 @@ import (
 
 const sleepTimeSecForS3 = 1
 
+type keyMarkerKeyForS3 struct{}
+type versionIdMarkerKeyForS3 struct{}
+
+func getNextMarkerForS3Initialize(
+	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
+) (
+	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
+) {
+	switch v := in.Parameters.(type) {
+	case *s3.ListObjectVersionsInput:
+		ctx = middleware.WithStackValue(ctx, keyMarkerKeyForS3{}, v.KeyMarker)
+		ctx = middleware.WithStackValue(ctx, versionIdMarkerKeyForS3{}, v.VersionIdMarker)
+	}
+	return next.HandleInitialize(ctx, in)
+}
+
 /*
 	Test Cases
 */
@@ -851,6 +867,176 @@ func TestS3_ListObjectVersions(t *testing.T) {
 				err: nil,
 			},
 			wantErr: false,
+		},
+		{
+			name: "list objects versions with marker successfully",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextMarker",
+							getNextMarkerForS3Initialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectVersionsWithMarkerMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								keyMarker := middleware.GetStackValue(ctx, keyMarkerKeyForS3{}).(*string)
+								versionIdMarker := middleware.GetStackValue(ctx, versionIdMarkerKeyForS3{}).(*string)
+
+								var nextKeyMarker *string
+								var nextVersionIdMarker *string
+								var objectVersions []types.ObjectVersion
+								var objectDeleteMarkers []types.DeleteMarkerEntry
+								if keyMarker == nil && versionIdMarker == nil {
+									nextKeyMarker = aws.String("NextMarker")
+									nextVersionIdMarker = aws.String("NextMarker")
+									objectVersions = []types.ObjectVersion{
+										{
+											Key:       aws.String("KeyForVersions1"),
+											VersionId: aws.String("VersionIdForVersions1"),
+										},
+									}
+									objectDeleteMarkers = []types.DeleteMarkerEntry{
+										{
+											Key:       aws.String("KeyForDeleteMarkers1"),
+											VersionId: aws.String("VersionIdForDeleteMarkers1"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &s3.ListObjectVersionsOutput{
+											Versions:            objectVersions,
+											DeleteMarkers:       objectDeleteMarkers,
+											NextKeyMarker:       nextKeyMarker,
+											NextVersionIdMarker: nextVersionIdMarker,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									objectVersions = []types.ObjectVersion{
+										{
+											Key:       aws.String("KeyForVersions2"),
+											VersionId: aws.String("VersionIdForVersions2"),
+										},
+									}
+									objectDeleteMarkers = []types.DeleteMarkerEntry{
+										{
+											Key:       aws.String("KeyForDeleteMarkers2"),
+											VersionId: aws.String("VersionIdForDeleteMarkers2"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &s3.ListObjectVersionsOutput{
+											Versions:            objectVersions,
+											DeleteMarkers:       objectDeleteMarkers,
+											NextKeyMarker:       nextKeyMarker,
+											NextVersionIdMarker: nextVersionIdMarker,
+										},
+									}, middleware.Metadata{}, nil
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				output: []types.ObjectIdentifier{
+					{
+						Key:       aws.String("KeyForVersions1"),
+						VersionId: aws.String("VersionIdForVersions1"),
+					},
+					{
+						Key:       aws.String("KeyForDeleteMarkers1"),
+						VersionId: aws.String("VersionIdForDeleteMarkers1"),
+					},
+					{
+						Key:       aws.String("KeyForVersions2"),
+						VersionId: aws.String("VersionIdForVersions2"),
+					},
+					{
+						Key:       aws.String("KeyForDeleteMarkers2"),
+						VersionId: aws.String("VersionIdForDeleteMarkers2"),
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list objects versions with marker failure",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextMarker",
+							getNextMarkerForS3Initialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectVersionsWithMarkerErrorMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								keyMarker := middleware.GetStackValue(ctx, keyMarkerKeyForS3{}).(*string)
+								versionIdMarker := middleware.GetStackValue(ctx, versionIdMarkerKeyForS3{}).(*string)
+
+								var nextKeyMarker *string
+								var nextVersionIdMarker *string
+								var objectVersions []types.ObjectVersion
+								var objectDeleteMarkers []types.DeleteMarkerEntry
+								if keyMarker == nil && versionIdMarker == nil {
+									nextKeyMarker = aws.String("NextMarker")
+									nextVersionIdMarker = aws.String("NextMarker")
+									objectVersions = []types.ObjectVersion{
+										{
+											Key:       aws.String("KeyForVersions1"),
+											VersionId: aws.String("VersionIdForVersions1"),
+										},
+									}
+									objectDeleteMarkers = []types.DeleteMarkerEntry{
+										{
+											Key:       aws.String("KeyForDeleteMarkers1"),
+											VersionId: aws.String("VersionIdForDeleteMarkers1"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &s3.ListObjectVersionsOutput{
+											Versions:            objectVersions,
+											DeleteMarkers:       objectDeleteMarkers,
+											NextKeyMarker:       nextKeyMarker,
+											NextVersionIdMarker: nextVersionIdMarker,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									return middleware.FinalizeOutput{
+										Result: &s3.ListObjectVersionsOutput{},
+									}, middleware.Metadata{}, fmt.Errorf("ListObjectVersionsError")
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				output: nil,
+				err:    fmt.Errorf("operation error S3: ListObjectVersions, ListObjectVersionsError"),
+			},
+			wantErr: true,
 		},
 	}
 
