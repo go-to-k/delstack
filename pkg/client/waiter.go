@@ -27,40 +27,41 @@ func Retry(
 	retryCount := 0
 
 	for {
-		select {
-		case <-in.Ctx.Done():
-			return nil, in.Ctx.Err()
-		default:
+		output, err := in.ApiFunc(in.Ctx, in.Input)
+		if err == nil {
+			return output, nil
 		}
 
-		output, err := in.ApiFunc(in.Ctx, in.Input)
 		if in.Retryable(err) {
 			retryCount++
-			if err := waitForRetry(retryCount, in.SleepTimeSec, in.TargetResource, err); err != nil {
+			if err := waitForRetry(in.Ctx, retryCount, in.SleepTimeSec, in.TargetResource, err); err != nil {
 				return nil, err
 			}
 			continue
 		}
-		if err != nil {
-			return nil, err
-		}
-
-		return output, nil
+		return nil, err
 	}
 }
 
-func waitForRetry(retryCount int, sleepTimeSec int, targetResource *string, err error) error {
+func waitForRetry(ctx context.Context, retryCount int, sleepTimeSec int, targetResource *string, err error) error {
 	if retryCount > maxRetryCount {
 		errorDetail := err.Error() + "\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "
 		return fmt.Errorf("RetryCountOverError: %v, %v", *targetResource, errorDetail)
 	}
 
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(getRandomSleepTime(sleepTimeSec)):
+	}
+	return nil
+}
+
+func getRandomSleepTime(sleepTimeSec int) time.Duration {
 	rand.Seed(time.Now().UnixNano())
 	waitTime := 1
 	if sleepTimeSec > 1 {
 		waitTime += rand.Intn(sleepTimeSec)
 	}
-	time.Sleep(time.Duration(waitTime) * time.Second)
-
-	return nil
+	return time.Duration(waitTime) * time.Second
 }

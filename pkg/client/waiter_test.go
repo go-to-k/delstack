@@ -107,6 +107,7 @@ func TestRetry(t *testing.T) {
 
 func Test_waitForRetry(t *testing.T) {
 	type args struct {
+		ctx                context.Context
 		retryCount         int
 		sleepTimeSec       int
 		targetResourceType *string
@@ -122,6 +123,7 @@ func Test_waitForRetry(t *testing.T) {
 		{
 			name: "sleepTimeSec = 0: not error",
 			args: args{
+				ctx:                context.Background(),
 				retryCount:         0,
 				sleepTimeSec:       0,
 				targetResourceType: aws.String("resource"),
@@ -133,6 +135,7 @@ func Test_waitForRetry(t *testing.T) {
 		{
 			name: "retryCount = 0: not error",
 			args: args{
+				ctx:                context.Background(),
 				retryCount:         0,
 				sleepTimeSec:       1,
 				targetResourceType: aws.String("resource"),
@@ -144,6 +147,7 @@ func Test_waitForRetry(t *testing.T) {
 		{
 			name: "retryCount = MaxRetryCount - 1: not error",
 			args: args{
+				ctx:                context.Background(),
 				retryCount:         maxRetryCount - 1,
 				sleepTimeSec:       1,
 				targetResourceType: aws.String("resource"),
@@ -155,6 +159,7 @@ func Test_waitForRetry(t *testing.T) {
 		{
 			name: "retryCount = MaxRetryCount: not error",
 			args: args{
+				ctx:                context.Background(),
 				retryCount:         maxRetryCount,
 				sleepTimeSec:       1,
 				targetResourceType: aws.String("resource"),
@@ -166,6 +171,7 @@ func Test_waitForRetry(t *testing.T) {
 		{
 			name: "retryCount = MaxRetryCount + 1: RetryCountOverError",
 			args: args{
+				ctx:                context.Background(),
 				retryCount:         maxRetryCount + 1,
 				sleepTimeSec:       1,
 				targetResourceType: aws.String("resource"),
@@ -179,6 +185,7 @@ func Test_waitForRetry(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			err := waitForRetry(
+				tt.args.ctx,
 				tt.args.retryCount,
 				tt.args.sleepTimeSec,
 				tt.args.targetResourceType,

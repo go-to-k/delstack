@@ -35,7 +35,7 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int
 	}
 
 	retryable := func(err error) bool {
-		return err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
+		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
 	}
 	_, err := Retry(
 		&RetryInput{
@@ -115,7 +115,7 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 	}
 
 	retryable := func(err error) bool {
-		return err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
+		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
 	}
 	_, err := Retry(
 		&RetryInput{

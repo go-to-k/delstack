@@ -96,7 +96,7 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 			defer sem.Release(1)
 
 			retryable := func(err error) bool {
-				return err != nil && strings.Contains(err.Error(), "api error SlowDown")
+				return strings.Contains(err.Error(), "api error SlowDown")
 			}
 			output, err := Retry(
 				&RetryInput{
