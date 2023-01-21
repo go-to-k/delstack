@@ -16,16 +16,16 @@ import (
 
 const sleepTimeSecForIam = 1
 
-type markerKey struct{}
+type markerKeyForIam struct{}
 
-func getNextMarkerForInitialize(
+func getNextMarkerForIamInitialize(
 	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
 ) (
 	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
 ) {
 	switch v := in.Parameters.(type) {
 	case *iam.ListAttachedRolePoliciesInput:
-		ctx = middleware.WithStackValue(ctx, markerKey{}, v.Marker)
+		ctx = middleware.WithStackValue(ctx, markerKeyForIam{}, v.Marker)
 	}
 	return next.HandleInitialize(ctx, in)
 }
@@ -382,7 +382,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 					err := stack.Initialize.Add(
 						middleware.InitializeMiddlewareFunc(
 							"GetNextMarker",
-							getNextMarkerForInitialize,
+							getNextMarkerForIamInitialize,
 						), middleware.Before,
 					)
 					if err != nil {
@@ -393,7 +393,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 						middleware.FinalizeMiddlewareFunc(
 							"ListAttachedRolePoliciesWithNextMarkerMock",
 							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								marker := middleware.GetStackValue(ctx, markerKey{}).(*string)
+								marker := middleware.GetStackValue(ctx, markerKeyForIam{}).(*string)
 
 								var nextMarker *string
 								var attachedPolicies []types.AttachedPolicy
@@ -472,7 +472,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 					err := stack.Initialize.Add(
 						middleware.InitializeMiddlewareFunc(
 							"GetNextMarker",
-							getNextMarkerForInitialize,
+							getNextMarkerForIamInitialize,
 						), middleware.Before,
 					)
 					if err != nil {
@@ -483,7 +483,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 						middleware.FinalizeMiddlewareFunc(
 							"ListAttachedRolePoliciesWithNextMarkerErrorMock",
 							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								marker := middleware.GetStackValue(ctx, markerKey{}).(*string)
+								marker := middleware.GetStackValue(ctx, markerKeyForIam{}).(*string)
 
 								var nextMarker *string
 								var attachedPolicies []types.AttachedPolicy
