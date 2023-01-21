@@ -16,6 +16,20 @@ import (
 
 const sleepTimeSecForIam = 1
 
+type markerKeyForIam struct{}
+
+func getNextMarkerForIamInitialize(
+	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
+) (
+	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
+) {
+	switch v := in.Parameters.(type) {
+	case *iam.ListAttachedRolePoliciesInput:
+		ctx = middleware.WithStackValue(ctx, markerKeyForIam{}, v.Marker)
+	}
+	return next.HandleInitialize(ctx, in)
+}
+
 /*
 	Test Cases
 */
@@ -308,6 +322,33 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "list attached role policies are empty",
+			args: args{
+				ctx:      context.Background(),
+				roleName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListAttachedRolePoliciesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListAttachedRolePoliciesOutput{
+										AttachedPolicies: []types.AttachedPolicy{},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: []types.AttachedPolicy{},
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
 			name: "list attached role policies failure",
 			args: args{
 				ctx:      context.Background(),
@@ -324,6 +365,156 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 						),
 						middleware.Before,
 					)
+				},
+			},
+			want: want{
+				output: nil,
+				err:    fmt.Errorf("operation error IAM: ListAttachedRolePolicies, ListAttachedRolePoliciesError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "list attached role policies with next marker successfully",
+			args: args{
+				ctx:      context.Background(),
+				roleName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextMarker",
+							getNextMarkerForIamInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListAttachedRolePoliciesWithNextMarkerMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								marker := middleware.GetStackValue(ctx, markerKeyForIam{}).(*string)
+
+								var nextMarker *string
+								var attachedPolicies []types.AttachedPolicy
+								if marker == nil {
+									nextMarker = aws.String("NextMarker")
+									attachedPolicies = []types.AttachedPolicy{
+										{
+											PolicyArn:  aws.String("PolicyArn1"),
+											PolicyName: aws.String("PolicyName1"),
+										},
+										{
+											PolicyArn:  aws.String("PolicyArn2"),
+											PolicyName: aws.String("PolicyName2"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &iam.ListAttachedRolePoliciesOutput{
+											Marker:           nextMarker,
+											AttachedPolicies: attachedPolicies,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									attachedPolicies = []types.AttachedPolicy{
+										{
+											PolicyArn:  aws.String("PolicyArn3"),
+											PolicyName: aws.String("PolicyName3"),
+										},
+										{
+											PolicyArn:  aws.String("PolicyArn4"),
+											PolicyName: aws.String("PolicyName4"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &iam.ListAttachedRolePoliciesOutput{
+											Marker:           nextMarker,
+											AttachedPolicies: attachedPolicies,
+										},
+									}, middleware.Metadata{}, nil
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				output: []types.AttachedPolicy{
+					{
+						PolicyArn:  aws.String("PolicyArn1"),
+						PolicyName: aws.String("PolicyName1"),
+					},
+					{
+						PolicyArn:  aws.String("PolicyArn2"),
+						PolicyName: aws.String("PolicyName2"),
+					},
+					{
+						PolicyArn:  aws.String("PolicyArn3"),
+						PolicyName: aws.String("PolicyName3"),
+					},
+					{
+						PolicyArn:  aws.String("PolicyArn4"),
+						PolicyName: aws.String("PolicyName4"),
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list attached role policies with next marker failure",
+			args: args{
+				ctx:      context.Background(),
+				roleName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextMarker",
+							getNextMarkerForIamInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListAttachedRolePoliciesWithNextMarkerErrorMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								marker := middleware.GetStackValue(ctx, markerKeyForIam{}).(*string)
+
+								var nextMarker *string
+								var attachedPolicies []types.AttachedPolicy
+								if marker == nil {
+									nextMarker = aws.String("NextMarker")
+									attachedPolicies = []types.AttachedPolicy{
+										{
+											PolicyArn:  aws.String("PolicyArn1"),
+											PolicyName: aws.String("PolicyName1"),
+										},
+										{
+											PolicyArn:  aws.String("PolicyArn2"),
+											PolicyName: aws.String("PolicyName2"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &iam.ListAttachedRolePoliciesOutput{
+											Marker:           nextMarker,
+											AttachedPolicies: attachedPolicies,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									return middleware.FinalizeOutput{
+										Result: &iam.ListAttachedRolePoliciesOutput{},
+									}, middleware.Metadata{}, fmt.Errorf("ListAttachedRolePoliciesError")
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
 				},
 			},
 			want: want{
