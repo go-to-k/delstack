@@ -99,7 +99,7 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 				return strings.Contains(err.Error(), "api error SlowDown")
 			}
 			output, err := Retry(
-				&RetryInput{
+				&RetryInput[any, any]{
 					Ctx:            ctx,
 					SleepTimeSec:   sleepTimeSec,
 					TargetResource: bucketName,

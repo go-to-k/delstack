@@ -12,17 +12,17 @@ const maxRetryCount = 10
 
 type ApiFunc[T, U any] func(ctx context.Context, input T) (U, error)
 
-type RetryInput struct {
+type RetryInput[T, U any] struct {
 	Ctx            context.Context
 	SleepTimeSec   int
 	TargetResource *string
-	Input          interface{}
-	ApiFunc        ApiFunc[any, any]
+	Input          T
+	ApiFunc        ApiFunc[T, U]
 	Retryable      func(error) bool
 }
 
 func Retry(
-	in *RetryInput,
+	in *RetryInput[any, any],
 ) (interface{}, error) {
 	retryCount := 0
 

@@ -84,7 +84,7 @@ func TestRetry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := Retry(
-				&RetryInput{
+				&RetryInput[any, any]{
 					Ctx:            tt.args.ctx,
 					SleepTimeSec:   tt.args.sleepTimeSec,
 					TargetResource: tt.args.targetResource,
