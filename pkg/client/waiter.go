@@ -10,29 +10,33 @@ import (
 
 const maxRetryCount = 10
 
-type apiFunc[T, U any] func(ctx context.Context, input T) (U, error)
+type ApiFunc[T, U any] func(ctx context.Context, input T) (U, error)
+
+type RetryInput struct {
+	Ctx            context.Context
+	SleepTimeSec   int
+	TargetResource *string
+	Input          interface{}
+	ApiFunc        ApiFunc[any, any]
+	Retryable      func(error) bool
+}
 
 func Retry(
-	ctx context.Context,
-	sleepTimeSec int,
-	targetResource *string,
-	input interface{},
-	f apiFunc[any, any],
-	retryable func(error) bool,
+	in *RetryInput,
 ) (interface{}, error) {
 	retryCount := 0
 
 	for {
 		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
+		case <-in.Ctx.Done():
+			return nil, in.Ctx.Err()
 		default:
 		}
 
-		output, err := f(ctx, input)
-		if retryable(err) {
+		output, err := in.ApiFunc(in.Ctx, in.Input)
+		if in.Retryable(err) {
 			retryCount++
-			if err := waitForRetry(retryCount, sleepTimeSec, targetResource, err); err != nil {
+			if err := waitForRetry(retryCount, in.SleepTimeSec, in.TargetResource, err); err != nil {
 				return nil, err
 			}
 			continue

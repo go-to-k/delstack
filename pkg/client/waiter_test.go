@@ -19,7 +19,7 @@ func TestRetry(t *testing.T) {
 		sleepTimeSec   int
 		targetResource *string
 		input          interface{}
-		f              apiFunc[any, any]
+		apiFunc        ApiFunc[any, any]
 		retryable      func(error) bool
 	}
 	type want error
@@ -36,7 +36,7 @@ func TestRetry(t *testing.T) {
 				sleepTimeSec:   1,
 				targetResource: aws.String("resource"),
 				input:          struct{}{},
-				f: func(ctx context.Context, input any) (any, error) {
+				apiFunc: func(ctx context.Context, input any) (any, error) {
 					return input, fmt.Errorf("ApiFuncError")
 				},
 				retryable: func(err error) bool {
@@ -53,7 +53,7 @@ func TestRetry(t *testing.T) {
 				sleepTimeSec:   1,
 				targetResource: aws.String("resource"),
 				input:          struct{}{},
-				f: func(ctx context.Context, input any) (any, error) {
+				apiFunc: func(ctx context.Context, input any) (any, error) {
 					return input, fmt.Errorf("ApiFuncError")
 				},
 				retryable: func(err error) bool {
@@ -70,7 +70,7 @@ func TestRetry(t *testing.T) {
 				sleepTimeSec:   1,
 				targetResource: aws.String("resource"),
 				input:          struct{}{},
-				f: func(ctx context.Context, input any) (any, error) {
+				apiFunc: func(ctx context.Context, input any) (any, error) {
 					return input, nil
 				},
 				retryable: func(err error) bool {
@@ -83,7 +83,16 @@ func TestRetry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Retry(tt.args.ctx, tt.args.sleepTimeSec, tt.args.targetResource, tt.args.input, tt.args.f, tt.args.retryable)
+			_, err := Retry(
+				&RetryInput{
+					Ctx:            tt.args.ctx,
+					SleepTimeSec:   tt.args.sleepTimeSec,
+					TargetResource: tt.args.targetResource,
+					Input:          tt.args.input,
+					ApiFunc:        tt.args.apiFunc,
+					Retryable:      tt.args.retryable,
+				},
+			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Retry() error = %v, wantErr %v", err, tt.wantErr)
 				return

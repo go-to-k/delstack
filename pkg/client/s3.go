@@ -98,7 +98,16 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 			retryable := func(err error) bool {
 				return err != nil && strings.Contains(err.Error(), "api error SlowDown")
 			}
-			output, err := Retry(ctx, sleepTimeSec, bucketName, input, s.deleteObjectsWithRetry, retryable)
+			output, err := Retry(
+				&RetryInput{
+					Ctx:            ctx,
+					SleepTimeSec:   sleepTimeSec,
+					TargetResource: bucketName,
+					Input:          input,
+					ApiFunc:        s.deleteObjectsWithRetry,
+					Retryable:      retryable,
+				},
+			)
 			if err != nil {
 				return err
 			}
