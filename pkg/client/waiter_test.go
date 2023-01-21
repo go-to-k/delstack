@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"testing"
@@ -12,7 +13,90 @@ import (
 	Test Cases
 */
 
-func TestWaitForRetry(t *testing.T) {
+func TestRetry(t *testing.T) {
+	type args struct {
+		ctx            context.Context
+		sleepTimeSec   int
+		targetResource *string
+		input          interface{}
+		f              apiFunc[any, any]
+		retryable      func(error) bool
+	}
+	type want error
+	tests := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "retry and then occur an error: apiFunc returns error and retryable returns true if error is not nil",
+			args: args{
+				ctx:            context.Background(),
+				sleepTimeSec:   1,
+				targetResource: aws.String("resource"),
+				input:          struct{}{},
+				f: func(ctx context.Context, input any) (any, error) {
+					return input, fmt.Errorf("ApiFuncError")
+				},
+				retryable: func(err error) bool {
+					return err != nil && true
+				},
+			},
+			want:    fmt.Errorf("RetryCountOverError: resource, ApiFuncError\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			wantErr: true,
+		},
+		{
+			name: "do not retry and then occur an error: apiFunc returns error and retryable just returns false",
+			args: args{
+				ctx:            context.Background(),
+				sleepTimeSec:   1,
+				targetResource: aws.String("resource"),
+				input:          struct{}{},
+				f: func(ctx context.Context, input any) (any, error) {
+					return input, fmt.Errorf("ApiFuncError")
+				},
+				retryable: func(err error) bool {
+					return err != nil && false
+				},
+			},
+			want:    fmt.Errorf("ApiFuncError"),
+			wantErr: true,
+		},
+		{
+			name: "success but do not retry: apiFunc do not return error and retryable returns true if error is not nil",
+			args: args{
+				ctx:            context.Background(),
+				sleepTimeSec:   1,
+				targetResource: aws.String("resource"),
+				input:          struct{}{},
+				f: func(ctx context.Context, input any) (any, error) {
+					return input, nil
+				},
+				retryable: func(err error) bool {
+					return err != nil
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Retry(tt.args.ctx, tt.args.sleepTimeSec, tt.args.targetResource, tt.args.input, tt.args.f, tt.args.retryable)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Retry() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("Retry() error = %v, want %v", err.Error(), tt.want.Error())
+				return
+			}
+		})
+	}
+}
+
+func Test_waitForRetry(t *testing.T) {
 	type args struct {
 		retryCount         int
 		sleepTimeSec       int
@@ -85,7 +169,7 @@ func TestWaitForRetry(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := WaitForRetry(
+			err := waitForRetry(
 				tt.args.retryCount,
 				tt.args.sleepTimeSec,
 				tt.args.targetResourceType,

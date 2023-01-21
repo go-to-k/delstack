@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"strings"
 	"sync"
@@ -94,12 +95,20 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			output, err := s.deleteObjectsWithRetry(ctx, input, bucketName, sleepTimeSec)
+			retryable := func(err error) bool {
+				return err != nil && strings.Contains(err.Error(), "api error SlowDown")
+			}
+			output, err := Retry(ctx, sleepTimeSec, bucketName, input, s.deleteObjectsWithRetry, retryable)
 			if err != nil {
 				return err
 			}
 
-			outputsCh <- output
+			o, ok := output.(*s3.DeleteObjectsOutput)
+			if !ok {
+				return fmt.Errorf("TypeAssertionError: %#v", output)
+			}
+
+			outputsCh <- o
 			return nil
 		})
 
@@ -125,33 +134,18 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 
 func (s *S3) deleteObjectsWithRetry(
 	ctx context.Context,
-	input *s3.DeleteObjectsInput,
-	bucketName *string,
-	sleepTimeSec int,
-) (*s3.DeleteObjectsOutput, error) {
-	retryCount := 0
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-
-		output, err := s.client.DeleteObjects(ctx, input)
-		if err != nil && strings.Contains(err.Error(), "api error SlowDown") {
-			retryCount++
-			if err := WaitForRetry(retryCount, sleepTimeSec, bucketName, err); err != nil {
-				return nil, err
-			}
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		return output, nil
+	input interface{},
+) (interface{}, error) {
+	param, ok := input.(*s3.DeleteObjectsInput)
+	if !ok {
+		return nil, fmt.Errorf("TypeAssertionError: %#v", input)
 	}
+	output, err := s.client.DeleteObjects(ctx, param)
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
 }
 
 func (s *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
