@@ -13,7 +13,7 @@ import (
 	"github.com/aws/smithy-go/middleware"
 )
 
-type tokenKeyForIam struct{}
+type tokenKeyForBackup struct{}
 
 func getNextTokenForBackupInitialize(
 	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
@@ -22,9 +22,9 @@ func getNextTokenForBackupInitialize(
 ) {
 	switch v := in.Parameters.(type) {
 	case *backup.ListRecoveryPointsByBackupVaultInput:
-		ctx = middleware.WithStackValue(ctx, tokenKeyForIam{}, v.NextToken)
+		ctx = middleware.WithStackValue(ctx, tokenKeyForBackup{}, v.NextToken)
 	case *backup.ListBackupVaultsInput:
-		ctx = middleware.WithStackValue(ctx, tokenKeyForIam{}, v.NextToken)
+		ctx = middleware.WithStackValue(ctx, tokenKeyForBackup{}, v.NextToken)
 	}
 	return next.HandleInitialize(ctx, in)
 }
@@ -141,7 +141,7 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 						middleware.FinalizeMiddlewareFunc(
 							"ListRecoveryPointsByBackupVaultWithNextTokenMock",
 							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								token := middleware.GetStackValue(ctx, tokenKeyForIam{}).(*string)
+								token := middleware.GetStackValue(ctx, tokenKeyForBackup{}).(*string)
 
 								var nextToken *string
 								var recoveryPoints []types.RecoveryPointByBackupVault
@@ -231,7 +231,7 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 						middleware.FinalizeMiddlewareFunc(
 							"ListRecoveryPointsByBackupVaultWithNextTokenErrorMock",
 							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								token := middleware.GetStackValue(ctx, tokenKeyForIam{}).(*string)
+								token := middleware.GetStackValue(ctx, tokenKeyForBackup{}).(*string)
 
 								var nextToken *string
 								var recoveryPoints []types.RecoveryPointByBackupVault
@@ -733,7 +733,7 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 						middleware.FinalizeMiddlewareFunc(
 							"ListBackupVaultsWithNextTokenMock",
 							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								token := middleware.GetStackValue(ctx, tokenKeyForIam{}).(*string)
+								token := middleware.GetStackValue(ctx, tokenKeyForBackup{}).(*string)
 
 								var nextToken *string
 								var backupVaultListMember []types.BackupVaultListMember
@@ -802,7 +802,7 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 						middleware.FinalizeMiddlewareFunc(
 							"ListBackupVaultsWithNextTokenMock",
 							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								token := middleware.GetStackValue(ctx, tokenKeyForIam{}).(*string)
+								token := middleware.GetStackValue(ctx, tokenKeyForBackup{}).(*string)
 
 								var nextToken *string
 								var backupVaultListMember []types.BackupVaultListMember
@@ -871,7 +871,7 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 						middleware.FinalizeMiddlewareFunc(
 							"ListBackupVaultsWithNextTokenErrorMock",
 							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								token := middleware.GetStackValue(ctx, tokenKeyForIam{}).(*string)
+								token := middleware.GetStackValue(ctx, tokenKeyForBackup{}).(*string)
 
 								var nextToken *string
 								var backupVaultListMember []types.BackupVaultListMember
