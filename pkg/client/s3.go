@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"runtime"
 	"strings"
 	"sync"
@@ -99,12 +98,12 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 				return strings.Contains(err.Error(), "api error SlowDown")
 			}
 			output, err := Retry(
-				&RetryInput[any, any]{
+				&RetryInput[s3.DeleteObjectsInput, s3.DeleteObjectsOutput]{
 					Ctx:            ctx,
 					SleepTimeSec:   sleepTimeSec,
 					TargetResource: bucketName,
 					Input:          input,
-					ApiFunc:        s.deleteObjectsWithRetry,
+					ApiFunc:        s.deleteObjectsWithRetry(ctx, input),
 					Retryable:      retryable,
 				},
 			)
@@ -112,12 +111,7 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 				return err
 			}
 
-			o, ok := output.(*s3.DeleteObjectsOutput)
-			if !ok {
-				return fmt.Errorf("TypeAssertionError: %#v", output)
-			}
-
-			outputsCh <- o
+			outputsCh <- output
 			return nil
 		})
 
@@ -143,18 +137,16 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 
 func (s *S3) deleteObjectsWithRetry(
 	ctx context.Context,
-	input interface{},
-) (interface{}, error) {
-	param, ok := input.(*s3.DeleteObjectsInput)
-	if !ok {
-		return nil, fmt.Errorf("TypeAssertionError: %#v", input)
-	}
-	output, err := s.client.DeleteObjects(ctx, param)
-	if err != nil {
-		return nil, err
-	}
+	input *s3.DeleteObjectsInput,
+) ApiFunc[s3.DeleteObjectsInput, s3.DeleteObjectsOutput] {
+	return func(ctx context.Context, input *s3.DeleteObjectsInput) (*s3.DeleteObjectsOutput, error) {
+		output, err := s.client.DeleteObjects(ctx, input)
+		if err != nil {
+			return nil, err
+		}
 
-	return output, nil
+		return output, nil
+	}
 }
 
 func (s *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {

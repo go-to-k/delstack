@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -38,12 +37,12 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int
 		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
 	}
 	_, err := Retry(
-		&RetryInput[any, any]{
+		&RetryInput[iam.DeleteRoleInput, iam.DeleteRoleOutput]{
 			Ctx:            ctx,
 			SleepTimeSec:   sleepTimeSec,
 			TargetResource: roleName,
 			Input:          input,
-			ApiFunc:        i.deleteRoleWithRetry,
+			ApiFunc:        i.deleteRoleWithRetry(ctx, input),
 			Retryable:      retryable,
 		},
 	)
@@ -52,18 +51,16 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int
 
 func (i *Iam) deleteRoleWithRetry(
 	ctx context.Context,
-	input interface{},
-) (interface{}, error) {
-	param, ok := input.(*iam.DeleteRoleInput)
-	if !ok {
-		return nil, fmt.Errorf("TypeAssertionError: %#v", input)
-	}
-	output, err := i.client.DeleteRole(ctx, param)
-	if err != nil {
-		return nil, err
-	}
+	input *iam.DeleteRoleInput,
+) ApiFunc[iam.DeleteRoleInput, iam.DeleteRoleOutput] {
+	return func(ctx context.Context, input *iam.DeleteRoleInput) (*iam.DeleteRoleOutput, error) {
+		output, err := i.client.DeleteRole(ctx, input)
+		if err != nil {
+			return nil, err
+		}
 
-	return output, nil
+		return output, nil
+	}
 }
 
 func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error) {
@@ -118,12 +115,12 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
 	}
 	_, err := Retry(
-		&RetryInput[any, any]{
+		&RetryInput[iam.DetachRolePolicyInput, iam.DetachRolePolicyOutput]{
 			Ctx:            ctx,
 			SleepTimeSec:   sleepTimeSec,
 			TargetResource: roleName,
 			Input:          input,
-			ApiFunc:        i.detachRolePolicyWithRetry,
+			ApiFunc:        i.detachRolePolicyWithRetry(ctx, input),
 			Retryable:      retryable,
 		},
 	)
@@ -132,18 +129,16 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 
 func (i *Iam) detachRolePolicyWithRetry(
 	ctx context.Context,
-	input interface{},
-) (interface{}, error) {
-	param, ok := input.(*iam.DetachRolePolicyInput)
-	if !ok {
-		return nil, fmt.Errorf("TypeAssertionError: %#v", input)
-	}
-	output, err := i.client.DetachRolePolicy(ctx, param)
-	if err != nil {
-		return nil, err
-	}
+	input *iam.DetachRolePolicyInput,
+) ApiFunc[iam.DetachRolePolicyInput, iam.DetachRolePolicyOutput] {
+	return func(ctx context.Context, input *iam.DetachRolePolicyInput) (*iam.DetachRolePolicyOutput, error) {
+		output, err := i.client.DetachRolePolicy(ctx, input)
+		if err != nil {
+			return nil, err
+		}
 
-	return output, nil
+		return output, nil
+	}
 }
 
 func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
