@@ -17,7 +17,7 @@ type RetryInput[T, U any] struct {
 	SleepTimeSec   int
 	TargetResource *string
 	Input          *T
-	ApiFunc        ApiFunc[T, U]
+	ApiFunction    ApiFunc[T, U]
 	Retryable      func(error) bool
 }
 
@@ -27,7 +27,7 @@ func Retry[T, U any](
 	retryCount := 0
 
 	for {
-		output, err := in.ApiFunc(in.Ctx, in.Input)
+		output, err := in.ApiFunction(in.Ctx, in.Input)
 		if err == nil {
 			return output, nil
 		}

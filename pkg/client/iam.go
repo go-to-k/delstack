@@ -42,7 +42,7 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int
 			SleepTimeSec:   sleepTimeSec,
 			TargetResource: roleName,
 			Input:          input,
-			ApiFunc:        i.deleteRoleWithRetry(ctx, input),
+			ApiFunction:    i.deleteRoleWithRetry(ctx, input),
 			Retryable:      retryable,
 		},
 	)
@@ -120,7 +120,7 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 			SleepTimeSec:   sleepTimeSec,
 			TargetResource: roleName,
 			Input:          input,
-			ApiFunc:        i.detachRolePolicyWithRetry(ctx, input),
+			ApiFunction:    i.detachRolePolicyWithRetry(ctx, input),
 			Retryable:      retryable,
 		},
 	)

@@ -89,7 +89,7 @@ func TestRetry(t *testing.T) {
 					SleepTimeSec:   tt.args.sleepTimeSec,
 					TargetResource: tt.args.targetResource,
 					Input:          tt.args.input,
-					ApiFunc:        tt.args.apiFunc,
+					ApiFunction:    tt.args.apiFunc,
 					Retryable:      tt.args.retryable,
 				},
 			)
