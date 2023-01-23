@@ -12,24 +12,27 @@ const maxRetryCount = 10
 
 // T: Input type for API Request.
 // U: Output type for API Response.
-type RetryInput[T, U any] struct {
+// V: Option Functions type for API Request.
+type RetryInput[T, U, V any] struct {
 	Ctx              context.Context
 	SleepTimeSec     int
 	TargetResource   *string
 	Input            *T
-	ApiCaller        func(ctx context.Context, input *T) (*U, error)
+	ApiOptions       []func(*V)
+	ApiCaller        func(ctx context.Context, input *T, optFns ...func(*V)) (*U, error)
 	RetryableChecker func(error) bool
 }
 
 // T: Input type for API Request.
 // U: Output type for API Response.
-func Retry[T, U any](
-	in *RetryInput[T, U],
+// V: Option Functions type for API Request.
+func Retry[T, U, V any](
+	in *RetryInput[T, U, V],
 ) (*U, error) {
 	retryCount := 0
 
 	for {
-		output, err := in.ApiCaller(in.Ctx, in.Input)
+		output, err := in.ApiCaller(in.Ctx, in.Input, in.ApiOptions...)
 		if err == nil {
 			return output, nil
 		}

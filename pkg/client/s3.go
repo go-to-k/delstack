@@ -97,22 +97,14 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 			retryable := func(err error) bool {
 				return strings.Contains(err.Error(), "api error SlowDown")
 			}
-			deleteObjectsForRetry := func(ctx context.Context, input *s3.DeleteObjectsInput) (*s3.DeleteObjectsOutput, error) {
-				output, err := s.client.DeleteObjects(ctx, input)
-				if err != nil {
-					return nil, err
-				}
-
-				return output, nil
-			}
 
 			output, err := Retry(
-				&RetryInput[s3.DeleteObjectsInput, s3.DeleteObjectsOutput]{
+				&RetryInput[s3.DeleteObjectsInput, s3.DeleteObjectsOutput, s3.Options]{
 					Ctx:              ctx,
 					SleepTimeSec:     sleepTimeSec,
 					TargetResource:   bucketName,
 					Input:            input,
-					ApiCaller:        deleteObjectsForRetry,
+					ApiCaller:        s.client.DeleteObjects,
 					RetryableChecker: retryable,
 				},
 			)
