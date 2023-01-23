@@ -14,67 +14,75 @@ import (
 */
 
 func TestRetry(t *testing.T) {
-	type args struct {
-		ctx            context.Context
-		sleepTimeSec   int
-		targetResource *string
-		input          *struct{}
-		apiFunc        func(ctx context.Context, input *struct{}) (*struct{}, error)
-		retryable      func(error) bool
-	}
-	type want error
 	tests := []struct {
 		name    string
-		args    args
-		want    want
+		args    RetryInput[struct{}, struct{}]
+		want    error
 		wantErr bool
 	}{
 		{
-			name: "retry and then occur an error: apiFunc returns error and retryable returns true if error is not nil",
-			args: args{
-				ctx:            context.Background(),
-				sleepTimeSec:   1,
-				targetResource: aws.String("resource"),
-				input:          &struct{}{},
-				apiFunc: func(ctx context.Context, input *struct{}) (*struct{}, error) {
+			name: "retry and then occur an error: ApiCaller returns error and RetryableChecker returns true",
+			args: RetryInput[struct{}, struct{}]{
+				Ctx:            context.Background(),
+				SleepTimeSec:   1,
+				TargetResource: aws.String("resource"),
+				Input:          &struct{}{},
+				ApiCaller: func(ctx context.Context, input *struct{}) (*struct{}, error) {
 					return input, fmt.Errorf("ApiFuncError")
 				},
-				retryable: func(err error) bool {
-					return err != nil && true
+				RetryableChecker: func(err error) bool {
+					return true
 				},
 			},
 			want:    fmt.Errorf("RetryCountOverError: resource, ApiFuncError\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 		{
-			name: "do not retry and then occur an error: apiFunc returns error and retryable just returns false",
-			args: args{
-				ctx:            context.Background(),
-				sleepTimeSec:   1,
-				targetResource: aws.String("resource"),
-				input:          &struct{}{},
-				apiFunc: func(ctx context.Context, input *struct{}) (*struct{}, error) {
+			name: "do not retry and then occur an error: ApiCaller returns error and RetryableChecker returns false",
+			args: RetryInput[struct{}, struct{}]{
+				Ctx:            context.Background(),
+				SleepTimeSec:   1,
+				TargetResource: aws.String("resource"),
+				Input:          &struct{}{},
+				ApiCaller: func(ctx context.Context, input *struct{}) (*struct{}, error) {
 					return input, fmt.Errorf("ApiFuncError")
 				},
-				retryable: func(err error) bool {
-					return err != nil && false
+				RetryableChecker: func(err error) bool {
+					return false
 				},
 			},
 			want:    fmt.Errorf("ApiFuncError"),
 			wantErr: true,
 		},
 		{
-			name: "success but do not retry: apiFunc do not return error and retryable returns true if error is not nil",
-			args: args{
-				ctx:            context.Background(),
-				sleepTimeSec:   1,
-				targetResource: aws.String("resource"),
-				input:          &struct{}{},
-				apiFunc: func(ctx context.Context, input *struct{}) (*struct{}, error) {
+			name: "success: ApiCaller do not return error and RetryableChecker returns true but is not concerned about",
+			args: RetryInput[struct{}, struct{}]{
+				Ctx:            context.Background(),
+				SleepTimeSec:   1,
+				TargetResource: aws.String("resource"),
+				Input:          &struct{}{},
+				ApiCaller: func(ctx context.Context, input *struct{}) (*struct{}, error) {
 					return input, nil
 				},
-				retryable: func(err error) bool {
-					return err != nil
+				RetryableChecker: func(err error) bool {
+					return true
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "success: ApiCaller do not return error and RetryableChecker returns false but is not concerned about",
+			args: RetryInput[struct{}, struct{}]{
+				Ctx:            context.Background(),
+				SleepTimeSec:   1,
+				TargetResource: aws.String("resource"),
+				Input:          &struct{}{},
+				ApiCaller: func(ctx context.Context, input *struct{}) (*struct{}, error) {
+					return input, nil
+				},
+				RetryableChecker: func(err error) bool {
+					return false
 				},
 			},
 			want:    nil,
@@ -85,12 +93,12 @@ func TestRetry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := Retry(
 				&RetryInput[struct{}, struct{}]{
-					Ctx:              tt.args.ctx,
-					SleepTimeSec:     tt.args.sleepTimeSec,
-					TargetResource:   tt.args.targetResource,
-					Input:            tt.args.input,
-					ApiCaller:        tt.args.apiFunc,
-					RetryableChecker: tt.args.retryable,
+					Ctx:              tt.args.Ctx,
+					SleepTimeSec:     tt.args.SleepTimeSec,
+					TargetResource:   tt.args.TargetResource,
+					Input:            tt.args.Input,
+					ApiCaller:        tt.args.ApiCaller,
+					RetryableChecker: tt.args.RetryableChecker,
 				},
 			)
 			if (err != nil) != tt.wantErr {
