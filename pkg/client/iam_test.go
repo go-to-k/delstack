@@ -215,6 +215,31 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "list attached role policies failure for api error",
+			args: args{
+				ctx:      context.Background(),
+				roleName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListAttachedRolePoliciesApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListAttachedRolePoliciesOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: nil,
+				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range cases {
@@ -613,6 +638,31 @@ func TestIam_CheckRoleExists(t *testing.T) {
 			want: want{
 				exists: false,
 				err:    fmt.Errorf("operation error IAM: GetRole, GetRoleError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "check role exists failure for api error",
+			args: args{
+				ctx:      context.Background(),
+				roleName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"GetRoleApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.GetRoleOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: false,
+				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: GetRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
 			},
 			wantErr: true,
 		},
