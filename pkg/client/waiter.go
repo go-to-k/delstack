@@ -13,12 +13,12 @@ const maxRetryCount = 10
 type ApiFunc[T, U any] func(ctx context.Context, input *T) (*U, error)
 
 type RetryInput[T, U any] struct {
-	Ctx            context.Context
-	SleepTimeSec   int
-	TargetResource *string
-	Input          *T
-	ApiFunction    ApiFunc[T, U]
-	Retryable      func(error) bool
+	Ctx              context.Context
+	SleepTimeSec     int
+	TargetResource   *string
+	Input            *T
+	ApiCaller        ApiFunc[T, U]
+	RetryableChecker func(error) bool
 }
 
 func Retry[T, U any](
@@ -27,12 +27,12 @@ func Retry[T, U any](
 	retryCount := 0
 
 	for {
-		output, err := in.ApiFunction(in.Ctx, in.Input)
+		output, err := in.ApiCaller(in.Ctx, in.Input)
 		if err == nil {
 			return output, nil
 		}
 
-		if in.Retryable(err) {
+		if in.RetryableChecker(err) {
 			retryCount++
 			if err := waitForRetry(in.Ctx, retryCount, in.SleepTimeSec, in.TargetResource, err); err != nil {
 				return nil, err

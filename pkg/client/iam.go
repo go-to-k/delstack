@@ -38,12 +38,12 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int
 	}
 	_, err := Retry(
 		&RetryInput[iam.DeleteRoleInput, iam.DeleteRoleOutput]{
-			Ctx:            ctx,
-			SleepTimeSec:   sleepTimeSec,
-			TargetResource: roleName,
-			Input:          input,
-			ApiFunction:    i.deleteRoleWithRetry(ctx, input),
-			Retryable:      retryable,
+			Ctx:              ctx,
+			SleepTimeSec:     sleepTimeSec,
+			TargetResource:   roleName,
+			Input:            input,
+			ApiCaller:        i.deleteRoleWithRetry(ctx, input),
+			RetryableChecker: retryable,
 		},
 	)
 	return err
@@ -116,12 +116,12 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 	}
 	_, err := Retry(
 		&RetryInput[iam.DetachRolePolicyInput, iam.DetachRolePolicyOutput]{
-			Ctx:            ctx,
-			SleepTimeSec:   sleepTimeSec,
-			TargetResource: roleName,
-			Input:          input,
-			ApiFunction:    i.detachRolePolicyWithRetry(ctx, input),
-			Retryable:      retryable,
+			Ctx:              ctx,
+			SleepTimeSec:     sleepTimeSec,
+			TargetResource:   roleName,
+			Input:            input,
+			ApiCaller:        i.detachRolePolicyWithRetry(ctx, input),
+			RetryableChecker: retryable,
 		},
 	)
 	return err

@@ -99,12 +99,12 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 			}
 			output, err := Retry(
 				&RetryInput[s3.DeleteObjectsInput, s3.DeleteObjectsOutput]{
-					Ctx:            ctx,
-					SleepTimeSec:   sleepTimeSec,
-					TargetResource: bucketName,
-					Input:          input,
-					ApiFunction:    s.deleteObjectsWithRetry(ctx, input),
-					Retryable:      retryable,
+					Ctx:              ctx,
+					SleepTimeSec:     sleepTimeSec,
+					TargetResource:   bucketName,
+					Input:            input,
+					ApiCaller:        s.deleteObjectsWithRetry(ctx, input),
+					RetryableChecker: retryable,
 				},
 			)
 			if err != nil {

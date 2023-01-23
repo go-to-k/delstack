@@ -85,12 +85,12 @@ func TestRetry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := Retry(
 				&RetryInput[struct{}, struct{}]{
-					Ctx:            tt.args.ctx,
-					SleepTimeSec:   tt.args.sleepTimeSec,
-					TargetResource: tt.args.targetResource,
-					Input:          tt.args.input,
-					ApiFunction:    tt.args.apiFunc,
-					Retryable:      tt.args.retryable,
+					Ctx:              tt.args.ctx,
+					SleepTimeSec:     tt.args.sleepTimeSec,
+					TargetResource:   tt.args.targetResource,
+					Input:            tt.args.input,
+					ApiCaller:        tt.args.apiFunc,
+					RetryableChecker: tt.args.retryable,
 				},
 			)
 			if (err != nil) != tt.wantErr {
