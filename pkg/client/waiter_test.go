@@ -19,7 +19,7 @@ func TestRetry(t *testing.T) {
 		sleepTimeSec   int
 		targetResource *string
 		input          *struct{}
-		apiFunc        ApiFunc[struct{}, struct{}]
+		apiFunc        func(ctx context.Context, input *struct{}) (*struct{}, error)
 		retryable      func(error) bool
 	}
 	type want error

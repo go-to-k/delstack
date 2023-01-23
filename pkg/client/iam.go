@@ -36,24 +36,7 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int
 	retryable := func(err error) bool {
 		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
 	}
-	_, err := Retry(
-		&RetryInput[iam.DeleteRoleInput, iam.DeleteRoleOutput]{
-			Ctx:              ctx,
-			SleepTimeSec:     sleepTimeSec,
-			TargetResource:   roleName,
-			Input:            input,
-			ApiCaller:        i.getFuncOfDeleteRoleForRetry(ctx, input),
-			RetryableChecker: retryable,
-		},
-	)
-	return err
-}
-
-func (i *Iam) getFuncOfDeleteRoleForRetry(
-	ctx context.Context,
-	input *iam.DeleteRoleInput,
-) ApiFunc[iam.DeleteRoleInput, iam.DeleteRoleOutput] {
-	return func(ctx context.Context, input *iam.DeleteRoleInput) (*iam.DeleteRoleOutput, error) {
+	deleteRoleForRetry := func(ctx context.Context, input *iam.DeleteRoleInput) (*iam.DeleteRoleOutput, error) {
 		output, err := i.client.DeleteRole(ctx, input)
 		if err != nil {
 			return nil, err
@@ -61,6 +44,17 @@ func (i *Iam) getFuncOfDeleteRoleForRetry(
 
 		return output, nil
 	}
+	_, err := Retry(
+		&RetryInput[iam.DeleteRoleInput, iam.DeleteRoleOutput]{
+			Ctx:              ctx,
+			SleepTimeSec:     sleepTimeSec,
+			TargetResource:   roleName,
+			Input:            input,
+			ApiCaller:        deleteRoleForRetry,
+			RetryableChecker: retryable,
+		},
+	)
+	return err
 }
 
 func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error) {
@@ -114,24 +108,7 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 	retryable := func(err error) bool {
 		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
 	}
-	_, err := Retry(
-		&RetryInput[iam.DetachRolePolicyInput, iam.DetachRolePolicyOutput]{
-			Ctx:              ctx,
-			SleepTimeSec:     sleepTimeSec,
-			TargetResource:   roleName,
-			Input:            input,
-			ApiCaller:        i.getFuncOfDetachRolePolicyForRetry(ctx, input),
-			RetryableChecker: retryable,
-		},
-	)
-	return err
-}
-
-func (i *Iam) getFuncOfDetachRolePolicyForRetry(
-	ctx context.Context,
-	input *iam.DetachRolePolicyInput,
-) ApiFunc[iam.DetachRolePolicyInput, iam.DetachRolePolicyOutput] {
-	return func(ctx context.Context, input *iam.DetachRolePolicyInput) (*iam.DetachRolePolicyOutput, error) {
+	detachRolePolicyForRetry := func(ctx context.Context, input *iam.DetachRolePolicyInput) (*iam.DetachRolePolicyOutput, error) {
 		output, err := i.client.DetachRolePolicy(ctx, input)
 		if err != nil {
 			return nil, err
@@ -139,6 +116,17 @@ func (i *Iam) getFuncOfDetachRolePolicyForRetry(
 
 		return output, nil
 	}
+	_, err := Retry(
+		&RetryInput[iam.DetachRolePolicyInput, iam.DetachRolePolicyOutput]{
+			Ctx:              ctx,
+			SleepTimeSec:     sleepTimeSec,
+			TargetResource:   roleName,
+			Input:            input,
+			ApiCaller:        detachRolePolicyForRetry,
+			RetryableChecker: retryable,
+		},
+	)
+	return err
 }
 
 func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
