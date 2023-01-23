@@ -24,3 +24,4 @@ dist/
 cover_file.html
 /delstack
 test_root_output.yaml
+testfiles/

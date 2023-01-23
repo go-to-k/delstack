@@ -12,6 +12,7 @@
         "Unshallow",
         "unshallow",
         "gomod",
+        "retryable",
     ],
     "gopls": {
         "analyses": {

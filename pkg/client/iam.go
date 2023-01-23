@@ -33,39 +33,21 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int
 		RoleName: roleName,
 	}
 
-	_, err := i.deleteRoleWithRetry(ctx, input, roleName, sleepTimeSec)
-	return err
-}
-
-func (i *Iam) deleteRoleWithRetry(
-	ctx context.Context,
-	input *iam.DeleteRoleInput,
-	roleName *string,
-	sleepTimeSec int,
-) (*iam.DeleteRoleOutput, error) {
-	retryCount := 0
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-
-		output, err := i.client.DeleteRole(ctx, input)
-		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
-			retryCount++
-			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
-				return nil, err
-			}
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		return output, nil
+	retryable := func(err error) bool {
+		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
 	}
+
+	_, err := Retry(
+		&RetryInput[iam.DeleteRoleInput, iam.DeleteRoleOutput, iam.Options]{
+			Ctx:              ctx,
+			SleepTimeSec:     sleepTimeSec,
+			TargetResource:   roleName,
+			Input:            input,
+			ApiCaller:        i.client.DeleteRole,
+			RetryableChecker: retryable,
+		},
+	)
+	return err
 }
 
 func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error) {
@@ -116,39 +98,21 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 		RoleName:  roleName,
 	}
 
-	_, err := i.detachRolePolicyWithRetry(ctx, input, roleName, sleepTimeSec)
-	return err
-}
-
-func (i *Iam) detachRolePolicyWithRetry(
-	ctx context.Context,
-	input *iam.DetachRolePolicyInput,
-	roleName *string,
-	sleepTimeSec int,
-) (*iam.DetachRolePolicyOutput, error) {
-	retryCount := 0
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-
-		output, err := i.client.DetachRolePolicy(ctx, input)
-		if err != nil && strings.Contains(err.Error(), "api error Throttling: Rate exceeded") {
-			retryCount++
-			if err := WaitForRetry(retryCount, sleepTimeSec, roleName, err); err != nil {
-				return nil, err
-			}
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		return output, nil
+	retryable := func(err error) bool {
+		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
 	}
+
+	_, err := Retry(
+		&RetryInput[iam.DetachRolePolicyInput, iam.DetachRolePolicyOutput, iam.Options]{
+			Ctx:              ctx,
+			SleepTimeSec:     sleepTimeSec,
+			TargetResource:   roleName,
+			Input:            input,
+			ApiCaller:        i.client.DetachRolePolicy,
+			RetryableChecker: retryable,
+		},
+	)
+	return err
 }
 
 func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
