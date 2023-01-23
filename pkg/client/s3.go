@@ -94,7 +94,20 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			output, err := s.deleteObjectsWithRetry(ctx, input, bucketName, sleepTimeSec)
+			retryable := func(err error) bool {
+				return strings.Contains(err.Error(), "api error SlowDown")
+			}
+
+			output, err := Retry(
+				&RetryInput[s3.DeleteObjectsInput, s3.DeleteObjectsOutput, s3.Options]{
+					Ctx:              ctx,
+					SleepTimeSec:     sleepTimeSec,
+					TargetResource:   bucketName,
+					Input:            input,
+					ApiCaller:        s.client.DeleteObjects,
+					RetryableChecker: retryable,
+				},
+			)
 			if err != nil {
 				return err
 			}
@@ -121,37 +134,6 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 	wg.Wait()
 
 	return errors, nil
-}
-
-func (s *S3) deleteObjectsWithRetry(
-	ctx context.Context,
-	input *s3.DeleteObjectsInput,
-	bucketName *string,
-	sleepTimeSec int,
-) (*s3.DeleteObjectsOutput, error) {
-	retryCount := 0
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-
-		output, err := s.client.DeleteObjects(ctx, input)
-		if err != nil && strings.Contains(err.Error(), "api error SlowDown") {
-			retryCount++
-			if err := WaitForRetry(retryCount, sleepTimeSec, bucketName, err); err != nil {
-				return nil, err
-			}
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		return output, nil
-	}
 }
 
 func (s *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
