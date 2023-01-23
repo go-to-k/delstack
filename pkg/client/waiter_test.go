@@ -89,13 +89,34 @@ func TestRetry(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "success: ApiCaller do not return error with ApiOptions",
+			name: "success: ApiCaller do not return error with empty ApiOptions",
 			args: RetryInput[struct{}, struct{}, struct{}]{
 				Ctx:            context.Background(),
 				SleepTimeSec:   1,
 				TargetResource: aws.String("resource"),
 				Input:          &struct{}{},
 				ApiOptions:     []func(*struct{}){},
+				ApiCaller: func(ctx context.Context, input *struct{}, optFns ...func(*struct{})) (*struct{}, error) {
+					return input, nil
+				},
+				RetryableChecker: func(err error) bool {
+					return false
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "success: ApiCaller do not return error with some ApiOptions",
+			args: RetryInput[struct{}, struct{}, struct{}]{
+				Ctx:            context.Background(),
+				SleepTimeSec:   1,
+				TargetResource: aws.String("resource"),
+				Input:          &struct{}{},
+				ApiOptions: []func(*struct{}){
+					func(*struct{}) {},
+					func(*struct{}) {},
+				},
 				ApiCaller: func(ctx context.Context, input *struct{}, optFns ...func(*struct{})) (*struct{}, error) {
 					return input, nil
 				},
