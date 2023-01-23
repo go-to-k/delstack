@@ -91,16 +91,7 @@ func TestRetry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Retry(
-				&RetryInput[struct{}, struct{}]{
-					Ctx:              tt.args.Ctx,
-					SleepTimeSec:     tt.args.SleepTimeSec,
-					TargetResource:   tt.args.TargetResource,
-					Input:            tt.args.Input,
-					ApiCaller:        tt.args.ApiCaller,
-					RetryableChecker: tt.args.RetryableChecker,
-				},
-			)
+			_, err := Retry(&tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Retry() error = %v, wantErr %v", err, tt.wantErr)
 				return
