@@ -10,6 +10,8 @@ import (
 
 const maxRetryCount = 10
 
+// T: Input type for ApiRequest.
+// U: Output type for ApiResponse.
 type RetryInput[T, U any] struct {
 	Ctx              context.Context
 	SleepTimeSec     int
@@ -19,6 +21,8 @@ type RetryInput[T, U any] struct {
 	RetryableChecker func(error) bool
 }
 
+// T: Input type for ApiRequest.
+// U: Output type for ApiResponse.
 func Retry[T, U any](
 	in *RetryInput[T, U],
 ) (*U, error) {
