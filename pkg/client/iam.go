@@ -42,14 +42,14 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int
 			SleepTimeSec:     sleepTimeSec,
 			TargetResource:   roleName,
 			Input:            input,
-			ApiCaller:        i.deleteRoleWithRetry(ctx, input),
+			ApiCaller:        i.getFuncOfDeleteRoleForRetry(ctx, input),
 			RetryableChecker: retryable,
 		},
 	)
 	return err
 }
 
-func (i *Iam) deleteRoleWithRetry(
+func (i *Iam) getFuncOfDeleteRoleForRetry(
 	ctx context.Context,
 	input *iam.DeleteRoleInput,
 ) ApiFunc[iam.DeleteRoleInput, iam.DeleteRoleOutput] {
@@ -120,14 +120,14 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 			SleepTimeSec:     sleepTimeSec,
 			TargetResource:   roleName,
 			Input:            input,
-			ApiCaller:        i.detachRolePolicyWithRetry(ctx, input),
+			ApiCaller:        i.getFuncOfDetachRolePolicyForRetry(ctx, input),
 			RetryableChecker: retryable,
 		},
 	)
 	return err
 }
 
-func (i *Iam) detachRolePolicyWithRetry(
+func (i *Iam) getFuncOfDetachRolePolicyForRetry(
 	ctx context.Context,
 	input *iam.DetachRolePolicyInput,
 ) ApiFunc[iam.DetachRolePolicyInput, iam.DetachRolePolicyOutput] {

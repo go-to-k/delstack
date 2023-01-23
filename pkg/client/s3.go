@@ -103,7 +103,7 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 					SleepTimeSec:     sleepTimeSec,
 					TargetResource:   bucketName,
 					Input:            input,
-					ApiCaller:        s.deleteObjectsWithRetry(ctx, input),
+					ApiCaller:        s.getFuncOfDeleteObjectsForRetry(ctx, input),
 					RetryableChecker: retryable,
 				},
 			)
@@ -135,7 +135,7 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 	return errors, nil
 }
 
-func (s *S3) deleteObjectsWithRetry(
+func (s *S3) getFuncOfDeleteObjectsForRetry(
 	ctx context.Context,
 	input *s3.DeleteObjectsInput,
 ) ApiFunc[s3.DeleteObjectsInput, s3.DeleteObjectsOutput] {
