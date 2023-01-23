@@ -231,7 +231,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			output, err := iamClient.ListAttachedRolePolicies(tt.args.ctx, tt.args.roleName)
+			output, err := iamClient.ListAttachedRolePolicies(tt.args.ctx, tt.args.roleName, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -632,7 +632,7 @@ func TestIam_CheckRoleExists(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			output, err := iamClient.CheckRoleExists(tt.args.ctx, tt.args.roleName)
+			output, err := iamClient.CheckRoleExists(tt.args.ctx, tt.args.roleName, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return

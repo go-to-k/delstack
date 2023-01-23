@@ -54,7 +54,7 @@ func (o *RoleOperator) DeleteResources(ctx context.Context) error {
 }
 
 func (o *RoleOperator) DeleteRole(ctx context.Context, roleName *string) error {
-	exists, err := o.client.CheckRoleExists(ctx, roleName)
+	exists, err := o.client.CheckRoleExists(ctx, roleName, sleepTimeSecForIam)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (o *RoleOperator) DeleteRole(ctx context.Context, roleName *string) error {
 		return nil
 	}
 
-	policies, err := o.client.ListAttachedRolePolicies(ctx, roleName)
+	policies, err := o.client.ListAttachedRolePolicies(ctx, roleName, sleepTimeSecForIam)
 	if err != nil {
 		return err
 	}
