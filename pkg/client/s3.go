@@ -15,7 +15,7 @@ import (
 
 const s3DeleteObjectsSizeLimit = 1000
 
-const sleepTimeSecForS3 = 10
+var SleepTimeSecForS3 = 10
 
 type IS3 interface {
 	DeleteBucket(ctx context.Context, bucketName *string) error
@@ -103,7 +103,7 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 			output, err := Retry(
 				&RetryInput[s3.DeleteObjectsInput, s3.DeleteObjectsOutput, s3.Options]{
 					Ctx:              ctx,
-					SleepTimeSec:     sleepTimeSecForS3,
+					SleepTimeSec:     SleepTimeSecForS3,
 					TargetResource:   bucketName,
 					Input:            input,
 					ApiCaller:        s.client.DeleteObjects,

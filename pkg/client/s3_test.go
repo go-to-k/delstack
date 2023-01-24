@@ -121,6 +121,7 @@ func TestS3_DeleteBucket(t *testing.T) {
 }
 
 func TestS3_DeleteObjects(t *testing.T) {
+	SleepTimeSecForS3 = 1
 	objectsOverLimit := []types.ObjectIdentifier{}
 	s3DeleteObjectsSizeOverLimit := s3DeleteObjectsSizeLimit*int(runtime.NumCPU())*2 + 1 // loop over cpu core size for channel waiting when next loop
 	for i := 0; i < s3DeleteObjectsSizeOverLimit; i++ {

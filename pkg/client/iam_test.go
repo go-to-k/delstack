@@ -33,6 +33,7 @@ func getNextMarkerForIamInitialize(
 */
 
 func TestIam_DeleteRole(t *testing.T) {
+	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		roleName           *string
@@ -140,6 +141,7 @@ func TestIam_DeleteRole(t *testing.T) {
 }
 
 func TestIam_ListAttachedRolePolicies(t *testing.T) {
+	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		roleName           *string
@@ -522,6 +524,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicies(t *testing.T) {
+	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		roleName           *string
@@ -683,6 +686,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicy(t *testing.T) {
+	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		roleName           *string
@@ -794,6 +798,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 }
 
 func TestIam_CheckRoleExists(t *testing.T) {
+	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		roleName           *string
