@@ -257,6 +257,31 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "list attached role policies failure for api error",
+			args: args{
+				ctx:      context.Background(),
+				roleName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListAttachedRolePoliciesApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListAttachedRolePoliciesOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: nil,
+				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			},
+			wantErr: true,
+		},
+		{
 			name: "list attached role policies with next marker successfully",
 			args: args{
 				ctx:      context.Background(),
@@ -406,6 +431,66 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "list attached role policies with next marker failure for api error",
+			args: args{
+				ctx:      context.Background(),
+				roleName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextMarker",
+							getNextMarkerForIamInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListAttachedRolePoliciesWithNextMarkerApiErrorMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								marker := middleware.GetStackValue(ctx, markerKeyForIam{}).(*string)
+
+								var nextMarker *string
+								var attachedPolicies []types.AttachedPolicy
+								if marker == nil {
+									nextMarker = aws.String("NextMarker")
+									attachedPolicies = []types.AttachedPolicy{
+										{
+											PolicyArn:  aws.String("PolicyArn1"),
+											PolicyName: aws.String("PolicyName1"),
+										},
+										{
+											PolicyArn:  aws.String("PolicyArn2"),
+											PolicyName: aws.String("PolicyName2"),
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &iam.ListAttachedRolePoliciesOutput{
+											Marker:           nextMarker,
+											AttachedPolicies: attachedPolicies,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									return middleware.FinalizeOutput{
+										Result: &iam.ListAttachedRolePoliciesOutput{},
+									}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				output: nil,
+				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range cases {
@@ -422,7 +507,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			output, err := iamClient.ListAttachedRolePolicies(tt.args.ctx, tt.args.roleName)
+			output, err := iamClient.ListAttachedRolePolicies(tt.args.ctx, tt.args.roleName, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -807,6 +892,31 @@ func TestIam_CheckRoleExists(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "check role exists failure for api error",
+			args: args{
+				ctx:      context.Background(),
+				roleName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"GetRoleApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.GetRoleOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: false,
+				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: GetRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range cases {
@@ -823,7 +933,7 @@ func TestIam_CheckRoleExists(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			output, err := iamClient.CheckRoleExists(tt.args.ctx, tt.args.roleName)
+			output, err := iamClient.CheckRoleExists(tt.args.ctx, tt.args.roleName, sleepTimeSecForIam)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
