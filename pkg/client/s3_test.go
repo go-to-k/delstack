@@ -15,8 +15,6 @@ import (
 	"github.com/aws/smithy-go/middleware"
 )
 
-const sleepTimeSecForS3 = 1
-
 type keyMarkerKeyForS3 struct{}
 type versionIdMarkerKeyForS3 struct{}
 
@@ -123,6 +121,7 @@ func TestS3_DeleteBucket(t *testing.T) {
 }
 
 func TestS3_DeleteObjects(t *testing.T) {
+	SleepTimeSecForS3 = 1
 	objectsOverLimit := []types.ObjectIdentifier{}
 	s3DeleteObjectsSizeOverLimit := s3DeleteObjectsSizeLimit*int(runtime.NumCPU())*2 + 1 // loop over cpu core size for channel waiting when next loop
 	for i := 0; i < s3DeleteObjectsSizeOverLimit; i++ {
@@ -374,7 +373,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 			client := s3.NewFromConfig(cfg)
 			s3Client := NewS3(client)
 
-			output, err := s3Client.DeleteObjects(tt.args.ctx, tt.args.bucketName, tt.args.objects, sleepTimeSecForS3)
+			output, err := s3Client.DeleteObjects(tt.args.ctx, tt.args.bucketName, tt.args.objects)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
