@@ -14,8 +14,6 @@ import (
 	"github.com/aws/smithy-go/middleware"
 )
 
-const sleepTimeSecForIam = 1
-
 type markerKeyForIam struct{}
 
 func getNextMarkerForIamInitialize(
