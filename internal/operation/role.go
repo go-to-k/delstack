@@ -12,8 +12,6 @@ import (
 
 var _ IOperator = (*RoleOperator)(nil)
 
-const sleepTimeSecForIam = 5
-
 type RoleOperator struct {
 	client    client.IIam
 	resources []*types.StackResourceSummary
@@ -54,7 +52,7 @@ func (o *RoleOperator) DeleteResources(ctx context.Context) error {
 }
 
 func (o *RoleOperator) DeleteRole(ctx context.Context, roleName *string) error {
-	exists, err := o.client.CheckRoleExists(ctx, roleName, sleepTimeSecForIam)
+	exists, err := o.client.CheckRoleExists(ctx, roleName)
 	if err != nil {
 		return err
 	}
@@ -62,18 +60,18 @@ func (o *RoleOperator) DeleteRole(ctx context.Context, roleName *string) error {
 		return nil
 	}
 
-	policies, err := o.client.ListAttachedRolePolicies(ctx, roleName, sleepTimeSecForIam)
+	policies, err := o.client.ListAttachedRolePolicies(ctx, roleName)
 	if err != nil {
 		return err
 	}
 
 	if len(policies) > 0 {
-		if err := o.client.DetachRolePolicies(ctx, roleName, policies, sleepTimeSecForIam); err != nil {
+		if err := o.client.DetachRolePolicies(ctx, roleName, policies); err != nil {
 			return err
 		}
 	}
 
-	if err := o.client.DeleteRole(ctx, roleName, sleepTimeSecForIam); err != nil {
+	if err := o.client.DeleteRole(ctx, roleName); err != nil {
 		return err
 	}
 

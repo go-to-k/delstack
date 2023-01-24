@@ -8,12 +8,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 )
 
+const sleepTimeSecForIam = 5
+
 type IIam interface {
-	DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int) error
-	ListAttachedRolePolicies(ctx context.Context, roleName *string, sleepTimeSec int) ([]types.AttachedPolicy, error)
-	DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error
-	DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn *string, sleepTimeSec int) error
-	CheckRoleExists(ctx context.Context, roleName *string, sleepTimeSec int) (bool, error)
+	DeleteRole(ctx context.Context, roleName *string) error
+	ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error)
+	DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy) error
+	DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn *string) error
+	CheckRoleExists(ctx context.Context, roleName *string) (bool, error)
 }
 
 var _ IIam = (*Iam)(nil)
@@ -28,7 +30,7 @@ func NewIam(client *iam.Client) *Iam {
 	}
 }
 
-func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int) error {
+func (i *Iam) DeleteRole(ctx context.Context, roleName *string) error {
 	input := &iam.DeleteRoleInput{
 		RoleName: roleName,
 	}
@@ -40,7 +42,7 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int
 	_, err := Retry(
 		&RetryInput[iam.DeleteRoleInput, iam.DeleteRoleOutput, iam.Options]{
 			Ctx:              ctx,
-			SleepTimeSec:     sleepTimeSec,
+			SleepTimeSec:     sleepTimeSecForIam,
 			TargetResource:   roleName,
 			Input:            input,
 			ApiCaller:        i.client.DeleteRole,
@@ -50,7 +52,7 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string, sleepTimeSec int
 	return err
 }
 
-func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string, sleepTimeSec int) ([]types.AttachedPolicy, error) {
+func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error) {
 	var marker *string
 	policies := []types.AttachedPolicy{}
 
@@ -73,7 +75,7 @@ func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string, sl
 		output, err := Retry(
 			&RetryInput[iam.ListAttachedRolePoliciesInput, iam.ListAttachedRolePoliciesOutput, iam.Options]{
 				Ctx:              ctx,
-				SleepTimeSec:     sleepTimeSec,
+				SleepTimeSec:     sleepTimeSecForIam,
 				TargetResource:   roleName,
 				Input:            input,
 				ApiCaller:        i.client.ListAttachedRolePolicies,
@@ -96,9 +98,9 @@ func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string, sl
 	return policies, nil
 }
 
-func (i *Iam) DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy, sleepTimeSec int) error {
+func (i *Iam) DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy) error {
 	for _, policy := range policies {
-		if err := i.DetachRolePolicy(ctx, roleName, policy.PolicyArn, sleepTimeSec); err != nil {
+		if err := i.DetachRolePolicy(ctx, roleName, policy.PolicyArn); err != nil {
 			return err
 		}
 	}
@@ -106,7 +108,7 @@ func (i *Iam) DetachRolePolicies(ctx context.Context, roleName *string, policies
 	return nil
 }
 
-func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn *string, sleepTimeSec int) error {
+func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn *string) error {
 	input := &iam.DetachRolePolicyInput{
 		PolicyArn: PolicyArn,
 		RoleName:  roleName,
@@ -119,7 +121,7 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 	_, err := Retry(
 		&RetryInput[iam.DetachRolePolicyInput, iam.DetachRolePolicyOutput, iam.Options]{
 			Ctx:              ctx,
-			SleepTimeSec:     sleepTimeSec,
+			SleepTimeSec:     sleepTimeSecForIam,
 			TargetResource:   roleName,
 			Input:            input,
 			ApiCaller:        i.client.DetachRolePolicy,
@@ -129,7 +131,7 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 	return err
 }
 
-func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string, sleepTimeSec int) (bool, error) {
+func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
 	input := &iam.GetRoleInput{
 		RoleName: roleName,
 	}
@@ -141,7 +143,7 @@ func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string, sleepTimeSe
 	_, err := Retry(
 		&RetryInput[iam.GetRoleInput, iam.GetRoleOutput, iam.Options]{
 			Ctx:              ctx,
-			SleepTimeSec:     sleepTimeSec,
+			SleepTimeSec:     sleepTimeSecForIam,
 			TargetResource:   roleName,
 			Input:            input,
 			ApiCaller:        i.client.GetRole,
