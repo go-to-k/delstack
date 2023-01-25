@@ -13,8 +13,6 @@ import (
 
 var _ IOperator = (*BucketOperator)(nil)
 
-const sleepTimeSecForS3 = 10
-
 type BucketOperator struct {
 	client    client.IS3
 	resources []*types.StackResourceSummary
@@ -69,7 +67,7 @@ func (o *BucketOperator) DeleteBucket(ctx context.Context, bucketName *string) e
 	}
 
 	if len(versions) > 0 {
-		errors, err := o.client.DeleteObjects(ctx, bucketName, versions, sleepTimeSecForS3)
+		errors, err := o.client.DeleteObjects(ctx, bucketName, versions)
 		if err != nil {
 			return err
 		}

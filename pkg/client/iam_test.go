@@ -14,8 +14,6 @@ import (
 	"github.com/aws/smithy-go/middleware"
 )
 
-const sleepTimeSecForIam = 1
-
 type markerKeyForIam struct{}
 
 func getNextMarkerForIamInitialize(
@@ -35,6 +33,7 @@ func getNextMarkerForIamInitialize(
 */
 
 func TestIam_DeleteRole(t *testing.T) {
+	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		roleName           *string
@@ -129,7 +128,7 @@ func TestIam_DeleteRole(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			err = iamClient.DeleteRole(tt.args.ctx, tt.args.roleName, sleepTimeSecForIam)
+			err = iamClient.DeleteRole(tt.args.ctx, tt.args.roleName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -142,6 +141,7 @@ func TestIam_DeleteRole(t *testing.T) {
 }
 
 func TestIam_ListAttachedRolePolicies(t *testing.T) {
+	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		roleName           *string
@@ -507,7 +507,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			output, err := iamClient.ListAttachedRolePolicies(tt.args.ctx, tt.args.roleName, sleepTimeSecForIam)
+			output, err := iamClient.ListAttachedRolePolicies(tt.args.ctx, tt.args.roleName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -524,6 +524,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicies(t *testing.T) {
+	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		roleName           *string
@@ -672,7 +673,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			err = iamClient.DetachRolePolicies(tt.args.ctx, tt.args.roleName, tt.args.policies, sleepTimeSecForIam)
+			err = iamClient.DetachRolePolicies(tt.args.ctx, tt.args.roleName, tt.args.policies)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -685,6 +686,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 }
 
 func TestIam_DetachRolePolicy(t *testing.T) {
+	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		roleName           *string
@@ -783,7 +785,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			err = iamClient.DetachRolePolicy(tt.args.ctx, tt.args.roleName, tt.args.PolicyArn, sleepTimeSecForIam)
+			err = iamClient.DetachRolePolicy(tt.args.ctx, tt.args.roleName, tt.args.PolicyArn)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -796,6 +798,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 }
 
 func TestIam_CheckRoleExists(t *testing.T) {
+	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		roleName           *string
@@ -933,7 +936,7 @@ func TestIam_CheckRoleExists(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			output, err := iamClient.CheckRoleExists(tt.args.ctx, tt.args.roleName, sleepTimeSecForIam)
+			output, err := iamClient.CheckRoleExists(tt.args.ctx, tt.args.roleName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
