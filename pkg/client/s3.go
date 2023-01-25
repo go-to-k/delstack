@@ -15,9 +15,11 @@ import (
 
 const s3DeleteObjectsSizeLimit = 1000
 
+var SleepTimeSecForS3 = 10
+
 type IS3 interface {
 	DeleteBucket(ctx context.Context, bucketName *string) error
-	DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error)
+	DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error)
 	ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error)
 	CheckBucketExists(ctx context.Context, bucketName *string) (bool, error)
 }
@@ -44,7 +46,7 @@ func (s *S3) DeleteBucket(ctx context.Context, bucketName *string) error {
 	return err
 }
 
-func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier, sleepTimeSec int) ([]types.Error, error) {
+func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error) {
 	errors := []types.Error{}
 	if len(objects) == 0 {
 		return errors, nil
@@ -101,7 +103,7 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 			output, err := Retry(
 				&RetryInput[s3.DeleteObjectsInput, s3.DeleteObjectsOutput, s3.Options]{
 					Ctx:              ctx,
-					SleepTimeSec:     sleepTimeSec,
+					SleepTimeSec:     SleepTimeSecForS3,
 					TargetResource:   bucketName,
 					Input:            input,
 					ApiCaller:        s.client.DeleteObjects,
