@@ -9,7 +9,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
-const selectionPageSize = 20
+const SelectionPageSize = 20
 
 func GetCheckboxes(label string, opts []string) []string {
 	res := []string{}
@@ -29,7 +29,7 @@ func GetSelection(label string, opts []string) string {
 	prompt := &survey.Select{
 		Message:  label,
 		Options:  opts,
-		PageSize: selectionPageSize,
+		PageSize: SelectionPageSize,
 	}
 	survey.AskOne(prompt, &res)
 

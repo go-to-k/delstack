@@ -17,9 +17,9 @@ import (
 
 var _ IOperator = (*StackOperator)(nil)
 
-const stackNameRule = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
+const StackNameRule = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
-var stackNameRuleRegExp = regexp.MustCompile(stackNameRule)
+var stackNameRuleRegExp = regexp.MustCompile(StackNameRule)
 
 type StackOperator struct {
 	config              aws.Config

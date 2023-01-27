@@ -34,7 +34,7 @@ func TestRetry(t *testing.T) {
 					return true
 				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: resource, ApiFuncError\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: resource, ApiFuncError\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 		{
@@ -186,7 +186,7 @@ func Test_waitForRetry(t *testing.T) {
 			name: "retryCount = MaxRetryCount - 1: not error",
 			args: args{
 				ctx:                context.Background(),
-				retryCount:         maxRetryCount - 1,
+				retryCount:         MaxRetryCount - 1,
 				sleepTimeSec:       1,
 				targetResourceType: aws.String("resource"),
 				err:                fmt.Errorf("API Error"),
@@ -198,7 +198,7 @@ func Test_waitForRetry(t *testing.T) {
 			name: "retryCount = MaxRetryCount: not error",
 			args: args{
 				ctx:                context.Background(),
-				retryCount:         maxRetryCount,
+				retryCount:         MaxRetryCount,
 				sleepTimeSec:       1,
 				targetResourceType: aws.String("resource"),
 				err:                fmt.Errorf("API Error"),
@@ -210,12 +210,12 @@ func Test_waitForRetry(t *testing.T) {
 			name: "retryCount = MaxRetryCount + 1: RetryCountOverError",
 			args: args{
 				ctx:                context.Background(),
-				retryCount:         maxRetryCount + 1,
+				retryCount:         MaxRetryCount + 1,
 				sleepTimeSec:       1,
 				targetResourceType: aws.String("resource"),
 				err:                fmt.Errorf("API Error"),
 			},
-			want:    fmt.Errorf("RetryCountOverError: resource, API Error\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: resource, API Error\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "),
 			wantErr: true,
 		},
 	}
