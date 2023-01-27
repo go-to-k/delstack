@@ -19,7 +19,7 @@ var _ IOperator = (*StackOperator)(nil)
 
 const StackNameRule = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
-var stackNameRuleRegExp = regexp.MustCompile(StackNameRule)
+var StackNameRuleRegExp = regexp.MustCompile(StackNameRule)
 
 type StackOperator struct {
 	config              aws.Config
@@ -56,7 +56,7 @@ func (o *StackOperator) DeleteResources(ctx context.Context) error {
 		}
 		eg.Go(func() error {
 			defer sem.Release(1)
-			stackName := stackNameRuleRegExp.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
+			stackName := StackNameRuleRegExp.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
 
 			isRootStack := false
 			operatorFactory := NewOperatorFactory(o.config)
