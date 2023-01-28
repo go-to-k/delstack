@@ -139,7 +139,7 @@ func (a *App) doInteractiveMode() ([]string, string, bool) {
 	opts := resourcetype.GetResourceTypes()
 
 	if a.StackName == "" {
-		stackNameLabel := "Filter a keyword of stack names: "
+		stackNameLabel := "Filter a keyword of stack names(case-insensitive): "
 		keyword = io.InputKeywordForFilter(stackNameLabel)
 	}
 

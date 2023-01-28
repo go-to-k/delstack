@@ -91,7 +91,7 @@ It can be **empty**.
 
 ```sh
 ❯ delstack -i
-Filter a keyword of stack names: test-goto
+Filter a keyword of stack names(case-insensitive): test-goto
 ```
 
 Then you select stack names in the UI.
