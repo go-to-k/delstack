@@ -123,7 +123,7 @@ func TestS3_DeleteBucket(t *testing.T) {
 func TestS3_DeleteObjects(t *testing.T) {
 	SleepTimeSecForS3 = 1
 	objectsOverLimit := []types.ObjectIdentifier{}
-	s3DeleteObjectsSizeOverLimit := s3DeleteObjectsSizeLimit*int(runtime.NumCPU())*2 + 1 // loop over cpu core size for channel waiting when next loop
+	s3DeleteObjectsSizeOverLimit := S3DeleteObjectsSizeLimit*int(runtime.NumCPU())*2 + 1 // loop over cpu core size for channel waiting when next loop
 	for i := 0; i < s3DeleteObjectsSizeOverLimit; i++ {
 		objectsOverLimit = append(objectsOverLimit, types.ObjectIdentifier{
 			Key:       aws.String("Key"),
@@ -305,7 +305,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("RetryCountOverError: test, operation error S3: DeleteObjects, api error SlowDown\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "),
+				err:    fmt.Errorf("RetryCountOverError: test, operation error S3: DeleteObjects, api error SlowDown\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "),
 			},
 			wantErr: true,
 		},

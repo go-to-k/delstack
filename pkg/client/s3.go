@@ -13,7 +13,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-const s3DeleteObjectsSizeLimit = 1000
+const S3DeleteObjectsSizeLimit = 1000
 
 var SleepTimeSecForS3 = 10
 
@@ -74,9 +74,9 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 	for {
 		inputObjects := []types.ObjectIdentifier{}
 
-		if len(nextObjects) > s3DeleteObjectsSizeLimit {
-			inputObjects = append(inputObjects, nextObjects[:s3DeleteObjectsSizeLimit]...)
-			nextObjects = nextObjects[s3DeleteObjectsSizeLimit:]
+		if len(nextObjects) > S3DeleteObjectsSizeLimit {
+			inputObjects = append(inputObjects, nextObjects[:S3DeleteObjectsSizeLimit]...)
+			nextObjects = nextObjects[S3DeleteObjectsSizeLimit:]
 		} else {
 			inputObjects = append(inputObjects, nextObjects...)
 			nextObjects = nil

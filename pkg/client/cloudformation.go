@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 )
 
-const cloudFormationWaitNanoSecTime = time.Duration(4500000000000)
+const CloudFormationWaitNanoSecTime = time.Duration(4500000000000)
 
 type ICloudFormation interface {
 	DeleteStack(ctx context.Context, stackName *string, retainResources []string) error
@@ -67,7 +67,7 @@ func (c *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string)
 		StackName: stackName,
 	}
 
-	err := c.waiter.Wait(ctx, input, cloudFormationWaitNanoSecTime)
+	err := c.waiter.Wait(ctx, input, CloudFormationWaitNanoSecTime)
 	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
 		return err
 	}
