@@ -558,6 +558,38 @@ func TestStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "list stacks filtered by lower keyword successfully",
+			args: args{
+				ctx:        ctx,
+				keyword:    "teststack",
+				clientMock: mock,
+			},
+			want: want{
+				filteredStacks: []string{
+					"TestStack1",
+					"TestStack2",
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list stacks filtered by upper keyword successfully",
+			args: args{
+				ctx:        ctx,
+				keyword:    "TESTSTACK",
+				clientMock: mock,
+			},
+			want: want{
+				filteredStacks: []string{
+					"TestStack1",
+					"TestStack2",
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
 			name: "list stacks filtered by keyword but empty keyword successfully",
 			args: args{
 				ctx:        ctx,

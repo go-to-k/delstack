@@ -146,7 +146,10 @@ func (o *StackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword
 	}
 
 	for _, stackSummary := range stackSummaries {
-		if strings.Contains(*stackSummary.StackName, *keyword) {
+		// for case-insensitive
+		lowerStackName := strings.ToLower(*stackSummary.StackName)
+		lowerKeyword := strings.ToLower(*keyword)
+		if strings.Contains(lowerStackName, lowerKeyword) {
 			filteredStacks = append(filteredStacks, *stackSummary.StackName)
 		}
 	}
