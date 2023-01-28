@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const maxRetryCount = 10
+const MaxRetryCount = 10
 
 // T: Input type for API Request.
 // U: Output type for API Response.
@@ -49,8 +49,8 @@ func Retry[T, U, V any](
 }
 
 func waitForRetry(ctx context.Context, retryCount int, sleepTimeSec int, targetResource *string, err error) error {
-	if retryCount > maxRetryCount {
-		errorDetail := err.Error() + "\nRetryCount(" + strconv.Itoa(maxRetryCount) + ") over, but failed to delete. "
+	if retryCount > MaxRetryCount {
+		errorDetail := err.Error() + "\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "
 		return fmt.Errorf("RetryCountOverError: %v, %v", *targetResource, errorDetail)
 	}
 

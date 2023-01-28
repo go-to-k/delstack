@@ -10,7 +10,7 @@ import (
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
-const awsSDKRetryMaxAttempts = 3
+const SDKRetryMaxAttempts = 3
 
 type IOperatorFactory interface {
 	CreateStackOperator(targetResourceTypes []string) *StackOperator
@@ -35,7 +35,7 @@ func NewOperatorFactory(config aws.Config) *OperatorFactory {
 
 func (f *OperatorFactory) CreateStackOperator(targetResourceTypes []string) *StackOperator {
 	sdkCfnClient := cloudformation.NewFromConfig(f.config, func(o *cloudformation.Options) {
-		o.RetryMaxAttempts = awsSDKRetryMaxAttempts
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 	sdkCfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
@@ -52,7 +52,7 @@ func (f *OperatorFactory) CreateStackOperator(targetResourceTypes []string) *Sta
 
 func (f *OperatorFactory) CreateBackupVaultOperator() *BackupVaultOperator {
 	sdkBackupClient := backup.NewFromConfig(f.config, func(o *backup.Options) {
-		o.RetryMaxAttempts = awsSDKRetryMaxAttempts
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 
@@ -65,7 +65,7 @@ func (f *OperatorFactory) CreateBackupVaultOperator() *BackupVaultOperator {
 
 func (f *OperatorFactory) CreateEcrOperator() *EcrOperator {
 	sdkEcrClient := ecr.NewFromConfig(f.config, func(o *ecr.Options) {
-		o.RetryMaxAttempts = awsSDKRetryMaxAttempts
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 
@@ -78,7 +78,7 @@ func (f *OperatorFactory) CreateEcrOperator() *EcrOperator {
 
 func (f *OperatorFactory) CreateRoleOperator() *RoleOperator {
 	sdkIamClient := iam.NewFromConfig(f.config, func(o *iam.Options) {
-		o.RetryMaxAttempts = awsSDKRetryMaxAttempts
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 
@@ -91,7 +91,7 @@ func (f *OperatorFactory) CreateRoleOperator() *RoleOperator {
 
 func (f *OperatorFactory) CreateBucketOperator() *BucketOperator {
 	sdkS3Client := s3.NewFromConfig(f.config, func(o *s3.Options) {
-		o.RetryMaxAttempts = awsSDKRetryMaxAttempts
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 
