@@ -6,7 +6,7 @@ The description in **Japanese** is available on the following blog page. -> [Blo
 
 ## What is
 
-Tool to force delete the **entire** CloudFormation stack, **even if it contains resources that fail to delete by the CloudFormation delete operation**.
+Tool to force delete the **entire** AWS CloudFormation stack, **even if it contains resources that fail to delete by the CloudFormation delete operation**.
 
 ## Resource Types that can be forced to delete
 
