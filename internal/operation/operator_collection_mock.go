@@ -37,14 +37,14 @@ func (m *MockOperatorCollection) GetLogicalResourceIds() []string {
 func (m *MockOperatorCollection) GetOperators() []IOperator {
 	var operators []IOperator
 
-	stackOperator := NewMockStackOperator()
+	cloudFormationStackOperator := NewMockCloudFormationStackOperator()
 	bucketOperator := NewMockBucketOperator()
 	roleOperator := NewMockRoleOperator()
 	ecrRepositoryOperator := NewMockEcrRepositoryOperator()
 	backupVaultOperator := NewMockBackupVaultOperator()
 	customOperator := NewMockCustomOperator()
 
-	operators = append(operators, stackOperator)
+	operators = append(operators, cloudFormationStackOperator)
 	operators = append(operators, bucketOperator)
 	operators = append(operators, roleOperator)
 	operators = append(operators, ecrRepositoryOperator)
@@ -77,14 +77,14 @@ func (m *IncorrectResourceCountsMockOperatorCollection) GetLogicalResourceIds() 
 func (m *IncorrectResourceCountsMockOperatorCollection) GetOperators() []IOperator {
 	var operators []IOperator
 
-	stackOperator := NewMockStackOperator()
+	cloudFormationStackOperator := NewMockCloudFormationStackOperator()
 	bucketOperator := NewMockBucketOperator()
 	roleOperator := NewMockRoleOperator()
 	ecrRepositoryOperator := NewMockEcrRepositoryOperator()
 	backupVaultOperator := NewMockBackupVaultOperator()
 	customOperator := NewMockCustomOperator()
 
-	operators = append(operators, stackOperator)
+	operators = append(operators, cloudFormationStackOperator)
 	operators = append(operators, bucketOperator)
 	operators = append(operators, roleOperator)
 	operators = append(operators, ecrRepositoryOperator)
@@ -121,14 +121,14 @@ func (m *OperatorDeleteResourcesMockOperatorCollection) GetLogicalResourceIds() 
 func (m *OperatorDeleteResourcesMockOperatorCollection) GetOperators() []IOperator {
 	var operators []IOperator
 
-	stackOperator := NewErrorMockStackOperator()
+	cloudFormationStackOperator := NewErrorMockCloudFormationStackOperator()
 	bucketOperator := NewMockBucketOperator()
 	roleOperator := NewMockRoleOperator()
 	ecrRepositoryOperator := NewMockEcrRepositoryOperator()
 	backupVaultOperator := NewMockBackupVaultOperator()
 	customOperator := NewMockCustomOperator()
 
-	operators = append(operators, stackOperator)
+	operators = append(operators, cloudFormationStackOperator)
 	operators = append(operators, bucketOperator)
 	operators = append(operators, roleOperator)
 	operators = append(operators, ecrRepositoryOperator)

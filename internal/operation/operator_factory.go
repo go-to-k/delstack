@@ -13,7 +13,7 @@ import (
 const SDKRetryMaxAttempts = 3
 
 type IOperatorFactory interface {
-	CreateStackOperator(targetResourceTypes []string) *StackOperator
+	CreateCloudFormationStackOperator(targetResourceTypes []string) *CloudFormationStackOperator
 	CreateBackupVaultOperator() *BackupVaultOperator
 	CreateEcrRepositoryOperator() *EcrRepositoryOperator
 	CreateRoleOperator() *RoleOperator
@@ -33,14 +33,14 @@ func NewOperatorFactory(config aws.Config) *OperatorFactory {
 	}
 }
 
-func (f *OperatorFactory) CreateStackOperator(targetResourceTypes []string) *StackOperator {
+func (f *OperatorFactory) CreateCloudFormationStackOperator(targetResourceTypes []string) *CloudFormationStackOperator {
 	sdkCfnClient := cloudformation.NewFromConfig(f.config, func(o *cloudformation.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 	sdkCfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
 
-	return NewStackOperator(
+	return NewCloudFormationStackOperator(
 		f.config,
 		client.NewCloudFormation(
 			sdkCfnClient,

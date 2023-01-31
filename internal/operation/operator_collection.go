@@ -42,7 +42,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	roleOperator := c.operatorFactory.CreateRoleOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
-	stackOperator := c.operatorFactory.CreateStackOperator(c.targetResourceTypes)
+	cloudFormationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator(c.targetResourceTypes)
 	customOperator := c.operatorFactory.CreateCustomOperator()
 
 	for _, v := range stackResourceSummaries {
@@ -63,7 +63,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				case resourcetype.BACKUP_VAULT:
 					backupVaultOperator.AddResource(&stackResource)
 				case resourcetype.CLOUDFORMATION_STACK:
-					stackOperator.AddResource(&stackResource)
+					cloudFormationStackOperator.AddResource(&stackResource)
 				default:
 					if strings.Contains(*stackResource.ResourceType, resourcetype.CUSTOM_RESOURCE) {
 						customOperator.AddResource(&stackResource)
@@ -77,7 +77,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, roleOperator)
 	c.operators = append(c.operators, ecrRepositoryOperator)
 	c.operators = append(c.operators, backupVaultOperator)
-	c.operators = append(c.operators, stackOperator)
+	c.operators = append(c.operators, cloudFormationStackOperator)
 	c.operators = append(c.operators, customOperator)
 }
 
