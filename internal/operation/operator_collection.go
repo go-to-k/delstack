@@ -39,10 +39,10 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.stackName = aws.ToString(stackName)
 
 	bucketOperator := c.operatorFactory.CreateBucketOperator()
-	roleOperator := c.operatorFactory.CreateRoleOperator()
+	iamRoleOperator := c.operatorFactory.CreateIamRoleOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
-	cloudFormationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator(c.targetResourceTypes)
+	cloudformationStackOperator := c.operatorFactory.CreateCloudformationStackOperator(c.targetResourceTypes)
 	customOperator := c.operatorFactory.CreateCustomOperator()
 
 	for _, v := range stackResourceSummaries {
@@ -57,13 +57,13 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				case resourcetype.S3_BUCKET:
 					bucketOperator.AddResource(&stackResource)
 				case resourcetype.IAM_ROLE:
-					roleOperator.AddResource(&stackResource)
+					iamRoleOperator.AddResource(&stackResource)
 				case resourcetype.ECR_REPOSITORY:
 					ecrRepositoryOperator.AddResource(&stackResource)
 				case resourcetype.BACKUP_VAULT:
 					backupVaultOperator.AddResource(&stackResource)
 				case resourcetype.CLOUDFORMATION_STACK:
-					cloudFormationStackOperator.AddResource(&stackResource)
+					cloudformationStackOperator.AddResource(&stackResource)
 				default:
 					if strings.Contains(*stackResource.ResourceType, resourcetype.CUSTOM_RESOURCE) {
 						customOperator.AddResource(&stackResource)
@@ -74,10 +74,10 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	}
 
 	c.operators = append(c.operators, bucketOperator)
-	c.operators = append(c.operators, roleOperator)
+	c.operators = append(c.operators, iamRoleOperator)
 	c.operators = append(c.operators, ecrRepositoryOperator)
 	c.operators = append(c.operators, backupVaultOperator)
-	c.operators = append(c.operators, cloudFormationStackOperator)
+	c.operators = append(c.operators, cloudformationStackOperator)
 	c.operators = append(c.operators, customOperator)
 }
 

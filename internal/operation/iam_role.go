@@ -10,29 +10,29 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ IOperator = (*RoleOperator)(nil)
+var _ IOperator = (*IamRoleOperator)(nil)
 
-type RoleOperator struct {
+type IamRoleOperator struct {
 	client    client.IIam
 	resources []*types.StackResourceSummary
 }
 
-func NewRoleOperator(client client.IIam) *RoleOperator {
-	return &RoleOperator{
+func NewIamRoleOperator(client client.IIam) *IamRoleOperator {
+	return &IamRoleOperator{
 		client:    client,
 		resources: []*types.StackResourceSummary{},
 	}
 }
 
-func (o *RoleOperator) AddResource(resource *types.StackResourceSummary) {
+func (o *IamRoleOperator) AddResource(resource *types.StackResourceSummary) {
 	o.resources = append(o.resources, resource)
 }
 
-func (o *RoleOperator) GetResourcesLength() int {
+func (o *IamRoleOperator) GetResourcesLength() int {
 	return len(o.resources)
 }
 
-func (o *RoleOperator) DeleteResources(ctx context.Context) error {
+func (o *IamRoleOperator) DeleteResources(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
@@ -51,7 +51,7 @@ func (o *RoleOperator) DeleteResources(ctx context.Context) error {
 	return eg.Wait()
 }
 
-func (o *RoleOperator) DeleteRole(ctx context.Context, roleName *string) error {
+func (o *IamRoleOperator) DeleteRole(ctx context.Context, roleName *string) error {
 	exists, err := o.client.CheckRoleExists(ctx, roleName)
 	if err != nil {
 		return err

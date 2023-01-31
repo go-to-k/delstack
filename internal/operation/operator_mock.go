@@ -11,43 +11,43 @@ import (
 	Mocks for each Operator
 */
 
-var _ IOperator = (*MockCloudFormationStackOperator)(nil)
-var _ IOperator = (*ErrorMockCloudFormationStackOperator)(nil)
+var _ IOperator = (*MockCloudformationStackOperator)(nil)
+var _ IOperator = (*ErrorMockCloudformationStackOperator)(nil)
 var _ IOperator = (*MockBucketOperator)(nil)
-var _ IOperator = (*MockRoleOperator)(nil)
+var _ IOperator = (*MockIamRoleOperator)(nil)
 var _ IOperator = (*MockEcrRepositoryOperator)(nil)
 var _ IOperator = (*MockBackupVaultOperator)(nil)
 var _ IOperator = (*MockCustomOperator)(nil)
 
-type MockCloudFormationStackOperator struct{}
+type MockCloudformationStackOperator struct{}
 
-func NewMockCloudFormationStackOperator() *MockCloudFormationStackOperator {
-	return &MockCloudFormationStackOperator{}
+func NewMockCloudformationStackOperator() *MockCloudformationStackOperator {
+	return &MockCloudformationStackOperator{}
 }
 
-func (m *MockCloudFormationStackOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockCloudformationStackOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *MockCloudFormationStackOperator) GetResourcesLength() int {
+func (m *MockCloudformationStackOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockCloudFormationStackOperator) DeleteResources(ctx context.Context) error {
+func (m *MockCloudformationStackOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
-type ErrorMockCloudFormationStackOperator struct{}
+type ErrorMockCloudformationStackOperator struct{}
 
-func NewErrorMockCloudFormationStackOperator() *ErrorMockCloudFormationStackOperator {
-	return &ErrorMockCloudFormationStackOperator{}
+func NewErrorMockCloudformationStackOperator() *ErrorMockCloudformationStackOperator {
+	return &ErrorMockCloudformationStackOperator{}
 }
 
-func (m *ErrorMockCloudFormationStackOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *ErrorMockCloudformationStackOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *ErrorMockCloudFormationStackOperator) GetResourcesLength() int {
+func (m *ErrorMockCloudformationStackOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *ErrorMockCloudFormationStackOperator) DeleteResources(ctx context.Context) error {
+func (m *ErrorMockCloudformationStackOperator) DeleteResources(ctx context.Context) error {
 	return fmt.Errorf("ErrorDeleteResources")
 }
 
@@ -67,19 +67,19 @@ func (m *MockBucketOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
-type MockRoleOperator struct{}
+type MockIamRoleOperator struct{}
 
-func NewMockRoleOperator() *MockRoleOperator {
-	return &MockRoleOperator{}
+func NewMockIamRoleOperator() *MockIamRoleOperator {
+	return &MockIamRoleOperator{}
 }
 
-func (m *MockRoleOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockIamRoleOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *MockRoleOperator) GetResourcesLength() int {
+func (m *MockIamRoleOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockRoleOperator) DeleteResources(ctx context.Context) error {
+func (m *MockIamRoleOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 

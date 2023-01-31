@@ -15,21 +15,21 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ IOperator = (*CloudFormationStackOperator)(nil)
+var _ IOperator = (*CloudformationStackOperator)(nil)
 
 const StackNameRule = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
 var StackNameRuleRegExp = regexp.MustCompile(StackNameRule)
 
-type CloudFormationStackOperator struct {
+type CloudformationStackOperator struct {
 	config              aws.Config
 	client              client.ICloudFormation
 	resources           []*types.StackResourceSummary
 	targetResourceTypes []string
 }
 
-func NewCloudFormationStackOperator(config aws.Config, client client.ICloudFormation, targetResourceTypes []string) *CloudFormationStackOperator {
-	return &CloudFormationStackOperator{
+func NewCloudformationStackOperator(config aws.Config, client client.ICloudFormation, targetResourceTypes []string) *CloudformationStackOperator {
+	return &CloudformationStackOperator{
 		config:              config,
 		client:              client,
 		resources:           []*types.StackResourceSummary{},
@@ -37,15 +37,15 @@ func NewCloudFormationStackOperator(config aws.Config, client client.ICloudForma
 	}
 }
 
-func (o *CloudFormationStackOperator) AddResource(resource *types.StackResourceSummary) {
+func (o *CloudformationStackOperator) AddResource(resource *types.StackResourceSummary) {
 	o.resources = append(o.resources, resource)
 }
 
-func (o *CloudFormationStackOperator) GetResourcesLength() int {
+func (o *CloudformationStackOperator) GetResourcesLength() int {
 	return len(o.resources)
 }
 
-func (o *CloudFormationStackOperator) DeleteResources(ctx context.Context) error {
+func (o *CloudformationStackOperator) DeleteResources(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
@@ -70,7 +70,7 @@ func (o *CloudFormationStackOperator) DeleteResources(ctx context.Context) error
 	return eg.Wait()
 }
 
-func (o *CloudFormationStackOperator) DeleteCloudFormationStackResources(ctx context.Context, stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
+func (o *CloudformationStackOperator) DeleteCloudFormationStackResources(ctx context.Context, stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
 	isSuccess, err := o.deleteStackNormally(ctx, stackName, isRootStack)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (o *CloudFormationStackOperator) DeleteCloudFormationStackResources(ctx con
 	return nil
 }
 
-func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, stackName *string, isRootStack bool) (bool, error) {
+func (o *CloudformationStackOperator) deleteStackNormally(ctx context.Context, stackName *string, isRootStack bool) (bool, error) {
 	stackOutputBeforeDelete, stackExistsBeforeDelete, err := o.client.DescribeStacks(ctx, stackName)
 	if err != nil {
 		return false, err
@@ -137,7 +137,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 	return false, nil
 }
 
-func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
+func (o *CloudformationStackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
 	filteredStacks := []string{}
 
 	stackSummaries, err := o.client.ListStacks(ctx)

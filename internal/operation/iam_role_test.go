@@ -15,7 +15,7 @@ import (
 	Test Cases
 */
 
-func TestRoleOperator_DeleteRole(t *testing.T) {
+func TestIamRoleOperator_DeleteRole(t *testing.T) {
 	io.NewLogger(false)
 	mock := client.NewMockIam()
 	allErrorMock := client.NewAllErrorMockIam()
@@ -122,9 +122,9 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			iamOperator := NewRoleOperator(tt.args.client)
+			iamRoleOperator := NewIamRoleOperator(tt.args.client)
 
-			err := iamOperator.DeleteRole(tt.args.ctx, tt.args.roleName)
+			err := iamRoleOperator.DeleteRole(tt.args.ctx, tt.args.roleName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -137,7 +137,7 @@ func TestRoleOperator_DeleteRole(t *testing.T) {
 	}
 }
 
-func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
+func TestIamRoleOperator_DeleteResourcesForIam(t *testing.T) {
 	io.NewLogger(false)
 	mock := client.NewMockIam()
 	allErrorMock := client.NewAllErrorMockIam()
@@ -175,15 +175,15 @@ func TestRoleOperator_DeleteResourcesForIam(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			iamOperator := NewRoleOperator(tt.args.client)
-			iamOperator.AddResource(&cfnTypes.StackResourceSummary{
+			iamRoleOperator := NewIamRoleOperator(tt.args.client)
+			iamRoleOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
 				ResourceType:       aws.String("AWS::IAM::Role"),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			})
 
-			err := iamOperator.DeleteResources(tt.args.ctx)
+			err := iamRoleOperator.DeleteResources(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
