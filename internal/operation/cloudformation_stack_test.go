@@ -276,7 +276,7 @@ func TestCloudformationStackOperator_DeleteStack(t *testing.T) {
 			}
 			cloudformationStackOperator := NewCloudformationStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
 
-			err := cloudformationStackOperator.DeleteCloudFormationStackResources(tt.args.ctx, tt.args.stackName, tt.args.isRootStack, tt.args.operatorManagerMock)
+			err := cloudformationStackOperator.DeleteCloudFormationStack(tt.args.ctx, tt.args.stackName, tt.args.isRootStack, tt.args.operatorManagerMock)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return

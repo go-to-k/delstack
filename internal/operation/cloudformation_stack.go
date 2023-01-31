@@ -63,14 +63,14 @@ func (o *CloudformationStackOperator) DeleteResources(ctx context.Context) error
 			operatorCollection := NewOperatorCollection(o.config, operatorFactory, o.targetResourceTypes)
 			operatorManager := NewOperatorManager(operatorCollection)
 
-			return o.DeleteCloudFormationStackResources(ctx, aws.String(stackName), isRootStack, operatorManager)
+			return o.DeleteCloudFormationStack(ctx, aws.String(stackName), isRootStack, operatorManager)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (o *CloudformationStackOperator) DeleteCloudFormationStackResources(ctx context.Context, stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
+func (o *CloudformationStackOperator) DeleteCloudFormationStack(ctx context.Context, stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
 	isSuccess, err := o.deleteStackNormally(ctx, stackName, isRootStack)
 	if err != nil {
 		return err
