@@ -178,7 +178,7 @@ func TestCloudformation_DeleteStack(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("operation error Cloudformation: DeleteStack, DeleteStackError"),
+			want:    fmt.Errorf("operation error CloudFormation: DeleteStack, DeleteStackError"),
 			wantErr: true,
 		},
 		{
@@ -210,7 +210,7 @@ func TestCloudformation_DeleteStack(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error Cloudformation: DescribeStacks, WaitError")),
+			want:    fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error CloudFormation: DescribeStacks, WaitError")),
 			wantErr: true,
 		},
 	}
@@ -326,7 +326,7 @@ func TestCloudformation_DescribeStacks(t *testing.T) {
 			want: want{
 				output: &cloudformation.DescribeStacksOutput{},
 				exists: true,
-				err:    fmt.Errorf("operation error Cloudformation: DescribeStacks, DescribeStacksError"),
+				err:    fmt.Errorf("operation error CloudFormation: DescribeStacks, DescribeStacksError"),
 			},
 			wantErr: true,
 		},
@@ -457,7 +457,7 @@ func TestCloudformation_waitDeleteStack(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error Cloudformation: DescribeStacks, WaitError")),
+			want:    fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error CloudFormation: DescribeStacks, WaitError")),
 			wantErr: true,
 		},
 		{
@@ -606,7 +606,7 @@ func TestCloudformation_ListStackResources(t *testing.T) {
 			},
 			want: want{
 				output: []types.StackResourceSummary{},
-				err:    fmt.Errorf("operation error Cloudformation: ListStackResources, ListStackResourcesError"),
+				err:    fmt.Errorf("operation error CloudFormation: ListStackResources, ListStackResourcesError"),
 			},
 			wantErr: true,
 		},
@@ -789,7 +789,7 @@ func TestCloudformation_ListStackResources(t *testing.T) {
 						PhysicalResourceId: aws.String("PhysicalResourceId2"),
 					},
 				},
-				err: fmt.Errorf("operation error Cloudformation: ListStackResources, ListStackResourcesError"),
+				err: fmt.Errorf("operation error CloudFormation: ListStackResources, ListStackResourcesError"),
 			},
 			wantErr: true,
 		},
@@ -936,7 +936,7 @@ func TestCloudformation_ListStacks(t *testing.T) {
 			},
 			want: want{
 				output: []types.StackSummary{},
-				err:    fmt.Errorf("operation error Cloudformation: ListStacks, ListStacksError"),
+				err:    fmt.Errorf("operation error CloudFormation: ListStacks, ListStacksError"),
 			},
 			wantErr: true,
 		},
@@ -1092,7 +1092,7 @@ func TestCloudformation_ListStacks(t *testing.T) {
 						StackName:   aws.String("TestStack2"),
 						StackStatus: types.StackStatusCreateComplete,
 					},
-				}, err: fmt.Errorf("operation error Cloudformation: ListStacks, ListStacksError"),
+				}, err: fmt.Errorf("operation error CloudFormation: ListStacks, ListStacksError"),
 			},
 			wantErr: true,
 		},
