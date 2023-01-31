@@ -93,10 +93,10 @@ func (a *App) getAction() func(c *cli.Context) error {
 		}
 
 		operatorFactory := operation.NewOperatorFactory(config)
-		stackOperator := operatorFactory.CreateStackOperator(targetResourceTypes)
+		cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(targetResourceTypes)
 
 		if a.InteractiveMode && a.StackName == "" {
-			stackNames, err := stackOperator.ListStacksFilteredByKeyword(c.Context, aws.String(keyword))
+			stackNames, err := cloudformationStackOperator.ListStacksFilteredByKeyword(c.Context, aws.String(keyword))
 			if err != nil {
 				return err
 			}
@@ -119,7 +119,7 @@ func (a *App) getAction() func(c *cli.Context) error {
 
 		io.Logger.Info().Msgf("Start deletion, %v", a.StackName)
 
-		if err := stackOperator.DeleteStackResources(c.Context, aws.String(a.StackName), isRootStack, operatorManager); err != nil {
+		if err := cloudformationStackOperator.DeleteCloudFormationStack(c.Context, aws.String(a.StackName), isRootStack, operatorManager); err != nil {
 			return err
 		}
 

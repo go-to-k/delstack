@@ -11,91 +11,91 @@ import (
 	Mocks for each Operator
 */
 
-var _ IOperator = (*MockStackOperator)(nil)
-var _ IOperator = (*ErrorMockStackOperator)(nil)
-var _ IOperator = (*MockBucketOperator)(nil)
-var _ IOperator = (*MockRoleOperator)(nil)
-var _ IOperator = (*MockEcrOperator)(nil)
+var _ IOperator = (*MockCloudFormationStackOperator)(nil)
+var _ IOperator = (*ErrorMockCloudFormationStackOperator)(nil)
+var _ IOperator = (*MockS3BucketOperator)(nil)
+var _ IOperator = (*MockIamRoleOperator)(nil)
+var _ IOperator = (*MockEcrRepositoryOperator)(nil)
 var _ IOperator = (*MockBackupVaultOperator)(nil)
 var _ IOperator = (*MockCustomOperator)(nil)
 
-type MockStackOperator struct{}
+type MockCloudFormationStackOperator struct{}
 
-func NewMockStackOperator() *MockStackOperator {
-	return &MockStackOperator{}
+func NewMockCloudFormationStackOperator() *MockCloudFormationStackOperator {
+	return &MockCloudFormationStackOperator{}
 }
 
-func (m *MockStackOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockCloudFormationStackOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *MockStackOperator) GetResourcesLength() int {
+func (m *MockCloudFormationStackOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockStackOperator) DeleteResources(ctx context.Context) error {
+func (m *MockCloudFormationStackOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
-type ErrorMockStackOperator struct{}
+type ErrorMockCloudFormationStackOperator struct{}
 
-func NewErrorMockStackOperator() *ErrorMockStackOperator {
-	return &ErrorMockStackOperator{}
+func NewErrorMockCloudFormationStackOperator() *ErrorMockCloudFormationStackOperator {
+	return &ErrorMockCloudFormationStackOperator{}
 }
 
-func (m *ErrorMockStackOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *ErrorMockCloudFormationStackOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *ErrorMockStackOperator) GetResourcesLength() int {
+func (m *ErrorMockCloudFormationStackOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *ErrorMockStackOperator) DeleteResources(ctx context.Context) error {
+func (m *ErrorMockCloudFormationStackOperator) DeleteResources(ctx context.Context) error {
 	return fmt.Errorf("ErrorDeleteResources")
 }
 
-type MockBucketOperator struct{}
+type MockS3BucketOperator struct{}
 
-func NewMockBucketOperator() *MockBucketOperator {
-	return &MockBucketOperator{}
+func NewMockS3BucketOperator() *MockS3BucketOperator {
+	return &MockS3BucketOperator{}
 }
 
-func (m *MockBucketOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockS3BucketOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *MockBucketOperator) GetResourcesLength() int {
+func (m *MockS3BucketOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockBucketOperator) DeleteResources(ctx context.Context) error {
+func (m *MockS3BucketOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
-type MockRoleOperator struct{}
+type MockIamRoleOperator struct{}
 
-func NewMockRoleOperator() *MockRoleOperator {
-	return &MockRoleOperator{}
+func NewMockIamRoleOperator() *MockIamRoleOperator {
+	return &MockIamRoleOperator{}
 }
 
-func (m *MockRoleOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockIamRoleOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *MockRoleOperator) GetResourcesLength() int {
+func (m *MockIamRoleOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockRoleOperator) DeleteResources(ctx context.Context) error {
+func (m *MockIamRoleOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
-type MockEcrOperator struct{}
+type MockEcrRepositoryOperator struct{}
 
-func NewMockEcrOperator() *MockEcrOperator {
-	return &MockEcrOperator{}
+func NewMockEcrRepositoryOperator() *MockEcrRepositoryOperator {
+	return &MockEcrRepositoryOperator{}
 }
 
-func (m *MockEcrOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockEcrRepositoryOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *MockEcrOperator) GetResourcesLength() int {
+func (m *MockEcrRepositoryOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockEcrOperator) DeleteResources(ctx context.Context) error {
+func (m *MockEcrRepositoryOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
