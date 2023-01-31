@@ -15,7 +15,7 @@ import (
 	Test Cases
 */
 
-func TestBucketOperator_DeleteBucket(t *testing.T) {
+func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 	io.NewLogger(false)
 	mock := client.NewMockS3()
 	allErrorMock := client.NewAllErrorMockS3()
@@ -144,9 +144,9 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			bucketOperator := NewBucketOperator(tt.args.client)
+			s3BucketOperator := NewS3BucketOperator(tt.args.client)
 
-			err := bucketOperator.DeleteBucket(tt.args.ctx, tt.args.bucketName)
+			err := s3BucketOperator.DeleteS3Bucket(tt.args.ctx, tt.args.bucketName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -159,7 +159,7 @@ func TestBucketOperator_DeleteBucket(t *testing.T) {
 	}
 }
 
-func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
+func TestS3BucketOperator_DeleteResourcesForS3Bucket(t *testing.T) {
 	io.NewLogger(false)
 	mock := client.NewMockS3()
 	allErrorMock := client.NewAllErrorMockS3()
@@ -197,15 +197,15 @@ func TestBucketOperator_DeleteResourcesForBucket(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			bucketOperator := NewBucketOperator(tt.args.client)
-			bucketOperator.AddResource(&cfnTypes.StackResourceSummary{
+			s3BucketOperator := NewS3BucketOperator(tt.args.client)
+			s3BucketOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
 				ResourceType:       aws.String("AWS::S3::Bucket"),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			})
 
-			err := bucketOperator.DeleteResources(tt.args.ctx)
+			err := s3BucketOperator.DeleteResources(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return

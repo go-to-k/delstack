@@ -11,29 +11,29 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ IOperator = (*BucketOperator)(nil)
+var _ IOperator = (*S3BucketOperator)(nil)
 
-type BucketOperator struct {
+type S3BucketOperator struct {
 	client    client.IS3
 	resources []*types.StackResourceSummary
 }
 
-func NewBucketOperator(client client.IS3) *BucketOperator {
-	return &BucketOperator{
+func NewS3BucketOperator(client client.IS3) *S3BucketOperator {
+	return &S3BucketOperator{
 		client:    client,
 		resources: []*types.StackResourceSummary{},
 	}
 }
 
-func (o *BucketOperator) AddResource(resource *types.StackResourceSummary) {
+func (o *S3BucketOperator) AddResource(resource *types.StackResourceSummary) {
 	o.resources = append(o.resources, resource)
 }
 
-func (o *BucketOperator) GetResourcesLength() int {
+func (o *S3BucketOperator) GetResourcesLength() int {
 	return len(o.resources)
 }
 
-func (o *BucketOperator) DeleteResources(ctx context.Context) error {
+func (o *S3BucketOperator) DeleteResources(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
@@ -45,14 +45,14 @@ func (o *BucketOperator) DeleteResources(ctx context.Context) error {
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			return o.DeleteBucket(ctx, bucket.PhysicalResourceId)
+			return o.DeleteS3Bucket(ctx, bucket.PhysicalResourceId)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (o *BucketOperator) DeleteBucket(ctx context.Context, bucketName *string) error {
+func (o *S3BucketOperator) DeleteS3Bucket(ctx context.Context, bucketName *string) error {
 	exists, err := o.client.CheckBucketExists(ctx, bucketName)
 	if err != nil {
 		return err

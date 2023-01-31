@@ -15,7 +15,7 @@ import (
 	Test Cases
 */
 
-func TestStackOperator_DeleteStack(t *testing.T) {
+func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 	io.NewLogger(false)
 
 	mock := client.NewMockCloudFormation()
@@ -274,9 +274,9 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 				"AWS::CloudFormation::Stack",
 				"Custom::",
 			}
-			cloudformationOperator := NewStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
 
-			err := cloudformationOperator.DeleteStackResources(tt.args.ctx, tt.args.stackName, tt.args.isRootStack, tt.args.operatorManagerMock)
+			err := cloudformationStackOperator.DeleteCloudFormationStack(tt.args.ctx, tt.args.stackName, tt.args.isRootStack, tt.args.operatorManagerMock)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -289,7 +289,7 @@ func TestStackOperator_DeleteStack(t *testing.T) {
 	}
 }
 
-func TestStackOperator_deleteRootStack(t *testing.T) {
+func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 	io.NewLogger(false)
 
 	mock := client.NewMockCloudFormation()
@@ -497,9 +497,9 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 				"AWS::CloudFormation::Stack",
 				"Custom::",
 			}
-			cloudformationOperator := NewStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
 
-			got, err := cloudformationOperator.deleteStackNormally(tt.args.ctx, tt.args.stackName, tt.args.isRootStack)
+			got, err := cloudformationStackOperator.deleteStackNormally(tt.args.ctx, tt.args.stackName, tt.args.isRootStack)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -515,7 +515,7 @@ func TestStackOperator_deleteRootStack(t *testing.T) {
 	}
 }
 
-func TestStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
+func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 	io.NewLogger(false)
 	ctx := context.Background()
 
@@ -696,9 +696,9 @@ func TestStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 				"Custom::",
 			}
 
-			cloudformationOperator := NewStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
 
-			output, err := cloudformationOperator.ListStacksFilteredByKeyword(tt.args.ctx, &tt.args.keyword)
+			output, err := cloudformationStackOperator.ListStacksFilteredByKeyword(tt.args.ctx, &tt.args.keyword)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return

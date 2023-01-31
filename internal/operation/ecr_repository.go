@@ -10,29 +10,29 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ IOperator = (*EcrOperator)(nil)
+var _ IOperator = (*EcrRepositoryOperator)(nil)
 
-type EcrOperator struct {
+type EcrRepositoryOperator struct {
 	client    client.IEcr
 	resources []*types.StackResourceSummary
 }
 
-func NewEcrOperator(client client.IEcr) *EcrOperator {
-	return &EcrOperator{
+func NewEcrRepositoryOperator(client client.IEcr) *EcrRepositoryOperator {
+	return &EcrRepositoryOperator{
 		client:    client,
 		resources: []*types.StackResourceSummary{},
 	}
 }
 
-func (o *EcrOperator) AddResource(resource *types.StackResourceSummary) {
+func (o *EcrRepositoryOperator) AddResource(resource *types.StackResourceSummary) {
 	o.resources = append(o.resources, resource)
 }
 
-func (o *EcrOperator) GetResourcesLength() int {
+func (o *EcrRepositoryOperator) GetResourcesLength() int {
 	return len(o.resources)
 }
 
-func (o *EcrOperator) DeleteResources(ctx context.Context) error {
+func (o *EcrRepositoryOperator) DeleteResources(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
@@ -44,7 +44,7 @@ func (o *EcrOperator) DeleteResources(ctx context.Context) error {
 		eg.Go(func() (err error) {
 			defer sem.Release(1)
 
-			return o.DeleteEcr(ctx, repository.PhysicalResourceId)
+			return o.DeleteEcrRepository(ctx, repository.PhysicalResourceId)
 		})
 	}
 
@@ -52,7 +52,7 @@ func (o *EcrOperator) DeleteResources(ctx context.Context) error {
 	return err
 }
 
-func (o *EcrOperator) DeleteEcr(ctx context.Context, repositoryName *string) error {
+func (o *EcrRepositoryOperator) DeleteEcrRepository(ctx context.Context, repositoryName *string) error {
 	exists, err := o.client.CheckEcrExists(ctx, repositoryName)
 	if err != nil {
 		return err

@@ -38,11 +38,11 @@ func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, 
 func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 	c.stackName = aws.ToString(stackName)
 
-	bucketOperator := c.operatorFactory.CreateBucketOperator()
-	roleOperator := c.operatorFactory.CreateRoleOperator()
-	ecrOperator := c.operatorFactory.CreateEcrOperator()
+	s3BucketOperator := c.operatorFactory.CreateS3BucketOperator()
+	iamRoleOperator := c.operatorFactory.CreateIamRoleOperator()
+	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
-	stackOperator := c.operatorFactory.CreateStackOperator(c.targetResourceTypes)
+	cloudformationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator(c.targetResourceTypes)
 	customOperator := c.operatorFactory.CreateCustomOperator()
 
 	for _, v := range stackResourceSummaries {
@@ -55,15 +55,15 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 			} else {
 				switch *stackResource.ResourceType {
 				case resourcetype.S3_BUCKET:
-					bucketOperator.AddResource(&stackResource)
+					s3BucketOperator.AddResource(&stackResource)
 				case resourcetype.IAM_ROLE:
-					roleOperator.AddResource(&stackResource)
+					iamRoleOperator.AddResource(&stackResource)
 				case resourcetype.ECR_REPOSITORY:
-					ecrOperator.AddResource(&stackResource)
+					ecrRepositoryOperator.AddResource(&stackResource)
 				case resourcetype.BACKUP_VAULT:
 					backupVaultOperator.AddResource(&stackResource)
 				case resourcetype.CLOUDFORMATION_STACK:
-					stackOperator.AddResource(&stackResource)
+					cloudformationStackOperator.AddResource(&stackResource)
 				default:
 					if strings.Contains(*stackResource.ResourceType, resourcetype.CUSTOM_RESOURCE) {
 						customOperator.AddResource(&stackResource)
@@ -73,11 +73,11 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 		}
 	}
 
-	c.operators = append(c.operators, bucketOperator)
-	c.operators = append(c.operators, roleOperator)
-	c.operators = append(c.operators, ecrOperator)
+	c.operators = append(c.operators, s3BucketOperator)
+	c.operators = append(c.operators, iamRoleOperator)
+	c.operators = append(c.operators, ecrRepositoryOperator)
 	c.operators = append(c.operators, backupVaultOperator)
-	c.operators = append(c.operators, stackOperator)
+	c.operators = append(c.operators, cloudformationStackOperator)
 	c.operators = append(c.operators, customOperator)
 }
 
