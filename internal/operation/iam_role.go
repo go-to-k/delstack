@@ -44,14 +44,14 @@ func (o *IamRoleOperator) DeleteResources(ctx context.Context) error {
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			return o.DeleteRole(ctx, role.PhysicalResourceId)
+			return o.DeleteIamRole(ctx, role.PhysicalResourceId)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (o *IamRoleOperator) DeleteRole(ctx context.Context, roleName *string) error {
+func (o *IamRoleOperator) DeleteIamRole(ctx context.Context, roleName *string) error {
 	exists, err := o.client.CheckRoleExists(ctx, roleName)
 	if err != nil {
 		return err

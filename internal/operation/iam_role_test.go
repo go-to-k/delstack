@@ -15,7 +15,7 @@ import (
 	Test Cases
 */
 
-func TestIamRoleOperator_DeleteRole(t *testing.T) {
+func TestIamRoleOperator_DeleteIamRole(t *testing.T) {
 	io.NewLogger(false)
 	mock := client.NewMockIam()
 	allErrorMock := client.NewAllErrorMockIam()
@@ -124,7 +124,7 @@ func TestIamRoleOperator_DeleteRole(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			iamRoleOperator := NewIamRoleOperator(tt.args.client)
 
-			err := iamRoleOperator.DeleteRole(tt.args.ctx, tt.args.roleName)
+			err := iamRoleOperator.DeleteIamRole(tt.args.ctx, tt.args.roleName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
