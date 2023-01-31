@@ -93,7 +93,7 @@ func (a *App) getAction() func(c *cli.Context) error {
 		}
 
 		operatorFactory := operation.NewOperatorFactory(config)
-		cloudformationStackOperator := operatorFactory.CreateCloudformationStackOperator(targetResourceTypes)
+		cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(targetResourceTypes)
 
 		if a.InteractiveMode && a.StackName == "" {
 			stackNames, err := cloudformationStackOperator.ListStacksFilteredByKeyword(c.Context, aws.String(keyword))

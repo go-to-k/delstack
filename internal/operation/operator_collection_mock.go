@@ -37,7 +37,7 @@ func (m *MockOperatorCollection) GetLogicalResourceIds() []string {
 func (m *MockOperatorCollection) GetOperators() []IOperator {
 	var operators []IOperator
 
-	cloudformationStackOperator := NewMockCloudformationStackOperator()
+	cloudformationStackOperator := NewMockCloudFormationStackOperator()
 	s3BucketOperator := NewMockS3BucketOperator()
 	iamRoleOperator := NewMockIamRoleOperator()
 	ecrRepositoryOperator := NewMockEcrRepositoryOperator()
@@ -77,7 +77,7 @@ func (m *IncorrectResourceCountsMockOperatorCollection) GetLogicalResourceIds() 
 func (m *IncorrectResourceCountsMockOperatorCollection) GetOperators() []IOperator {
 	var operators []IOperator
 
-	cloudformationStackOperator := NewMockCloudformationStackOperator()
+	cloudformationStackOperator := NewMockCloudFormationStackOperator()
 	s3BucketOperator := NewMockS3BucketOperator()
 	iamRoleOperator := NewMockIamRoleOperator()
 	ecrRepositoryOperator := NewMockEcrRepositoryOperator()
@@ -121,7 +121,7 @@ func (m *OperatorDeleteResourcesMockOperatorCollection) GetLogicalResourceIds() 
 func (m *OperatorDeleteResourcesMockOperatorCollection) GetOperators() []IOperator {
 	var operators []IOperator
 
-	cloudformationStackOperator := NewErrorMockCloudformationStackOperator()
+	cloudformationStackOperator := NewErrorMockCloudFormationStackOperator()
 	s3BucketOperator := NewMockS3BucketOperator()
 	iamRoleOperator := NewMockIamRoleOperator()
 	ecrRepositoryOperator := NewMockEcrRepositoryOperator()

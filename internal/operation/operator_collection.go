@@ -42,7 +42,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	iamRoleOperator := c.operatorFactory.CreateIamRoleOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
-	cloudformationStackOperator := c.operatorFactory.CreateCloudformationStackOperator(c.targetResourceTypes)
+	cloudformationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator(c.targetResourceTypes)
 	customOperator := c.operatorFactory.CreateCustomOperator()
 
 	for _, v := range stackResourceSummaries {
