@@ -42,7 +42,7 @@ func (f *OperatorFactory) CreateCloudformationStackOperator(targetResourceTypes 
 
 	return NewCloudformationStackOperator(
 		f.config,
-		client.NewCloudformation(
+		client.NewCloudFormation(
 			sdkCfnClient,
 			sdkCfnWaiter,
 		),

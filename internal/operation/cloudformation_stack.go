@@ -23,12 +23,12 @@ var StackNameRuleRegExp = regexp.MustCompile(StackNameRule)
 
 type CloudformationStackOperator struct {
 	config              aws.Config
-	client              client.ICloudformation
+	client              client.ICloudFormation
 	resources           []*types.StackResourceSummary
 	targetResourceTypes []string
 }
 
-func NewCloudformationStackOperator(config aws.Config, client client.ICloudformation, targetResourceTypes []string) *CloudformationStackOperator {
+func NewCloudformationStackOperator(config aws.Config, client client.ICloudFormation, targetResourceTypes []string) *CloudformationStackOperator {
 	return &CloudformationStackOperator{
 		config:              config,
 		client:              client,
@@ -63,14 +63,14 @@ func (o *CloudformationStackOperator) DeleteResources(ctx context.Context) error
 			operatorCollection := NewOperatorCollection(o.config, operatorFactory, o.targetResourceTypes)
 			operatorManager := NewOperatorManager(operatorCollection)
 
-			return o.DeleteCloudformationStack(ctx, aws.String(stackName), isRootStack, operatorManager)
+			return o.DeleteCloudFormationStack(ctx, aws.String(stackName), isRootStack, operatorManager)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (o *CloudformationStackOperator) DeleteCloudformationStack(ctx context.Context, stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
+func (o *CloudformationStackOperator) DeleteCloudFormationStack(ctx context.Context, stackName *string, isRootStack bool, operatorManager IOperatorManager) error {
 	isSuccess, err := o.deleteStackNormally(ctx, stackName, isRootStack)
 	if err != nil {
 		return err
