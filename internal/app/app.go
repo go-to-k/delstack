@@ -119,7 +119,7 @@ func (a *App) getAction() func(c *cli.Context) error {
 
 		io.Logger.Info().Msgf("Start deletion, %v", a.StackName)
 
-		if err := cloudformationStackOperator.DeleteCloudFormationStack(c.Context, aws.String(a.StackName), isRootStack, operatorManager); err != nil {
+		if err := cloudformationStackOperator.DeleteCloudformationStack(c.Context, aws.String(a.StackName), isRootStack, operatorManager); err != nil {
 			return err
 		}
 

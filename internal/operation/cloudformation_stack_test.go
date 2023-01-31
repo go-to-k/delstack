@@ -15,17 +15,17 @@ import (
 	Test Cases
 */
 
-func TestCloudformationStackOperator_DeleteCloudFormationStack(t *testing.T) {
+func TestCloudformationStackOperator_DeleteCloudformationStack(t *testing.T) {
 	io.NewLogger(false)
 
-	mock := client.NewMockCloudFormation()
-	terminationProtectionIsEnabledMock := client.NewTerminationProtectionIsEnabledMockCloudFormation()
-	notDeleteFailedMock := client.NewNotDeleteFailedMockCloudFormation()
-	allErrorMock := client.NewAllErrorMockCloudFormation()
-	deleteStackErrorMock := client.NewDeleteStackErrorMockCloudFormation()
-	describeStacksErrorMock := client.NewDescribeStacksErrorMockCloudFormation()
-	describeStacksNotExistsErrorMock := client.NewDescribeStacksNotExistsErrorMockCloudFormation()
-	listStackResourcesErrorMock := client.NewListStackResourcesErrorMockCloudFormation()
+	mock := client.NewMockCloudformation()
+	terminationProtectionIsEnabledMock := client.NewTerminationProtectionIsEnabledMockCloudformation()
+	notDeleteFailedMock := client.NewNotDeleteFailedMockCloudformation()
+	allErrorMock := client.NewAllErrorMockCloudformation()
+	deleteStackErrorMock := client.NewDeleteStackErrorMockCloudformation()
+	describeStacksErrorMock := client.NewDescribeStacksErrorMockCloudformation()
+	describeStacksNotExistsErrorMock := client.NewDescribeStacksNotExistsErrorMockCloudformation()
+	listStackResourcesErrorMock := client.NewListStackResourcesErrorMockCloudformation()
 
 	mockOperatorManager := NewMockOperatorManager()
 	allErrorMockOperatorManager := NewAllErrorMockOperatorManager()
@@ -36,7 +36,7 @@ func TestCloudformationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 		ctx                 context.Context
 		stackName           *string
 		isRootStack         bool
-		clientMock          client.ICloudFormation
+		clientMock          client.ICloudformation
 		operatorManagerMock IOperatorManager
 	}
 
@@ -276,7 +276,7 @@ func TestCloudformationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			}
 			cloudformationStackOperator := NewCloudformationStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
 
-			err := cloudformationStackOperator.DeleteCloudFormationStack(tt.args.ctx, tt.args.stackName, tt.args.isRootStack, tt.args.operatorManagerMock)
+			err := cloudformationStackOperator.DeleteCloudformationStack(tt.args.ctx, tt.args.stackName, tt.args.isRootStack, tt.args.operatorManagerMock)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -292,18 +292,18 @@ func TestCloudformationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 func TestCloudformationStackOperator_deleteRootStack(t *testing.T) {
 	io.NewLogger(false)
 
-	mock := client.NewMockCloudFormation()
-	terminationProtectionIsEnabledMock := client.NewTerminationProtectionIsEnabledMockCloudFormation()
-	notDeleteFailedMock := client.NewNotDeleteFailedMockCloudFormation()
-	allErrorMock := client.NewAllErrorMockCloudFormation()
-	describeStacksErrorMock := client.NewDescribeStacksErrorMockCloudFormation()
-	describeStacksNotExistsErrorMock := client.NewDescribeStacksNotExistsErrorMockCloudFormation()
+	mock := client.NewMockCloudformation()
+	terminationProtectionIsEnabledMock := client.NewTerminationProtectionIsEnabledMockCloudformation()
+	notDeleteFailedMock := client.NewNotDeleteFailedMockCloudformation()
+	allErrorMock := client.NewAllErrorMockCloudformation()
+	describeStacksErrorMock := client.NewDescribeStacksErrorMockCloudformation()
+	describeStacksNotExistsErrorMock := client.NewDescribeStacksNotExistsErrorMockCloudformation()
 
 	type args struct {
 		ctx         context.Context
 		stackName   *string
 		isRootStack bool
-		clientMock  client.ICloudFormation
+		clientMock  client.ICloudformation
 	}
 
 	type want struct {
@@ -519,15 +519,15 @@ func TestCloudformationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 	io.NewLogger(false)
 	ctx := context.Background()
 
-	mock := client.NewMockCloudFormation()
-	allErrorMock := client.NewAllErrorMockCloudFormation()
-	listStacksErrorMock := client.NewListStacksErrorMockCloudFormation()
-	listStacksEmptyMock := client.NewListStacksEmptyMockCloudFormation()
+	mock := client.NewMockCloudformation()
+	allErrorMock := client.NewAllErrorMockCloudformation()
+	listStacksErrorMock := client.NewListStacksErrorMockCloudformation()
+	listStacksEmptyMock := client.NewListStacksEmptyMockCloudformation()
 
 	type args struct {
 		ctx        context.Context
 		keyword    string
-		clientMock client.ICloudFormation
+		clientMock client.ICloudformation
 	}
 
 	type want struct {

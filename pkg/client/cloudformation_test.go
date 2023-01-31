@@ -14,18 +14,18 @@ import (
 	"github.com/aws/smithy-go/middleware"
 )
 
-type tokenKeyForCloudFormation struct{}
+type tokenKeyForCloudformation struct{}
 
-func getNextTokenForCloudFormationInitialize(
+func getNextTokenForCloudformationInitialize(
 	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
 ) (
 	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
 ) {
 	switch v := in.Parameters.(type) {
 	case *cloudformation.ListStackResourcesInput:
-		ctx = middleware.WithStackValue(ctx, tokenKeyForCloudFormation{}, v.NextToken)
+		ctx = middleware.WithStackValue(ctx, tokenKeyForCloudformation{}, v.NextToken)
 	case *cloudformation.ListStacksInput:
-		ctx = middleware.WithStackValue(ctx, tokenKeyForCloudFormation{}, v.NextToken)
+		ctx = middleware.WithStackValue(ctx, tokenKeyForCloudformation{}, v.NextToken)
 	}
 	return next.HandleInitialize(ctx, in)
 }
@@ -34,7 +34,7 @@ func getNextTokenForCloudFormationInitialize(
 	Test Cases
 */
 
-func TestCloudFormation_DeleteStack(t *testing.T) {
+func TestCloudformation_DeleteStack(t *testing.T) {
 	type args struct {
 		ctx                context.Context
 		stackName          *string
@@ -178,7 +178,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("operation error CloudFormation: DeleteStack, DeleteStackError"),
+			want:    fmt.Errorf("operation error Cloudformation: DeleteStack, DeleteStackError"),
 			wantErr: true,
 		},
 		{
@@ -210,7 +210,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error CloudFormation: DescribeStacks, WaitError")),
+			want:    fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error Cloudformation: DescribeStacks, WaitError")),
 			wantErr: true,
 		},
 	}
@@ -228,7 +228,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 
 			client := cloudformation.NewFromConfig(cfg)
 			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
-			cfnClient := NewCloudFormation(
+			cfnClient := NewCloudformation(
 				client,
 				cfnWaiter,
 			)
@@ -245,7 +245,7 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 	}
 }
 
-func TestCloudFormation_DescribeStacks(t *testing.T) {
+func TestCloudformation_DescribeStacks(t *testing.T) {
 	type args struct {
 		ctx                context.Context
 		stackName          *string
@@ -326,7 +326,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 			want: want{
 				output: &cloudformation.DescribeStacksOutput{},
 				exists: true,
-				err:    fmt.Errorf("operation error CloudFormation: DescribeStacks, DescribeStacksError"),
+				err:    fmt.Errorf("operation error Cloudformation: DescribeStacks, DescribeStacksError"),
 			},
 			wantErr: true,
 		},
@@ -371,7 +371,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 
 			client := cloudformation.NewFromConfig(cfg)
 			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
-			cfnClient := NewCloudFormation(
+			cfnClient := NewCloudformation(
 				client,
 				cfnWaiter,
 			)
@@ -396,7 +396,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 	}
 }
 
-func TestCloudFormation_waitDeleteStack(t *testing.T) {
+func TestCloudformation_waitDeleteStack(t *testing.T) {
 	type args struct {
 		ctx                context.Context
 		stackName          *string
@@ -457,7 +457,7 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error CloudFormation: DescribeStacks, WaitError")),
+			want:    fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error Cloudformation: DescribeStacks, WaitError")),
 			wantErr: true,
 		},
 		{
@@ -497,7 +497,7 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 
 			client := cloudformation.NewFromConfig(cfg)
 			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
-			cfnClient := NewCloudFormation(
+			cfnClient := NewCloudformation(
 				client,
 				cfnWaiter,
 			)
@@ -514,7 +514,7 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 	}
 }
 
-func TestCloudFormation_ListStackResources(t *testing.T) {
+func TestCloudformation_ListStackResources(t *testing.T) {
 	type args struct {
 		ctx                context.Context
 		stackName          *string
@@ -606,7 +606,7 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 			},
 			want: want{
 				output: []types.StackResourceSummary{},
-				err:    fmt.Errorf("operation error CloudFormation: ListStackResources, ListStackResourcesError"),
+				err:    fmt.Errorf("operation error Cloudformation: ListStackResources, ListStackResourcesError"),
 			},
 			wantErr: true,
 		},
@@ -619,7 +619,7 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 					err := stack.Initialize.Add(
 						middleware.InitializeMiddlewareFunc(
 							"GetNextToken",
-							getNextTokenForCloudFormationInitialize,
+							getNextTokenForCloudformationInitialize,
 						), middleware.Before,
 					)
 					if err != nil {
@@ -630,7 +630,7 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 						middleware.FinalizeMiddlewareFunc(
 							"ListStackResourcesWithNextTokenMock",
 							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								token := middleware.GetStackValue(ctx, tokenKeyForCloudFormation{}).(*string)
+								token := middleware.GetStackValue(ctx, tokenKeyForCloudformation{}).(*string)
 
 								var nextToken *string
 								var stackResourceSummaries []types.StackResourceSummary
@@ -725,7 +725,7 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 					err := stack.Initialize.Add(
 						middleware.InitializeMiddlewareFunc(
 							"GetNextToken",
-							getNextTokenForCloudFormationInitialize,
+							getNextTokenForCloudformationInitialize,
 						), middleware.Before,
 					)
 					if err != nil {
@@ -736,7 +736,7 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 						middleware.FinalizeMiddlewareFunc(
 							"ListStackResourcesWithNextTokenErrorMock",
 							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								token := middleware.GetStackValue(ctx, tokenKeyForCloudFormation{}).(*string)
+								token := middleware.GetStackValue(ctx, tokenKeyForCloudformation{}).(*string)
 
 								var nextToken *string
 								var stackResourceSummaries []types.StackResourceSummary
@@ -789,7 +789,7 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 						PhysicalResourceId: aws.String("PhysicalResourceId2"),
 					},
 				},
-				err: fmt.Errorf("operation error CloudFormation: ListStackResources, ListStackResourcesError"),
+				err: fmt.Errorf("operation error Cloudformation: ListStackResources, ListStackResourcesError"),
 			},
 			wantErr: true,
 		},
@@ -808,7 +808,7 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 
 			client := cloudformation.NewFromConfig(cfg)
 			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
-			cfnClient := NewCloudFormation(
+			cfnClient := NewCloudformation(
 				client,
 				cfnWaiter,
 			)
@@ -829,7 +829,7 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 	}
 }
 
-func TestCloudFormation_ListStacks(t *testing.T) {
+func TestCloudformation_ListStacks(t *testing.T) {
 	type args struct {
 		ctx                context.Context
 		withAPIOptionsFunc func(*middleware.Stack) error
@@ -936,7 +936,7 @@ func TestCloudFormation_ListStacks(t *testing.T) {
 			},
 			want: want{
 				output: []types.StackSummary{},
-				err:    fmt.Errorf("operation error CloudFormation: ListStacks, ListStacksError"),
+				err:    fmt.Errorf("operation error Cloudformation: ListStacks, ListStacksError"),
 			},
 			wantErr: true,
 		},
@@ -948,7 +948,7 @@ func TestCloudFormation_ListStacks(t *testing.T) {
 					err := stack.Initialize.Add(
 						middleware.InitializeMiddlewareFunc(
 							"GetNextToken",
-							getNextTokenForCloudFormationInitialize,
+							getNextTokenForCloudformationInitialize,
 						), middleware.Before,
 					)
 					if err != nil {
@@ -959,7 +959,7 @@ func TestCloudFormation_ListStacks(t *testing.T) {
 						middleware.FinalizeMiddlewareFunc(
 							"ListStacksWithNextTokenMock",
 							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								token := middleware.GetStackValue(ctx, tokenKeyForCloudFormation{}).(*string)
+								token := middleware.GetStackValue(ctx, tokenKeyForCloudformation{}).(*string)
 
 								var nextToken *string
 								var stackSummaries []types.StackSummary
@@ -1037,7 +1037,7 @@ func TestCloudFormation_ListStacks(t *testing.T) {
 					err := stack.Initialize.Add(
 						middleware.InitializeMiddlewareFunc(
 							"GetNextToken",
-							getNextTokenForCloudFormationInitialize,
+							getNextTokenForCloudformationInitialize,
 						), middleware.Before,
 					)
 					if err != nil {
@@ -1048,7 +1048,7 @@ func TestCloudFormation_ListStacks(t *testing.T) {
 						middleware.FinalizeMiddlewareFunc(
 							"ListStacksWithNextTokenErrorMock",
 							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								token := middleware.GetStackValue(ctx, tokenKeyForCloudFormation{}).(*string)
+								token := middleware.GetStackValue(ctx, tokenKeyForCloudformation{}).(*string)
 
 								var nextToken *string
 								var stackSummaries []types.StackSummary
@@ -1092,7 +1092,7 @@ func TestCloudFormation_ListStacks(t *testing.T) {
 						StackName:   aws.String("TestStack2"),
 						StackStatus: types.StackStatusCreateComplete,
 					},
-				}, err: fmt.Errorf("operation error CloudFormation: ListStacks, ListStacksError"),
+				}, err: fmt.Errorf("operation error Cloudformation: ListStacks, ListStacksError"),
 			},
 			wantErr: true,
 		},
@@ -1111,7 +1111,7 @@ func TestCloudFormation_ListStacks(t *testing.T) {
 
 			client := cloudformation.NewFromConfig(cfg)
 			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
-			cfnClient := NewCloudFormation(
+			cfnClient := NewCloudformation(
 				client,
 				cfnWaiter,
 			)

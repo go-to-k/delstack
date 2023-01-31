@@ -9,30 +9,30 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 )
 
-const CloudFormationWaitNanoSecTime = time.Duration(4500000000000)
+const CloudformationWaitNanoSecTime = time.Duration(4500000000000)
 
-type ICloudFormation interface {
+type ICloudformation interface {
 	DeleteStack(ctx context.Context, stackName *string, retainResources []string) error
 	DescribeStacks(ctx context.Context, stackName *string) (*cloudformation.DescribeStacksOutput, bool, error)
 	ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error)
 	ListStacks(ctx context.Context) ([]types.StackSummary, error)
 }
 
-var _ ICloudFormation = (*CloudFormation)(nil)
+var _ ICloudformation = (*Cloudformation)(nil)
 
-type CloudFormation struct {
+type Cloudformation struct {
 	client *cloudformation.Client
 	waiter *cloudformation.StackDeleteCompleteWaiter
 }
 
-func NewCloudFormation(client *cloudformation.Client, waiter *cloudformation.StackDeleteCompleteWaiter) *CloudFormation {
-	return &CloudFormation{
+func NewCloudformation(client *cloudformation.Client, waiter *cloudformation.StackDeleteCompleteWaiter) *Cloudformation {
+	return &Cloudformation{
 		client,
 		waiter,
 	}
 }
 
-func (c *CloudFormation) DeleteStack(ctx context.Context, stackName *string, retainResources []string) error {
+func (c *Cloudformation) DeleteStack(ctx context.Context, stackName *string, retainResources []string) error {
 	input := &cloudformation.DeleteStackInput{
 		StackName:       stackName,
 		RetainResources: retainResources,
@@ -49,7 +49,7 @@ func (c *CloudFormation) DeleteStack(ctx context.Context, stackName *string, ret
 	return nil
 }
 
-func (c *CloudFormation) DescribeStacks(ctx context.Context, stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
+func (c *Cloudformation) DescribeStacks(ctx context.Context, stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
 	input := &cloudformation.DescribeStacksInput{
 		StackName: stackName,
 	}
@@ -62,12 +62,12 @@ func (c *CloudFormation) DescribeStacks(ctx context.Context, stackName *string) 
 	return output, true, err
 }
 
-func (c *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string) error {
+func (c *Cloudformation) waitDeleteStack(ctx context.Context, stackName *string) error {
 	input := &cloudformation.DescribeStacksInput{
 		StackName: stackName,
 	}
 
-	err := c.waiter.Wait(ctx, input, CloudFormationWaitNanoSecTime)
+	err := c.waiter.Wait(ctx, input, CloudformationWaitNanoSecTime)
 	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
 		return err
 	}
@@ -75,7 +75,7 @@ func (c *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string)
 	return nil
 }
 
-func (c *CloudFormation) ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error) {
+func (c *Cloudformation) ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error) {
 	var nextToken *string
 	stackResourceSummaries := []types.StackResourceSummary{}
 
@@ -107,7 +107,7 @@ func (c *CloudFormation) ListStackResources(ctx context.Context, stackName *stri
 	return stackResourceSummaries, nil
 }
 
-func (c *CloudFormation) ListStacks(ctx context.Context) ([]types.StackSummary, error) {
+func (c *Cloudformation) ListStacks(ctx context.Context) ([]types.StackSummary, error) {
 	var nextToken *string
 	stackSummaries := []types.StackSummary{}
 
