@@ -64,9 +64,9 @@ Among the resources that **fail in the normal CloudFormation stack deletion**, t
 
 ### ResourceTypes
 
-If you selected `-i, --interactive` option, **you can select** ResourceTypes **you wish to delete even if DELETE_FAILED** in a prompt. This allows you to protect resources you do not want to delete!!
+The `-i, --interactive` option allows you to select the ResourceTypes **you wish to force delete even if DELETE_FAILED**. This feature allows you to **protect resources** you really do not want to delete by **"do not select the ResourceTypes"**!
 
-However, if resources of the selected ResourceTypes **will not be DELETE_FAILED when the stack is deleted**, the resources will be deleted **even if you selected**. The purpose of this tool is not to protect specific resources from CloudFormation's stack deletion feature, but simply to avoid forcing the deletion of something that really should not be deleted.
+However, if a resource can be deleted **without becoming DELETE_FAILED** by the **normal** CloudFormation stack deletion feature, the resource will be deleted **even if you do not select that resource type**. This tool is not intended to protect specific resources from the normal CloudFormation stack deletion feature, so I implemented this feature with the nuance that **only those resources that really should not be deleted will not be forced to be deleted**.
 
 If the stack contains resources that will be DELETE_FAILED but is not selected, **all DELETE_FAILED resources including the selected or not selected resources and the stack will remain undeleted**.
 
