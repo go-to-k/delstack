@@ -159,7 +159,7 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 	}
 }
 
-func TestS3BucketOperator_DeleteResourcesForBucket(t *testing.T) {
+func TestS3BucketOperator_DeleteResourcesForS3Bucket(t *testing.T) {
 	io.NewLogger(false)
 	mock := client.NewMockS3()
 	allErrorMock := client.NewAllErrorMockS3()

@@ -137,7 +137,7 @@ func TestIamRoleOperator_DeleteIamRole(t *testing.T) {
 	}
 }
 
-func TestIamRoleOperator_DeleteResourcesForIam(t *testing.T) {
+func TestIamRoleOperator_DeleteResourcesForIamRole(t *testing.T) {
 	io.NewLogger(false)
 	mock := client.NewMockIam()
 	allErrorMock := client.NewAllErrorMockIam()

@@ -15,7 +15,7 @@ import (
 	Test Cases
 */
 
-func TestCloudformationStackOperator_DeleteStack(t *testing.T) {
+func TestCloudformationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 	io.NewLogger(false)
 
 	mock := client.NewMockCloudFormation()
