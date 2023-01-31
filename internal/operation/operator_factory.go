@@ -17,7 +17,7 @@ type IOperatorFactory interface {
 	CreateBackupVaultOperator() *BackupVaultOperator
 	CreateEcrRepositoryOperator() *EcrRepositoryOperator
 	CreateIamRoleOperator() *IamRoleOperator
-	CreateBucketOperator() *BucketOperator
+	CreateS3BucketOperator() *S3BucketOperator
 	CreateCustomOperator() *CustomOperator
 }
 
@@ -89,13 +89,13 @@ func (f *OperatorFactory) CreateIamRoleOperator() *IamRoleOperator {
 	)
 }
 
-func (f *OperatorFactory) CreateBucketOperator() *BucketOperator {
+func (f *OperatorFactory) CreateS3BucketOperator() *S3BucketOperator {
 	sdkS3Client := s3.NewFromConfig(f.config, func(o *s3.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 
-	return NewBucketOperator(
+	return NewS3BucketOperator(
 		client.NewS3(
 			sdkS3Client,
 		),

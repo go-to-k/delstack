@@ -38,7 +38,7 @@ func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, 
 func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 	c.stackName = aws.ToString(stackName)
 
-	bucketOperator := c.operatorFactory.CreateBucketOperator()
+	s3BucketOperator := c.operatorFactory.CreateS3BucketOperator()
 	iamRoleOperator := c.operatorFactory.CreateIamRoleOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
@@ -55,7 +55,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 			} else {
 				switch *stackResource.ResourceType {
 				case resourcetype.S3_BUCKET:
-					bucketOperator.AddResource(&stackResource)
+					s3BucketOperator.AddResource(&stackResource)
 				case resourcetype.IAM_ROLE:
 					iamRoleOperator.AddResource(&stackResource)
 				case resourcetype.ECR_REPOSITORY:
@@ -73,7 +73,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 		}
 	}
 
-	c.operators = append(c.operators, bucketOperator)
+	c.operators = append(c.operators, s3BucketOperator)
 	c.operators = append(c.operators, iamRoleOperator)
 	c.operators = append(c.operators, ecrRepositoryOperator)
 	c.operators = append(c.operators, backupVaultOperator)

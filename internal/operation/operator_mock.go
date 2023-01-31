@@ -13,7 +13,7 @@ import (
 
 var _ IOperator = (*MockCloudformationStackOperator)(nil)
 var _ IOperator = (*ErrorMockCloudformationStackOperator)(nil)
-var _ IOperator = (*MockBucketOperator)(nil)
+var _ IOperator = (*MockS3BucketOperator)(nil)
 var _ IOperator = (*MockIamRoleOperator)(nil)
 var _ IOperator = (*MockEcrRepositoryOperator)(nil)
 var _ IOperator = (*MockBackupVaultOperator)(nil)
@@ -51,19 +51,19 @@ func (m *ErrorMockCloudformationStackOperator) DeleteResources(ctx context.Conte
 	return fmt.Errorf("ErrorDeleteResources")
 }
 
-type MockBucketOperator struct{}
+type MockS3BucketOperator struct{}
 
-func NewMockBucketOperator() *MockBucketOperator {
-	return &MockBucketOperator{}
+func NewMockS3BucketOperator() *MockS3BucketOperator {
+	return &MockS3BucketOperator{}
 }
 
-func (m *MockBucketOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockS3BucketOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *MockBucketOperator) GetResourcesLength() int {
+func (m *MockS3BucketOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockBucketOperator) DeleteResources(ctx context.Context) error {
+func (m *MockS3BucketOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 

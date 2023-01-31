@@ -38,14 +38,14 @@ func (m *MockOperatorCollection) GetOperators() []IOperator {
 	var operators []IOperator
 
 	cloudformationStackOperator := NewMockCloudformationStackOperator()
-	bucketOperator := NewMockBucketOperator()
+	s3BucketOperator := NewMockS3BucketOperator()
 	iamRoleOperator := NewMockIamRoleOperator()
 	ecrRepositoryOperator := NewMockEcrRepositoryOperator()
 	backupVaultOperator := NewMockBackupVaultOperator()
 	customOperator := NewMockCustomOperator()
 
 	operators = append(operators, cloudformationStackOperator)
-	operators = append(operators, bucketOperator)
+	operators = append(operators, s3BucketOperator)
 	operators = append(operators, iamRoleOperator)
 	operators = append(operators, ecrRepositoryOperator)
 	operators = append(operators, backupVaultOperator)
@@ -78,14 +78,14 @@ func (m *IncorrectResourceCountsMockOperatorCollection) GetOperators() []IOperat
 	var operators []IOperator
 
 	cloudformationStackOperator := NewMockCloudformationStackOperator()
-	bucketOperator := NewMockBucketOperator()
+	s3BucketOperator := NewMockS3BucketOperator()
 	iamRoleOperator := NewMockIamRoleOperator()
 	ecrRepositoryOperator := NewMockEcrRepositoryOperator()
 	backupVaultOperator := NewMockBackupVaultOperator()
 	customOperator := NewMockCustomOperator()
 
 	operators = append(operators, cloudformationStackOperator)
-	operators = append(operators, bucketOperator)
+	operators = append(operators, s3BucketOperator)
 	operators = append(operators, iamRoleOperator)
 	operators = append(operators, ecrRepositoryOperator)
 	operators = append(operators, backupVaultOperator)
@@ -122,14 +122,14 @@ func (m *OperatorDeleteResourcesMockOperatorCollection) GetOperators() []IOperat
 	var operators []IOperator
 
 	cloudformationStackOperator := NewErrorMockCloudformationStackOperator()
-	bucketOperator := NewMockBucketOperator()
+	s3BucketOperator := NewMockS3BucketOperator()
 	iamRoleOperator := NewMockIamRoleOperator()
 	ecrRepositoryOperator := NewMockEcrRepositoryOperator()
 	backupVaultOperator := NewMockBackupVaultOperator()
 	customOperator := NewMockCustomOperator()
 
 	operators = append(operators, cloudformationStackOperator)
-	operators = append(operators, bucketOperator)
+	operators = append(operators, s3BucketOperator)
 	operators = append(operators, iamRoleOperator)
 	operators = append(operators, ecrRepositoryOperator)
 	operators = append(operators, backupVaultOperator)
