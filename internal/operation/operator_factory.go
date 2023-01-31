@@ -13,11 +13,11 @@ import (
 const SDKRetryMaxAttempts = 3
 
 type IOperatorFactory interface {
-	CreateStackOperator(targetResourceTypes []string) *StackOperator
+	CreateCloudFormationStackOperator(targetResourceTypes []string) *CloudFormationStackOperator
 	CreateBackupVaultOperator() *BackupVaultOperator
-	CreateEcrOperator() *EcrOperator
-	CreateRoleOperator() *RoleOperator
-	CreateBucketOperator() *BucketOperator
+	CreateEcrRepositoryOperator() *EcrRepositoryOperator
+	CreateIamRoleOperator() *IamRoleOperator
+	CreateS3BucketOperator() *S3BucketOperator
 	CreateCustomOperator() *CustomOperator
 }
 
@@ -33,14 +33,14 @@ func NewOperatorFactory(config aws.Config) *OperatorFactory {
 	}
 }
 
-func (f *OperatorFactory) CreateStackOperator(targetResourceTypes []string) *StackOperator {
+func (f *OperatorFactory) CreateCloudFormationStackOperator(targetResourceTypes []string) *CloudFormationStackOperator {
 	sdkCfnClient := cloudformation.NewFromConfig(f.config, func(o *cloudformation.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 	sdkCfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
 
-	return NewStackOperator(
+	return NewCloudFormationStackOperator(
 		f.config,
 		client.NewCloudFormation(
 			sdkCfnClient,
@@ -63,39 +63,39 @@ func (f *OperatorFactory) CreateBackupVaultOperator() *BackupVaultOperator {
 	)
 }
 
-func (f *OperatorFactory) CreateEcrOperator() *EcrOperator {
+func (f *OperatorFactory) CreateEcrRepositoryOperator() *EcrRepositoryOperator {
 	sdkEcrClient := ecr.NewFromConfig(f.config, func(o *ecr.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 
-	return NewEcrOperator(
+	return NewEcrRepositoryOperator(
 		client.NewEcr(
 			sdkEcrClient,
 		),
 	)
 }
 
-func (f *OperatorFactory) CreateRoleOperator() *RoleOperator {
+func (f *OperatorFactory) CreateIamRoleOperator() *IamRoleOperator {
 	sdkIamClient := iam.NewFromConfig(f.config, func(o *iam.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 
-	return NewRoleOperator(
+	return NewIamRoleOperator(
 		client.NewIam(
 			sdkIamClient,
 		),
 	)
 }
 
-func (f *OperatorFactory) CreateBucketOperator() *BucketOperator {
+func (f *OperatorFactory) CreateS3BucketOperator() *S3BucketOperator {
 	sdkS3Client := s3.NewFromConfig(f.config, func(o *s3.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 
-	return NewBucketOperator(
+	return NewS3BucketOperator(
 		client.NewS3(
 			sdkS3Client,
 		),

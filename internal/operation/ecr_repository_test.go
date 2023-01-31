@@ -15,7 +15,7 @@ import (
 	Test Cases
 */
 
-func TestEcrOperator_DeleteRepository(t *testing.T) {
+func TestEcrRepositoryOperator_DeleteEcrRepository(t *testing.T) {
 	io.NewLogger(false)
 	mock := client.NewMockEcr()
 	DeleteRepositoryErrorMock := client.NewDeleteRepositoryErrorMockEcr()
@@ -35,7 +35,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "delete ecr successfully",
+			name: "delete ecr repository successfully",
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
@@ -55,7 +55,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete bucket failure for check bucket exists errors",
+			name: "delete ecr repository failure for check ecr repository exists errors",
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
@@ -65,7 +65,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete bucket successfully for bucket not exists",
+			name: "delete ecr repository successfully for ecr repository not exists",
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
@@ -78,9 +78,9 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			ecrOperator := NewEcrOperator(tt.args.client)
+			ecrRepositoryOperator := NewEcrRepositoryOperator(tt.args.client)
 
-			err := ecrOperator.DeleteEcr(tt.args.ctx, tt.args.repositoryName)
+			err := ecrRepositoryOperator.DeleteEcrRepository(tt.args.ctx, tt.args.repositoryName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -93,7 +93,7 @@ func TestEcrOperator_DeleteRepository(t *testing.T) {
 	}
 }
 
-func TestEcrOperator_DeleteResourcesForEcr(t *testing.T) {
+func TestEcrRepositoryOperator_DeleteResourcesForEcrRepository(t *testing.T) {
 	io.NewLogger(false)
 	mock := client.NewMockEcr()
 	errorMock := client.NewDeleteRepositoryErrorMockEcr()
@@ -131,15 +131,15 @@ func TestEcrOperator_DeleteResourcesForEcr(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			ecrOperator := NewEcrOperator(tt.args.client)
-			ecrOperator.AddResource(&cfnTypes.StackResourceSummary{
+			ecrRepositoryOperator := NewEcrRepositoryOperator(tt.args.client)
+			ecrRepositoryOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
 				ResourceType:       aws.String("AWS::ECR::Repository"),
 				PhysicalResourceId: aws.String("PhysicalResourceId1"),
 			})
 
-			err := ecrOperator.DeleteResources(tt.args.ctx)
+			err := ecrRepositoryOperator.DeleteResources(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
