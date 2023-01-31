@@ -15,7 +15,7 @@ const SDKRetryMaxAttempts = 3
 type IOperatorFactory interface {
 	CreateStackOperator(targetResourceTypes []string) *StackOperator
 	CreateBackupVaultOperator() *BackupVaultOperator
-	CreateEcrOperator() *EcrOperator
+	CreateEcrRepositoryOperator() *EcrRepositoryOperator
 	CreateRoleOperator() *RoleOperator
 	CreateBucketOperator() *BucketOperator
 	CreateCustomOperator() *CustomOperator
@@ -63,13 +63,13 @@ func (f *OperatorFactory) CreateBackupVaultOperator() *BackupVaultOperator {
 	)
 }
 
-func (f *OperatorFactory) CreateEcrOperator() *EcrOperator {
+func (f *OperatorFactory) CreateEcrRepositoryOperator() *EcrRepositoryOperator {
 	sdkEcrClient := ecr.NewFromConfig(f.config, func(o *ecr.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
 
-	return NewEcrOperator(
+	return NewEcrRepositoryOperator(
 		client.NewEcr(
 			sdkEcrClient,
 		),

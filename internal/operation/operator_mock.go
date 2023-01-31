@@ -15,7 +15,7 @@ var _ IOperator = (*MockStackOperator)(nil)
 var _ IOperator = (*ErrorMockStackOperator)(nil)
 var _ IOperator = (*MockBucketOperator)(nil)
 var _ IOperator = (*MockRoleOperator)(nil)
-var _ IOperator = (*MockEcrOperator)(nil)
+var _ IOperator = (*MockEcrRepositoryOperator)(nil)
 var _ IOperator = (*MockBackupVaultOperator)(nil)
 var _ IOperator = (*MockCustomOperator)(nil)
 
@@ -83,19 +83,19 @@ func (m *MockRoleOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
-type MockEcrOperator struct{}
+type MockEcrRepositoryOperator struct{}
 
-func NewMockEcrOperator() *MockEcrOperator {
-	return &MockEcrOperator{}
+func NewMockEcrRepositoryOperator() *MockEcrRepositoryOperator {
+	return &MockEcrRepositoryOperator{}
 }
 
-func (m *MockEcrOperator) AddResource(resource *types.StackResourceSummary) {}
+func (m *MockEcrRepositoryOperator) AddResource(resource *types.StackResourceSummary) {}
 
-func (m *MockEcrOperator) GetResourcesLength() int {
+func (m *MockEcrRepositoryOperator) GetResourcesLength() int {
 	return 1
 }
 
-func (m *MockEcrOperator) DeleteResources(ctx context.Context) error {
+func (m *MockEcrRepositoryOperator) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
