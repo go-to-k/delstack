@@ -256,8 +256,7 @@ func TestS3BucketOperator_DeleteResourcesForS3Bucket(t *testing.T) {
 	io.NewLogger(false)
 
 	type args struct {
-		ctx    context.Context
-		client client.IS3
+		ctx context.Context
 	}
 
 	cases := []struct {

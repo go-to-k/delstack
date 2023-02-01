@@ -184,8 +184,7 @@ func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
 	io.NewLogger(false)
 
 	type args struct {
-		ctx    context.Context
-		client client.IBackup
+		ctx context.Context
 	}
 
 	cases := []struct {
