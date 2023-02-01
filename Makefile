@@ -25,6 +25,8 @@ mockgen:
 	go generate ./...
 shadow:
 	find . -type f -name '*.go' | sed -e "s/\/[^\.\/]*\.go//g" | uniq | xargs shadow
+cognit:
+	gocognit -top 10 ./ | grep -v "_test.go"
 run:
 	go mod tidy
 	go run -ldflags "$(LDFLAGS)" cmd/delstack/main.go $${OPT}
