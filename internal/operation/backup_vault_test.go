@@ -23,7 +23,6 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 	type args struct {
 		ctx             context.Context
 		backupVaultName *string
-		client          client.IBackup
 	}
 
 	cases := []struct {

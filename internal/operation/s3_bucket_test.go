@@ -35,10 +35,11 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 	}
 
 	cases := []struct {
-		name    string
-		args    args
-		want    error
-		wantErr bool
+		name          string
+		args          args
+		prepareMockFn func(m *client.MockIS3)
+		want          error
+		wantErr       bool
 	}{
 		{
 			name: "delete bucket successfully",
