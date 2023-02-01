@@ -12,17 +12,6 @@ import (
 
 const SDKRetryMaxAttempts = 3
 
-type IOperatorFactory interface {
-	CreateCloudFormationStackOperator(targetResourceTypes []string) *CloudFormationStackOperator
-	CreateBackupVaultOperator() *BackupVaultOperator
-	CreateEcrRepositoryOperator() *EcrRepositoryOperator
-	CreateIamRoleOperator() *IamRoleOperator
-	CreateS3BucketOperator() *S3BucketOperator
-	CreateCustomOperator() *CustomOperator
-}
-
-var _ IOperatorFactory = (*OperatorFactory)(nil)
-
 type OperatorFactory struct {
 	config aws.Config
 }

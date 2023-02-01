@@ -1,3 +1,4 @@
+//go:generate mockgen -source=./operator_collection.go -destination=./operator_collection_mock.go -package=operation
 package operation
 
 import (
@@ -21,14 +22,14 @@ var _ IOperatorCollection = (*OperatorCollection)(nil)
 
 type OperatorCollection struct {
 	stackName                 string
-	operatorFactory           IOperatorFactory
+	operatorFactory           *OperatorFactory
 	logicalResourceIds        []string
 	unsupportedStackResources []types.StackResourceSummary
 	operators                 []IOperator
 	targetResourceTypes       []string
 }
 
-func NewOperatorCollection(config aws.Config, operatorFactory IOperatorFactory, targetResourceTypes []string) *OperatorCollection {
+func NewOperatorCollection(config aws.Config, operatorFactory *OperatorFactory, targetResourceTypes []string) *OperatorCollection {
 	return &OperatorCollection{
 		operatorFactory:     operatorFactory,
 		targetResourceTypes: targetResourceTypes,

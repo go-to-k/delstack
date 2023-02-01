@@ -1,3 +1,4 @@
+//go:generate mockgen -source=./operator_manager.go -destination=./operator_manager_mock.go -package=operation
 package operation
 
 import (
