@@ -7,8 +7,10 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
+	gomock "github.com/golang/mock/gomock"
 )
 
 /*
@@ -17,53 +19,52 @@ import (
 
 func TestIamRoleOperator_DeleteIamRole(t *testing.T) {
 	io.NewLogger(false)
-	mock := client.NewMockIam()
-	allErrorMock := client.NewAllErrorMockIam()
-	deleteRoleErrorMock := client.NewDeleteRoleErrorMockIam()
-	listAttachedRolePoliciesErrorMock := client.NewListAttachedRolePoliciesErrorMockIam()
-	detachRolePoliciesErrorMock := client.NewDetachRolePoliciesErrorMockIam()
-	detachRolePoliciesErrorAfterZeroLengthMock := client.NewDetachRolePoliciesErrorAfterZeroLengthMockIam()
-	checkRoleExistsErrorMock := client.NewCheckRoleExistsErrorMockRole()
-	checkRoleNotExistsMock := client.NewCheckRoleNotExistsMockRole()
 
 	type args struct {
 		ctx      context.Context
 		roleName *string
-		client   client.IIam
 	}
 
 	cases := []struct {
-		name    string
-		args    args
-		want    error
-		wantErr bool
+		name          string
+		args          args
+		prepareMockFn func(m *client.MockIIam)
+		want          error
+		wantErr       bool
 	}{
 		{
 			name: "delete role successfully",
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   mock,
+			},
+			prepareMockFn: func(m *client.MockIIam) {
+				m.EXPECT().CheckRoleExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListAttachedRolePolicies(gomock.Any(), aws.String("test")).Return(
+					[]types.AttachedPolicy{
+						{
+							PolicyArn:  aws.String("PolicyArn1"),
+							PolicyName: aws.String("PolicyName1"),
+						},
+						{
+							PolicyArn:  aws.String("PolicyArn2"),
+							PolicyName: aws.String("PolicyName2"),
+						},
+					}, nil)
+				m.EXPECT().DetachRolePolicies(gomock.Any(), aws.String("test"), gomock.Any()).Return(nil)
+				m.EXPECT().DeleteRole(gomock.Any(), aws.String("test")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
-		},
-		{
-			name: "delete role failure for all errors",
-			args: args{
-				ctx:      context.Background(),
-				roleName: aws.String("test"),
-				client:   allErrorMock,
-			},
-			want:    fmt.Errorf("GetRoleError"),
-			wantErr: true,
 		},
 		{
 			name: "delete role failure for check role exists errors",
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   checkRoleExistsErrorMock,
+			},
+			prepareMockFn: func(m *client.MockIIam) {
+				m.EXPECT().CheckRoleExists(gomock.Any(), aws.String("test")).Return(false, fmt.Errorf("GetRoleError"))
 			},
 			want:    fmt.Errorf("GetRoleError"),
 			wantErr: true,
@@ -73,7 +74,9 @@ func TestIamRoleOperator_DeleteIamRole(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   checkRoleNotExistsMock,
+			},
+			prepareMockFn: func(m *client.MockIIam) {
+				m.EXPECT().CheckRoleExists(gomock.Any(), aws.String("test")).Return(false, nil)
 			},
 			want:    nil,
 			wantErr: false,
@@ -83,7 +86,10 @@ func TestIamRoleOperator_DeleteIamRole(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   listAttachedRolePoliciesErrorMock,
+			},
+			prepareMockFn: func(m *client.MockIIam) {
+				m.EXPECT().CheckRoleExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListAttachedRolePolicies(gomock.Any(), aws.String("test")).Return(nil, fmt.Errorf("ListAttachedRolePoliciesError"))
 			},
 			want:    fmt.Errorf("ListAttachedRolePoliciesError"),
 			wantErr: true,
@@ -93,17 +99,35 @@ func TestIamRoleOperator_DeleteIamRole(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   detachRolePoliciesErrorMock,
+			},
+			prepareMockFn: func(m *client.MockIIam) {
+				m.EXPECT().CheckRoleExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListAttachedRolePolicies(gomock.Any(), aws.String("test")).Return(
+					[]types.AttachedPolicy{
+						{
+							PolicyArn:  aws.String("PolicyArn1"),
+							PolicyName: aws.String("PolicyName1"),
+						},
+						{
+							PolicyArn:  aws.String("PolicyArn2"),
+							PolicyName: aws.String("PolicyName2"),
+						},
+					}, nil)
+				m.EXPECT().DetachRolePolicies(gomock.Any(), aws.String("test"), gomock.Any()).Return(fmt.Errorf("DetachRolePoliciesError"))
 			},
 			want:    fmt.Errorf("DetachRolePoliciesError"),
 			wantErr: true,
 		},
 		{
-			name: "delete role successfully for detach role errors after zero length",
+			name: "delete role successfully for ListAttachedRolePolicies with zero length",
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   detachRolePoliciesErrorAfterZeroLengthMock,
+			},
+			prepareMockFn: func(m *client.MockIIam) {
+				m.EXPECT().CheckRoleExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListAttachedRolePolicies(gomock.Any(), aws.String("test")).Return([]types.AttachedPolicy{}, nil)
+				m.EXPECT().DeleteRole(gomock.Any(), aws.String("test")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
@@ -113,7 +137,22 @@ func TestIamRoleOperator_DeleteIamRole(t *testing.T) {
 			args: args{
 				ctx:      context.Background(),
 				roleName: aws.String("test"),
-				client:   deleteRoleErrorMock,
+			},
+			prepareMockFn: func(m *client.MockIIam) {
+				m.EXPECT().CheckRoleExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListAttachedRolePolicies(gomock.Any(), aws.String("test")).Return(
+					[]types.AttachedPolicy{
+						{
+							PolicyArn:  aws.String("PolicyArn1"),
+							PolicyName: aws.String("PolicyName1"),
+						},
+						{
+							PolicyArn:  aws.String("PolicyArn2"),
+							PolicyName: aws.String("PolicyName2"),
+						},
+					}, nil)
+				m.EXPECT().DetachRolePolicies(gomock.Any(), aws.String("test"), gomock.Any()).Return(nil)
+				m.EXPECT().DeleteRole(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteRoleError"))
 			},
 			want:    fmt.Errorf("DeleteRoleError"),
 			wantErr: true,
@@ -122,7 +161,11 @@ func TestIamRoleOperator_DeleteIamRole(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			iamRoleOperator := NewIamRoleOperator(tt.args.client)
+			ctrl := gomock.NewController(t)
+			iamMock := client.NewMockIIam(ctrl)
+			tt.prepareMockFn(iamMock)
+
+			iamRoleOperator := NewIamRoleOperator(iamMock)
 
 			err := iamRoleOperator.DeleteIamRole(tt.args.ctx, tt.args.roleName)
 			if (err != nil) != tt.wantErr {
@@ -139,25 +182,38 @@ func TestIamRoleOperator_DeleteIamRole(t *testing.T) {
 
 func TestIamRoleOperator_DeleteResourcesForIamRole(t *testing.T) {
 	io.NewLogger(false)
-	mock := client.NewMockIam()
-	allErrorMock := client.NewAllErrorMockIam()
 
 	type args struct {
-		ctx    context.Context
-		client client.IIam
+		ctx context.Context
 	}
 
 	cases := []struct {
-		name    string
-		args    args
-		want    error
-		wantErr bool
+		name          string
+		args          args
+		prepareMockFn func(m *client.MockIIam)
+		want          error
+		wantErr       bool
 	}{
 		{
 			name: "delete resources successfully",
 			args: args{
-				ctx:    context.Background(),
-				client: mock,
+				ctx: context.Background(),
+			},
+			prepareMockFn: func(m *client.MockIIam) {
+				m.EXPECT().CheckRoleExists(gomock.Any(), aws.String("PhysicalResourceId1")).Return(true, nil)
+				m.EXPECT().ListAttachedRolePolicies(gomock.Any(), aws.String("PhysicalResourceId1")).Return(
+					[]types.AttachedPolicy{
+						{
+							PolicyArn:  aws.String("PolicyArn1"),
+							PolicyName: aws.String("PolicyName1"),
+						},
+						{
+							PolicyArn:  aws.String("PolicyArn2"),
+							PolicyName: aws.String("PolicyName2"),
+						},
+					}, nil)
+				m.EXPECT().DetachRolePolicies(gomock.Any(), aws.String("PhysicalResourceId1"), gomock.Any()).Return(nil)
+				m.EXPECT().DeleteRole(gomock.Any(), aws.String("PhysicalResourceId1")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
@@ -165,8 +221,10 @@ func TestIamRoleOperator_DeleteResourcesForIamRole(t *testing.T) {
 		{
 			name: "delete resources failure",
 			args: args{
-				ctx:    context.Background(),
-				client: allErrorMock,
+				ctx: context.Background(),
+			},
+			prepareMockFn: func(m *client.MockIIam) {
+				m.EXPECT().CheckRoleExists(gomock.Any(), aws.String("PhysicalResourceId1")).Return(false, fmt.Errorf("GetRoleError"))
 			},
 			want:    fmt.Errorf("GetRoleError"),
 			wantErr: true,
@@ -175,7 +233,11 @@ func TestIamRoleOperator_DeleteResourcesForIamRole(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			iamRoleOperator := NewIamRoleOperator(tt.args.client)
+			ctrl := gomock.NewController(t)
+			iamMock := client.NewMockIIam(ctrl)
+			tt.prepareMockFn(iamMock)
+
+			iamRoleOperator := NewIamRoleOperator(iamMock)
 			iamRoleOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",

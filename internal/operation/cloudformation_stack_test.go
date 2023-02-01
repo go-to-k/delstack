@@ -7,8 +7,11 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
+	gomock "github.com/golang/mock/gomock"
 )
 
 /*
@@ -18,254 +21,979 @@ import (
 func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 	io.NewLogger(false)
 
-	mock := client.NewMockCloudFormation()
-	terminationProtectionIsEnabledMock := client.NewTerminationProtectionIsEnabledMockCloudFormation()
-	notDeleteFailedMock := client.NewNotDeleteFailedMockCloudFormation()
-	allErrorMock := client.NewAllErrorMockCloudFormation()
-	deleteStackErrorMock := client.NewDeleteStackErrorMockCloudFormation()
-	describeStacksErrorMock := client.NewDescribeStacksErrorMockCloudFormation()
-	describeStacksNotExistsErrorMock := client.NewDescribeStacksNotExistsErrorMockCloudFormation()
-	listStackResourcesErrorMock := client.NewListStackResourcesErrorMockCloudFormation()
-
-	mockOperatorManager := NewMockOperatorManager()
-	allErrorMockOperatorManager := NewAllErrorMockOperatorManager()
-	checkResourceCountsErrorMockOperatorManager := NewCheckResourceCountsErrorMockOperatorManager()
-	deleteResourceCollectionErrorMockOperatorManager := NewDeleteResourceCollectionErrorMockOperatorManager()
-
 	type args struct {
-		ctx                 context.Context
-		stackName           *string
-		isRootStack         bool
-		clientMock          client.ICloudFormation
-		operatorManagerMock IOperatorManager
+		ctx         context.Context
+		stackName   *string
+		isRootStack bool
 	}
 
 	cases := []struct {
-		name    string
-		args    args
-		want    error
-		wantErr bool
+		name                         string
+		args                         args
+		prepareMockCloudFormationFn  func(m *client.MockICloudFormation)
+		prepareMockOperatorManagerFn func(m *MockIOperatorManager)
+		want                         error
+		wantErr                      bool
 	}{
 		{
 			name: "delete stack successfully for root stack",
 			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         true,
-				clientMock:          mock,
-				operatorManagerMock: mockOperatorManager,
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
 			},
-			want:    nil,
-			wantErr: false,
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					false,
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         nil,
+			wantErr:                      false,
 		},
 		{
 			name: "delete stack successfully for child stack",
 			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         false,
-				clientMock:          mock,
-				operatorManagerMock: mockOperatorManager,
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					false,
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         nil,
+			wantErr:                      false,
+		},
+		{
+			name: "delete stack failure for root stack for TerminationProtection is enabled stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "CREATE_COMPLETE",
+								EnableTerminationProtection: aws.Bool(true),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("TerminationProtectionIsEnabled: test"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for child stack for TerminationProtection is enabled stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "CREATE_COMPLETE",
+								EnableTerminationProtection: aws.Bool(true),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("TerminationProtectionIsEnabled: test"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for root stack for not DELETE_FAILED stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but UPDATE_ROLLBACK_COMPLETE: test"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for child stack for not DELETE_FAILED stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but UPDATE_ROLLBACK_COMPLETE: test"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for root stack for delete stack error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(fmt.Errorf("DeleteStackError"))
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("DeleteStackError"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for child stack for delete stack error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(fmt.Errorf("DeleteStackError"))
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("DeleteStackError"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for root stack for describe stacks error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					true,
+					fmt.Errorf("DescribeStacksError"),
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("DescribeStacksError"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for child stack for describe stacks error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					true,
+					fmt.Errorf("DescribeStacksError"),
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("DescribeStacksError"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for root stack for describe stacks but not exists",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					false,
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("NotExistsError: test stack not found."),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for child stack for describe stacks but not exists",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					false,
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         nil,
+			wantErr:                      false,
+		},
+		{
+			name: "delete stack failure for root stack for describe stacks error after delete stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					true,
+					fmt.Errorf("DescribeStacksError"),
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("DescribeStacksError"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for child stack for describe stacks error after delete stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					true,
+					fmt.Errorf("DescribeStacksError"),
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("DescribeStacksError"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack success for root stack for no resources after delete stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					false,
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         nil,
+			wantErr:                      false,
+		},
+		{
+			name: "delete stack success for child stack for no resources after delete stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					false,
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         nil,
+			wantErr:                      false,
+		},
+		{
+			name: "delete stack failure for root stack for list stack resources error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{},
+					fmt.Errorf("ListStackResourcesError"),
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("ListStackResourcesError"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for child stack for list stack resources error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{},
+					fmt.Errorf("ListStackResourcesError"),
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
+			want:                         fmt.Errorf("ListStackResourcesError"),
+			wantErr:                      true,
+		},
+		{
+			name: "delete stack failure for root stack for operator manager check resource counts error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId1"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("PhysicalResourceId1"),
+						},
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId2"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("PhysicalResourceId2"),
+						},
+					},
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {
+				m.EXPECT().SetOperatorCollection(aws.String("test"), gomock.Any()).Do(
+					func(stackName *string, stackResourceSummaries []types.StackResourceSummary) {},
+				)
+				m.EXPECT().CheckResourceCounts().Return(fmt.Errorf("CheckResourceCountsError"))
+			},
+			want:    fmt.Errorf("CheckResourceCountsError"),
+			wantErr: true,
+		},
+		{
+			name: "delete stack failure for child stack for operator manager check resource counts error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId1"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("PhysicalResourceId1"),
+						},
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId2"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("PhysicalResourceId2"),
+						},
+					},
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {
+				m.EXPECT().SetOperatorCollection(aws.String("test"), gomock.Any()).Do(
+					func(stackName *string, stackResourceSummaries []types.StackResourceSummary) {},
+				)
+				m.EXPECT().CheckResourceCounts().Return(fmt.Errorf("CheckResourceCountsError"))
+			},
+			want:    fmt.Errorf("CheckResourceCountsError"),
+			wantErr: true,
+		},
+		{
+			name: "delete stack failure for root stack for operator manager delete resource collection error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId1"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("PhysicalResourceId1"),
+						},
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId2"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("PhysicalResourceId2"),
+						},
+					},
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {
+				m.EXPECT().SetOperatorCollection(aws.String("test"), gomock.Any()).Do(
+					func(stackName *string, stackResourceSummaries []types.StackResourceSummary) {},
+				)
+				m.EXPECT().CheckResourceCounts().Return(nil)
+				m.EXPECT().DeleteResourceCollection(gomock.Any()).Return(fmt.Errorf("DeleteResourceCollectionError"))
+			},
+			want:    fmt.Errorf("DeleteResourceCollectionError"),
+			wantErr: true,
+		},
+		{
+			name: "delete stack failure for child stack for operator manager delete resource collection error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId1"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("PhysicalResourceId1"),
+						},
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId2"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("PhysicalResourceId2"),
+						},
+					},
+					nil,
+				)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {
+				m.EXPECT().SetOperatorCollection(aws.String("test"), gomock.Any()).Do(
+					func(stackName *string, stackResourceSummaries []types.StackResourceSummary) {},
+				)
+				m.EXPECT().CheckResourceCounts().Return(nil)
+				m.EXPECT().DeleteResourceCollection(gomock.Any()).Return(fmt.Errorf("DeleteResourceCollectionError"))
+			},
+			want:    fmt.Errorf("DeleteResourceCollectionError"),
+			wantErr: true,
+		},
+		{
+			name: "delete stack success for root stack for delete stack at last",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId1"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("PhysicalResourceId1"),
+						},
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId2"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("PhysicalResourceId2"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{"LogicalResourceId1", "LogicalResourceId2"}).Return(nil)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {
+				m.EXPECT().SetOperatorCollection(aws.String("test"), gomock.Any()).Do(
+					func(stackName *string, stackResourceSummaries []types.StackResourceSummary) {},
+				)
+				m.EXPECT().CheckResourceCounts().Return(nil)
+				m.EXPECT().DeleteResourceCollection(gomock.Any()).Return(nil)
+				m.EXPECT().GetLogicalResourceIds().Return([]string{"LogicalResourceId1", "LogicalResourceId2"})
 			},
 			want:    nil,
 			wantErr: false,
 		},
 		{
-			name: "delete stack failure for TerminationProtection is enabled stack",
+			name: "delete stack success for child stack for delete stack at last",
 			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         true,
-				clientMock:          terminationProtectionIsEnabledMock,
-				operatorManagerMock: mockOperatorManager,
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
 			},
-			want:    fmt.Errorf("TerminationProtectionIsEnabled: test"),
-			wantErr: true,
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId1"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("PhysicalResourceId1"),
+						},
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId2"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("PhysicalResourceId2"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{"LogicalResourceId1", "LogicalResourceId2"}).Return(nil)
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {
+				m.EXPECT().SetOperatorCollection(aws.String("test"), gomock.Any()).Do(
+					func(stackName *string, stackResourceSummaries []types.StackResourceSummary) {},
+				)
+				m.EXPECT().CheckResourceCounts().Return(nil)
+				m.EXPECT().DeleteResourceCollection(gomock.Any()).Return(nil)
+				m.EXPECT().GetLogicalResourceIds().Return([]string{"LogicalResourceId1", "LogicalResourceId2"})
+			},
+			want:    nil,
+			wantErr: false,
 		},
 		{
-			name: "delete stack failure for not DELETE_FAILED stack",
+			name: "delete stack failure for root stack for delete stack error at last",
 			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         true,
-				clientMock:          notDeleteFailedMock,
-				operatorManagerMock: mockOperatorManager,
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
 			},
-			want:    fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but UPDATE_ROLLBACK_COMPLETE: test"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for root stack for all errors",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         true,
-				clientMock:          allErrorMock,
-				operatorManagerMock: mockOperatorManager,
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId1"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("PhysicalResourceId1"),
+						},
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId2"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("PhysicalResourceId2"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{"LogicalResourceId1", "LogicalResourceId2"}).Return(fmt.Errorf("DeleteStackError"))
 			},
-			want:    fmt.Errorf("DescribeStacksError"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for child stack for all errors",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         false,
-				clientMock:          allErrorMock,
-				operatorManagerMock: mockOperatorManager,
-			},
-			want:    fmt.Errorf("DescribeStacksError"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for root stack for delete Stack",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         true,
-				clientMock:          deleteStackErrorMock,
-				operatorManagerMock: mockOperatorManager,
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {
+				m.EXPECT().SetOperatorCollection(aws.String("test"), gomock.Any()).Do(
+					func(stackName *string, stackResourceSummaries []types.StackResourceSummary) {},
+				)
+				m.EXPECT().CheckResourceCounts().Return(nil)
+				m.EXPECT().DeleteResourceCollection(gomock.Any()).Return(nil)
+				m.EXPECT().GetLogicalResourceIds().Return([]string{"LogicalResourceId1", "LogicalResourceId2"})
 			},
 			want:    fmt.Errorf("DeleteStackError"),
 			wantErr: true,
 		},
 		{
-			name: "delete stack failure for child stack for delete Stack",
+			name: "delete stack failure for child stack for delete stack error at last",
 			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         false,
-				clientMock:          deleteStackErrorMock,
-				operatorManagerMock: mockOperatorManager,
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId1"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("PhysicalResourceId1"),
+						},
+						{
+							LogicalResourceId:  aws.String("LogicalResourceId2"),
+							ResourceStatus:     "DELETE_FAILED",
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("PhysicalResourceId2"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{"LogicalResourceId1", "LogicalResourceId2"}).Return(fmt.Errorf("DeleteStackError"))
+			},
+			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {
+				m.EXPECT().SetOperatorCollection(aws.String("test"), gomock.Any()).Do(
+					func(stackName *string, stackResourceSummaries []types.StackResourceSummary) {},
+				)
+				m.EXPECT().CheckResourceCounts().Return(nil)
+				m.EXPECT().DeleteResourceCollection(gomock.Any()).Return(nil)
+				m.EXPECT().GetLogicalResourceIds().Return([]string{"LogicalResourceId1", "LogicalResourceId2"})
 			},
 			want:    fmt.Errorf("DeleteStackError"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for root stack for describe stacks",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         true,
-				clientMock:          describeStacksErrorMock,
-				operatorManagerMock: mockOperatorManager,
-			},
-			want:    fmt.Errorf("DescribeStacksError"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for root stack for describe stacks but not exists",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         true,
-				clientMock:          describeStacksNotExistsErrorMock,
-				operatorManagerMock: mockOperatorManager,
-			},
-			want:    fmt.Errorf("NotExistsError: test stack not found."),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for root stack for list stack resources",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         true,
-				clientMock:          listStackResourcesErrorMock,
-				operatorManagerMock: mockOperatorManager,
-			},
-			want:    fmt.Errorf("ListStackResourcesError"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for child stack for list stack resources",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         false,
-				clientMock:          listStackResourcesErrorMock,
-				operatorManagerMock: mockOperatorManager,
-			},
-			want:    fmt.Errorf("ListStackResourcesError"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for root stack for operator manager all errors",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         true,
-				clientMock:          mock,
-				operatorManagerMock: allErrorMockOperatorManager,
-			},
-			want:    fmt.Errorf("CheckResourceCountsError"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for child stack for operator manager all errors",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         false,
-				clientMock:          mock,
-				operatorManagerMock: allErrorMockOperatorManager,
-			},
-			want:    fmt.Errorf("CheckResourceCountsError"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for root stack for operator manager check resource counts",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         true,
-				clientMock:          mock,
-				operatorManagerMock: checkResourceCountsErrorMockOperatorManager,
-			},
-			want:    fmt.Errorf("CheckResourceCountsError"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for child stack for operator manager check resource counts",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         false,
-				clientMock:          mock,
-				operatorManagerMock: checkResourceCountsErrorMockOperatorManager,
-			},
-			want:    fmt.Errorf("CheckResourceCountsError"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for root stack for operator manager delete resource collection",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         true,
-				clientMock:          mock,
-				operatorManagerMock: deleteResourceCollectionErrorMockOperatorManager,
-			},
-			want:    fmt.Errorf("DeleteResourceCollectionError"),
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for child stack for operator manager delete resource collection",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				isRootStack:         false,
-				clientMock:          mock,
-				operatorManagerMock: deleteResourceCollectionErrorMockOperatorManager,
-			},
-			want:    fmt.Errorf("DeleteResourceCollectionError"),
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			cloudformationMock := client.NewMockICloudFormation(ctrl)
+			operatorManagerMock := NewMockIOperatorManager(ctrl)
+
+			tt.prepareMockCloudFormationFn(cloudformationMock)
+			tt.prepareMockOperatorManagerFn(operatorManagerMock)
+
 			targetResourceTypes := []string{
 				"AWS::S3::Bucket",
 				"AWS::IAM::Role",
@@ -274,9 +1002,10 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 				"AWS::CloudFormation::Stack",
 				"Custom::",
 			}
-			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
 
-			err := cloudformationStackOperator.DeleteCloudFormationStack(tt.args.ctx, tt.args.stackName, tt.args.isRootStack, tt.args.operatorManagerMock)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, targetResourceTypes)
+
+			err := cloudformationStackOperator.DeleteCloudFormationStack(tt.args.ctx, tt.args.stackName, tt.args.isRootStack, operatorManagerMock)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -289,21 +1018,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 	}
 }
 
-func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
+func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 	io.NewLogger(false)
-
-	mock := client.NewMockCloudFormation()
-	terminationProtectionIsEnabledMock := client.NewTerminationProtectionIsEnabledMockCloudFormation()
-	notDeleteFailedMock := client.NewNotDeleteFailedMockCloudFormation()
-	allErrorMock := client.NewAllErrorMockCloudFormation()
-	describeStacksErrorMock := client.NewDescribeStacksErrorMockCloudFormation()
-	describeStacksNotExistsErrorMock := client.NewDescribeStacksNotExistsErrorMockCloudFormation()
 
 	type args struct {
 		ctx         context.Context
 		stackName   *string
 		isRootStack bool
-		clientMock  client.ICloudFormation
 	}
 
 	type want struct {
@@ -312,10 +1033,11 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 	}
 
 	cases := []struct {
-		name    string
-		args    args
-		want    want
-		wantErr bool
+		name                        string
+		args                        args
+		prepareMockCloudFormationFn func(m *client.MockICloudFormation)
+		want                        want
+		wantErr                     bool
 	}{
 		{
 			name: "delete stack successfully for root stack",
@@ -323,7 +1045,81 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: true,
-				clientMock:  mock,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+			},
+			want: want{
+				got: false,
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "delete stack successfully for child stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
 			},
 			want: want{
 				got: false,
@@ -337,7 +1133,49 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: true,
-				clientMock:  terminationProtectionIsEnabledMock,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "CREATE_COMPLETE",
+								EnableTerminationProtection: aws.Bool(true),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+			},
+			want: want{
+				got: false,
+				err: fmt.Errorf("TerminationProtectionIsEnabled: test"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "delete stack failure for child stack for TerminationProtection is enabled stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "CREATE_COMPLETE",
+								EnableTerminationProtection: aws.Bool(true),
+							},
+						},
+					},
+					true,
+					nil,
+				)
 			},
 			want: want{
 				got: false,
@@ -351,7 +1189,23 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: true,
-				clientMock:  notDeleteFailedMock,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 			},
 			want: want{
 				got: false,
@@ -360,12 +1214,108 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete stack failure for root stack for all errors",
+			name: "delete stack failure for child stack for not DELETE_FAILED stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				).AnyTimes()
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+			},
+			want: want{
+				got: false,
+				err: fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but UPDATE_ROLLBACK_COMPLETE: test"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "delete stack failure for root stack for delete stack error",
 			args: args{
 				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: true,
-				clientMock:  allErrorMock,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(fmt.Errorf("DeleteStackError"))
+			},
+			want: want{
+				got: false,
+				err: fmt.Errorf("DeleteStackError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "delete stack failure for child stack for delete stack error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(fmt.Errorf("DeleteStackError"))
+			},
+			want: want{
+				got: false,
+				err: fmt.Errorf("DeleteStackError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "delete stack failure for root stack for describe stacks error",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					true,
+					fmt.Errorf("DescribeStacksError"),
+				)
 			},
 			want: want{
 				got: false,
@@ -374,12 +1324,18 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete stack failure for root stack for describe stacks",
+			name: "delete stack failure for child stack for describe stacks error",
 			args: args{
 				ctx:         context.Background(),
 				stackName:   aws.String("test"),
-				isRootStack: true,
-				clientMock:  describeStacksErrorMock,
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					true,
+					fmt.Errorf("DescribeStacksError"),
+				)
 			},
 			want: want{
 				got: false,
@@ -393,7 +1349,13 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: true,
-				clientMock:  describeStacksNotExistsErrorMock,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					false,
+					nil,
+				)
 			},
 			want: want{
 				got: false,
@@ -402,54 +1364,54 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete stack successfully for child stack",
+			name: "delete stack failure for child stack for already deleted",
 			args: args{
 				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: false,
-				clientMock:  mock,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					false,
+					nil,
+				)
 			},
 			want: want{
-				got: false,
+				got: true,
 				err: nil,
 			},
 			wantErr: false,
 		},
 		{
-			name: "delete stack failure for child stack for TerminationProtection is enabled stack",
+			name: "delete stack failure for root stack for describe stacks error after delete stack",
 			args: args{
 				ctx:         context.Background(),
 				stackName:   aws.String("test"),
-				isRootStack: false,
-				clientMock:  terminationProtectionIsEnabledMock,
+				isRootStack: true,
 			},
-			want: want{
-				got: false,
-				err: fmt.Errorf("TerminationProtectionIsEnabled: test"),
-			},
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for child stack for not DELETE_FAILED stack",
-			args: args{
-				ctx:         context.Background(),
-				stackName:   aws.String("test"),
-				isRootStack: false,
-				clientMock:  notDeleteFailedMock,
-			},
-			want: want{
-				got: false,
-				err: fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but UPDATE_ROLLBACK_COMPLETE: test"),
-			},
-			wantErr: true,
-		},
-		{
-			name: "delete stack failure for child stack for all errors",
-			args: args{
-				ctx:         context.Background(),
-				stackName:   aws.String("test"),
-				isRootStack: false,
-				clientMock:  allErrorMock,
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					true,
+					fmt.Errorf("DescribeStacksError"),
+				)
 			},
 			want: want{
 				got: false,
@@ -458,12 +1420,34 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete stack failure for child stack for describe stacks",
+			name: "delete stack failure for child stack for describe stacks error after delete stack",
 			args: args{
 				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: false,
-				clientMock:  describeStacksErrorMock,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					true,
+					fmt.Errorf("DescribeStacksError"),
+				)
 			},
 			want: want{
 				got: false,
@@ -472,12 +1456,70 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete stack successfully for child stack for the stack already deleted",
+			name: "delete stack success for root stack for no resources after delete stack",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					false,
+					nil,
+				)
+			},
+			want: want{
+				got: true,
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "delete stack success for child stack for no resources after delete stack",
 			args: args{
 				ctx:         context.Background(),
 				stackName:   aws.String("test"),
 				isRootStack: false,
-				clientMock:  describeStacksNotExistsErrorMock,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{
+						Stacks: []types.Stack{
+							{
+								StackName:                   aws.String("test"),
+								StackStatus:                 "DELETE_FAILED",
+								EnableTerminationProtection: aws.Bool(false),
+							},
+						},
+					},
+					true,
+					nil,
+				)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					&cloudformation.DescribeStacksOutput{},
+					false,
+					nil,
+				)
 			},
 			want: want{
 				got: true,
@@ -489,6 +1531,11 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			cloudformationMock := client.NewMockICloudFormation(ctrl)
+
+			tt.prepareMockCloudFormationFn(cloudformationMock)
+
 			targetResourceTypes := []string{
 				"AWS::S3::Bucket",
 				"AWS::IAM::Role",
@@ -497,7 +1544,7 @@ func TestCloudFormationStackOperator_deleteRootStack(t *testing.T) {
 				"AWS::CloudFormation::Stack",
 				"Custom::",
 			}
-			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, targetResourceTypes)
 
 			got, err := cloudformationStackOperator.deleteStackNormally(tt.args.ctx, tt.args.stackName, tt.args.isRootStack)
 			if (err != nil) != tt.wantErr {
@@ -519,15 +1566,9 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 	io.NewLogger(false)
 	ctx := context.Background()
 
-	mock := client.NewMockCloudFormation()
-	allErrorMock := client.NewAllErrorMockCloudFormation()
-	listStacksErrorMock := client.NewListStacksErrorMockCloudFormation()
-	listStacksEmptyMock := client.NewListStacksEmptyMockCloudFormation()
-
 	type args struct {
-		ctx        context.Context
-		keyword    string
-		clientMock client.ICloudFormation
+		ctx     context.Context
+		keyword string
 	}
 
 	type want struct {
@@ -536,17 +1577,32 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 	}
 
 	cases := []struct {
-		name    string
-		args    args
-		want    want
-		wantErr bool
+		name                        string
+		args                        args
+		prepareMockCloudFormationFn func(m *client.MockICloudFormation)
+		want                        want
+		wantErr                     bool
 	}{
 		{
 			name: "list stacks filtered by keyword successfully",
 			args: args{
-				ctx:        ctx,
-				keyword:    "TestStack",
-				clientMock: mock,
+				ctx:     ctx,
+				keyword: "TestStack",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().ListStacks(gomock.Any()).Return(
+					[]types.StackSummary{
+						{
+							StackName:   aws.String("TestStack1"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+						{
+							StackName:   aws.String("TestStack2"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+					},
+					nil,
+				)
 			},
 			want: want{
 				filteredStacks: []string{
@@ -560,9 +1616,23 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 		{
 			name: "list stacks filtered by keyword but empty keyword successfully",
 			args: args{
-				ctx:        ctx,
-				keyword:    "",
-				clientMock: mock,
+				ctx:     ctx,
+				keyword: "",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().ListStacks(gomock.Any()).Return(
+					[]types.StackSummary{
+						{
+							StackName:   aws.String("TestStack1"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+						{
+							StackName:   aws.String("TestStack2"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+					},
+					nil,
+				)
 			},
 			want: want{
 				filteredStacks: []string{
@@ -576,9 +1646,11 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 		{
 			name: "list stacks filtered by keyword but no stacks found successfully",
 			args: args{
-				ctx:        ctx,
-				keyword:    "TestStack",
-				clientMock: listStacksEmptyMock,
+				ctx:     ctx,
+				keyword: "TestStack",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().ListStacks(gomock.Any()).Return([]types.StackSummary{}, nil)
 			},
 			want: want{
 				filteredStacks: []string{},
@@ -589,9 +1661,11 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 		{
 			name: "list stacks filtered by keyword but empty keyword and no stacks found successfully",
 			args: args{
-				ctx:        ctx,
-				keyword:    "",
-				clientMock: listStacksEmptyMock,
+				ctx:     ctx,
+				keyword: "",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().ListStacks(gomock.Any()).Return([]types.StackSummary{}, nil)
 			},
 			want: want{
 				filteredStacks: []string{},
@@ -600,37 +1674,13 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "list stacks filtered by keyword failure for all errors",
-			args: args{
-				ctx:        ctx,
-				keyword:    "TestStack",
-				clientMock: allErrorMock,
-			},
-			want: want{
-				filteredStacks: []string{},
-				err:            fmt.Errorf("ListStacksError"),
-			},
-			wantErr: true,
-		},
-		{
 			name: "list stacks filtered by keyword failure for list stacks errors",
 			args: args{
-				ctx:        ctx,
-				keyword:    "TestStack",
-				clientMock: listStacksErrorMock,
+				ctx:     ctx,
+				keyword: "TestStack",
 			},
-			want: want{
-				filteredStacks: []string{},
-				err:            fmt.Errorf("ListStacksError"),
-			},
-			wantErr: true,
-		},
-		{
-			name: "list stacks filtered by keyword but empty keyword failure for all errors",
-			args: args{
-				ctx:        ctx,
-				keyword:    "",
-				clientMock: allErrorMock,
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().ListStacks(gomock.Any()).Return([]types.StackSummary{}, fmt.Errorf("ListStacksError"))
 			},
 			want: want{
 				filteredStacks: []string{},
@@ -641,9 +1691,11 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 		{
 			name: "list stacks filtered by keyword but empty keyword failure for list stacks errors",
 			args: args{
-				ctx:        ctx,
-				keyword:    "",
-				clientMock: listStacksErrorMock,
+				ctx:     ctx,
+				keyword: "",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().ListStacks(gomock.Any()).Return([]types.StackSummary{}, fmt.Errorf("ListStacksError"))
 			},
 			want: want{
 				filteredStacks: []string{},
@@ -655,6 +1707,11 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			cloudformationMock := client.NewMockICloudFormation(ctrl)
+
+			tt.prepareMockCloudFormationFn(cloudformationMock)
+
 			targetResourceTypes := []string{
 				"AWS::S3::Bucket",
 				"AWS::IAM::Role",
@@ -664,7 +1721,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 				"Custom::",
 			}
 
-			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, tt.args.clientMock, targetResourceTypes)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, targetResourceTypes)
 
 			output, err := cloudformationStackOperator.ListStacksFilteredByKeyword(tt.args.ctx, &tt.args.keyword)
 			if (err != nil) != tt.wantErr {

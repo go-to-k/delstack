@@ -1,3 +1,4 @@
+//go:generate mockgen -source=./s3.go -destination=./s3_mock.go -package=client
 package client
 
 import (

@@ -40,8 +40,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 	}
 
 	type want struct {
-		logicalResourceIdsLength        int
-		unsupportedStackResourcesLength int
+		logicalResourceIdsLength                   int
+		unsupportedStackResourcesLength            int
+		s3BucketOperatorResourcesLength            int
+		iamRoleOperatorResourcesLength             int
+		ecrRepositoryOperatorResourcesLength       int
+		backupVaultOperatorResourcesLength         int
+		cloudformationStackOperatorResourcesLength int
+		customOperatorResourcesLength              int
 	}
 
 	cases := []struct {
@@ -95,8 +101,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        6,
-				unsupportedStackResourcesLength: 0,
+				logicalResourceIdsLength:                   6,
+				unsupportedStackResourcesLength:            0,
+				s3BucketOperatorResourcesLength:            1,
+				iamRoleOperatorResourcesLength:             1,
+				ecrRepositoryOperatorResourcesLength:       1,
+				backupVaultOperatorResourcesLength:         1,
+				cloudformationStackOperatorResourcesLength: 1,
+				customOperatorResourcesLength:              1,
 			},
 		},
 		{
@@ -121,8 +133,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        2,
-				unsupportedStackResourcesLength: 1,
+				logicalResourceIdsLength:                   2,
+				unsupportedStackResourcesLength:            1,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 1,
+				customOperatorResourcesLength:              0,
 			},
 		},
 		{
@@ -147,8 +165,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        1,
-				unsupportedStackResourcesLength: 1,
+				logicalResourceIdsLength:                   1,
+				unsupportedStackResourcesLength:            1,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              0,
 			},
 		},
 		{
@@ -173,8 +197,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        1,
-				unsupportedStackResourcesLength: 0,
+				logicalResourceIdsLength:                   1,
+				unsupportedStackResourcesLength:            0,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 1,
+				customOperatorResourcesLength:              0,
 			},
 		},
 		{
@@ -223,8 +253,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        6,
-				unsupportedStackResourcesLength: 3,
+				logicalResourceIdsLength:                   6,
+				unsupportedStackResourcesLength:            3,
+				s3BucketOperatorResourcesLength:            1,
+				iamRoleOperatorResourcesLength:             1,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              1,
 			},
 		},
 		{
@@ -249,8 +285,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        2,
-				unsupportedStackResourcesLength: 2,
+				logicalResourceIdsLength:                   2,
+				unsupportedStackResourcesLength:            2,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              0,
 			},
 		},
 		{
@@ -275,8 +317,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        1,
-				unsupportedStackResourcesLength: 1,
+				logicalResourceIdsLength:                   1,
+				unsupportedStackResourcesLength:            1,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              0,
 			},
 		},
 		{
@@ -301,8 +349,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        1,
-				unsupportedStackResourcesLength: 1,
+				logicalResourceIdsLength:                   1,
+				unsupportedStackResourcesLength:            1,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              0,
 			},
 		},
 		{
@@ -327,8 +381,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        2,
-				unsupportedStackResourcesLength: 1,
+				logicalResourceIdsLength:                   2,
+				unsupportedStackResourcesLength:            1,
+				s3BucketOperatorResourcesLength:            1,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              0,
 			},
 		},
 		{
@@ -353,8 +413,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        1,
-				unsupportedStackResourcesLength: 1,
+				logicalResourceIdsLength:                   1,
+				unsupportedStackResourcesLength:            1,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              0,
 			},
 		},
 		{
@@ -379,8 +445,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        1,
-				unsupportedStackResourcesLength: 0,
+				logicalResourceIdsLength:                   1,
+				unsupportedStackResourcesLength:            0,
+				s3BucketOperatorResourcesLength:            1,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              0,
 			},
 		},
 		{
@@ -405,8 +477,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        2,
-				unsupportedStackResourcesLength: 1,
+				logicalResourceIdsLength:                   2,
+				unsupportedStackResourcesLength:            1,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              1,
 			},
 		},
 		{
@@ -431,8 +509,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        1,
-				unsupportedStackResourcesLength: 1,
+				logicalResourceIdsLength:                   1,
+				unsupportedStackResourcesLength:            1,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              0,
 			},
 		},
 		{
@@ -457,8 +541,14 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:        1,
-				unsupportedStackResourcesLength: 0,
+				logicalResourceIdsLength:                   1,
+				unsupportedStackResourcesLength:            0,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              1,
 			},
 		},
 	}
@@ -471,9 +561,40 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 
 			operatorCollection.SetOperatorCollection(tt.args.stackName, tt.args.stackResourceSummaries)
 
+			s3BucketOperatorResourcesLength := 0
+			iamRoleOperatorResourcesLength := 0
+			ecrRepositoryOperatorResourcesLength := 0
+			backupVaultOperatorResourcesLength := 0
+			cloudformationStackOperatorResourcesLength := 0
+			customOperatorResourcesLength := 0
+
+			for _, operator := range operatorCollection.GetOperators() {
+				switch operator.(type) {
+				case *S3BucketOperator:
+					s3BucketOperatorResourcesLength += operator.GetResourcesLength()
+				case *IamRoleOperator:
+					iamRoleOperatorResourcesLength += operator.GetResourcesLength()
+				case *EcrRepositoryOperator:
+					ecrRepositoryOperatorResourcesLength += operator.GetResourcesLength()
+				case *BackupVaultOperator:
+					backupVaultOperatorResourcesLength += operator.GetResourcesLength()
+				case *CloudFormationStackOperator:
+					cloudformationStackOperatorResourcesLength += operator.GetResourcesLength()
+				case *CustomOperator:
+					customOperatorResourcesLength += operator.GetResourcesLength()
+				default:
+				}
+			}
+
 			got := want{
-				logicalResourceIdsLength:        len(operatorCollection.logicalResourceIds),
-				unsupportedStackResourcesLength: len(operatorCollection.unsupportedStackResources),
+				logicalResourceIdsLength:                   len(operatorCollection.logicalResourceIds),
+				unsupportedStackResourcesLength:            len(operatorCollection.unsupportedStackResources),
+				s3BucketOperatorResourcesLength:            s3BucketOperatorResourcesLength,
+				iamRoleOperatorResourcesLength:             iamRoleOperatorResourcesLength,
+				ecrRepositoryOperatorResourcesLength:       ecrRepositoryOperatorResourcesLength,
+				backupVaultOperatorResourcesLength:         backupVaultOperatorResourcesLength,
+				cloudformationStackOperatorResourcesLength: cloudformationStackOperatorResourcesLength,
+				customOperatorResourcesLength:              customOperatorResourcesLength,
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
