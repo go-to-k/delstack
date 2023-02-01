@@ -6,9 +6,11 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
+	gomock "github.com/golang/mock/gomock"
 )
 
 /*
@@ -17,14 +19,6 @@ import (
 
 func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 	io.NewLogger(false)
-	mock := client.NewMockBackup()
-	allErrorMock := client.NewAllErrorMockBackup()
-	listRecoveryPointsErrorMock := client.NewListRecoveryPointsErrorMockBackup()
-	deleteRecoveryPointsErrorMock := client.NewDeleteRecoveryPointsErrorMockBackup()
-	deleteRecoveryPointsErrorAfterZeroLengthMock := client.NewDeleteRecoveryPointsErrorAfterZeroLengthMockBackup()
-	deleteBackupVaultErrorMock := client.NewDeleteBackupVaultErrorMockBackup()
-	checkBackupVaultExistsErrorMock := client.NewCheckBackupVaultExistsErrorMockBackup()
-	checkBackupVaultNotExistsMock := client.NewCheckBackupVaultNotExistsMockBackup()
 
 	type args struct {
 		ctx             context.Context
@@ -33,47 +27,57 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 	}
 
 	cases := []struct {
-		name    string
-		args    args
-		want    error
-		wantErr bool
+		name          string
+		args          args
+		prepareMockFn func(m *client.MockIBackup)
+		want          error
+		wantErr       bool
 	}{
 		{
 			name: "delete backup vault successfully",
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          mock,
+			},
+			prepareMockFn: func(m *client.MockIBackup) {
+				m.EXPECT().CheckBackupVaultExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListRecoveryPointsByBackupVault(gomock.Any(), aws.String("test")).Return(
+					[]types.RecoveryPointByBackupVault{
+						{
+							BackupVaultName: aws.String("BackupVaultName1"),
+							BackupVaultArn:  aws.String("BackupVaultArn1"),
+						},
+						{
+							BackupVaultName: aws.String("BackupVaultName2"),
+							BackupVaultArn:  aws.String("BackupVaultArn2"),
+						},
+					}, nil)
+				m.EXPECT().DeleteRecoveryPoints(gomock.Any(), aws.String("test"), gomock.Any()).Return(nil)
+				m.EXPECT().DeleteBackupVault(gomock.Any(), aws.String("test")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
 		},
 		{
-			name: "delete backup vault failure for all errors",
+			name: "delete backup vault failure for check backup vault exists errors",
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          allErrorMock,
+			},
+			prepareMockFn: func(m *client.MockIBackup) {
+				m.EXPECT().CheckBackupVaultExists(gomock.Any(), aws.String("test")).Return(false, fmt.Errorf("ListBackupVaultsError"))
 			},
 			want:    fmt.Errorf("ListBackupVaultsError"),
 			wantErr: true,
 		},
 		{
-			name: "delete bucket failure for check bucket exists errors",
+			name: "delete backup vault successfully for backup vault not exists",
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          checkBackupVaultExistsErrorMock,
 			},
-			want:    fmt.Errorf("ListBackupVaultsError"),
-			wantErr: true,
-		},
-		{
-			name: "delete bucket successfully for bucket not exists",
-			args: args{
-				ctx:             context.Background(),
-				backupVaultName: aws.String("test"),
-				client:          checkBackupVaultNotExistsMock,
+			prepareMockFn: func(m *client.MockIBackup) {
+				m.EXPECT().CheckBackupVaultExists(gomock.Any(), aws.String("test")).Return(false, nil)
 			},
 			want:    nil,
 			wantErr: false,
@@ -83,7 +87,10 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          listRecoveryPointsErrorMock,
+			},
+			prepareMockFn: func(m *client.MockIBackup) {
+				m.EXPECT().CheckBackupVaultExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListRecoveryPointsByBackupVault(gomock.Any(), aws.String("test")).Return(nil, fmt.Errorf("ListRecoveryPointsByBackupVaultError"))
 			},
 			want:    fmt.Errorf("ListRecoveryPointsByBackupVaultError"),
 			wantErr: true,
@@ -93,7 +100,21 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          deleteRecoveryPointsErrorMock,
+			},
+			prepareMockFn: func(m *client.MockIBackup) {
+				m.EXPECT().CheckBackupVaultExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListRecoveryPointsByBackupVault(gomock.Any(), aws.String("test")).Return(
+					[]types.RecoveryPointByBackupVault{
+						{
+							BackupVaultName: aws.String("BackupVaultName1"),
+							BackupVaultArn:  aws.String("BackupVaultArn1"),
+						},
+						{
+							BackupVaultName: aws.String("BackupVaultName2"),
+							BackupVaultArn:  aws.String("BackupVaultArn2"),
+						},
+					}, nil)
+				m.EXPECT().DeleteRecoveryPoints(gomock.Any(), aws.String("test"), gomock.Any()).Return(fmt.Errorf("DeleteRecoveryPointsError"))
 			},
 			want:    fmt.Errorf("DeleteRecoveryPointsError"),
 			wantErr: true,
@@ -103,7 +124,11 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          deleteRecoveryPointsErrorAfterZeroLengthMock,
+			},
+			prepareMockFn: func(m *client.MockIBackup) {
+				m.EXPECT().CheckBackupVaultExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListRecoveryPointsByBackupVault(gomock.Any(), aws.String("test")).Return([]types.RecoveryPointByBackupVault{}, nil)
+				m.EXPECT().DeleteBackupVault(gomock.Any(), aws.String("test")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
@@ -113,7 +138,22 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 			args: args{
 				ctx:             context.Background(),
 				backupVaultName: aws.String("test"),
-				client:          deleteBackupVaultErrorMock,
+			},
+			prepareMockFn: func(m *client.MockIBackup) {
+				m.EXPECT().CheckBackupVaultExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListRecoveryPointsByBackupVault(gomock.Any(), aws.String("test")).Return(
+					[]types.RecoveryPointByBackupVault{
+						{
+							BackupVaultName: aws.String("BackupVaultName1"),
+							BackupVaultArn:  aws.String("BackupVaultArn1"),
+						},
+						{
+							BackupVaultName: aws.String("BackupVaultName2"),
+							BackupVaultArn:  aws.String("BackupVaultArn2"),
+						},
+					}, nil)
+				m.EXPECT().DeleteRecoveryPoints(gomock.Any(), aws.String("test"), gomock.Any()).Return(nil)
+				m.EXPECT().DeleteBackupVault(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteBackupVaultError"))
 			},
 			want:    fmt.Errorf("DeleteBackupVaultError"),
 			wantErr: true,
@@ -122,7 +162,11 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			backupOperator := NewBackupVaultOperator(tt.args.client)
+			ctrl := gomock.NewController(t)
+			backupMock := client.NewMockIBackup(ctrl)
+			tt.prepareMockFn(backupMock)
+
+			backupOperator := NewBackupVaultOperator(backupMock)
 
 			err := backupOperator.DeleteBackupVault(tt.args.ctx, tt.args.backupVaultName)
 			if (err != nil) != tt.wantErr {
@@ -139,8 +183,6 @@ func TestBackupVaultOperator_DeleteBackupVault(t *testing.T) {
 
 func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
 	io.NewLogger(false)
-	mock := client.NewMockBackup()
-	allErrorMock := client.NewAllErrorMockBackup()
 
 	type args struct {
 		ctx    context.Context
@@ -148,16 +190,32 @@ func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
 	}
 
 	cases := []struct {
-		name    string
-		args    args
-		want    error
-		wantErr bool
+		name          string
+		args          args
+		prepareMockFn func(m *client.MockIBackup)
+		want          error
+		wantErr       bool
 	}{
 		{
 			name: "delete resources successfully",
 			args: args{
-				ctx:    context.Background(),
-				client: mock,
+				ctx: context.Background(),
+			},
+			prepareMockFn: func(m *client.MockIBackup) {
+				m.EXPECT().CheckBackupVaultExists(gomock.Any(), aws.String("PhysicalResourceId1")).Return(true, nil)
+				m.EXPECT().ListRecoveryPointsByBackupVault(gomock.Any(), aws.String("PhysicalResourceId1")).Return(
+					[]types.RecoveryPointByBackupVault{
+						{
+							BackupVaultName: aws.String("BackupVaultName1"),
+							BackupVaultArn:  aws.String("BackupVaultArn1"),
+						},
+						{
+							BackupVaultName: aws.String("BackupVaultName2"),
+							BackupVaultArn:  aws.String("BackupVaultArn2"),
+						},
+					}, nil)
+				m.EXPECT().DeleteRecoveryPoints(gomock.Any(), aws.String("PhysicalResourceId1"), gomock.Any()).Return(nil)
+				m.EXPECT().DeleteBackupVault(gomock.Any(), aws.String("PhysicalResourceId1")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
@@ -165,8 +223,10 @@ func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
 		{
 			name: "delete resources failure",
 			args: args{
-				ctx:    context.Background(),
-				client: allErrorMock,
+				ctx: context.Background(),
+			},
+			prepareMockFn: func(m *client.MockIBackup) {
+				m.EXPECT().CheckBackupVaultExists(gomock.Any(), aws.String("PhysicalResourceId1")).Return(false, fmt.Errorf("ListBackupVaultsError"))
 			},
 			want:    fmt.Errorf("ListBackupVaultsError"),
 			wantErr: true,
@@ -175,7 +235,12 @@ func TestBackupVaultOperator_DeleteResourcesForBackupVault(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			backupOperator := NewBackupVaultOperator(tt.args.client)
+			ctrl := gomock.NewController(t)
+			backupMock := client.NewMockIBackup(ctrl)
+			tt.prepareMockFn(backupMock)
+
+			backupOperator := NewBackupVaultOperator(backupMock)
+
 			backupOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",

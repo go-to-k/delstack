@@ -1,3 +1,4 @@
+//go:generate mockgen -source=./ecr.go -destination=./ecr_mock.go -package=client
 package client
 
 import (

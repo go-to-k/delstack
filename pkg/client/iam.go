@@ -1,3 +1,4 @@
+//go:generate mockgen -source=./iam.go -destination=./iam_mock.go -package=client
 package client
 
 import (

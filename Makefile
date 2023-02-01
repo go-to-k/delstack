@@ -21,6 +21,8 @@ test:
 test_view:
 	@! echo $(TEST_COV_RESULT) | $(COLORIZE_PASS) | $(COLORIZE_FAIL) | tee /dev/stderr | grep $(FAIL_CHECK) > /dev/null
 	go tool cover -html=cover_file.out -o cover_file.html
+mockgen:
+	go generate ./...
 shadow:
 	find . -type f -name '*.go' | sed -e "s/\/[^\.\/]*\.go//g" | uniq | xargs shadow
 run:
