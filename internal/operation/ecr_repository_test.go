@@ -9,6 +9,7 @@ import (
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
+	gomock "github.com/golang/mock/gomock"
 )
 
 /*
@@ -17,29 +18,28 @@ import (
 
 func TestEcrRepositoryOperator_DeleteEcrRepository(t *testing.T) {
 	io.NewLogger(false)
-	mock := client.NewMockEcr()
-	DeleteRepositoryErrorMock := client.NewDeleteRepositoryErrorMockEcr()
-	checkEcrExistsErrorMock := client.NewCheckEcrExistsErrorMockEcr()
-	checkEcrNotExistsMock := client.NewCheckEcrNotExistsMockEcr()
 
 	type args struct {
 		ctx            context.Context
 		repositoryName *string
-		client         client.IEcr
 	}
 
 	cases := []struct {
-		name    string
-		args    args
-		want    error
-		wantErr bool
+		name          string
+		args          args
+		prepareMockFn func(m *client.MockIEcr)
+		want          error
+		wantErr       bool
 	}{
 		{
 			name: "delete ecr repository successfully",
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
-				client:         mock,
+			},
+			prepareMockFn: func(m *client.MockIEcr) {
+				m.EXPECT().CheckEcrExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().DeleteRepository(gomock.Any(), aws.String("test")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
@@ -49,7 +49,10 @@ func TestEcrRepositoryOperator_DeleteEcrRepository(t *testing.T) {
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
-				client:         DeleteRepositoryErrorMock,
+			},
+			prepareMockFn: func(m *client.MockIEcr) {
+				m.EXPECT().CheckEcrExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().DeleteRepository(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteRepositoryError"))
 			},
 			want:    fmt.Errorf("DeleteRepositoryError"),
 			wantErr: true,
@@ -59,7 +62,9 @@ func TestEcrRepositoryOperator_DeleteEcrRepository(t *testing.T) {
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
-				client:         checkEcrExistsErrorMock,
+			},
+			prepareMockFn: func(m *client.MockIEcr) {
+				m.EXPECT().CheckEcrExists(gomock.Any(), aws.String("test")).Return(false, fmt.Errorf("DescribeRepositoriesError"))
 			},
 			want:    fmt.Errorf("DescribeRepositoriesError"),
 			wantErr: true,
@@ -69,7 +74,9 @@ func TestEcrRepositoryOperator_DeleteEcrRepository(t *testing.T) {
 			args: args{
 				ctx:            context.Background(),
 				repositoryName: aws.String("test"),
-				client:         checkEcrNotExistsMock,
+			},
+			prepareMockFn: func(m *client.MockIEcr) {
+				m.EXPECT().CheckEcrExists(gomock.Any(), aws.String("test")).Return(false, nil)
 			},
 			want:    nil,
 			wantErr: false,
@@ -78,7 +85,11 @@ func TestEcrRepositoryOperator_DeleteEcrRepository(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			ecrRepositoryOperator := NewEcrRepositoryOperator(tt.args.client)
+			ctrl := gomock.NewController(t)
+			ecrMock := client.NewMockIEcr(ctrl)
+			tt.prepareMockFn(ecrMock)
+
+			ecrRepositoryOperator := NewEcrRepositoryOperator(ecrMock)
 
 			err := ecrRepositoryOperator.DeleteEcrRepository(tt.args.ctx, tt.args.repositoryName)
 			if (err != nil) != tt.wantErr {
@@ -95,25 +106,26 @@ func TestEcrRepositoryOperator_DeleteEcrRepository(t *testing.T) {
 
 func TestEcrRepositoryOperator_DeleteResourcesForEcrRepository(t *testing.T) {
 	io.NewLogger(false)
-	mock := client.NewMockEcr()
-	errorMock := client.NewDeleteRepositoryErrorMockEcr()
 
 	type args struct {
-		ctx    context.Context
-		client client.IEcr
+		ctx context.Context
 	}
 
 	cases := []struct {
-		name    string
-		args    args
-		want    error
-		wantErr bool
+		name          string
+		args          args
+		prepareMockFn func(m *client.MockIEcr)
+		want          error
+		wantErr       bool
 	}{
 		{
 			name: "delete resources successfully",
 			args: args{
-				ctx:    context.Background(),
-				client: mock,
+				ctx: context.Background(),
+			},
+			prepareMockFn: func(m *client.MockIEcr) {
+				m.EXPECT().CheckEcrExists(gomock.Any(), aws.String("PhysicalResourceId1")).Return(true, nil)
+				m.EXPECT().DeleteRepository(gomock.Any(), aws.String("PhysicalResourceId1")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
@@ -121,17 +133,23 @@ func TestEcrRepositoryOperator_DeleteResourcesForEcrRepository(t *testing.T) {
 		{
 			name: "delete resources failure",
 			args: args{
-				ctx:    context.Background(),
-				client: errorMock,
+				ctx: context.Background(),
 			},
-			want:    fmt.Errorf("DeleteRepositoryError"),
+			prepareMockFn: func(m *client.MockIEcr) {
+				m.EXPECT().CheckEcrExists(gomock.Any(), aws.String("PhysicalResourceId1")).Return(false, fmt.Errorf("DescribeRepositoriesError"))
+			},
+			want:    fmt.Errorf("DescribeRepositoriesError"),
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			ecrRepositoryOperator := NewEcrRepositoryOperator(tt.args.client)
+			ctrl := gomock.NewController(t)
+			ecrMock := client.NewMockIEcr(ctrl)
+			tt.prepareMockFn(ecrMock)
+
+			ecrRepositoryOperator := NewEcrRepositoryOperator(ecrMock)
 			ecrRepositoryOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",
