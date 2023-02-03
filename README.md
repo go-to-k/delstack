@@ -85,13 +85,13 @@ However, if resources of the selected ResourceTypes will not be DELETE_FAILED wh
 
 ### StackName Selection
 
-If you do not specify a stack name in command options in the interactive mode, you can input a keyword for filtering stack names and select a stack.
+If you do not specify a stack name in command options in the interactive mode, you can search stack names in a **case-insensitive** and select a stack.
 
 It can be **empty**.
 
 ```sh
 ❯ delstack -i
-Filter a keyword of stack names: test-goto
+Filter a keyword of stack names(case-insensitive): test-goto
 ```
 
 Then you select stack names in the UI.
@@ -102,4 +102,7 @@ Then you select stack names in the UI.
 > test-goto-stack-1
   test-goto-stack-2
   test-goto-stack-3
+  TEST-GOTO-stack-4
+  Test-Goto-stack-5
+  TEST-goto-stack-6
 ```
