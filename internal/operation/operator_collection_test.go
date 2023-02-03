@@ -152,6 +152,50 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				stackResourceSummaries: []types.StackResourceSummary{
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId1"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						PhysicalResourceId: aws.String("PhysicalResourceId1"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId2"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::DynamoDB::Table"),
+						PhysicalResourceId: aws.String("PhysicalResourceId2"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId3"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						PhysicalResourceId: aws.String("PhysicalResourceId1"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId4"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::DynamoDB::Table"),
+						PhysicalResourceId: aws.String("PhysicalResourceId2"),
+					},
+				},
+			},
+			want: want{
+				logicalResourceIdsLength:                   4,
+				unsupportedStackResourcesLength:            2,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 2,
+				customOperatorResourcesLength:              0,
+			},
+		},
+		{
+			name: "resource counts check 4 for all target resource types",
+			args: args{
+				ctx:                 context.Background(),
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForAllServices,
+				stackResourceSummaries: []types.StackResourceSummary{
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId1"),
 						ResourceStatus:     "DELETE_COMPLETE",
 						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
 						PhysicalResourceId: aws.String("PhysicalResourceId1"),
@@ -176,7 +220,51 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			},
 		},
 		{
-			name: "resource counts check 4 for all target resource types",
+			name: "resource counts check 5 for all target resource types",
+			args: args{
+				ctx:                 context.Background(),
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForAllServices,
+				stackResourceSummaries: []types.StackResourceSummary{
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId1"),
+						ResourceStatus:     "DELETE_COMPLETE",
+						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						PhysicalResourceId: aws.String("PhysicalResourceId1"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId2"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::DynamoDB::Table"),
+						PhysicalResourceId: aws.String("PhysicalResourceId2"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId1"),
+						ResourceStatus:     "DELETE_COMPLETE",
+						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						PhysicalResourceId: aws.String("PhysicalResourceId1"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId2"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::DynamoDB::Table"),
+						PhysicalResourceId: aws.String("PhysicalResourceId2"),
+					},
+				},
+			},
+			want: want{
+				logicalResourceIdsLength:                   2,
+				unsupportedStackResourcesLength:            2,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 0,
+				customOperatorResourcesLength:              0,
+			},
+		},
+		{
+			name: "resource counts check 6 for all target resource types",
 			args: args{
 				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
@@ -204,6 +292,50 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				cloudformationStackOperatorResourcesLength: 1,
+				customOperatorResourcesLength:              0,
+			},
+		},
+		{
+			name: "resource counts check 7 for all target resource types",
+			args: args{
+				ctx:                 context.Background(),
+				stackName:           aws.String("test"),
+				targetResourceTypes: targetResourceTypesForAllServices,
+				stackResourceSummaries: []types.StackResourceSummary{
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId1"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						PhysicalResourceId: aws.String("PhysicalResourceId1"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId2"),
+						ResourceStatus:     "DELETE_COMPLETE",
+						ResourceType:       aws.String("AWS::DynamoDB::Table"),
+						PhysicalResourceId: aws.String("PhysicalResourceId2"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId1"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+						PhysicalResourceId: aws.String("PhysicalResourceId1"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId2"),
+						ResourceStatus:     "DELETE_COMPLETE",
+						ResourceType:       aws.String("AWS::DynamoDB::Table"),
+						PhysicalResourceId: aws.String("PhysicalResourceId2"),
+					},
+				},
+			},
+			want: want{
+				logicalResourceIdsLength:                   2,
+				unsupportedStackResourcesLength:            0,
+				s3BucketOperatorResourcesLength:            0,
+				iamRoleOperatorResourcesLength:             0,
+				ecrRepositoryOperatorResourcesLength:       0,
+				backupVaultOperatorResourcesLength:         0,
+				cloudformationStackOperatorResourcesLength: 2,
 				customOperatorResourcesLength:              0,
 			},
 		},
