@@ -1616,9 +1616,23 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 		{
 			name: "list stacks filtered by lower keyword successfully",
 			args: args{
-				ctx:        ctx,
-				keyword:    "teststack",
-				clientMock: mock,
+				ctx:     ctx,
+				keyword: "teststack",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().ListStacks(gomock.Any()).Return(
+					[]types.StackSummary{
+						{
+							StackName:   aws.String("TestStack1"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+						{
+							StackName:   aws.String("TestStack2"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+					},
+					nil,
+				)
 			},
 			want: want{
 				filteredStacks: []string{
@@ -1632,9 +1646,23 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 		{
 			name: "list stacks filtered by upper keyword successfully",
 			args: args{
-				ctx:        ctx,
-				keyword:    "TESTSTACK",
-				clientMock: mock,
+				ctx:     ctx,
+				keyword: "TESTSTACK",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().ListStacks(gomock.Any()).Return(
+					[]types.StackSummary{
+						{
+							StackName:   aws.String("TestStack1"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+						{
+							StackName:   aws.String("TestStack2"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+					},
+					nil,
+				)
 			},
 			want: want{
 				filteredStacks: []string{
