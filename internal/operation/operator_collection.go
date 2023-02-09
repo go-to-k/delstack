@@ -55,18 +55,18 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				c.unsupportedStackResources = append(c.unsupportedStackResources, stackResource)
 			} else {
 				switch *stackResource.ResourceType {
-				case resourcetype.S3_BUCKET:
+				case resourcetype.S3Bucket:
 					s3BucketOperator.AddResource(&stackResource)
-				case resourcetype.IAM_ROLE:
+				case resourcetype.IamRole:
 					iamRoleOperator.AddResource(&stackResource)
-				case resourcetype.ECR_REPOSITORY:
+				case resourcetype.EcrRepository:
 					ecrRepositoryOperator.AddResource(&stackResource)
-				case resourcetype.BACKUP_VAULT:
+				case resourcetype.BackupVault:
 					backupVaultOperator.AddResource(&stackResource)
-				case resourcetype.CLOUDFORMATION_STACK:
+				case resourcetype.CloudformationStack:
 					cloudformationStackOperator.AddResource(&stackResource)
 				default:
-					if strings.Contains(*stackResource.ResourceType, resourcetype.CUSTOM_RESOURCE) {
+					if strings.Contains(*stackResource.ResourceType, resourcetype.CustomResource) {
 						customOperator.AddResource(&stackResource)
 					}
 				}
@@ -84,7 +84,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 
 func (c *OperatorCollection) containsResourceType(resource string) bool {
 	for _, t := range c.targetResourceTypes {
-		if t == resource || (t == resourcetype.CUSTOM_RESOURCE && strings.Contains(resource, resourcetype.CUSTOM_RESOURCE)) {
+		if t == resource || (t == resourcetype.CustomResource && strings.Contains(resource, resourcetype.CustomResource)) {
 			return true
 		}
 	}
@@ -112,11 +112,11 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 
 	supportedStackResourcesHeader := []string{"ResourceType", "Description"}
 	supportedStackResourcesData := [][]string{
-		{resourcetype.S3_BUCKET, "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
-		{resourcetype.IAM_ROLE, "IAM Roles, including roles with policies from outside the stack."},
-		{resourcetype.ECR_REPOSITORY, "ECR Repositories, including repositories containing images."},
-		{resourcetype.BACKUP_VAULT, "Backup Vaults, including vaults containing recovery points."},
-		{resourcetype.CLOUDFORMATION_STACK, "Nested Child Stacks that failed to delete."},
+		{resourcetype.S3Bucket, "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
+		{resourcetype.IamRole, "IAM Roles, including roles with policies from outside the stack."},
+		{resourcetype.EcrRepository, "ECR Repositories, including repositories containing images."},
+		{resourcetype.BackupVault, "Backup Vaults, including vaults containing recovery points."},
+		{resourcetype.CloudformationStack, "Nested Child Stacks that failed to delete."},
 		{"Custom::Xxx", "Custom Resources, but they will be deleted on its own."},
 	}
 	supportedStackResources := "\nSupported resources for force deletion of DELETE_FAILED resources are followings.\n" + *io.ToStringAsTableFormat(supportedStackResourcesHeader, supportedStackResourcesData)
