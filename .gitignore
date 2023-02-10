@@ -21,7 +21,8 @@
 go.work
 
 dist/
-cover_file.html
+cover.out.tmp
+cover.html
 /delstack
 test_root_output.yaml
 testfiles/
