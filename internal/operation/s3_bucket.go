@@ -74,12 +74,13 @@ func (o *S3BucketOperator) DeleteS3Bucket(ctx context.Context, bucketName *strin
 		if len(errors) > 0 {
 			errorStr := ""
 			for _, error := range errors {
-				errorStr += fmt.Sprintf("\nCode: %v\n", *error.Code)
+				errorStr += fmt.Sprintf("\nBucketName: %v\n", *bucketName)
+				errorStr += fmt.Sprintf("Code: %v\n", *error.Code)
 				errorStr += fmt.Sprintf("Key: %v\n", *error.Key)
 				errorStr += fmt.Sprintf("VersionId: %v\n", *error.VersionId)
 				errorStr += fmt.Sprintf("Message: %v\n", *error.Message)
 			}
-			return fmt.Errorf("DeleteObjectsError: followings %v", errorStr)
+			return fmt.Errorf("DeleteObjectsError: followings\n%v", errorStr)
 		}
 	}
 	if err := o.client.DeleteBucket(ctx, bucketName); err != nil {
