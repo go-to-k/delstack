@@ -160,7 +160,7 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 					},
 				}, nil)
 			},
-			want:    fmt.Errorf("DeleteObjectsError: followings \nCode: Code\nKey: Key\nVersionId: VersionId\nMessage: Message\n"),
+			want:    fmt.Errorf("DeleteObjectsError: followings\n\nBucketName: test\nCode: Code\nKey: Key\nVersionId: VersionId\nMessage: Message\n"),
 			wantErr: true,
 		},
 		{
