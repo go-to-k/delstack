@@ -45,7 +45,7 @@ account_id=$(aws sts get-caller-identity \
 
 dir="./testfiles"
 mkdir -p ${dir}
-touch ${dir}/{1..10000}.txt
+touch ${dir}/{1..2500}.txt
 
 function attach_policy(){
 	local own_stackname="${1}"
