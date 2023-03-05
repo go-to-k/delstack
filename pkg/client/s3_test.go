@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
-	"strconv"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -313,7 +312,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 				output: nil,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
-					Err:          fmt.Errorf("RetryCountOverError: test, operation error S3: DeleteObjects, api error SlowDown\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+					Err:          fmt.Errorf("operation error S3: DeleteObjects, api error SlowDown"),
 				},
 			},
 			wantErr: true,

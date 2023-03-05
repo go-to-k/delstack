@@ -108,17 +108,11 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 			retryable := func(err error) bool {
 				return strings.Contains(err.Error(), "api error SlowDown")
 			}
+			optFn := func(o *s3.Options) {
+				o.Retryer = NewRetryer(retryable, SleepTimeSecForS3)
+			}
 
-			output, err := Retry(
-				&RetryInput[s3.DeleteObjectsInput, s3.DeleteObjectsOutput, s3.Options]{
-					Ctx:              ctx,
-					SleepTimeSec:     SleepTimeSecForS3,
-					TargetResource:   bucketName,
-					Input:            input,
-					ApiCaller:        s.client.DeleteObjects,
-					RetryableChecker: retryable,
-				},
-			)
+			output, err := s.client.DeleteObjects(ctx, input, optFn)
 			if err != nil {
 				return err // return non wrapping error because wrap after eg.Wait()
 			}
