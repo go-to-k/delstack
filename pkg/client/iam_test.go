@@ -109,7 +109,7 @@ func TestIam_DeleteRole(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DeleteRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DeleteRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
 			wantErr: true,
 		},
 	}
@@ -277,7 +277,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "),
+				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
 			},
 			wantErr: true,
 		},
@@ -487,7 +487,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "),
+				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
 			},
 			wantErr: true,
 		},
@@ -654,7 +654,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
 			wantErr: true,
 		},
 	}
@@ -766,7 +766,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "),
+			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
 			wantErr: true,
 		},
 	}
@@ -916,7 +916,7 @@ func TestIam_CheckRoleExists(t *testing.T) {
 			},
 			want: want{
 				exists: false,
-				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: GetRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "),
+				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: GetRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
 			},
 			wantErr: true,
 		},
