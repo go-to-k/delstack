@@ -12,7 +12,7 @@ const MaxRetryCount = 10
 
 // T: Input type for API Request.
 // U: Output type for API Response.
-// V: Option Functions type for API Request.
+// V: Options type for API Request.
 type RetryInput[T, U, V any] struct {
 	Ctx              context.Context
 	SleepTimeSec     int
@@ -25,7 +25,7 @@ type RetryInput[T, U, V any] struct {
 
 // T: Input type for API Request.
 // U: Output type for API Response.
-// V: Option Functions type for API Request.
+// V: Options type for API Request.
 func Retry[T, U, V any](
 	in *RetryInput[T, U, V],
 ) (*U, error) {
@@ -50,7 +50,7 @@ func Retry[T, U, V any](
 
 func waitForRetry(ctx context.Context, retryCount int, sleepTimeSec int, targetResource *string, err error) error {
 	if retryCount > MaxRetryCount {
-		errorDetail := err.Error() + "\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "
+		errorDetail := err.Error() + "\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "
 		return fmt.Errorf("RetryCountOverError: %v, %v", *targetResource, errorDetail)
 	}
 

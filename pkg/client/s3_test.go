@@ -305,7 +305,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("RetryCountOverError: test, operation error S3: DeleteObjects, api error SlowDown\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "),
+				err:    fmt.Errorf("RetryCountOverError: test, operation error S3: DeleteObjects, api error SlowDown\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
 			},
 			wantErr: true,
 		},
