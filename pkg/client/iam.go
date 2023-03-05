@@ -50,7 +50,13 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string) error {
 			RetryableChecker: retryable,
 		},
 	)
-	return err
+	if err != nil {
+		return &ClientError{
+			ResourceName: roleName,
+			Err:          err,
+		}
+	}
+	return nil
 }
 
 func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error) {
@@ -60,7 +66,10 @@ func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([
 	for {
 		select {
 		case <-ctx.Done():
-			return policies, ctx.Err()
+			return policies, &ClientError{
+				ResourceName: roleName,
+				Err:          ctx.Err(),
+			}
 		default:
 		}
 
@@ -83,9 +92,11 @@ func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([
 				RetryableChecker: retryable,
 			},
 		)
-
 		if err != nil {
-			return nil, err
+			return nil, &ClientError{
+				ResourceName: roleName,
+				Err:          err,
+			}
 		}
 
 		policies = append(policies, output.AttachedPolicies...)
@@ -102,7 +113,7 @@ func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([
 func (i *Iam) DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy) error {
 	for _, policy := range policies {
 		if err := i.DetachRolePolicy(ctx, roleName, policy.PolicyArn); err != nil {
-			return err
+			return err // return non wrapping error because already wrapped error in DetachRolePolicy
 		}
 	}
 
@@ -129,7 +140,13 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 			RetryableChecker: retryable,
 		},
 	)
-	return err
+	if err != nil {
+		return &ClientError{
+			ResourceName: roleName,
+			Err:          err,
+		}
+	}
+	return nil
 }
 
 func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
@@ -156,7 +173,10 @@ func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, erro
 		return false, nil
 	}
 	if err != nil {
-		return false, err
+		return false, &ClientError{
+			ResourceName: roleName,
+			Err:          err,
+		}
 	}
 
 	return true, nil

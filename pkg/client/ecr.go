@@ -32,8 +32,13 @@ func (e *Ecr) DeleteRepository(ctx context.Context, repositoryName *string) erro
 	}
 
 	_, err := e.client.DeleteRepository(ctx, input)
-
-	return err
+	if err != nil {
+		return &ClientError{
+			ResourceName: repositoryName,
+			Err:          err,
+		}
+	}
+	return nil
 }
 
 func (e *Ecr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool, error) {
@@ -42,7 +47,10 @@ func (e *Ecr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool,
 	for {
 		select {
 		case <-ctx.Done():
-			return false, ctx.Err()
+			return false, &ClientError{
+				ResourceName: repositoryName,
+				Err:          ctx.Err(),
+			}
 		default:
 		}
 
@@ -58,7 +66,10 @@ func (e *Ecr) CheckEcrExists(ctx context.Context, repositoryName *string) (bool,
 			return false, nil
 		}
 		if err != nil {
-			return false, err
+			return false, &ClientError{
+				ResourceName: repositoryName,
+				Err:          err,
+			}
 		}
 
 		for _, repository := range output.Repositories {

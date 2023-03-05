@@ -35,7 +35,10 @@ func (b *Backup) ListRecoveryPointsByBackupVault(ctx context.Context, backupVaul
 	for {
 		select {
 		case <-ctx.Done():
-			return recoveryPoints, ctx.Err()
+			return recoveryPoints, &ClientError{
+				ResourceName: backupVaultName,
+				Err:          ctx.Err(),
+			}
 		default:
 		}
 
@@ -46,7 +49,10 @@ func (b *Backup) ListRecoveryPointsByBackupVault(ctx context.Context, backupVaul
 
 		output, err := b.client.ListRecoveryPointsByBackupVault(ctx, input)
 		if err != nil {
-			return nil, err
+			return nil, &ClientError{
+				ResourceName: backupVaultName,
+				Err:          err,
+			}
 		}
 		recoveryPoints = append(recoveryPoints, output.RecoveryPoints...)
 
@@ -62,7 +68,7 @@ func (b *Backup) ListRecoveryPointsByBackupVault(ctx context.Context, backupVaul
 func (b *Backup) DeleteRecoveryPoints(ctx context.Context, backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
 	for _, recoveryPoint := range recoveryPoints {
 		if err := b.DeleteRecoveryPoint(ctx, backupVaultName, recoveryPoint.RecoveryPointArn); err != nil {
-			return err
+			return err // return non wrapping error because already wrapped error in DeleteRecoveryPoint
 		}
 	}
 	return nil
@@ -75,8 +81,13 @@ func (b *Backup) DeleteRecoveryPoint(ctx context.Context, backupVaultName *strin
 	}
 
 	_, err := b.client.DeleteRecoveryPoint(ctx, input)
-
-	return err
+	if err != nil {
+		return &ClientError{
+			ResourceName: backupVaultName,
+			Err:          err,
+		}
+	}
+	return nil
 }
 
 func (b *Backup) DeleteBackupVault(ctx context.Context, backupVaultName *string) error {
@@ -85,8 +96,13 @@ func (b *Backup) DeleteBackupVault(ctx context.Context, backupVaultName *string)
 	}
 
 	_, err := b.client.DeleteBackupVault(ctx, input)
-
-	return err
+	if err != nil {
+		return &ClientError{
+			ResourceName: backupVaultName,
+			Err:          err,
+		}
+	}
+	return nil
 }
 
 func (b *Backup) CheckBackupVaultExists(ctx context.Context, backupVaultName *string) (bool, error) {
@@ -95,7 +111,10 @@ func (b *Backup) CheckBackupVaultExists(ctx context.Context, backupVaultName *st
 	for {
 		select {
 		case <-ctx.Done():
-			return false, ctx.Err()
+			return false, &ClientError{
+				ResourceName: backupVaultName,
+				Err:          ctx.Err(),
+			}
 		default:
 		}
 
@@ -105,7 +124,10 @@ func (b *Backup) CheckBackupVaultExists(ctx context.Context, backupVaultName *st
 
 		output, err := b.client.ListBackupVaults(ctx, input)
 		if err != nil {
-			return false, err
+			return false, &ClientError{
+				ResourceName: backupVaultName,
+				Err:          err,
+			}
 		}
 
 		for _, vault := range output.BackupVaultList {

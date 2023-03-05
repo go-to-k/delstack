@@ -43,8 +43,13 @@ func (s *S3) DeleteBucket(ctx context.Context, bucketName *string) error {
 	}
 
 	_, err := s.client.DeleteBucket(ctx, input)
-
-	return err
+	if err != nil {
+		return &ClientError{
+			ResourceName: bucketName,
+			Err:          err,
+		}
+	}
+	return nil
 }
 
 func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error) {
@@ -92,7 +97,10 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 		}
 
 		if err := sem.Acquire(ctx, 1); err != nil {
-			return errors, err
+			return errors, &ClientError{
+				ResourceName: bucketName,
+				Err:          err,
+			}
 		}
 		eg.Go(func() error {
 			defer sem.Release(1)
@@ -112,7 +120,7 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 				},
 			)
 			if err != nil {
-				return err
+				return err // return non wrapping error because wrap after eg.Wait()
 			}
 
 			outputsCh <- output
@@ -130,7 +138,10 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 	}()
 
 	if err := eg.Wait(); err != nil {
-		return nil, err
+		return nil, &ClientError{
+			ResourceName: bucketName,
+			Err:          err,
+		}
 	}
 
 	// wait errors set before access an errors var at below return (for race)
@@ -147,7 +158,10 @@ func (s *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]type
 	for {
 		select {
 		case <-ctx.Done():
-			return objectIdentifiers, ctx.Err()
+			return objectIdentifiers, &ClientError{
+				ResourceName: bucketName,
+				Err:          ctx.Err(),
+			}
 		default:
 		}
 
@@ -159,7 +173,10 @@ func (s *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]type
 
 		output, err := s.client.ListObjectVersions(ctx, input)
 		if err != nil {
-			return nil, err
+			return nil, &ClientError{
+				ResourceName: bucketName,
+				Err:          err,
+			}
 		}
 
 		for _, version := range output.Versions {
@@ -194,7 +211,10 @@ func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, e
 
 	output, err := s.client.ListBuckets(ctx, input)
 	if err != nil {
-		return false, err
+		return false, &ClientError{
+			ResourceName: bucketName,
+			Err:          err,
+		}
 	}
 
 	for _, bucket := range output.Buckets {
