@@ -13,7 +13,7 @@ type ClientError struct {
 func (e *ClientError) Error() string {
 	var msg string
 	if e.ResourceName == nil {
-		msg = fmt.Sprintf("[no resource] %v", e.Err)
+		msg = fmt.Sprintf("[resource -] %v", e.Err)
 	} else {
 		msg = fmt.Sprintf("[resource %s] %v", *e.ResourceName, e.Err)
 	}
