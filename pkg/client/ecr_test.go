@@ -71,7 +71,10 @@ func TestEcr_DeleteRepository(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("operation error ECR: DeleteRepository, DeleteRepositoryError"),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error ECR: DeleteRepository, DeleteRepositoryError"),
+			},
 			wantErr: true,
 		},
 	}
@@ -201,7 +204,10 @@ func TestEcr_CheckRepository(t *testing.T) {
 			},
 			want: want{
 				exists: false,
-				err:    fmt.Errorf("operation error ECR: DescribeRepositories, DescribeRepositoriesError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error ECR: DescribeRepositories, DescribeRepositoriesError"),
+				},
 			},
 			wantErr: true,
 		},

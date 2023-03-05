@@ -178,7 +178,10 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("operation error CloudFormation: DeleteStack, DeleteStackError"),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error CloudFormation: DeleteStack, DeleteStackError"),
+			},
 			wantErr: true,
 		},
 		{
@@ -210,7 +213,10 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error CloudFormation: DescribeStacks, WaitError")),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error CloudFormation: DescribeStacks, WaitError")),
+			},
 			wantErr: true,
 		},
 	}
@@ -326,7 +332,10 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 			want: want{
 				output: &cloudformation.DescribeStacksOutput{},
 				exists: true,
-				err:    fmt.Errorf("operation error CloudFormation: DescribeStacks, DescribeStacksError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error CloudFormation: DescribeStacks, DescribeStacksError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -606,7 +615,10 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 			},
 			want: want{
 				output: []types.StackResourceSummary{},
-				err:    fmt.Errorf("operation error CloudFormation: ListStackResources, ListStackResourcesError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error CloudFormation: ListStackResources, ListStackResourcesError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -789,7 +801,10 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 						PhysicalResourceId: aws.String("PhysicalResourceId2"),
 					},
 				},
-				err: fmt.Errorf("operation error CloudFormation: ListStackResources, ListStackResourcesError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error CloudFormation: ListStackResources, ListStackResourcesError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -936,7 +951,9 @@ func TestCloudFormation_ListStacks(t *testing.T) {
 			},
 			want: want{
 				output: []types.StackSummary{},
-				err:    fmt.Errorf("operation error CloudFormation: ListStacks, ListStacksError"),
+				err: &ClientError{
+					Err: fmt.Errorf("operation error CloudFormation: ListStacks, ListStacksError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -1092,7 +1109,9 @@ func TestCloudFormation_ListStacks(t *testing.T) {
 						StackName:   aws.String("TestStack2"),
 						StackStatus: types.StackStatusCreateComplete,
 					},
-				}, err: fmt.Errorf("operation error CloudFormation: ListStacks, ListStacksError"),
+				}, err: &ClientError{
+					Err: fmt.Errorf("operation error CloudFormation: ListStacks, ListStacksError"),
+				},
 			},
 			wantErr: true,
 		},
