@@ -50,7 +50,7 @@ func Retry[T, U, V any](
 
 func waitForRetry(ctx context.Context, retryCount int, sleepTimeSec int, targetResource *string, err error) error {
 	if retryCount > MaxRetryCount {
-		errorDetail := err.Error() + "\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed to delete. "
+		errorDetail := err.Error() + "\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "
 		return fmt.Errorf("RetryCountOverError: %v, %v", *targetResource, errorDetail)
 	}
 
