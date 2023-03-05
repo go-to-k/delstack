@@ -89,7 +89,10 @@ func TestS3_DeleteBucket(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("operation error S3: DeleteBucket, DeleteBucketError"),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error S3: DeleteBucket, DeleteBucketError"),
+			},
 			wantErr: true,
 		},
 	}
@@ -271,7 +274,10 @@ func TestS3_DeleteObjects(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("operation error S3: DeleteObjects, DeleteObjectsError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error S3: DeleteObjects, DeleteObjectsError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -305,7 +311,10 @@ func TestS3_DeleteObjects(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("RetryCountOverError: test, operation error S3: DeleteObjects, api error SlowDown\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("RetryCountOverError: test, operation error S3: DeleteObjects, api error SlowDown\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+				},
 			},
 			wantErr: true,
 		},
@@ -475,7 +484,10 @@ func TestS3_ListObjectVersions(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("operation error S3: ListObjectVersions, ListObjectVersionsError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error S3: ListObjectVersions, ListObjectVersionsError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -749,7 +761,10 @@ func TestS3_ListObjectVersions(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("operation error S3: ListObjectVersions, ListObjectVersionsError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error S3: ListObjectVersions, ListObjectVersionsError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -892,7 +907,10 @@ func TestS3_CheckBucketExists(t *testing.T) {
 			},
 			want: want{
 				exists: false,
-				err:    fmt.Errorf("operation error S3: ListBuckets, ListBucketsError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error S3: ListBuckets, ListBucketsError"),
+				},
 			},
 			wantErr: true,
 		},

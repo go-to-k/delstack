@@ -40,11 +40,17 @@ func (c *CloudFormation) DeleteStack(ctx context.Context, stackName *string, ret
 	}
 
 	if _, err := c.client.DeleteStack(ctx, input); err != nil {
-		return err
+		return &ClientError{
+			ResourceName: stackName,
+			Err:          err,
+		}
 	}
 
 	if err := c.waitDeleteStack(ctx, stackName); err != nil {
-		return err
+		return &ClientError{
+			ResourceName: stackName,
+			Err:          err,
+		}
 	}
 
 	return nil
@@ -59,8 +65,13 @@ func (c *CloudFormation) DescribeStacks(ctx context.Context, stackName *string) 
 	if err != nil && strings.Contains(err.Error(), "does not exist") {
 		return output, false, nil
 	}
-
-	return output, true, err
+	if err != nil {
+		return output, true, &ClientError{
+			ResourceName: stackName,
+			Err:          err,
+		}
+	}
+	return output, true, nil
 }
 
 func (c *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string) error {
@@ -70,7 +81,7 @@ func (c *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string)
 
 	err := c.waiter.Wait(ctx, input, CloudFormationWaitNanoSecTime)
 	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
-		return err
+		return err // return non wrapping error because wrap in public callers
 	}
 
 	return nil
@@ -83,7 +94,10 @@ func (c *CloudFormation) ListStackResources(ctx context.Context, stackName *stri
 	for {
 		select {
 		case <-ctx.Done():
-			return stackResourceSummaries, ctx.Err()
+			return stackResourceSummaries, &ClientError{
+				ResourceName: stackName,
+				Err:          ctx.Err(),
+			}
 		default:
 		}
 
@@ -94,7 +108,10 @@ func (c *CloudFormation) ListStackResources(ctx context.Context, stackName *stri
 
 		output, err := c.client.ListStackResources(ctx, input)
 		if err != nil {
-			return stackResourceSummaries, err
+			return stackResourceSummaries, &ClientError{
+				ResourceName: stackName,
+				Err:          err,
+			}
 		}
 
 		stackResourceSummaries = append(stackResourceSummaries, output.StackResourceSummaries...)
@@ -115,7 +132,9 @@ func (c *CloudFormation) ListStacks(ctx context.Context) ([]types.StackSummary, 
 	for {
 		select {
 		case <-ctx.Done():
-			return stackSummaries, ctx.Err()
+			return stackSummaries, &ClientError{
+				Err: ctx.Err(),
+			}
 		default:
 		}
 
@@ -149,7 +168,9 @@ func (c *CloudFormation) ListStacks(ctx context.Context) ([]types.StackSummary, 
 
 		output, err := c.client.ListStacks(ctx, input)
 		if err != nil {
-			return stackSummaries, err
+			return stackSummaries, &ClientError{
+				Err: err,
+			}
 		}
 
 		stackSummaries = append(stackSummaries, output.StackSummaries...)

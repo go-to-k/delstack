@@ -117,7 +117,10 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("operation error Backup: ListRecoveryPointsByBackupVault, ListRecoveryPointsByBackupVaultError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error Backup: ListRecoveryPointsByBackupVault, ListRecoveryPointsByBackupVaultError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -267,7 +270,10 @@ func TestBackup_ListRecoveryPointsByBackupVault(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("operation error Backup: ListRecoveryPointsByBackupVault, ListRecoveryPointsByBackupVaultError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error Backup: ListRecoveryPointsByBackupVault, ListRecoveryPointsByBackupVaultError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -397,7 +403,10 @@ func TestBackup_DeleteRecoveryPoints(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("operation error Backup: DeleteRecoveryPoint, DeleteRecoveryPointError"),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error Backup: DeleteRecoveryPoint, DeleteRecoveryPointError"),
+			},
 			wantErr: true,
 		},
 	}
@@ -485,7 +494,10 @@ func TestBackup_DeleteRecoveryPoint(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("operation error Backup: DeleteRecoveryPoint, DeleteRecoveryPointError"),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error Backup: DeleteRecoveryPoint, DeleteRecoveryPointError"),
+			},
 			wantErr: true,
 		},
 	}
@@ -570,7 +582,10 @@ func TestBackup_DeleteBackupVault(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("operation error Backup: DeleteBackupVault, DeleteBackupVaultError"),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error Backup: DeleteBackupVault, DeleteBackupVaultError"),
+			},
 			wantErr: true,
 		},
 	}
@@ -709,7 +724,10 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 			},
 			want: want{
 				exists: false,
-				err:    fmt.Errorf("operation error Backup: ListBackupVaults, ListBackupVaultsError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error Backup: ListBackupVaults, ListBackupVaultsError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -905,7 +923,10 @@ func TestBackup_CheckBackupVaultExists(t *testing.T) {
 			},
 			want: want{
 				exists: false,
-				err:    fmt.Errorf("operation error Backup: ListBackupVaults, ListBackupVaultsError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error Backup: ListBackupVaults, ListBackupVaultsError"),
+				},
 			},
 			wantErr: true,
 		},

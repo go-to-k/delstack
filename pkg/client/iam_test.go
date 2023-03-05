@@ -87,7 +87,10 @@ func TestIam_DeleteRole(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("operation error IAM: DeleteRole, DeleteRoleError"),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error IAM: DeleteRole, DeleteRoleError"),
+			},
 			wantErr: true,
 		},
 		{
@@ -109,7 +112,10 @@ func TestIam_DeleteRole(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DeleteRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("RetryCountOverError: test, operation error IAM: DeleteRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+			},
 			wantErr: true,
 		},
 	}
@@ -252,7 +258,10 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("operation error IAM: ListAttachedRolePolicies, ListAttachedRolePoliciesError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error IAM: ListAttachedRolePolicies, ListAttachedRolePoliciesError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -277,7 +286,10 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("RetryCountOverError: test, operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+				},
 			},
 			wantErr: true,
 		},
@@ -427,7 +439,10 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("operation error IAM: ListAttachedRolePolicies, ListAttachedRolePoliciesError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error IAM: ListAttachedRolePolicies, ListAttachedRolePoliciesError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -487,7 +502,10 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 			},
 			want: want{
 				output: nil,
-				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("RetryCountOverError: test, operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+				},
 			},
 			wantErr: true,
 		},
@@ -622,7 +640,10 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("operation error IAM: DetachRolePolicy, DetachRolePolicyError"),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error IAM: DetachRolePolicy, DetachRolePolicyError"),
+			},
 			wantErr: true,
 		},
 		{
@@ -654,7 +675,10 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("RetryCountOverError: test, operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+			},
 			wantErr: true,
 		},
 	}
@@ -743,7 +767,10 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("operation error IAM: DetachRolePolicy, DetachRolePolicyError"),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error IAM: DetachRolePolicy, DetachRolePolicyError"),
+			},
 			wantErr: true,
 		},
 		{
@@ -766,7 +793,10 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 					)
 				},
 			},
-			want:    fmt.Errorf("RetryCountOverError: test, operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("RetryCountOverError: test, operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+			},
 			wantErr: true,
 		},
 	}
@@ -891,7 +921,10 @@ func TestIam_CheckRoleExists(t *testing.T) {
 			},
 			want: want{
 				exists: false,
-				err:    fmt.Errorf("operation error IAM: GetRole, GetRoleError"),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error IAM: GetRole, GetRoleError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -916,7 +949,10 @@ func TestIam_CheckRoleExists(t *testing.T) {
 			},
 			want: want{
 				exists: false,
-				err:    fmt.Errorf("RetryCountOverError: test, operation error IAM: GetRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("RetryCountOverError: test, operation error IAM: GetRole, api error Throttling: Rate exceeded\nRetryCount(" + strconv.Itoa(MaxRetryCount) + ") over, but failed. "),
+				},
 			},
 			wantErr: true,
 		},
