@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -297,11 +298,14 @@ func TestS3_DeleteObjects(t *testing.T) {
 							"DeleteObjectsApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &s3.DeleteObjectsOutput{
-										Deleted: []types.DeletedObject{},
-										Errors:  []types.Error{},
-									},
-								}, middleware.Metadata{}, fmt.Errorf("api error SlowDown")
+										Result: &s3.DeleteObjectsOutput{
+											Deleted: []types.DeletedObject{},
+											Errors:  []types.Error{},
+										},
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error SlowDown"),
+									}
 							},
 						),
 						middleware.Before,
@@ -312,7 +316,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 				output: nil,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
-					Err:          fmt.Errorf("operation error S3: DeleteObjects, api error SlowDown"),
+					Err:          fmt.Errorf("operation error S3: DeleteObjects, exceeded maximum number of attempts, 10, api error SlowDown"),
 				},
 			},
 			wantErr: true,

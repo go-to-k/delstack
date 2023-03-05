@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
@@ -103,8 +104,11 @@ func TestIam_DeleteRole(t *testing.T) {
 							"DeleteRoleApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.DeleteRoleOutput{},
-								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+										Result: &iam.DeleteRoleOutput{},
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+									}
 							},
 						),
 						middleware.Before,
@@ -113,7 +117,7 @@ func TestIam_DeleteRole(t *testing.T) {
 			},
 			want: &ClientError{
 				ResourceName: aws.String("test"),
-				Err:          fmt.Errorf("operation error IAM: DeleteRole, api error Throttling: Rate exceeded"),
+				Err:          fmt.Errorf("operation error IAM: DeleteRole, exceeded maximum number of attempts, 10, api error Throttling: Rate exceeded"),
 			},
 			wantErr: true,
 		},
@@ -275,8 +279,11 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 							"ListAttachedRolePoliciesApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.ListAttachedRolePoliciesOutput{},
-								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+										Result: &iam.ListAttachedRolePoliciesOutput{},
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+									}
 							},
 						),
 						middleware.Before,
@@ -287,7 +294,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 				output: nil,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
-					Err:          fmt.Errorf("operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded"),
+					Err:          fmt.Errorf("operation error IAM: ListAttachedRolePolicies, exceeded maximum number of attempts, 10, api error Throttling: Rate exceeded"),
 				},
 			},
 			wantErr: true,
@@ -489,8 +496,11 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 									}, middleware.Metadata{}, nil
 								} else {
 									return middleware.FinalizeOutput{
-										Result: &iam.ListAttachedRolePoliciesOutput{},
-									}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+											Result: &iam.ListAttachedRolePoliciesOutput{},
+										}, middleware.Metadata{}, &retry.MaxAttemptsError{
+											Attempt: MaxRetryCount,
+											Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+										}
 								}
 							},
 						),
@@ -503,7 +513,7 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 				output: nil,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
-					Err:          fmt.Errorf("operation error IAM: ListAttachedRolePolicies, api error Throttling: Rate exceeded"),
+					Err:          fmt.Errorf("operation error IAM: ListAttachedRolePolicies, exceeded maximum number of attempts, 10, api error Throttling: Rate exceeded"),
 				},
 			},
 			wantErr: true,
@@ -666,8 +676,11 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 							"DetachRolePolicyApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.DetachRolePolicyOutput{},
-								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+										Result: &iam.DetachRolePolicyOutput{},
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+									}
 							},
 						),
 						middleware.Before,
@@ -676,7 +689,7 @@ func TestIam_DetachRolePolicies(t *testing.T) {
 			},
 			want: &ClientError{
 				ResourceName: aws.String("test"),
-				Err:          fmt.Errorf("operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded"),
+				Err:          fmt.Errorf("operation error IAM: DetachRolePolicy, exceeded maximum number of attempts, 10, api error Throttling: Rate exceeded"),
 			},
 			wantErr: true,
 		},
@@ -784,8 +797,11 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 							"DetachRolePolicyApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.DetachRolePolicyOutput{},
-								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+										Result: &iam.DetachRolePolicyOutput{},
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+									}
 							},
 						),
 						middleware.Before,
@@ -794,7 +810,7 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 			},
 			want: &ClientError{
 				ResourceName: aws.String("test"),
-				Err:          fmt.Errorf("operation error IAM: DetachRolePolicy, api error Throttling: Rate exceeded"),
+				Err:          fmt.Errorf("operation error IAM: DetachRolePolicy, exceeded maximum number of attempts, 10, api error Throttling: Rate exceeded"),
 			},
 			wantErr: true,
 		},
@@ -938,8 +954,11 @@ func TestIam_CheckRoleExists(t *testing.T) {
 							"GetRoleApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.GetRoleOutput{},
-								}, middleware.Metadata{}, fmt.Errorf("api error Throttling: Rate exceeded")
+										Result: &iam.GetRoleOutput{},
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+									}
 							},
 						),
 						middleware.Before,
@@ -950,7 +969,7 @@ func TestIam_CheckRoleExists(t *testing.T) {
 				exists: false,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
-					Err:          fmt.Errorf("operation error IAM: GetRole, api error Throttling: Rate exceeded"),
+					Err:          fmt.Errorf("operation error IAM: GetRole, exceeded maximum number of attempts, 10, api error Throttling: Rate exceeded"),
 				},
 			},
 			wantErr: true,
