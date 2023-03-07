@@ -259,7 +259,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 	}
 
 	type want struct {
-		output *cloudformation.DescribeStacksOutput
+		output []types.Stack
 		exists bool
 		err    error
 	}
@@ -297,12 +297,10 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 				},
 			},
 			want: want{
-				output: &cloudformation.DescribeStacksOutput{
-					Stacks: []types.Stack{
-						{
-							StackName:   aws.String("StackName"),
-							StackStatus: "DELETE_FAILED",
-						},
+				output: []types.Stack{
+					{
+						StackName:   aws.String("StackName"),
+						StackStatus: "DELETE_FAILED",
 					},
 				},
 				exists: true,
@@ -330,7 +328,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 				},
 			},
 			want: want{
-				output: &cloudformation.DescribeStacksOutput{},
+				output: []types.Stack{},
 				exists: true,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
@@ -359,7 +357,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 				},
 			},
 			want: want{
-				output: &cloudformation.DescribeStacksOutput{},
+				output: []types.Stack{},
 				exists: false,
 				err:    nil,
 			},
@@ -385,7 +383,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 				cfnWaiter,
 			)
 
-			output, exists, err := cfnClient.DescribeStacks(tt.args.ctx, tt.args.stackName)
+			output, err := cfnClient.DescribeStacks(tt.args.ctx, tt.args.stackName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -394,10 +392,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 				t.Errorf("err = %#v, want %#v", err, tt.want)
 				return
 			}
-			if !tt.wantErr && exists != tt.want.exists {
-				t.Errorf("exists = %#v, want %#v", exists, tt.want.exists)
-			}
-			if !tt.wantErr && exists && !reflect.DeepEqual(output, tt.want.output) {
+			if !tt.wantErr && !reflect.DeepEqual(output, tt.want.output) {
 				t.Errorf("output = %#v, want %#v", output, tt.want.output)
 				return
 			}

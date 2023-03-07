@@ -14,7 +14,7 @@ const CloudFormationWaitNanoSecTime = time.Duration(4500000000000)
 
 type ICloudFormation interface {
 	DeleteStack(ctx context.Context, stackName *string, retainResources []string) error
-	DescribeStacks(ctx context.Context, stackName *string) (*cloudformation.DescribeStacksOutput, bool, error)
+	DescribeStacks(ctx context.Context, stackName *string) ([]types.Stack, error)
 	ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error)
 	ListStacks(ctx context.Context) ([]types.StackSummary, error)
 }
@@ -56,22 +56,47 @@ func (c *CloudFormation) DeleteStack(ctx context.Context, stackName *string, ret
 	return nil
 }
 
-func (c *CloudFormation) DescribeStacks(ctx context.Context, stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
-	input := &cloudformation.DescribeStacksInput{
-		StackName: stackName,
-	}
+func (c *CloudFormation) DescribeStacks(ctx context.Context, stackName *string) ([]types.Stack, error) {
+	var nextToken *string
+	stacks := []types.Stack{}
 
-	output, err := c.client.DescribeStacks(ctx, input)
-	if err != nil && strings.Contains(err.Error(), "does not exist") {
-		return output, false, nil
-	}
-	if err != nil {
-		return output, true, &ClientError{
-			ResourceName: stackName,
-			Err:          err,
+	for {
+		select {
+		case <-ctx.Done():
+			return stacks, &ClientError{
+				ResourceName: stackName,
+				Err:          ctx.Err(),
+			}
+		default:
+		}
+
+		// If a stackName is nil, then return all stacks
+		input := &cloudformation.DescribeStacksInput{
+			StackName: stackName,
+		}
+
+		output, err := c.client.DescribeStacks(ctx, input)
+		if err != nil && strings.Contains(err.Error(), "does not exist") {
+			return stacks, nil
+		}
+		if err != nil {
+			return stacks, &ClientError{
+				ResourceName: stackName,
+				Err:          err,
+			}
+		}
+
+		if len(stacks) == 0 && len(output.Stacks) == 0 {
+			return stacks, nil
+		}
+		stacks = append(stacks, output.Stacks...)
+
+		nextToken = output.NextToken
+		if nextToken == nil {
+			break
 		}
 	}
-	return output, true, nil
+	return stacks, nil
 }
 
 func (c *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string) error {

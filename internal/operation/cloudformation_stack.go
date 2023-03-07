@@ -102,19 +102,19 @@ func (o *CloudFormationStackOperator) DeleteCloudFormationStack(ctx context.Cont
 }
 
 func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, stackName *string, isRootStack bool) (bool, error) {
-	stackOutputBeforeDelete, stackExistsBeforeDelete, err := o.client.DescribeStacks(ctx, stackName)
+	stackOutputBeforeDelete, err := o.client.DescribeStacks(ctx, stackName)
 	if err != nil {
 		return false, err
 	}
-	if !stackExistsBeforeDelete && isRootStack {
+	if len(stackOutputBeforeDelete) == 0 && isRootStack {
 		errMsg := fmt.Sprintf("%s stack not found.", *stackName)
 		return false, fmt.Errorf("NotExistsError: %v", errMsg)
 	}
-	if !stackExistsBeforeDelete {
+	if len(stackOutputBeforeDelete) == 0 {
 		return true, nil
 	}
 
-	if *stackOutputBeforeDelete.Stacks[0].EnableTerminationProtection {
+	if *stackOutputBeforeDelete[0].EnableTerminationProtection {
 		return false, fmt.Errorf("TerminationProtectionIsEnabled: %v", *stackName)
 	}
 
@@ -122,16 +122,16 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 		return false, err
 	}
 
-	stackOutputAfterDelete, stackExistsAfterDelete, err := o.client.DescribeStacks(ctx, stackName)
+	stackOutputAfterDelete, err := o.client.DescribeStacks(ctx, stackName)
 	if err != nil {
 		return false, err
 	}
-	if !stackExistsAfterDelete {
+	if len(stackOutputAfterDelete) == 0 {
 		io.Logger.Info().Msg("No resources were DELETE_FAILED.")
 		return true, nil
 	}
-	if stackOutputAfterDelete.Stacks[0].StackStatus != "DELETE_FAILED" {
-		return false, fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but %v: %v", stackOutputAfterDelete.Stacks[0].StackStatus, *stackName)
+	if stackOutputAfterDelete[0].StackStatus != "DELETE_FAILED" {
+		return false, fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but %v: %v", stackOutputAfterDelete[0].StackStatus, *stackName)
 	}
 
 	return false, nil
