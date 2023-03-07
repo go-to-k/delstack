@@ -1614,6 +1614,65 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "list stacks with RootId filtered by keyword successfully",
+			args: args{
+				ctx:     ctx,
+				keyword: "TestStack",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().ListStacks(gomock.Any()).Return(
+					[]types.StackSummary{
+						{
+							StackName:   aws.String("TestStack1"),
+							StackStatus: types.StackStatusCreateComplete,
+							RootId:      aws.String("test-stack-root"),
+						},
+						{
+							StackName:   aws.String("TestStack2"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				filteredStacks: []string{
+					"TestStack2",
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list stacks with RootId filtered by keyword and no stacks do not have RootId found successfully",
+			args: args{
+				ctx:     ctx,
+				keyword: "TestStack",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().ListStacks(gomock.Any()).Return(
+					[]types.StackSummary{
+						{
+							StackName:   aws.String("TestStack1"),
+							StackStatus: types.StackStatusCreateComplete,
+							RootId:      aws.String("test-stack-root"),
+						},
+						{
+							StackName:   aws.String("TestStack2"),
+							StackStatus: types.StackStatusCreateComplete,
+							RootId:      aws.String("test-stack-root"),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				filteredStacks: []string{},
+				err:            nil,
+			},
+			wantErr: false,
+		},
+		{
 			name: "list stacks filtered by lower keyword successfully",
 			args: args{
 				ctx:     ctx,
