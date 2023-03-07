@@ -758,6 +758,33 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "list stack resources but not exist",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListStackResourcesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.ListStackResourcesOutput{
+										StackResourceSummaries: []types.StackResourceSummary{},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: []types.StackResourceSummary{},
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
 			name: "list stack resources with next token successfully",
 			args: args{
 				ctx:       context.Background(),

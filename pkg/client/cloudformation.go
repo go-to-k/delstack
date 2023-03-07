@@ -199,6 +199,10 @@ func (c *CloudFormation) ListStacks(ctx context.Context) ([]types.StackSummary, 
 			}
 		}
 
+		if len(stackSummaries) == 0 && len(output.StackSummaries) == 0 {
+			return stackSummaries, nil
+		}
+
 		stackSummaries = append(stackSummaries, output.StackSummaries...)
 		nextToken = output.NextToken
 
