@@ -72,6 +72,7 @@ func (c *CloudFormation) DescribeStacks(ctx context.Context, stackName *string) 
 
 		// If a stackName is nil, then return all stacks
 		input := &cloudformation.DescribeStacksInput{
+			NextToken: nextToken,
 			StackName: stackName,
 		}
 
