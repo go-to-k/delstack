@@ -147,8 +147,13 @@ func (a *App) doInteractiveMode() ([]string, string, bool) {
 		checkboxes = io.GetCheckboxes(label, opts)
 
 		if len(checkboxes) == 0 {
-			io.Logger.Warn().Msg("Select ResourceTypes!")
-			ok := io.GetYesNo("Do you want to finish?")
+			ok := io.GetYesNo("No selection?")
+			if ok {
+				return checkboxes, keyword, true
+			}
+
+			// The case for interruption(Ctrl + C)
+			ok = io.GetYesNo("Do you want to finish?")
 			if ok {
 				io.Logger.Info().Msg("Finished...")
 				return checkboxes, keyword, false
