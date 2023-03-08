@@ -114,7 +114,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 		return true, nil
 	}
 
-	if *stacksBeforeDelete[0].EnableTerminationProtection {
+	if stacksBeforeDelete[0].EnableTerminationProtection != nil && *stacksBeforeDelete[0].EnableTerminationProtection {
 		return false, fmt.Errorf("TerminationProtectionIsEnabled: %v", *stackName)
 	}
 
