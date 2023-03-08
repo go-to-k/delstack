@@ -165,6 +165,7 @@ func (c *CloudFormation) ListStacks(ctx context.Context) ([]types.StackSummary, 
 		}
 
 		input := &cloudformation.ListStacksInput{
+			// Without StackStatusDeleteComplete
 			StackStatusFilter: []types.StackStatus{
 				types.StackStatusCreateInProgress,
 				types.StackStatusCreateFailed,
