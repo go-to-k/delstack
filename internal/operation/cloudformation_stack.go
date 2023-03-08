@@ -131,7 +131,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 		return true, nil
 	}
 	if stacksAfterDelete[0].StackStatus != "DELETE_FAILED" {
-		return false, fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but %v: %v", stackOutputAfterDelete[0].StackStatus, *stackName)
+		return false, fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but %v: %v", stacksAfterDelete[0].StackStatus, *stackName)
 	}
 
 	return false, nil
