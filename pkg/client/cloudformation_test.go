@@ -22,6 +22,8 @@ func getNextTokenForCloudFormationInitialize(
 	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
 ) {
 	switch v := in.Parameters.(type) {
+	case *cloudformation.DescribeStacksInput:
+		ctx = middleware.WithStackValue(ctx, tokenKeyForCloudFormation{}, v.NextToken)
 	case *cloudformation.ListStackResourcesInput:
 		ctx = middleware.WithStackValue(ctx, tokenKeyForCloudFormation{}, v.NextToken)
 	case *cloudformation.ListStacksInput:
@@ -259,8 +261,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 	}
 
 	type want struct {
-		output *cloudformation.DescribeStacksOutput
-		exists bool
+		output []types.Stack
 		err    error
 	}
 
@@ -297,16 +298,87 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 				},
 			},
 			want: want{
-				output: &cloudformation.DescribeStacksOutput{
-					Stacks: []types.Stack{
-						{
-							StackName:   aws.String("StackName"),
-							StackStatus: "DELETE_FAILED",
-						},
+				output: []types.Stack{
+					{
+						StackName:   aws.String("StackName"),
+						StackStatus: "DELETE_FAILED",
 					},
 				},
-				exists: true,
-				err:    nil,
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "describe stacks with next token successfully",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextToken",
+							getNextTokenForCloudFormationInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DescribeStacksWithNextTokenMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								token := middleware.GetStackValue(ctx, tokenKeyForCloudFormation{}).(*string)
+
+								var nextToken *string
+								var stacks []types.Stack
+								if token == nil {
+									nextToken = aws.String("NextToken")
+									stacks = []types.Stack{
+										{
+											StackName:   aws.String("StackName1"),
+											StackStatus: "DELETE_FAILED",
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.DescribeStacksOutput{
+											NextToken: nextToken,
+											Stacks:    stacks,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									stacks = []types.Stack{
+										{
+											StackName:   aws.String("StackName2"),
+											StackStatus: "DELETE_FAILED",
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.DescribeStacksOutput{
+											NextToken: nextToken,
+											Stacks:    stacks,
+										},
+									}, middleware.Metadata{}, nil
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				output: []types.Stack{
+					{
+						StackName:   aws.String("StackName1"),
+						StackStatus: "DELETE_FAILED",
+					},
+					{
+						StackName:   aws.String("StackName2"),
+						StackStatus: "DELETE_FAILED",
+					},
+				},
+				err: nil,
 			},
 			wantErr: false,
 		},
@@ -330,8 +402,75 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 				},
 			},
 			want: want{
-				output: &cloudformation.DescribeStacksOutput{},
-				exists: true,
+				output: []types.Stack{},
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error CloudFormation: DescribeStacks, DescribeStacksError"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "describe stacks with next token failure",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"GetNextToken",
+							getNextTokenForCloudFormationInitialize,
+						), middleware.Before,
+					)
+					if err != nil {
+						return err
+					}
+
+					err = stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DescribeStacksWithNextTokenErrorMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								token := middleware.GetStackValue(ctx, tokenKeyForCloudFormation{}).(*string)
+
+								var nextToken *string
+								var stacks []types.Stack
+								if token == nil {
+									nextToken = aws.String("NextToken")
+									stacks = []types.Stack{
+										{
+											StackName:   aws.String("StackName1"),
+											StackStatus: "DELETE_FAILED",
+										},
+									}
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.DescribeStacksOutput{
+											NextToken: nextToken,
+											Stacks:    stacks,
+										},
+									}, middleware.Metadata{}, nil
+								} else {
+									stacks = []types.Stack{}
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.DescribeStacksOutput{
+											NextToken: nextToken,
+											Stacks:    stacks,
+										},
+									}, middleware.Metadata{}, fmt.Errorf("DescribeStacksError")
+								}
+							},
+						),
+						middleware.Before,
+					)
+					return err
+				},
+			},
+			want: want{
+				output: []types.Stack{
+					{
+						StackName:   aws.String("StackName1"),
+						StackStatus: "DELETE_FAILED",
+					},
+				},
 				err: &ClientError{
 					ResourceName: aws.String("test"),
 					Err:          fmt.Errorf("operation error CloudFormation: DescribeStacks, DescribeStacksError"),
@@ -359,8 +498,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 				},
 			},
 			want: want{
-				output: &cloudformation.DescribeStacksOutput{},
-				exists: false,
+				output: []types.Stack{},
 				err:    nil,
 			},
 			wantErr: false,
@@ -385,7 +523,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 				cfnWaiter,
 			)
 
-			output, exists, err := cfnClient.DescribeStacks(tt.args.ctx, tt.args.stackName)
+			output, err := cfnClient.DescribeStacks(tt.args.ctx, tt.args.stackName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -394,10 +532,7 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 				t.Errorf("err = %#v, want %#v", err, tt.want)
 				return
 			}
-			if !tt.wantErr && exists != tt.want.exists {
-				t.Errorf("exists = %#v, want %#v", exists, tt.want.exists)
-			}
-			if !tt.wantErr && exists && !reflect.DeepEqual(output, tt.want.output) {
+			if !tt.wantErr && !reflect.DeepEqual(output, tt.want.output) {
 				t.Errorf("output = %#v, want %#v", output, tt.want.output)
 				return
 			}
@@ -621,6 +756,33 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "list stack resources but not exist",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListStackResourcesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.ListStackResourcesOutput{
+										StackResourceSummaries: []types.StackResourceSummary{},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: []types.StackResourceSummary{},
+				err:    nil,
+			},
+			wantErr: false,
 		},
 		{
 			name: "list stack resources with next token successfully",

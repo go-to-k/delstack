@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
@@ -44,32 +43,20 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
-						},
-					},
-					false,
+					[]types.Stack{},
 					nil,
 				)
 			},
@@ -86,32 +73,20 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
-						},
-					},
-					false,
+					[]types.Stack{},
 					nil,
 				)
 			},
@@ -128,16 +103,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "CREATE_COMPLETE",
-								EnableTerminationProtection: aws.Bool(true),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "CREATE_COMPLETE",
+							EnableTerminationProtection: aws.Bool(true),
 						},
 					},
-					true,
 					nil,
 				)
 			},
@@ -154,16 +126,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "CREATE_COMPLETE",
-								EnableTerminationProtection: aws.Bool(true),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "CREATE_COMPLETE",
+							EnableTerminationProtection: aws.Bool(true),
 						},
 					},
-					true,
 					nil,
 				)
 			},
@@ -180,16 +149,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -208,16 +174,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -236,16 +199,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
@@ -264,16 +224,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
@@ -292,8 +249,7 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					true,
+					[]types.Stack{},
 					fmt.Errorf("DescribeStacksError"),
 				)
 			},
@@ -310,8 +266,7 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					true,
+					[]types.Stack{},
 					fmt.Errorf("DescribeStacksError"),
 				)
 			},
@@ -328,8 +283,7 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					false,
+					[]types.Stack{},
 					nil,
 				)
 			},
@@ -346,8 +300,7 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					false,
+					[]types.Stack{},
 					nil,
 				)
 			},
@@ -364,24 +317,20 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					true,
+					[]types.Stack{},
 					fmt.Errorf("DescribeStacksError"),
 				)
 			},
@@ -398,24 +347,20 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					true,
+					[]types.Stack{},
 					fmt.Errorf("DescribeStacksError"),
 				)
 			},
@@ -432,24 +377,20 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					false,
+					[]types.Stack{},
 					nil,
 				)
 			},
@@ -466,24 +407,20 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					false,
+					[]types.Stack{},
 					nil,
 				)
 			},
@@ -500,16 +437,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -533,16 +467,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -566,16 +497,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -617,16 +545,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -668,16 +593,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -720,16 +642,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -772,16 +691,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -827,16 +743,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -882,16 +795,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -937,16 +847,13 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -1048,32 +955,26 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 			},
@@ -1092,32 +993,26 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 			},
@@ -1136,16 +1031,13 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "CREATE_COMPLETE",
-								EnableTerminationProtection: aws.Bool(true),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "CREATE_COMPLETE",
+							EnableTerminationProtection: aws.Bool(true),
 						},
 					},
-					true,
 					nil,
 				)
 			},
@@ -1164,16 +1056,13 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "CREATE_COMPLETE",
-								EnableTerminationProtection: aws.Bool(true),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "CREATE_COMPLETE",
+							EnableTerminationProtection: aws.Bool(true),
 						},
 					},
-					true,
 					nil,
 				)
 			},
@@ -1192,16 +1081,13 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -1222,16 +1108,13 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "UPDATE_ROLLBACK_COMPLETE",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				).AnyTimes()
 
@@ -1252,16 +1135,13 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
@@ -1282,16 +1162,13 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
@@ -1312,8 +1189,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					true,
+					[]types.Stack{},
 					fmt.Errorf("DescribeStacksError"),
 				)
 			},
@@ -1332,8 +1208,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					true,
+					[]types.Stack{},
 					fmt.Errorf("DescribeStacksError"),
 				)
 			},
@@ -1352,8 +1227,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					false,
+					[]types.Stack{},
 					nil,
 				)
 			},
@@ -1372,8 +1246,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					false,
+					[]types.Stack{},
 					nil,
 				)
 			},
@@ -1392,24 +1265,20 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					true,
+					[]types.Stack{},
 					fmt.Errorf("DescribeStacksError"),
 				)
 			},
@@ -1428,24 +1297,20 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					true,
+					[]types.Stack{},
 					fmt.Errorf("DescribeStacksError"),
 				)
 			},
@@ -1464,24 +1329,20 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					false,
+					[]types.Stack{},
 					nil,
 				)
 			},
@@ -1500,24 +1361,20 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{
-						Stacks: []types.Stack{
-							{
-								StackName:                   aws.String("test"),
-								StackStatus:                 "DELETE_FAILED",
-								EnableTerminationProtection: aws.Bool(false),
-							},
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
-					true,
 					nil,
 				)
 
 				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
 
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
-					&cloudformation.DescribeStacksOutput{},
-					false,
+					[]types.Stack{},
 					nil,
 				)
 			},
