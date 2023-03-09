@@ -8,7 +8,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	cloudformation "github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	types "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -51,13 +50,12 @@ func (mr *MockICloudFormationMockRecorder) DeleteStack(ctx, stackName, retainRes
 }
 
 // DescribeStacks mocks base method.
-func (m *MockICloudFormation) DescribeStacks(ctx context.Context, stackName *string) (*cloudformation.DescribeStacksOutput, bool, error) {
+func (m *MockICloudFormation) DescribeStacks(ctx context.Context, stackName *string) ([]types.Stack, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DescribeStacks", ctx, stackName)
-	ret0, _ := ret[0].(*cloudformation.DescribeStacksOutput)
-	ret1, _ := ret[1].(bool)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret0, _ := ret[0].([]types.Stack)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DescribeStacks indicates an expected call of DescribeStacks.
