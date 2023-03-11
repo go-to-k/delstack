@@ -135,7 +135,7 @@ func (a *App) doInteractiveMode() ([]string, string, bool) {
 
 	label := "Select ResourceTypes you wish to delete even if DELETE_FAILED." +
 		"\n" +
-		"However, if resources of the selected ResourceTypes will not be DELETE_FAILED when the stack is deleted, the resources will be deleted even if you selected. " +
+		"However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type. " +
 		"\n"
 	opts := resourcetype.GetResourceTypes()
 
