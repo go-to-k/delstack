@@ -106,3 +106,7 @@ Then you select stack names in the UI.
   Test-Goto-stack-5
   TEST-goto-stack-6
 ```
+
+In addition, **child stacks of nested stacks are not displayed**. This is because it is unlikely that there are cases where only child stacks of nested stacks are deleted without deleting the parent stack, and also because it is possible that the parent stack may be buried in the stack list if there are child stacks, or that the child stacks may be accidentally deleted.
+
+However, the `-s` command option allows deletion of child stacks by specifying their names, so please use this option if you want.
