@@ -73,7 +73,7 @@ If the stack contains resources that will be DELETE_FAILED but is not selected, 
 ```sh
 ❯ delstack -s YourStack -i
 ? Select ResourceTypes you wish to delete even if DELETE_FAILED.
-However, if resources of the selected ResourceTypes will not be DELETE_FAILED when the stack is deleted, the resources will be deleted even if you selected.
+However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type.
   [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
   [ ]  AWS::S3::Bucket
   [x]  AWS::IAM::Role
