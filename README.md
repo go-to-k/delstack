@@ -111,4 +111,4 @@ In addition, **child stacks of nested stacks are not displayed**. This is becaus
 
 However, the `-s` command option allows deletion of child stacks by specifying their names, so please use this option if you want.
 
-Also stacks with **the xxInProgress CloudFormation status** are not displayed, because the delete operations should not be duplicated at the same time.
+Also stacks with **the xxInProgress CloudFormation status** are not displayed, because multiple CloudFormation operations should not be duplicated at the same time.
