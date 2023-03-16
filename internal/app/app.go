@@ -172,7 +172,8 @@ func (a *App) doInteractiveMode() ([]string, string, bool) {
 func (a *App) selectStackName(stackNames []string) string {
 	var stackName string
 
-	label := "Select StackName." + "\n"
+	label := "Select StackName." + "\n" +
+		"Nested child stacks and XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks are not displayed."
 
 	for {
 		stackName = io.GetSelection(label, stackNames)

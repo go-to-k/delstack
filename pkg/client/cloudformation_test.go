@@ -1297,7 +1297,24 @@ func TestCloudFormation_ListStacks(t *testing.T) {
 				cfnWaiter,
 			)
 
-			output, err := cfnClient.ListStacks(tt.args.ctx)
+			// Except StackStatusDeleteComplete and xxInProgress
+			stackStatusFilter := []types.StackStatus{
+				types.StackStatusCreateFailed,
+				types.StackStatusCreateComplete,
+				types.StackStatusRollbackFailed,
+				types.StackStatusRollbackComplete,
+				types.StackStatusDeleteFailed,
+				types.StackStatusUpdateComplete,
+				types.StackStatusUpdateFailed,
+				types.StackStatusUpdateRollbackFailed,
+				types.StackStatusUpdateRollbackComplete,
+				types.StackStatusImportComplete,
+				types.StackStatusImportRollbackInProgress,
+				types.StackStatusImportRollbackFailed,
+				types.StackStatusImportRollbackComplete,
+			}
+
+			output, err := cfnClient.ListStacks(tt.args.ctx, stackStatusFilter)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return

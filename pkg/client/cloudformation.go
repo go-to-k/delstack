@@ -16,7 +16,7 @@ type ICloudFormation interface {
 	DeleteStack(ctx context.Context, stackName *string, retainResources []string) error
 	DescribeStacks(ctx context.Context, stackName *string) ([]types.Stack, error)
 	ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error)
-	ListStacks(ctx context.Context) ([]types.StackSummary, error)
+	ListStacks(ctx context.Context, stackStatusFilter []types.StackStatus) ([]types.StackSummary, error)
 }
 
 var _ ICloudFormation = (*CloudFormation)(nil)
@@ -151,7 +151,7 @@ func (c *CloudFormation) ListStackResources(ctx context.Context, stackName *stri
 	return stackResourceSummaries, nil
 }
 
-func (c *CloudFormation) ListStacks(ctx context.Context) ([]types.StackSummary, error) {
+func (c *CloudFormation) ListStacks(ctx context.Context, stackStatusFilter []types.StackStatus) ([]types.StackSummary, error) {
 	var nextToken *string
 	stackSummaries := []types.StackSummary{}
 
@@ -165,32 +165,8 @@ func (c *CloudFormation) ListStacks(ctx context.Context) ([]types.StackSummary, 
 		}
 
 		input := &cloudformation.ListStacksInput{
-			// Except StackStatusDeleteComplete
-			StackStatusFilter: []types.StackStatus{
-				types.StackStatusCreateInProgress,
-				types.StackStatusCreateFailed,
-				types.StackStatusCreateComplete,
-				types.StackStatusRollbackInProgress,
-				types.StackStatusRollbackFailed,
-				types.StackStatusRollbackComplete,
-				types.StackStatusDeleteInProgress,
-				types.StackStatusDeleteFailed,
-				types.StackStatusUpdateInProgress,
-				types.StackStatusUpdateCompleteCleanupInProgress,
-				types.StackStatusUpdateComplete,
-				types.StackStatusUpdateFailed,
-				types.StackStatusUpdateRollbackInProgress,
-				types.StackStatusUpdateRollbackFailed,
-				types.StackStatusUpdateRollbackCompleteCleanupInProgress,
-				types.StackStatusUpdateRollbackComplete,
-				types.StackStatusReviewInProgress,
-				types.StackStatusImportInProgress,
-				types.StackStatusImportComplete,
-				types.StackStatusImportRollbackInProgress,
-				types.StackStatusImportRollbackFailed,
-				types.StackStatusImportRollbackComplete,
-			},
-			NextToken: nextToken,
+			StackStatusFilter: stackStatusFilter,
+			NextToken:         nextToken,
 		}
 
 		output, err := c.client.ListStacks(ctx, input)

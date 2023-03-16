@@ -140,7 +140,24 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
 	filteredStacks := []string{}
 
-	stackSummaries, err := o.client.ListStacks(ctx)
+	// Except StackStatusDeleteComplete and xxInProgress
+	stackStatusFilter := []types.StackStatus{
+		types.StackStatusCreateFailed,
+		types.StackStatusCreateComplete,
+		types.StackStatusRollbackFailed,
+		types.StackStatusRollbackComplete,
+		types.StackStatusDeleteFailed,
+		types.StackStatusUpdateComplete,
+		types.StackStatusUpdateFailed,
+		types.StackStatusUpdateRollbackFailed,
+		types.StackStatusUpdateRollbackComplete,
+		types.StackStatusImportComplete,
+		types.StackStatusImportRollbackInProgress,
+		types.StackStatusImportRollbackFailed,
+		types.StackStatusImportRollbackComplete,
+	}
+
+	stackSummaries, err := o.client.ListStacks(ctx, stackStatusFilter)
 	if err != nil {
 		return filteredStacks, err
 	}
