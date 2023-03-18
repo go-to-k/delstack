@@ -1,4 +1,4 @@
-//go:generate mockgen -source=./cloudformation.go -destination=./cloudformation_mock.go -package=client
+//go:generate mockgen -source=./cloudformation.go -destination=./cloudformation_mock.go -package=client -write_package_comment=false
 package client
 
 import (
