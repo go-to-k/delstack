@@ -1,4 +1,4 @@
-//go:generate mockgen -source=./ecr.go -destination=./ecr_mock.go -package=client
+//go:generate mockgen -source=$GOFILE -destination=ecr_mock.go -package=$GOPACKAGE -write_package_comment=false
 package client
 
 import (
