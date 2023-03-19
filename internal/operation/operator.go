@@ -1,4 +1,4 @@
-//go:generate mockgen -source=./operator.go -destination=./operator_mock.go -package=operation
+//go:generate mockgen -source=$GOFILE -destination=operator_mock.go -package=$GOPACKAGE -write_package_comment=false
 package operation
 
 import (
