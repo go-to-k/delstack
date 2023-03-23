@@ -70,7 +70,7 @@ func (a *App) Run(ctx context.Context) error {
 func (a *App) getAction() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		if !a.InteractiveMode && a.StackName == "" {
-			errMsg := fmt.Sprintln("The stack name must be specified in command options (-s) or a flow of the interactive mode.")
+			errMsg := fmt.Sprintln("The stack name must be specified in command options (-s) or a flow of the interactive mode (-i).")
 			return fmt.Errorf("StackNameNotSpecifiedError: %v", errMsg)
 		}
 
