@@ -14,7 +14,10 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-const S3DeleteObjectsSizeLimit = 1000
+const (
+	S3DeleteObjectsSizeLimit         = 1000
+	MaxS3DeleteObjectsParallelsCount = 3 // according to benchmarks
+)
 
 var SleepTimeSecForS3 = 10
 
@@ -58,9 +61,15 @@ func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []ty
 		return errors, nil
 	}
 
+	maxParallelsCount := MaxS3DeleteObjectsParallelsCount
+	numCPU := runtime.NumCPU()
+	if numCPU < MaxS3DeleteObjectsParallelsCount {
+		maxParallelsCount = numCPU
+	}
+
 	eg, ctx := errgroup.WithContext(ctx)
-	outputsCh := make(chan *s3.DeleteObjectsOutput, int64(runtime.NumCPU()))
-	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
+	outputsCh := make(chan *s3.DeleteObjectsOutput, maxParallelsCount)
+	sem := semaphore.NewWeighted(int64(maxParallelsCount))
 	wg := sync.WaitGroup{}
 
 	nextObjects := make([]types.ObjectIdentifier, len(objects))
