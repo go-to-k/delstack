@@ -16,7 +16,7 @@ import (
 
 const (
 	S3DeleteObjectsSizeLimit         = 1000
-	MaxS3DeleteObjectsParallelsCount = 4 // according to benchmarks
+	MaxS3DeleteObjectsParallelsCount = 3 // according to benchmarks
 )
 
 var SleepTimeSecForS3 = 10
