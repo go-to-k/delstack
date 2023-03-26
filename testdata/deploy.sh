@@ -194,8 +194,8 @@ function object_upload() {
 
 	for i in ${!bucket_name_array[@]}; do
 		aws s3 cp ${dir} s3://${bucket_name_array[$i]}/ --recursive ${profile_option} >/dev/null
-		aws s3 rm s3://${bucket_name_array[$i]}/ --recursive ${profile_option} >/dev/null        # delete marker
 		aws s3 cp ${dir} s3://${bucket_name_array[$i]}/ --recursive ${profile_option} >/dev/null # version
+		aws s3 rm s3://${bucket_name_array[$i]}/ --recursive ${profile_option} >/dev/null        # delete marker
 	done
 }
 
