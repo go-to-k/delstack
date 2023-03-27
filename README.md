@@ -98,6 +98,7 @@ Then you select stack names in the UI.
 
 ```sh
 ? Select StackName.
+Nested child stacks and XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks are not displayed.
   [Use arrows to move, type to filter]
 > test-goto-stack-1
   test-goto-stack-2
