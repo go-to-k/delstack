@@ -15,8 +15,13 @@ import (
 )
 
 const (
-	S3DeleteObjectsSizeLimit         = 1000
-	MaxS3DeleteObjectsParallelsCount = 3 // according to benchmarks
+	S3DeleteObjectsSizeLimit = 1000
+
+	// S3 API can achieve at least 3,500 PUT/COPY/POST/DELETE or 5,500 GET/HEAD requests per second per partitioned prefix.
+	// Values above that threshold cause many 503 errors.
+	// So limit DeleteObjects to 3 parallels of 1000 objects at a time.
+	// https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimizing-performance.html
+	MaxS3DeleteObjectsParallelsCount = 3
 )
 
 var SleepTimeSecForS3 = 10
