@@ -28,8 +28,8 @@ github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.23 h1:DWYZIsyqagnWL00f8M/SOr9fN06
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.23/go.mod h1:uIiFgURZbACBEQJfqTZPb/jxO7R+9LeoHUFudtIdeQI=
 github.com/aws/aws-sdk-go-v2/service/backup v1.20.0 h1:q3K48GkN+MEXSWEJDgN466Mcgxt2q0YCHAMMprG3r7M=
 github.com/aws/aws-sdk-go-v2/service/backup v1.20.0/go.mod h1:C8OY9BP/rQqiVXrQAoeIiiSref/EAGPPXmebCdiwaA4=
-github.com/aws/aws-sdk-go-v2/service/cloudformation v1.26.2 h1:qC1iS/QLm1U1pR/G+nMAVZrfXd1UcVzLOzg5F2l61a8=
-github.com/aws/aws-sdk-go-v2/service/cloudformation v1.26.2/go.mod h1:10RmylQ8sZDQY+54HXAK5qz+5WVpxlkB5MAl77zwAT0=
+github.com/aws/aws-sdk-go-v2/service/cloudformation v1.27.0 h1:AeFFk3tjhyTwwjEgx7FyHh2pIVJRkt6WxpPGgkzgO1A=
+github.com/aws/aws-sdk-go-v2/service/cloudformation v1.27.0/go.mod h1:YxmrPfRqDEQ1pD7c+iGkrZoTHsN4vyL+uA2lPYcXzE4=
 github.com/aws/aws-sdk-go-v2/service/ecr v1.18.2 h1:wVHiJDAzNaovEUwJYsXLOf3/dXzYkidkcbHnLx+ebD0=
 github.com/aws/aws-sdk-go-v2/service/ecr v1.18.2/go.mod h1:53xgmccefO+AwKsxVKuTh2vo/IDOkeMWNpmDuhZH1Vc=
 github.com/aws/aws-sdk-go-v2/service/iam v1.19.2 h1:3VWoyWLF29SjuazBalLhYM5dtk6zUpvgK/TKvaVBnjg=
