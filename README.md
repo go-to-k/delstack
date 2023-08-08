@@ -4,6 +4,8 @@
 
 The description in **Japanese** is available on the following blog page. -> [Blog](https://go-to-k.hatenablog.com/entry/delstack)
 
+The description in **English** is available on the following blog page. -> [Blog](https://dev.to/aws-builders/a-cli-tool-to-force-delete-cloudformation-stacks-3808)
+
 ## What is
 
 Tool to force delete the **entire** AWS CloudFormation stack, **even if it contains resources that fail to delete by the CloudFormation delete operation**.
