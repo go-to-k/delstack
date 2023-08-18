@@ -18,7 +18,6 @@ Resources:
     Type: "AWS::S3::Bucket"
     # DeletionPolicy: Retain
     Properties:
-      AccessControl: LogDeliveryWrite
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:

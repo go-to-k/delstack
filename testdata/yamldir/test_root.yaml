@@ -57,7 +57,6 @@ Resources:
   RootS3Bucket:
     Type: "AWS::S3::Bucket"
     Properties:
-      AccessControl: LogDeliveryWrite
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
