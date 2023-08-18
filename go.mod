@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.20.2
 	github.com/aws/aws-sdk-go-v2/config v1.18.0
 	github.com/aws/aws-sdk-go-v2/service/backup v1.20.0
-	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.26.2
+	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.34.3
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.18.2
 	github.com/aws/aws-sdk-go-v2/service/iam v1.22.3
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.38.3
