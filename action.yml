@@ -1,5 +1,6 @@
-name: "delstack"
+name: "delstack-action"
 author: "k.goto"
+description: "Run delstack in GitHub Actions"
 runs:
   using: "composite"
   steps:
