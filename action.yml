@@ -10,7 +10,7 @@ runs:
     - shell: bash
       run: |
         set -eu
-        DOWNLOAD_URL=$(curl https://api.github.com/repos/go-to-k/delstack/releases | jq -r '[.[]][0].assets[].browser_download_url|select(match("Linux_x86_64."))')
+        DOWNLOAD_URL=$(curl https://api.github.com/repos/go-to-k/delstack/releases/latest | jq -r '.assets[].browser_download_url|select(match("Linux_x86_64."))')
         cd /tmp
         curl -sfLO ${DOWNLOAD_URL}
         FILENAME=$(basename $DOWNLOAD_URL)

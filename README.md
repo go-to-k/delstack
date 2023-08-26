@@ -139,5 +139,5 @@ jobs:
         uses: go-to-k/delstack@v1
       - name: Run delstack
         run: |
-          delstack -s YourStack
+          delstack -s YourStack -r us-east-1
 ```
