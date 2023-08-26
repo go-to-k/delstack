@@ -134,7 +134,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       - name: Use delstack
-        uses: go-to-k/delstack@master
+        uses: go-to-k/delstack@v1
       - name: Run delstack
         run: |
           delstack -s YourStack
