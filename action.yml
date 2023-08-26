@@ -1,8 +1,8 @@
 name: "delstack-action"
 author: "k.goto"
 description: "Run delstack in GitHub Actions"
-icon: command
-color: blue
+icon: "command"
+color: "blue"
 runs:
   using: "composite"
   steps:
