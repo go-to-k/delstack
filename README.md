@@ -115,3 +115,27 @@ In addition, **child stacks of nested stacks are not displayed**. This is becaus
 However, the `-s` command option allows deletion of child stacks by specifying their names, so please use this option if you want.
 
 Also stacks with **the XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) CloudFormation status** are not displayed, because multiple CloudFormation operations should not be duplicated at the same time.
+
+## GitHub Actions
+
+You can use delstack in GitHub Actions Workflow.
+
+```yaml
+jobs:
+  delstack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: delstack
+        uses: go-to-k/delstack
+      - name: Run delstack
+        run: |
+          delstack -s YourStack
+```

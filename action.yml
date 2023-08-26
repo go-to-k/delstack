@@ -1,0 +1,15 @@
+name: "delstack"
+author: "k.goto"
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        set -eu
+        DOWNLOAD_URL=$(curl https://api.github.com/repos/go-to-k/delstack/releases | jq -r '[.[]][0].assets[].browser_download_url|select(match("Linux_x86_64."))')
+        cd /tmp
+        curl -sfLO ${DOWNLOAD_URL}
+        FILENAME=$(basename $DOWNLOAD_URL)
+        tar xzvf ${FILENAME}
+        chmod +x delstack
+        sudo mv delstack /usr/local/bin/
