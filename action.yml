@@ -28,6 +28,6 @@ runs:
           sudo mv delstack /usr/local/bin/
           rm ${FILENAME}
         fi        
-        if [ -n "${INPUT_STACK-NAME:-}" ]; then
-          delstack -s ${INPUT_STACK-NAME} -r ${INPUT_REGION}
+        if [ -n "${{ inputs.stack-name }}" ]; then
+          delstack -s ${{ inputs.stack-name }} -r ${{ inputs.region }}
         fi
