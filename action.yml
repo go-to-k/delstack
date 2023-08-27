@@ -4,17 +4,30 @@ description: "Run delstack in GitHub Actions"
 branding:
   icon: "command"
   color: "blue"
+inputs:
+  stack-name:
+    description: "Name of the stack you want to delete"
+    required: false
+  region:
+    description: "AWS Region"
+    default: "us-east-1"
+    required: false
 runs:
   using: "composite"
   steps:
     - shell: bash
       run: |
         set -eu
-        DOWNLOAD_URL=$(curl https://api.github.com/repos/go-to-k/delstack/releases/latest | jq -r '.assets[].browser_download_url|select(match("Linux_x86_64."))')
-        cd /tmp
-        curl -sfLO ${DOWNLOAD_URL}
-        FILENAME=$(basename $DOWNLOAD_URL)
-        tar xzvf ${FILENAME}
-        chmod +x delstack
-        sudo mv delstack /usr/local/bin/
-        rm ${FILENAME}
+        if [ ! -e /usr/local/bin/delstack ]; then
+          DOWNLOAD_URL=$(curl https://api.github.com/repos/go-to-k/delstack/releases/latest | jq -r '.assets[].browser_download_url|select(match("Linux_x86_64."))')
+          cd /tmp
+          curl -sfLO ${DOWNLOAD_URL}
+          FILENAME=$(basename $DOWNLOAD_URL)
+          tar xzvf ${FILENAME}
+          chmod +x delstack
+          sudo mv delstack /usr/local/bin/
+          rm ${FILENAME}
+        fi        
+        if [ -n "${INPUT_STACK-NAME:-}" ]; then
+          delstack -s ${INPUT_STACK-NAME} -r ${INPUT_REGION}
+        fi
