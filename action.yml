@@ -10,7 +10,7 @@ inputs:
     required: false
   region:
     description: "AWS Region"
-    default: 'us-east-1'
+    default: "us-east-1"
     required: false
 runs:
   using: "composite"
