@@ -136,7 +136,7 @@ jobs:
           # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       - name: Delete stack
-        uses: go-to-k/delstack@v1
+        uses: go-to-k/delstack@v1.0.4
         with:
           stack-name: "YourStack"
           region: "us-east-1"
@@ -160,7 +160,7 @@ jobs:
           # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       - name: Install delstack
-        uses: go-to-k/delstack@v1
+        uses: go-to-k/delstack@v1.0.4
       - name: Run delstack
         run: |
           delstack -s YourStack1 -r us-east-1
