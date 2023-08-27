@@ -17,7 +17,7 @@ runs:
   steps:
     - shell: bash
       run: |
-        set -e
+        set -eu
         if [ ! -e /usr/local/bin/delstack ]; then
           DOWNLOAD_URL=$(curl https://api.github.com/repos/go-to-k/delstack/releases/latest | jq -r '.assets[].browser_download_url|select(match("Linux_x86_64."))')
           cd /tmp
