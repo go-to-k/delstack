@@ -136,10 +136,10 @@ jobs:
           # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       - name: Delete stack
-        uses: go-to-k/delstack@main
+        uses: go-to-k/delstack@main # Or specify the version instead of main
         with:
-          stack-name: "YourStack"
-          region: "us-east-1"
+          stack-name: YourStack
+          region: us-east-1
 ```
 
 You can also run raw commands after installing the delstack binary.
@@ -160,7 +160,7 @@ jobs:
           # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       - name: Install delstack
-        uses: go-to-k/delstack@main
+        uses: go-to-k/delstack@main # Or specify the version instead of main
       - name: Run delstack
         run: |
           delstack -s YourStack1 -r us-east-1
