@@ -14,6 +14,8 @@ Tool to force delete the **entire** AWS CloudFormation stack, **even if it conta
 
 Among the resources that **fail in the normal CloudFormation stack deletion**, this tool supports the following resources.
 
+All resources that do not fail normal deletion can be deleted as is.
+
 |  RESOURCE TYPE  |  DETAILS  |
 | ---- | ---- |
 |  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled** and DeletionPolicy **not Retain**.(Because "Retain" buckets should not be deleted.)  |
