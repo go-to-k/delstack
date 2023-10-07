@@ -1,6 +1,6 @@
 module github.com/go-to-k/delstack
 
-go 1.18
+go 1.21
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
@@ -16,6 +16,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/rs/zerolog v1.30.0
 	github.com/urfave/cli/v2 v2.25.0
+	go.uber.org/goleak v1.2.1
 	golang.org/x/sync v0.3.0
 )
 
@@ -43,7 +44,6 @@ require (
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	go.uber.org/goleak v1.2.1 // indirect
 	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
 	golang.org/x/term v0.0.0-20210503060354-a79de5458b56 // indirect
 	golang.org/x/text v0.3.8 // indirect
