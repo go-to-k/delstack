@@ -162,6 +162,8 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 		return filteredStacks, err
 	}
 
+	lowerKeyword := strings.ToLower(*keyword)
+
 	for _, stackSummary := range stackSummaries {
 		// pass the nested child stacks
 		if stackSummary.RootId != nil {
@@ -170,7 +172,6 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 
 		// for case-insensitive
 		lowerStackName := strings.ToLower(*stackSummary.StackName)
-		lowerKeyword := strings.ToLower(*keyword)
 		if strings.Contains(lowerStackName, lowerKeyword) {
 			filteredStacks = append(filteredStacks, *stackSummary.StackName)
 		}
