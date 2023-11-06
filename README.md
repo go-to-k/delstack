@@ -59,7 +59,7 @@ All resources that do not fail normal deletion can be deleted as is.
     - Otherwise you can specify it in the interactive mode
 - -p, --profile: optional
   - AWS profile name
-- -r, --region: optional(default: `ap-northeast-1`)
+- -r, --region: optional(default: `us-east-1`)
   - AWS Region
 - -i, --interactive: optional
   - Interactive Mode
