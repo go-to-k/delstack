@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.39.1
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.22.2
 	github.com/aws/aws-sdk-go-v2/service/iam v1.27.2
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.42.2
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.43.0
 	github.com/aws/smithy-go v1.17.0
 	github.com/golang/mock v1.6.0
 	github.com/olekukonko/tablewriter v0.0.5
