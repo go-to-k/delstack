@@ -17,7 +17,7 @@ require (
 	github.com/rs/zerolog v1.30.0
 	github.com/urfave/cli/v2 v2.25.0
 	go.uber.org/goleak v1.2.1
-	golang.org/x/sync v0.3.0
+	golang.org/x/sync v0.5.0
 )
 
 require (
