@@ -25,8 +25,6 @@ All resources that do not fail normal deletion can be deleted as is.
 |  AWS::CloudFormation::Stack  |  **Nested Child Stacks** that failed to delete. If any of the other resources are included in the child stack, **they too will be deleted**.  |
 |  Custom::Xxx  |  Custom Resources, but they will be deleted on its own.  |
 
-<br>
-
 - This tool can be used **even for stacks that do not contain any of the above targets** for forced deletion.
   - So **all stack deletions can basically be done with this tool!!**
 - If there are resources other than those listed above that result in DELETE_FAILED, the deletion will fail.
@@ -36,20 +34,36 @@ All resources that do not fail normal deletion can be deleted as is.
 ## Install
 
 - Homebrew
-  ```
+
+  ```bash
   brew install go-to-k/tap/delstack
   ```
+
+- Linux, Darwin (macOS) and Windows
+
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/go-to-k/delstack/main/install.sh | sh
+  delstack -h
+
+  # To install a specific version of delstack
+  # e.g. version 0.12.1
+  curl -fsSL https://raw.githubusercontent.com/go-to-k/delstack/main/install.sh | sh -s "v1.2.0"
+  delstack -h
+  ```
+
 - Binary
   - [Releases](https://github.com/go-to-k/delstack/releases)
 - Git Clone and install(for developers)
-  ```
+
+  ```bash
   git clone https://github.com/go-to-k/delstack.git
   cd delstack
   make install
   ```
 
 ## How to use
-  ```
+
+  ```bash
   delstack [-s <stackName>] [-p <profile>] [-r <region>] [-i]
   ```
 
@@ -74,7 +88,7 @@ However, if a resource can be deleted **without becoming DELETE_FAILED** by the 
 
 If the stack contains resources that will be DELETE_FAILED but is not selected, **all DELETE_FAILED resources including the selected or not selected resources and the stack will remain undeleted**.
 
-```sh
+```bash
 ❯ delstack -s YourStack -i
 ? Select ResourceTypes you wish to delete even if DELETE_FAILED.
 However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type.
@@ -93,14 +107,14 @@ If you do not specify a stack name in command options in the interactive mode, y
 
 It can be **empty**.
 
-```sh
+```bash
 ❯ delstack -i
 Filter a keyword of stack names(case-insensitive): test-goto
 ```
 
 Then you select stack names in the UI.
 
-```sh
+```bash
 ? Select StackName.
 Nested child stacks and XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks are not displayed.
   [Use arrows to move, type to filter]
