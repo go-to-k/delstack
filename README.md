@@ -46,7 +46,7 @@ All resources that do not fail normal deletion can be deleted as is.
   delstack -h
 
   # To install a specific version of delstack
-  # e.g. version 0.12.1
+  # e.g. version 1.2.0
   curl -fsSL https://raw.githubusercontent.com/go-to-k/delstack/main/install.sh | sh -s "v1.2.0"
   delstack -h
   ```
