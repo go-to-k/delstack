@@ -21,7 +21,7 @@ const StackNameRule = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
 // Except xxInProgress
 // StackStatusDeleteComplete is not included because DescribeStacks does not return a DELETE_COMPLETE stack.
-var STACK_STATUS_EXCEPTIONS_FOR_DESCRIBE_STACKS = []types.StackStatus{
+var StackStatusExceptionsForDescribeStacks = []types.StackStatus{
 	types.StackStatusCreateInProgress,
 	types.StackStatusRollbackInProgress,
 	types.StackStatusDeleteInProgress,
@@ -193,7 +193,7 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 }
 
 func (o *CloudFormationStackOperator) isExceptedByStackStatus(stackStatus types.StackStatus) bool {
-	for _, status := range STACK_STATUS_EXCEPTIONS_FOR_DESCRIBE_STACKS {
+	for _, status := range StackStatusExceptionsForDescribeStacks {
 		if stackStatus == status {
 			return true
 		}
