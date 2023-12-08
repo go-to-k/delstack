@@ -1433,23 +1433,6 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 		err            error
 	}
 
-	// Except StackStatusDeleteComplete and xxInProgress
-	stackStatusFilter := []types.StackStatus{
-		types.StackStatusCreateFailed,
-		types.StackStatusCreateComplete,
-		types.StackStatusRollbackFailed,
-		types.StackStatusRollbackComplete,
-		types.StackStatusDeleteFailed,
-		types.StackStatusUpdateComplete,
-		types.StackStatusUpdateFailed,
-		types.StackStatusUpdateRollbackFailed,
-		types.StackStatusUpdateRollbackComplete,
-		types.StackStatusImportComplete,
-		types.StackStatusImportRollbackInProgress,
-		types.StackStatusImportRollbackFailed,
-		types.StackStatusImportRollbackComplete,
-	}
-
 	cases := []struct {
 		name                        string
 		args                        args
@@ -1464,8 +1447,8 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 				keyword: "TestStack",
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().ListStacks(gomock.Any(), stackStatusFilter).Return(
-					[]types.StackSummary{
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
 						{
 							StackName:   aws.String("TestStack1"),
 							StackStatus: types.StackStatusCreateComplete,
@@ -1494,8 +1477,8 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 				keyword: "TestStack",
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().ListStacks(gomock.Any(), stackStatusFilter).Return(
-					[]types.StackSummary{
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
 						{
 							StackName:   aws.String("TestStack1"),
 							StackStatus: types.StackStatusCreateComplete,
@@ -1524,8 +1507,8 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 				keyword: "TestStack",
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().ListStacks(gomock.Any(), stackStatusFilter).Return(
-					[]types.StackSummary{
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
 						{
 							StackName:   aws.String("TestStack1"),
 							StackStatus: types.StackStatusCreateComplete,
@@ -1553,8 +1536,8 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 				keyword: "teststack",
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().ListStacks(gomock.Any(), stackStatusFilter).Return(
-					[]types.StackSummary{
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
 						{
 							StackName:   aws.String("TestStack1"),
 							StackStatus: types.StackStatusCreateComplete,
@@ -1583,8 +1566,8 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 				keyword: "TESTSTACK",
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().ListStacks(gomock.Any(), stackStatusFilter).Return(
-					[]types.StackSummary{
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
 						{
 							StackName:   aws.String("TestStack1"),
 							StackStatus: types.StackStatusCreateComplete,
@@ -1613,8 +1596,8 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 				keyword: "",
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().ListStacks(gomock.Any(), stackStatusFilter).Return(
-					[]types.StackSummary{
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
 						{
 							StackName:   aws.String("TestStack1"),
 							StackStatus: types.StackStatusCreateComplete,
@@ -1643,7 +1626,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 				keyword: "TestStack",
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().ListStacks(gomock.Any(), stackStatusFilter).Return([]types.StackSummary{}, nil)
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return([]types.Stack{}, nil)
 			},
 			want: want{
 				filteredStacks: []string{},
@@ -1658,7 +1641,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 				keyword: "",
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().ListStacks(gomock.Any(), stackStatusFilter).Return([]types.StackSummary{}, nil)
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return([]types.Stack{}, nil)
 			},
 			want: want{
 				filteredStacks: []string{},
@@ -1667,34 +1650,119 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "list stacks filtered by keyword failure for list stacks errors",
+			name: "list stacks filtered by keyword failure for describe stacks errors",
 			args: args{
 				ctx:     ctx,
 				keyword: "TestStack",
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().ListStacks(gomock.Any(), stackStatusFilter).Return([]types.StackSummary{}, fmt.Errorf("ListStacksError"))
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return([]types.Stack{}, fmt.Errorf("DescribeStacksError"))
 			},
 			want: want{
 				filteredStacks: []string{},
-				err:            fmt.Errorf("ListStacksError"),
+				err:            fmt.Errorf("DescribeStacksError"),
 			},
 			wantErr: true,
 		},
 		{
-			name: "list stacks filtered by keyword but empty keyword failure for list stacks errors",
+			name: "list stacks filtered by keyword but empty keyword failure for describe stacks errors",
 			args: args{
 				ctx:     ctx,
 				keyword: "",
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().ListStacks(gomock.Any(), stackStatusFilter).Return([]types.StackSummary{}, fmt.Errorf("ListStacksError"))
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return([]types.Stack{}, fmt.Errorf("DescribeStacksError"))
 			},
 			want: want{
 				filteredStacks: []string{},
-				err:            fmt.Errorf("ListStacksError"),
+				err:            fmt.Errorf("DescribeStacksError"),
 			},
 			wantErr: true,
+		},
+		{
+			name: "list stacks filtered by keyword with XxxInProgress stacks successfully",
+			args: args{
+				ctx:     ctx,
+				keyword: "TestStack",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("TestStack1"),
+							StackStatus: types.StackStatusCreateInProgress,
+						},
+						{
+							StackName:   aws.String("TestStack2"),
+							StackStatus: types.StackStatusUpdateRollbackCompleteCleanupInProgress,
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				filteredStacks: []string{},
+				err:            nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list stacks filtered by keyword with DeleteComplete stacks successfully",
+			args: args{
+				ctx:     ctx,
+				keyword: "TestStack",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("TestStack1"),
+							StackStatus: types.StackStatusDeleteComplete,
+						},
+						{
+							StackName:   aws.String("TestStack2"),
+							StackStatus: types.StackStatusDeleteComplete,
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				filteredStacks: []string{},
+				err:            nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list stacks filtered by keyword with EnableTerminationProtection stacks successfully",
+			args: args{
+				ctx:     ctx,
+				keyword: "TestStack",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("TestStack1"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							EnableTerminationProtection: aws.Bool(false),
+						},
+						{
+							StackName:                   aws.String("TestStack2"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							EnableTerminationProtection: aws.Bool(true),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				filteredStacks: []string{
+					"TestStack1",
+				},
+				err: nil,
+			},
+			wantErr: false,
 		},
 	}
 
