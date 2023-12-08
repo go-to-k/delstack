@@ -1706,6 +1706,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		// In fact, DescribeStacks does not return a DELETE_COMPLETE stack, but it is included just in case.
 		{
 			name: "list stacks filtered by keyword with DeleteComplete stacks successfully",
 			args: args{
