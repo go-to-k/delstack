@@ -141,39 +141,56 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 	filteredStacks := []string{}
 
 	// Except StackStatusDeleteComplete and xxInProgress
-	stackStatusFilter := []types.StackStatus{
-		types.StackStatusCreateFailed,
-		types.StackStatusCreateComplete,
-		types.StackStatusRollbackFailed,
-		types.StackStatusRollbackComplete,
-		types.StackStatusDeleteFailed,
-		types.StackStatusUpdateComplete,
-		types.StackStatusUpdateFailed,
-		types.StackStatusUpdateRollbackFailed,
-		types.StackStatusUpdateRollbackComplete,
-		types.StackStatusImportComplete,
+	// In fact, DescribeStacks does not return a DELETE_COMPLETE stack, but it is included just in case.
+	stackStatusExceptionFilter := []types.StackStatus{
+		types.StackStatusCreateInProgress,
+		types.StackStatusRollbackInProgress,
+		types.StackStatusDeleteInProgress,
+		types.StackStatusUpdateInProgress,
+		types.StackStatusUpdateCompleteCleanupInProgress,
+		types.StackStatusUpdateRollbackInProgress,
+		types.StackStatusUpdateRollbackCompleteCleanupInProgress,
+		types.StackStatusReviewInProgress,
+		types.StackStatusImportInProgress,
 		types.StackStatusImportRollbackInProgress,
-		types.StackStatusImportRollbackFailed,
-		types.StackStatusImportRollbackComplete,
+		types.StackStatusDeleteComplete,
 	}
 
-	stackSummaries, err := o.client.ListStacks(ctx, stackStatusFilter)
+	// Use DescribeStacks instead of ListStacks to take EnableTerminationProtection
+	stacks, err := o.client.DescribeStacks(ctx, nil)
 	if err != nil {
 		return filteredStacks, err
 	}
 
 	lowerKeyword := strings.ToLower(*keyword)
 
-	for _, stackSummary := range stackSummaries {
-		// pass the nested child stacks
-		if stackSummary.RootId != nil {
+	for _, stack := range stacks {
+		// except the nested child stacks
+		if stack.RootId != nil {
+			continue
+		}
+
+		// except the stacks with EnableTerminationProtection
+		if stack.EnableTerminationProtection != nil && *stack.EnableTerminationProtection {
+			continue
+		}
+
+		// except the stacks that are in the exception list
+		shouldExcept := false
+		for _, status := range stackStatusExceptionFilter {
+			if stack.StackStatus == status {
+				shouldExcept = true
+				break
+			}
+		}
+		if shouldExcept {
 			continue
 		}
 
 		// for case-insensitive
-		lowerStackName := strings.ToLower(*stackSummary.StackName)
+		lowerStackName := strings.ToLower(*stack.StackName)
 		if strings.Contains(lowerStackName, lowerKeyword) {
-			filteredStacks = append(filteredStacks, *stackSummary.StackName)
+			filteredStacks = append(filteredStacks, *stack.StackName)
 		}
 	}
 

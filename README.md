@@ -130,7 +130,9 @@ In addition, **child stacks of nested stacks are not displayed**. This is becaus
 
 However, the `-s` command option allows deletion of child stacks by specifying their names, so please use this option if you want.
 
-Also stacks with **the XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) CloudFormation status** are not displayed, because multiple CloudFormation operations should not be duplicated at the same time.
+And stacks with **the XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) CloudFormation status** are not displayed, because multiple CloudFormation operations should not be duplicated at the same time.
+
+Also, **"Termination Protection"** stacks will not be displayed, because it probably really should not want to delete it.
 
 ## GitHub Actions
 
