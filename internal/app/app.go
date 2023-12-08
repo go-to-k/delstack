@@ -173,7 +173,7 @@ func (a *App) selectStackName(stackNames []string) string {
 	var stackName string
 
 	label := "Select StackName." + "\n" +
-		"Nested child stacks and XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks are not displayed." +
+		"Nested child stacks, XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks and EnableTerminationProtection stacks are not displayed." +
 		"\n"
 
 	for {
