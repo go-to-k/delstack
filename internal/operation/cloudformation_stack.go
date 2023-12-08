@@ -19,6 +19,21 @@ var _ IOperator = (*CloudFormationStackOperator)(nil)
 
 const StackNameRule = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
+// Except xxInProgress
+// StackStatusDeleteComplete is not included because DescribeStacks does not return a DELETE_COMPLETE stack.
+var STACK_STATUS_EXCEPTIONS_FOR_DESCRIBE_STACKS = []types.StackStatus{
+	types.StackStatusCreateInProgress,
+	types.StackStatusRollbackInProgress,
+	types.StackStatusDeleteInProgress,
+	types.StackStatusUpdateInProgress,
+	types.StackStatusUpdateCompleteCleanupInProgress,
+	types.StackStatusUpdateRollbackInProgress,
+	types.StackStatusUpdateRollbackCompleteCleanupInProgress,
+	types.StackStatusReviewInProgress,
+	types.StackStatusImportInProgress,
+	types.StackStatusImportRollbackInProgress,
+}
+
 var StackNameRuleRegExp = regexp.MustCompile(StackNameRule)
 
 type CloudFormationStackOperator struct {
@@ -117,6 +132,9 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 	if stacksBeforeDelete[0].EnableTerminationProtection != nil && *stacksBeforeDelete[0].EnableTerminationProtection {
 		return false, fmt.Errorf("TerminationProtectionIsEnabled: %v", *stackName)
 	}
+	if o.isExceptedByStackStatus(stacksBeforeDelete[0].StackStatus) {
+		return false, fmt.Errorf("OperationInProgressError: Stacks with XxxInProgress cannot be deleted, but %v: %v", stacksBeforeDelete[0].StackStatus, *stackName)
+	}
 
 	if err := o.client.DeleteStack(ctx, stackName, []string{}); err != nil {
 		return false, err
@@ -140,22 +158,6 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
 	filteredStacks := []string{}
 
-	// Except StackStatusDeleteComplete and xxInProgress
-	// In fact, DescribeStacks does not return a DELETE_COMPLETE stack, but it is included just in case.
-	stackStatusExceptionFilter := []types.StackStatus{
-		types.StackStatusCreateInProgress,
-		types.StackStatusRollbackInProgress,
-		types.StackStatusDeleteInProgress,
-		types.StackStatusUpdateInProgress,
-		types.StackStatusUpdateCompleteCleanupInProgress,
-		types.StackStatusUpdateRollbackInProgress,
-		types.StackStatusUpdateRollbackCompleteCleanupInProgress,
-		types.StackStatusReviewInProgress,
-		types.StackStatusImportInProgress,
-		types.StackStatusImportRollbackInProgress,
-		types.StackStatusDeleteComplete,
-	}
-
 	// Use DescribeStacks instead of ListStacks to take EnableTerminationProtection
 	stacks, err := o.client.DescribeStacks(ctx, nil)
 	if err != nil {
@@ -176,14 +178,7 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 		}
 
 		// except the stacks that are in the exception list
-		shouldExcept := false
-		for _, status := range stackStatusExceptionFilter {
-			if stack.StackStatus == status {
-				shouldExcept = true
-				break
-			}
-		}
-		if shouldExcept {
+		if o.isExceptedByStackStatus(stack.StackStatus) {
 			continue
 		}
 
@@ -195,4 +190,13 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 	}
 
 	return filteredStacks, nil
+}
+
+func (o *CloudFormationStackOperator) isExceptedByStackStatus(stackStatus types.StackStatus) bool {
+	for _, status := range STACK_STATUS_EXCEPTIONS_FOR_DESCRIBE_STACKS {
+		if stackStatus == status {
+			return true
+		}
+	}
+	return false
 }
