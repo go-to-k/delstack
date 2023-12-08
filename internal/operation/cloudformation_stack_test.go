@@ -1384,6 +1384,31 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "delete stack failure for root stack with operation in progress",
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: false,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_IN_PROGRESS",
+							EnableTerminationProtection: aws.Bool(false),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				got: false,
+				err: fmt.Errorf("OperationInProgressError: Stacks with XxxInProgress cannot be deleted, but DELETE_IN_PROGRESS: test"),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range cases {
@@ -1695,34 +1720,6 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 						{
 							StackName:   aws.String("TestStack2"),
 							StackStatus: types.StackStatusUpdateRollbackCompleteCleanupInProgress,
-						},
-					},
-					nil,
-				)
-			},
-			want: want{
-				filteredStacks: []string{},
-				err:            nil,
-			},
-			wantErr: false,
-		},
-		// In fact, DescribeStacks does not return a DELETE_COMPLETE stack, but it is included just in case.
-		{
-			name: "list stacks filtered by keyword with DeleteComplete stacks successfully",
-			args: args{
-				ctx:     ctx,
-				keyword: "TestStack",
-			},
-			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
-					[]types.Stack{
-						{
-							StackName:   aws.String("TestStack1"),
-							StackStatus: types.StackStatusDeleteComplete,
-						},
-						{
-							StackName:   aws.String("TestStack2"),
-							StackStatus: types.StackStatusDeleteComplete,
 						},
 					},
 					nil,
