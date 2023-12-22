@@ -18,7 +18,7 @@ func GetCheckboxes(label string, opts []string) []string {
 		Message: label,
 		Options: opts,
 	}
-	survey.AskOne(prompt, &res)
+	survey.AskOne(prompt, &res, survey.WithKeepFilter(true))
 
 	return res
 }
