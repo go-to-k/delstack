@@ -31,7 +31,19 @@ func GetSelection(label string, opts []string) string {
 		Options:  opts,
 		PageSize: SelectionPageSize,
 	}
-	survey.AskOne(prompt, &res)
+	survey.AskOne(
+		prompt,
+		&res,
+		survey.WithFilter(
+			func(filter string, value string, index int) (include bool) {
+				trimmedFilter := strings.TrimSpace(filter)
+				lowerFilter := strings.ToLower(trimmedFilter)
+				lowerValue := strings.ToLower(value)
+
+				return strings.Contains(lowerValue, lowerFilter)
+			},
+		),
+	)
 
 	return res
 }
