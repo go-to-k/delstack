@@ -51,6 +51,12 @@ All resources that do not fail normal deletion can be deleted as is.
   delstack -h
   ```
 
+- aqua
+
+  ```bash
+  aqua g -i go-to-k/delstack
+  ```
+
 - Binary
   - [Releases](https://github.com/go-to-k/delstack/releases)
 - Git Clone and install(for developers)
