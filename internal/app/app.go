@@ -115,9 +115,10 @@ func (a *App) getAction() func(c *cli.Context) error {
 				return nil
 			}
 
-			// describeStacks returns in descending order of CreationTime, so reverse the order to delete from the undependent stacks
-			for i := len(selectedStacks) - 1; i >= 0; i-- {
-				a.StackNames.Set(selectedStacks[i])
+			// The `describeStacks` returns the stacks in descending order of CreationTime.
+			// Therefore, by deleting stacks in the same order, we can delete from a new stack that is not depended on by any stack.
+			for _, stack := range selectedStacks {
+				a.StackNames.Set(stack)
 			}
 		}
 
