@@ -84,6 +84,7 @@ func (a *App) getAction() func(c *cli.Context) error {
 			return err
 		}
 
+		// FIXME: Select targetResourceTypes for each stack specified.
 		var targetResourceTypes []string
 		var keyword string
 		continuation := true
