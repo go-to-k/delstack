@@ -121,7 +121,9 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 	}
 	supportedStackResources := "\nSupported resources for force deletion of DELETE_FAILED resources are followings.\n" + *io.ToStringAsTableFormat(supportedStackResourcesHeader, supportedStackResourcesData)
 
-	unsupportedResourceError := title + unsupportedStackResources + supportedStackResources
+	issueLink := "\nIf you want to delete the unsupported resources, please create an issue at GitHub(https://github.com/go-to-k/delstack/issues).\n"
+
+	unsupportedResourceError := title + unsupportedStackResources + supportedStackResources + issueLink
 
 	return fmt.Errorf("UnsupportedResourceError: %v", unsupportedResourceError)
 }

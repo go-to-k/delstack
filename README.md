@@ -14,6 +14,8 @@ Tool to force delete the **entire** AWS CloudFormation stack, **even if it conta
 
 Among the resources that **fail in the normal CloudFormation stack deletion**, this tool supports the following resources.
 
+If you want to delete the unsupported resources, please create an issue at [GitHub](https://github.com/go-to-k/delstack/issues).
+
 All resources that do not fail normal deletion can be deleted as is.
 
 |  RESOURCE TYPE  |  DETAILS  |
