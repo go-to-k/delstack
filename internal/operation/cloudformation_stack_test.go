@@ -1764,6 +1764,35 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "list stacks filtered by keyword with EnableTerminationProtection stacks but empty failure",
+			args: args{
+				ctx:     ctx,
+				keyword: "TestStack",
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("TestStack1"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							EnableTerminationProtection: aws.Bool(true),
+						},
+						{
+							StackName:                   aws.String("TestStack2"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							EnableTerminationProtection: aws.Bool(true),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				filteredStacks: []string{},
+				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)."),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range cases {
