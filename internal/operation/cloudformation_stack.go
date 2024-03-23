@@ -159,8 +159,8 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 func (o *CloudFormationStackOperator) GetStackNamesSorted(ctx context.Context, stackNames []string) ([]string, error) {
 	sortedStackNames := []string{}
 	gotStacks := []types.Stack{}
-	notFoundStacks := []string{}
-	stacksInProgress := []struct {
+	notFoundStackNames := []string{}
+	stackNamesInProgress := []struct {
 		stackName   string
 		stackStatus types.StackStatus
 	}{}
@@ -172,11 +172,11 @@ func (o *CloudFormationStackOperator) GetStackNamesSorted(ctx context.Context, s
 		}
 
 		if len(stack) == 0 {
-			notFoundStacks = append(notFoundStacks, stackName)
+			notFoundStackNames = append(notFoundStackNames, stackName)
 			continue
 		}
 		if o.isExceptedByStackStatus(stack[0].StackStatus) {
-			stacksInProgress = append(stacksInProgress, struct {
+			stackNamesInProgress = append(stackNamesInProgress, struct {
 				stackName   string
 				stackStatus types.StackStatus
 			}{
@@ -188,16 +188,16 @@ func (o *CloudFormationStackOperator) GetStackNamesSorted(ctx context.Context, s
 		gotStacks = append(gotStacks, stack[0]) // DescribeStacks returns a stack with a single element
 	}
 
-	if len(notFoundStacks) > 0 {
-		errMsg := fmt.Sprintf("%s stack not found.", strings.Join(notFoundStacks, ", "))
+	if len(notFoundStackNames) > 0 {
+		errMsg := fmt.Sprintf("%s stack not found.", strings.Join(notFoundStackNames, ", "))
 		return sortedStackNames, fmt.Errorf("NotExistsError: %v", errMsg)
 	}
-	if len(stacksInProgress) > 0 {
-		var stacksWithStatus []string
-		for _, stack := range stacksInProgress {
-			stacksWithStatus = append(stacksWithStatus, fmt.Sprintf("%s: %s", stack.stackStatus, stack.stackName))
+	if len(stackNamesInProgress) > 0 {
+		var stackNamesWithStatus []string
+		for _, stack := range stackNamesInProgress {
+			stackNamesWithStatus = append(stackNamesWithStatus, fmt.Sprintf("%s: %s", stack.stackStatus, stack.stackName))
 		}
-		errMsg := fmt.Sprintf("Stacks with XxxInProgress cannot be deleted, but %s", strings.Join(stacksWithStatus, ", "))
+		errMsg := fmt.Sprintf("Stacks with XxxInProgress cannot be deleted, but %s", strings.Join(stackNamesWithStatus, ", "))
 		return sortedStackNames, fmt.Errorf("OperationInProgressError: %v", errMsg)
 	}
 
