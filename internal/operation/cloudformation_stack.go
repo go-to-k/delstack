@@ -156,7 +156,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 	return false, nil
 }
 
-func (o *CloudFormationStackOperator) GetStackNamesSorted(ctx context.Context, stackNames []string) ([]string, error) {
+func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, stackNames []string) ([]string, error) {
 	sortedStackNames := []string{}
 	gotStacks := []types.Stack{}
 	notFoundStackNames := []string{}

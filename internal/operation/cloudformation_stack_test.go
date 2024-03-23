@@ -1445,7 +1445,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 	}
 }
 
-func TestCloudFormationStackOperator_GetStackNamesSorted(t *testing.T) {
+func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
@@ -1778,7 +1778,7 @@ func TestCloudFormationStackOperator_GetStackNamesSorted(t *testing.T) {
 
 			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, targetResourceTypes)
 
-			output, err := cloudformationStackOperator.GetStackNamesSorted(tt.args.ctx, tt.args.stackNames)
+			output, err := cloudformationStackOperator.GetSortedStackNames(tt.args.ctx, tt.args.stackNames)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
