@@ -15,8 +15,9 @@ func GetCheckboxes(label string, opts []string) []string {
 	res := []string{}
 
 	prompt := &survey.MultiSelect{
-		Message: label,
-		Options: opts,
+		Message:  label,
+		Options:  opts,
+		PageSize: SelectionPageSize,
 	}
 	survey.AskOne(prompt, &res, survey.WithKeepFilter(true))
 
