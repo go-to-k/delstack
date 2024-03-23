@@ -1446,7 +1446,6 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 
 // TODO: Tests for GetStackNamesSorted with complicated order
 
-// TODO: Add new tests for empty error handlings
 func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 	io.NewLogger(false)
 	ctx := context.Background()
@@ -1529,7 +1528,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "list stacks with RootId filtered by keyword and no stacks do not have RootId found successfully",
+			name: "list stacks with RootId filtered by keyword and no stacks do not have RootId failure",
 			args: args{
 				ctx:     ctx,
 				keyword: "TestStack",
@@ -1648,7 +1647,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "list stacks filtered by keyword but no stacks found successfully",
+			name: "list stacks filtered by keyword but no stacks failure",
 			args: args{
 				ctx:     ctx,
 				keyword: "TestStack",
@@ -1663,7 +1662,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "list stacks filtered by keyword but empty keyword and no stacks found successfully",
+			name: "list stacks filtered by keyword but empty keyword and no stacks failure",
 			args: args{
 				ctx:     ctx,
 				keyword: "",
@@ -1708,7 +1707,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "list stacks filtered by keyword with XxxInProgress stacks successfully",
+			name: "list stacks filtered by keyword with XxxInProgress stacks failure",
 			args: args{
 				ctx:     ctx,
 				keyword: "TestStack",
