@@ -160,10 +160,12 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 	sortedStackNames := []string{}
 	gotStacks := []types.Stack{}
 	notFoundStackNames := []string{}
-	stackNamesInProgress := []struct {
+
+	type stackNameInProgress struct {
 		stackName   string
 		stackStatus types.StackStatus
-	}{}
+	}
+	stackNamesInProgress := []stackNameInProgress{}
 
 	for _, stackName := range stackNames {
 		stack, err := o.client.DescribeStacks(ctx, aws.String(stackName))
@@ -176,10 +178,7 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 			continue
 		}
 		if o.isExceptedByStackStatus(stack[0].StackStatus) {
-			stackNamesInProgress = append(stackNamesInProgress, struct {
-				stackName   string
-				stackStatus types.StackStatus
-			}{
+			stackNamesInProgress = append(stackNamesInProgress, stackNameInProgress{
 				stackName:   stackName,
 				stackStatus: stack[0].StackStatus,
 			})

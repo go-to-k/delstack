@@ -88,7 +88,9 @@ func (a *App) getAction() func(c *cli.Context) error {
 		operatorFactory := operation.NewOperatorFactory(config)
 		cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(resourcetype.GetResourceTypes())
 
-		sortedStackNames, err := a.getSortedStackNames(c.Context, cloudformationStackOperator)
+		deduplicatedStackNames := a.deduplicateStackNames()
+
+		sortedStackNames, err := a.getSortedStackNames(c.Context, cloudformationStackOperator, deduplicatedStackNames)
 		if err != nil {
 			return err
 		}
@@ -97,7 +99,7 @@ func (a *App) getAction() func(c *cli.Context) error {
 			return nil
 		}
 
-		targetStacks := a.setTargetResourceTypes(sortedStackNames)
+		targetStacks := a.setTargetResourceTypes(sortedStackNames, deduplicatedStackNames)
 
 		isRootStack := true
 		for _, stack := range targetStacks {
@@ -117,11 +119,30 @@ func (a *App) getAction() func(c *cli.Context) error {
 	}
 }
 
-func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperator *operation.CloudFormationStackOperator) ([]string, error) {
+func (a *App) deduplicateStackNames() []string {
+	deduplicatedStackNames := []string{}
+
+	for _, stackName := range a.StackNames.Value() {
+		var isDuplicated bool
+		for _, deduplicatedStackName := range deduplicatedStackNames {
+			if stackName == deduplicatedStackName {
+				isDuplicated = true
+				break
+			}
+		}
+		if !isDuplicated {
+			deduplicatedStackNames = append(deduplicatedStackNames, stackName)
+		}
+	}
+
+	return deduplicatedStackNames
+}
+
+func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperator *operation.CloudFormationStackOperator, specifiedStackNames []string) ([]string, error) {
 	sortedStackNames := []string{}
 
-	if len(a.StackNames.Value()) != 0 {
-		stackNames, err := cloudformationStackOperator.GetSortedStackNames(ctx, a.StackNames.Value())
+	if len(specifiedStackNames) != 0 {
+		stackNames, err := cloudformationStackOperator.GetSortedStackNames(ctx, specifiedStackNames)
 		if err != nil {
 			return sortedStackNames, err
 		}
@@ -142,13 +163,13 @@ func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperat
 	return sortedStackNames, nil
 }
 
-func (a *App) setTargetResourceTypes(sortedStackNames []string) []targetStack {
+func (a *App) setTargetResourceTypes(sortedStackNames []string, specifiedStackNames []string) []targetStack {
 	targetStacks := []targetStack{}
 
 	// If stackNames are specified with an interactive mode option, select ResourceTypes in the order specified (not sorted order).
-	if a.InteractiveMode && len(a.StackNames.Value()) != 0 {
+	if a.InteractiveMode && len(specifiedStackNames) != 0 {
 		var selectedResourceTypes []targetStack
-		for _, stackName := range a.StackNames.Value() {
+		for _, stackName := range specifiedStackNames {
 			targetResourceTypes, continuation := a.selectResourceTypes(stackName)
 			if !continuation {
 				return nil
@@ -167,7 +188,7 @@ func (a *App) setTargetResourceTypes(sortedStackNames []string) []targetStack {
 		}
 		io.Logger.Info().Msg("The stacks are removed in order of the latest creation time, taking into account dependencies.")
 	}
-	if a.InteractiveMode && len(a.StackNames.Value()) == 0 {
+	if a.InteractiveMode && len(specifiedStackNames) == 0 {
 		for _, stackName := range sortedStackNames {
 			targetResourceTypes, continuation := a.selectResourceTypes(stackName)
 			if !continuation {
