@@ -15,24 +15,30 @@ import (
 
 type App struct {
 	Cli             *cli.App
-	StackName       string
+	StackNames      *cli.StringSlice
 	Profile         string
 	Region          string
 	InteractiveMode bool
 }
 
+type targetStack struct {
+	stackName           string
+	targetResourceTypes []string
+}
+
 func NewApp(version string) *App {
 	app := App{}
+	app.StackNames = cli.NewStringSlice()
 
 	app.Cli = &cli.App{
 		Name:  "delstack",
 		Usage: "A CLI tool to force delete the entire CloudFormation stack.",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:        "stackName",
 				Aliases:     []string{"s"},
-				Usage:       "CloudFormation stack name",
-				Destination: &app.StackName,
+				Usage:       "CloudFormation stack names(one or more)",
+				Destination: app.StackNames,
 			},
 			&cli.StringFlag{
 				Name:        "profile",
@@ -69,9 +75,9 @@ func (a *App) Run(ctx context.Context) error {
 
 func (a *App) getAction() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		if !a.InteractiveMode && a.StackName == "" {
-			errMsg := fmt.Sprintln("The stack name must be specified in command options (-s) or a flow of the interactive mode (-i).")
-			return fmt.Errorf("StackNameNotSpecifiedError: %v", errMsg)
+		if !a.InteractiveMode && len(a.StackNames.Value()) == 0 {
+			errMsg := fmt.Sprintln("At least one stack name must be specified in command options (-s) or a flow of the interactive mode (-i).")
+			return fmt.Errorf("InvalidOptionError: %v", errMsg)
 		}
 
 		config, err := client.LoadAWSConfig(c.Context, a.Region, a.Profile)
@@ -79,70 +85,152 @@ func (a *App) getAction() func(c *cli.Context) error {
 			return err
 		}
 
-		var targetResourceTypes []string
-		var keyword string
-		continuation := true
-		if a.InteractiveMode {
-			targetResourceTypes, keyword, continuation = a.doInteractiveMode()
-		} else {
-			targetResourceTypes = resourcetype.GetResourceTypes()
-		}
+		operatorFactory := operation.NewOperatorFactory(config)
+		cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(resourcetype.GetResourceTypes())
 
-		if !continuation {
+		deduplicatedStackNames := a.deduplicateStackNames()
+
+		sortedStackNames, err := a.getSortedStackNames(c.Context, cloudformationStackOperator, deduplicatedStackNames)
+		if err != nil {
+			return err
+		}
+		// The case for interruption(Ctrl + C)
+		if len(sortedStackNames) == 0 {
 			return nil
 		}
 
-		operatorFactory := operation.NewOperatorFactory(config)
-		cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(targetResourceTypes)
-
-		if a.InteractiveMode && a.StackName == "" {
-			stackNames, err := cloudformationStackOperator.ListStacksFilteredByKeyword(c.Context, aws.String(keyword))
-			if err != nil {
-				return err
-			}
-			if len(stackNames) == 0 {
-				errMsg := fmt.Sprintf("No stacks matching the keyword %s.", keyword)
-				return fmt.Errorf("NotExistsError: %v", errMsg)
-			}
-
-			stackName := a.selectStackName(stackNames)
-			if stackName == "" {
-				return nil
-			}
-
-			a.StackName = stackName
+		targetStacks := a.attachTargetResourceTypes(sortedStackNames, deduplicatedStackNames)
+		// Explanation of deletion order in the case of multiple stacks
+		if len(targetStacks) > 1 {
+			io.Logger.Info().Msg("The stacks are removed in order of the latest creation time, taking into account dependencies.")
 		}
 
 		isRootStack := true
-		operatorCollection := operation.NewOperatorCollection(config, operatorFactory, targetResourceTypes)
-		operatorManager := operation.NewOperatorManager(operatorCollection)
+		for _, stack := range targetStacks {
+			operatorCollection := operation.NewOperatorCollection(config, operatorFactory, stack.targetResourceTypes)
+			operatorManager := operation.NewOperatorManager(operatorCollection)
+			cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(stack.targetResourceTypes)
 
-		io.Logger.Info().Msgf("Start deletion, %v", a.StackName)
-		io.Logger.Info().Msg("Please wait a few minutes...")
+			io.Logger.Info().Msgf("%v: Start deletion. Please wait a few minutes...", stack.stackName)
 
-		if err := cloudformationStackOperator.DeleteCloudFormationStack(c.Context, aws.String(a.StackName), isRootStack, operatorManager); err != nil {
-			return err
+			if err := cloudformationStackOperator.DeleteCloudFormationStack(c.Context, aws.String(stack.stackName), isRootStack, operatorManager); err != nil {
+				return err
+			}
+
+			io.Logger.Info().Msgf("%v: Successfully deleted!!", stack.stackName)
 		}
-
-		io.Logger.Info().Msgf("Successfully deleted, %v", a.StackName)
 		return nil
 	}
 }
 
-func (a *App) doInteractiveMode() ([]string, string, bool) {
-	var checkboxes []string
-	var keyword string
+func (a *App) deduplicateStackNames() []string {
+	deduplicatedStackNames := []string{}
 
-	label := "Select ResourceTypes you wish to delete even if DELETE_FAILED." +
+	for _, stackName := range a.StackNames.Value() {
+		var isDuplicated bool
+		for _, deduplicatedStackName := range deduplicatedStackNames {
+			if stackName == deduplicatedStackName {
+				isDuplicated = true
+				break
+			}
+		}
+		if !isDuplicated {
+			deduplicatedStackNames = append(deduplicatedStackNames, stackName)
+		}
+	}
+
+	return deduplicatedStackNames
+}
+
+func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperator *operation.CloudFormationStackOperator, specifiedStackNames []string) ([]string, error) {
+	sortedStackNames := []string{}
+
+	if len(specifiedStackNames) != 0 {
+		stackNames, err := cloudformationStackOperator.GetSortedStackNames(ctx, specifiedStackNames)
+		if err != nil {
+			return sortedStackNames, err
+		}
+		sortedStackNames = append(sortedStackNames, stackNames...)
+	} else if a.InteractiveMode {
+		keyword := a.inputKeywordForFilter()
+		stacks, err := cloudformationStackOperator.ListStacksFilteredByKeyword(ctx, aws.String(keyword))
+		if err != nil {
+			return sortedStackNames, err
+		}
+
+		// The `ListStacksFilteredByKeyword` with SDK's `DescribeStacks` returns the stacks in descending order of CreationTime.
+		// Therefore, by deleting stacks in the same order, we can delete from a new stack that is not depended on by any stack.
+		stackNames := a.selectStackNames(stacks)
+		sortedStackNames = append(sortedStackNames, stackNames...)
+	}
+
+	return sortedStackNames, nil
+}
+
+func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStackNames []string) []targetStack {
+	targetStacks := []targetStack{}
+
+	// If stackNames are specified with an interactive mode option, select ResourceTypes in the order specified (not sorted order).
+	if a.InteractiveMode && len(specifiedStackNames) != 0 {
+		var selectedResourceTypes []targetStack
+		for _, stackName := range specifiedStackNames {
+			targetResourceTypes, continuation := a.selectResourceTypes(stackName)
+			if !continuation {
+				return nil
+			}
+			selectedResourceTypes = append(selectedResourceTypes, targetStack{
+				stackName:           stackName,
+				targetResourceTypes: targetResourceTypes,
+			})
+		}
+		for _, stackName := range sortedStackNames {
+			for _, selectedResourceType := range selectedResourceTypes {
+				if stackName == selectedResourceType.stackName {
+					targetStacks = append(targetStacks, selectedResourceType)
+				}
+			}
+		}
+	}
+	if a.InteractiveMode && len(specifiedStackNames) == 0 {
+		for _, stackName := range sortedStackNames {
+			targetResourceTypes, continuation := a.selectResourceTypes(stackName)
+			if !continuation {
+				return nil
+			}
+			targetStacks = append(targetStacks, targetStack{
+				stackName:           stackName,
+				targetResourceTypes: targetResourceTypes,
+			})
+		}
+	}
+	if !a.InteractiveMode {
+		for _, stackName := range sortedStackNames {
+			targetResourceTypes := resourcetype.GetResourceTypes()
+			targetStacks = append(targetStacks, targetStack{
+				stackName:           stackName,
+				targetResourceTypes: targetResourceTypes,
+			})
+		}
+	}
+
+	return targetStacks
+}
+
+func (a *App) inputKeywordForFilter() string {
+	label := "Filter a keyword of stack names(case-insensitive): "
+	return io.InputKeywordForFilter(label)
+}
+
+func (a *App) selectResourceTypes(stackName string) ([]string, bool) {
+	var checkboxes []string
+
+	label := stackName +
 		"\n" +
+		"Select ResourceTypes you wish to delete even if DELETE_FAILED.\n" +
 		"However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type. " +
 		"\n"
-	opts := resourcetype.GetResourceTypes()
 
-	if a.StackName == "" {
-		stackNameLabel := "Filter a keyword of stack names(case-insensitive): "
-		keyword = io.InputKeywordForFilter(stackNameLabel)
-	}
+	opts := resourcetype.GetResourceTypes()
 
 	for {
 		checkboxes = io.GetCheckboxes(label, opts)
@@ -150,48 +238,48 @@ func (a *App) doInteractiveMode() ([]string, string, bool) {
 		if len(checkboxes) == 0 {
 			ok := io.GetYesNo("No selection?")
 			if ok {
-				return checkboxes, keyword, true
+				return checkboxes, true
 			}
 
 			// The case for interruption(Ctrl + C)
 			ok = io.GetYesNo("Do you want to finish?")
 			if ok {
 				io.Logger.Info().Msg("Finished...")
-				return checkboxes, keyword, false
+				return checkboxes, false
 			}
 			continue
 		}
 
 		ok := io.GetYesNo("OK?")
 		if ok {
-			return checkboxes, keyword, true
+			return checkboxes, true
 		}
 	}
 }
 
-func (a *App) selectStackName(stackNames []string) string {
-	var stackName string
+func (a *App) selectStackNames(stackNames []string) []string {
+	var selectedStackNames []string
 
-	label := "Select StackName." + "\n" +
+	label := "Select StackNames." + "\n" +
 		"Nested child stacks, XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks and EnableTerminationProtection stacks are not displayed." +
 		"\n"
 
 	for {
-		stackName = io.GetSelection(label, stackNames)
+		selectedStackNames = io.GetCheckboxes(label, stackNames)
 
-		if stackName == "" {
-			io.Logger.Warn().Msg("Select StackName!")
+		if len(selectedStackNames) == 0 {
+			// The case for interruption(Ctrl + C)
 			ok := io.GetYesNo("Do you want to finish?")
 			if ok {
 				io.Logger.Info().Msg("Finished...")
-				return stackName
+				return selectedStackNames
 			}
 			continue
 		}
 
 		ok := io.GetYesNo("OK?")
 		if ok {
-			return stackName
+			return selectedStackNames
 		}
 	}
 }

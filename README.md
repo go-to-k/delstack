@@ -79,6 +79,9 @@ All resources that do not fail normal deletion can be deleted as is.
   - CloudFormation stack name
     - Must be specified in **not** interactive mode
     - Otherwise you can specify it in the interactive mode
+  - **Multiple specifications are possible.**
+    - `delstack -s test1 -s test2`
+    - **Dependencies between stacks are taken into account, the stacks are deleted in order, starting with the newly created stack.**
 - -p, --profile: optional
   - AWS profile name
 - -r, --region: optional(default: `us-east-1`)
@@ -87,6 +90,37 @@ All resources that do not fail normal deletion can be deleted as is.
   - Interactive Mode
 
 ## Interactive Mode
+
+### StackName Selection
+
+If you do not specify a stack name in command options in the interactive mode (`-i, --interactive`), you can search stack names in a **case-insensitive** and select a stack.
+
+It can be **empty**.
+
+```bash
+❯ delstack -i
+Filter a keyword of stack names(case-insensitive): goto
+```
+
+Then you select stack names in the UI.
+
+```bash
+? Select StackNames.
+Nested child stacks, XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks and EnableTerminationProtection stacks are not displayed.
+  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
+  [x]  dev-goto-04-TestStack
+  [ ]  dev-GOTO-03-TestStack
+> [x]  dev-Goto-02-TestStack
+  [ ]  dev-goto-01-TestStack
+```
+
+In addition, **child stacks of nested stacks are not displayed**. This is because it is unlikely that there are cases where only child stacks of nested stacks are deleted without deleting the parent stack, and also because it is possible that the parent stack may be buried in the stack list if there are child stacks, or that the child stacks may be accidentally deleted.
+
+However, **the `-s` command option allows deletion of CHILD stacks by specifying their names**, so please use this option if you want.
+
+And stacks with **the XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) CloudFormation status** are not displayed, because multiple CloudFormation operations should not be duplicated at the same time.
+
+Also, **"Termination Protection"** stacks will not be displayed, because it probably really should not want to delete it.
 
 ### ResourceTypes
 
@@ -97,50 +131,18 @@ However, if a resource can be deleted **without becoming DELETE_FAILED** by the 
 If the stack contains resources that will be DELETE_FAILED but is not selected, **all DELETE_FAILED resources including the selected or not selected resources and the stack will remain undeleted**.
 
 ```bash
-❯ delstack -s YourStack -i
-? Select ResourceTypes you wish to delete even if DELETE_FAILED.
+❯ delstack -i -s dev-goto-01-TestStack
+? dev-goto-01-TestStack
+Select ResourceTypes you wish to delete even if DELETE_FAILED.
 However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type.
   [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
-  [ ]  AWS::S3::Bucket
-  [x]  AWS::IAM::Role
+  [x]  AWS::S3::Bucket
+  [ ]  AWS::IAM::Role
 > [x]  AWS::ECR::Repository
   [ ]  AWS::Backup::BackupVault
-  [x]  AWS::CloudFormation::Stack
+  [ ]  AWS::CloudFormation::Stack
   [ ]  Custom::
 ```
-
-### StackName Selection
-
-If you do not specify a stack name in command options in the interactive mode, you can search stack names in a **case-insensitive** and select a stack.
-
-It can be **empty**.
-
-```bash
-❯ delstack -i
-Filter a keyword of stack names(case-insensitive): test-goto
-```
-
-Then you select stack names in the UI.
-
-```bash
-? Select StackName.
-Nested child stacks, XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks and EnableTerminationProtection stacks are not displayed.
-  [Use arrows to move, type to filter]
-> test-goto-stack-1
-  test-goto-stack-2
-  test-goto-stack-3
-  TEST-GOTO-stack-4
-  Test-Goto-stack-5
-  TEST-goto-stack-6
-```
-
-In addition, **child stacks of nested stacks are not displayed**. This is because it is unlikely that there are cases where only child stacks of nested stacks are deleted without deleting the parent stack, and also because it is possible that the parent stack may be buried in the stack list if there are child stacks, or that the child stacks may be accidentally deleted.
-
-However, the `-s` command option allows deletion of child stacks by specifying their names, so please use this option if you want.
-
-And stacks with **the XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) CloudFormation status** are not displayed, because multiple CloudFormation operations should not be duplicated at the same time.
-
-Also, **"Termination Protection"** stacks will not be displayed, because it probably really should not want to delete it.
 
 ## GitHub Actions
 

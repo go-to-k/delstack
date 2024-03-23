@@ -15,35 +15,11 @@ func GetCheckboxes(label string, opts []string) []string {
 	res := []string{}
 
 	prompt := &survey.MultiSelect{
-		Message: label,
-		Options: opts,
-	}
-	survey.AskOne(prompt, &res, survey.WithKeepFilter(true))
-
-	return res
-}
-
-func GetSelection(label string, opts []string) string {
-	var res string
-
-	prompt := &survey.Select{
 		Message:  label,
 		Options:  opts,
 		PageSize: SelectionPageSize,
 	}
-	survey.AskOne(
-		prompt,
-		&res,
-		survey.WithFilter(
-			func(filter string, value string, index int) (include bool) {
-				trimmedFilter := strings.TrimSpace(filter)
-				lowerFilter := strings.ToLower(trimmedFilter)
-				lowerValue := strings.ToLower(value)
-
-				return strings.Contains(lowerValue, lowerFilter)
-			},
-		),
-	)
+	survey.AskOne(prompt, &res, survey.WithKeepFilter(true))
 
 	return res
 }
