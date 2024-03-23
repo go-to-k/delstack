@@ -1553,9 +1553,9 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			want: want{
 				filteredStacks: []string{},
-				err:            nil,
+				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)."),
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "list stacks filtered by lower keyword successfully",
@@ -1658,9 +1658,9 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			want: want{
 				filteredStacks: []string{},
-				err:            nil,
+				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)."),
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "list stacks filtered by keyword but empty keyword and no stacks found successfully",
@@ -1673,9 +1673,9 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			want: want{
 				filteredStacks: []string{},
-				err:            nil,
+				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword ()."),
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "list stacks filtered by keyword failure for describe stacks errors",
@@ -1730,9 +1730,9 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			want: want{
 				filteredStacks: []string{},
-				err:            nil,
+				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)."),
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "list stacks filtered by keyword with EnableTerminationProtection stacks successfully",

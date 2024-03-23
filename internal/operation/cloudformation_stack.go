@@ -245,6 +245,11 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 		}
 	}
 
+	if len(filteredStacks) == 0 {
+		errMsg := fmt.Sprintf("No stacks matching the keyword (%s).", *keyword)
+		return filteredStacks, fmt.Errorf("NotExistsError: %v", errMsg)
+	}
+
 	return filteredStacks, nil
 }
 

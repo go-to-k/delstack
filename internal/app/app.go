@@ -98,11 +98,6 @@ func (a *App) getAction() func(c *cli.Context) error {
 			if err != nil {
 				return err
 			}
-			// TODO: put the handling into operator's method and change unit tests
-			if len(stacks) == 0 {
-				errMsg := fmt.Sprintf("No stacks matching the keyword %s.", keyword)
-				return fmt.Errorf("NotExistsError: %v", errMsg)
-			}
 
 			// The `ListStacksFilteredByKeyword` with SDK's `DescribeStacks` returns the stacks in descending order of CreationTime.
 			// Therefore, by deleting stacks in the same order, we can delete from a new stack that is not depended on by any stack.
