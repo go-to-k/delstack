@@ -81,8 +81,16 @@ func (a *App) getAction() func(c *cli.Context) error {
 		}
 
 		operatorFactory := operation.NewOperatorFactory(config)
+		var stackNameList []string
 
-		if a.InteractiveMode && len(a.StackNames.Value()) == 0 {
+		if len(a.StackNames.Value()) != 0 {
+			cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(resourcetype.GetResourceTypes())
+
+			stackNameList, err = cloudformationStackOperator.GetStackNamesSorted(c.Context, a.StackNames.Value())
+			if err != nil {
+				return err
+			}
+		} else if a.InteractiveMode {
 			keyword := a.inputKeywordForFilter()
 			cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(resourcetype.GetResourceTypes())
 
@@ -90,20 +98,19 @@ func (a *App) getAction() func(c *cli.Context) error {
 			if err != nil {
 				return err
 			}
+			// TODO: put the handling into operator's method and change unit tests
 			if len(stacks) == 0 {
 				errMsg := fmt.Sprintf("No stacks matching the keyword %s.", keyword)
 				return fmt.Errorf("NotExistsError: %v", errMsg)
 			}
 
-			selectedStacks := a.selectStackNames(stacks)
-			if len(selectedStacks) == 0 {
-				return nil
-			}
-
-			// The `describeStacks` returns the stacks in descending order of CreationTime.
+			// The `ListStacksFilteredByKeyword` with SDK's `DescribeStacks` returns the stacks in descending order of CreationTime.
 			// Therefore, by deleting stacks in the same order, we can delete from a new stack that is not depended on by any stack.
-			for _, stack := range selectedStacks {
-				a.StackNames.Set(stack)
+			stackNameList = a.selectStackNames(stacks)
+
+			// The case for interruption(Ctrl + C)
+			if len(stackNameList) == 0 {
+				return nil
 			}
 		}
 
@@ -112,7 +119,7 @@ func (a *App) getAction() func(c *cli.Context) error {
 			targetResourceTypes []string
 		}
 		var stackItemList []stackItem
-		for _, stackName := range a.StackNames.Value() {
+		for _, stackName := range stackNameList {
 			var targetResourceTypes []string
 			continuation := true
 			if a.InteractiveMode {

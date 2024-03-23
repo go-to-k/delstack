@@ -1444,6 +1444,9 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 	}
 }
 
+// TODO: Tests for GetStackNamesSorted with complicated order
+
+// TODO: Add new tests for empty error handlings
 func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 	io.NewLogger(false)
 	ctx := context.Background()

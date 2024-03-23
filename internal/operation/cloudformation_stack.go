@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"runtime"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -153,6 +154,36 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 	}
 
 	return false, nil
+}
+
+func (o *CloudFormationStackOperator) GetStackNamesSorted(ctx context.Context, stackNames []string) ([]string, error) {
+	var sortedStackNames []string
+	var gotStacks []types.Stack
+	var notFoundStacks []string
+
+	for _, stackName := range stackNames {
+		stack, err := o.client.DescribeStacks(ctx, aws.String(stackName))
+		if err != nil {
+			return sortedStackNames, err
+		}
+		if len(stack) == 0 {
+			notFoundStacks = append(notFoundStacks, stackName)
+		}
+		gotStacks = append(gotStacks, stack[0]) // DescribeStacks returns a stack with a single element
+	}
+	if len(notFoundStacks) > 0 {
+		errMsg := fmt.Sprintf("%s stack not found.", strings.Join(notFoundStacks, ", "))
+		return sortedStackNames, fmt.Errorf("NotExistsError: %v", errMsg)
+	}
+
+	// Sort gotStacks in descending order by stack.CreationTime
+	sort.Slice(gotStacks, func(i, j int) bool {
+		return gotStacks[i].CreationTime.After(*gotStacks[j].CreationTime)
+	})
+	for _, stack := range gotStacks {
+		sortedStackNames = append(sortedStackNames, *stack.StackName)
+	}
+	return sortedStackNames, nil
 }
 
 func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
