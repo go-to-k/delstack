@@ -99,7 +99,7 @@ func (a *App) getAction() func(c *cli.Context) error {
 			return nil
 		}
 
-		targetStacks := a.setTargetResourceTypes(sortedStackNames, deduplicatedStackNames)
+		targetStacks := a.attachTargetResourceTypes(sortedStackNames, deduplicatedStackNames)
 		// Explanation of deletion order in the case of multiple stacks
 		if len(targetStacks) > 1 {
 			io.Logger.Info().Msg("The stacks are removed in order of the latest creation time, taking into account dependencies.")
@@ -167,7 +167,7 @@ func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperat
 	return sortedStackNames, nil
 }
 
-func (a *App) setTargetResourceTypes(sortedStackNames []string, specifiedStackNames []string) []targetStack {
+func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStackNames []string) []targetStack {
 	targetStacks := []targetStack{}
 
 	// If stackNames are specified with an interactive mode option, select ResourceTypes in the order specified (not sorted order).
