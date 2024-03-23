@@ -157,13 +157,13 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 }
 
 func (o *CloudFormationStackOperator) GetStackNamesSorted(ctx context.Context, stackNames []string) ([]string, error) {
-	var sortedStackNames []string
-	var gotStacks []types.Stack
-	var notFoundStacks []string
-	var stacksInProgress []struct {
+	sortedStackNames := []string{}
+	gotStacks := []types.Stack{}
+	notFoundStacks := []string{}
+	stacksInProgress := []struct {
 		stackName   string
 		stackStatus types.StackStatus
-	}
+	}{}
 
 	for _, stackName := range stackNames {
 		stack, err := o.client.DescribeStacks(ctx, aws.String(stackName))

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
@@ -1444,7 +1445,354 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 	}
 }
 
-// TODO: Tests for GetStackNamesSorted with complicated order
+func TestCloudFormationStackOperator_GetStackNamesSorted(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx        context.Context
+		stackNames []string
+	}
+
+	type want struct {
+		sortedStackNames []string
+		err              error
+	}
+
+	cases := []struct {
+		name                        string
+		args                        args
+		prepareMockCloudFormationFn func(m *client.MockICloudFormation)
+		want                        want
+		wantErr                     bool
+	}{
+		{
+			name: "sort stacks with ascending order successfully",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack1", "Stack2", "Stack3", "Stack4", "Stack5"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack1"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-40 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack2"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-30 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack3"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-20 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack4")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack4"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-10 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack5")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack5"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now()),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				sortedStackNames: []string{"Stack5", "Stack4", "Stack3", "Stack2", "Stack1"},
+				err:              nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "sort stacks with descending order successfully",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack5", "Stack4", "Stack3", "Stack2", "Stack1"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack1"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-40 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack2"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-30 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack3"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-20 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack4")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack4"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-10 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack5")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack5"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now()),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				sortedStackNames: []string{"Stack5", "Stack4", "Stack3", "Stack2", "Stack1"},
+				err:              nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "sort stacks with random order successfully",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack3", "Stack4", "Stack1", "Stack2", "Stack5"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack1"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-40 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack2"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-30 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack3"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-20 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack4")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack4"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-10 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack5")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack5"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now()),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				sortedStackNames: []string{"Stack5", "Stack4", "Stack3", "Stack2", "Stack1"},
+				err:              nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "sort stacks failure for stacks in progress",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack1", "Stack2", "Stack3"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack1"),
+							StackStatus:  types.StackStatusUpdateInProgress,
+							CreationTime: aws.Time(time.Now().Add(-20 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack2"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-10 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack3"),
+							StackStatus:  types.StackStatusRollbackInProgress,
+							CreationTime: aws.Time(time.Now()),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				sortedStackNames: []string{},
+				err:              fmt.Errorf("OperationInProgressError: Stacks with XxxInProgress cannot be deleted, but UPDATE_IN_PROGRESS: Stack1, ROLLBACK_IN_PROGRESS: Stack3"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "sort stacks failure for non existent stacks",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack1", "Stack2", "Stack3"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
+					[]types.Stack{},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack3"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now()),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				sortedStackNames: []string{},
+				err:              fmt.Errorf("NotExistsError: Stack1, Stack2 stack not found."),
+			},
+			wantErr: true,
+		},
+		{
+			name: "sort stacks failure for DescribeStacksError",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack1", "Stack2"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack1"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-10 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return([]types.Stack{}, fmt.Errorf("DescribeStacksError"))
+			},
+			want: want{
+				sortedStackNames: []string{},
+				err:              fmt.Errorf("DescribeStacksError"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			cloudformationMock := client.NewMockICloudFormation(ctrl)
+
+			tt.prepareMockCloudFormationFn(cloudformationMock)
+
+			targetResourceTypes := []string{
+				"AWS::S3::Bucket",
+				"AWS::IAM::Role",
+				"AWS::ECR::Repository",
+				"AWS::Backup::BackupVault",
+				"AWS::CloudFormation::Stack",
+				"Custom::",
+			}
+
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, targetResourceTypes)
+
+			output, err := cloudformationStackOperator.GetStackNamesSorted(tt.args.ctx, tt.args.stackNames)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.sortedStackNames) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.sortedStackNames)
+			}
+		})
+	}
+}
 
 func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 	io.NewLogger(false)
