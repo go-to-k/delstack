@@ -100,6 +100,10 @@ func (a *App) getAction() func(c *cli.Context) error {
 		}
 
 		targetStacks := a.setTargetResourceTypes(sortedStackNames, deduplicatedStackNames)
+		// Explanation of deletion order in the case of multiple stacks
+		if len(targetStacks) > 1 {
+			io.Logger.Info().Msg("The stacks are removed in order of the latest creation time, taking into account dependencies.")
+		}
 
 		isRootStack := true
 		for _, stack := range targetStacks {
@@ -186,7 +190,6 @@ func (a *App) setTargetResourceTypes(sortedStackNames []string, specifiedStackNa
 				}
 			}
 		}
-		io.Logger.Info().Msg("The stacks are removed in order of the latest creation time, taking into account dependencies.")
 	}
 	if a.InteractiveMode && len(specifiedStackNames) == 0 {
 		for _, stackName := range sortedStackNames {
