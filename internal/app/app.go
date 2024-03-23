@@ -74,34 +74,18 @@ func (a *App) getAction() func(c *cli.Context) error {
 			errMsg := fmt.Sprintln("At least one stack name must be specified in command options (-s) or a flow of the interactive mode (-i).")
 			return fmt.Errorf("InvalidOptionError: %v", errMsg)
 		}
-		if a.InteractiveMode && len(a.StackNames.Value()) != 0 {
-			errMsg := fmt.Sprintln("When specifying -i, do not specify the -s option.")
-			return fmt.Errorf("InvalidOptionError: %v", errMsg)
-		}
 
 		config, err := client.LoadAWSConfig(c.Context, a.Region, a.Profile)
 		if err != nil {
 			return err
 		}
 
-		// FIXME: Select targetResourceTypes for each stack specified.
-		var targetResourceTypes []string
-		var keyword string
-		continuation := true
-		if a.InteractiveMode {
-			targetResourceTypes, keyword, continuation = a.doInteractiveMode()
-		} else {
-			targetResourceTypes = resourcetype.GetResourceTypes()
-		}
-
-		if !continuation {
-			return nil
-		}
-
 		operatorFactory := operation.NewOperatorFactory(config)
-		cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(targetResourceTypes)
 
 		if a.InteractiveMode && len(a.StackNames.Value()) == 0 {
+			keyword := a.inputKeywordForFilter()
+			cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(resourcetype.GetResourceTypes())
+
 			stacks, err := cloudformationStackOperator.ListStacksFilteredByKeyword(c.Context, aws.String(keyword))
 			if err != nil {
 				return err
@@ -123,37 +107,61 @@ func (a *App) getAction() func(c *cli.Context) error {
 			}
 		}
 
-		isRootStack := true
+		if a.InteractiveMode {
+			resourceTypesMsg := "Select ResourceTypes you wish to delete even if DELETE_FAILED.\n" +
+				"However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type. "
+			io.Logger.Info().Msg(resourceTypesMsg)
+		}
+
+		type stackItem struct {
+			stackName           string
+			targetResourceTypes []string
+		}
+		var stackItemList []stackItem
 		for _, stackName := range a.StackNames.Value() {
-			operatorCollection := operation.NewOperatorCollection(config, operatorFactory, targetResourceTypes)
+			var targetResourceTypes []string
+			continuation := true
+			if a.InteractiveMode {
+				targetResourceTypes, continuation = a.selectResourceTypes(stackName)
+			} else {
+				targetResourceTypes = resourcetype.GetResourceTypes()
+			}
+			if !continuation {
+				return nil
+			}
+			stackItemList = append(stackItemList, stackItem{
+				stackName:           stackName,
+				targetResourceTypes: targetResourceTypes,
+			})
+		}
+
+		isRootStack := true
+		for _, stackItem := range stackItemList {
+			operatorCollection := operation.NewOperatorCollection(config, operatorFactory, stackItem.targetResourceTypes)
 			operatorManager := operation.NewOperatorManager(operatorCollection)
+			cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(stackItem.targetResourceTypes)
 
-			io.Logger.Info().Msgf("Start deletion, %v", stackName)
-			io.Logger.Info().Msg("Please wait a few minutes...")
+			io.Logger.Info().Msgf("%v: Start deletion. Please wait a few minutes...", stackItem.stackName)
 
-			if err := cloudformationStackOperator.DeleteCloudFormationStack(c.Context, aws.String(stackName), isRootStack, operatorManager); err != nil {
+			if err := cloudformationStackOperator.DeleteCloudFormationStack(c.Context, aws.String(stackItem.stackName), isRootStack, operatorManager); err != nil {
 				return err
 			}
 
-			io.Logger.Info().Msgf("Successfully deleted, %v", stackName)
+			io.Logger.Info().Msgf("%v: Successfully deleted!!", stackItem.stackName)
 		}
 		return nil
 	}
 }
 
-func (a *App) doInteractiveMode() ([]string, string, bool) {
+func (a *App) inputKeywordForFilter() string {
+	label := "Filter a keyword of stack names(case-insensitive): "
+	return io.InputKeywordForFilter(label)
+}
+
+func (a *App) selectResourceTypes(stackName string) ([]string, bool) {
 	var checkboxes []string
-	var keyword string
 
-	if len(a.StackNames.Value()) == 0 {
-		stackNameLabel := "Filter a keyword of stack names(case-insensitive): "
-		keyword = io.InputKeywordForFilter(stackNameLabel)
-	}
-
-	label := "Select ResourceTypes you wish to delete even if DELETE_FAILED." +
-		"\n" +
-		"However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type. " +
-		"\n"
+	label := stackName + "\n"
 	opts := resourcetype.GetResourceTypes()
 
 	for {
@@ -162,21 +170,21 @@ func (a *App) doInteractiveMode() ([]string, string, bool) {
 		if len(checkboxes) == 0 {
 			ok := io.GetYesNo("No selection?")
 			if ok {
-				return checkboxes, keyword, true
+				return checkboxes, true
 			}
 
 			// The case for interruption(Ctrl + C)
 			ok = io.GetYesNo("Do you want to finish?")
 			if ok {
 				io.Logger.Info().Msg("Finished...")
-				return checkboxes, keyword, false
+				return checkboxes, false
 			}
 			continue
 		}
 
 		ok := io.GetYesNo("OK?")
 		if ok {
-			return checkboxes, keyword, true
+			return checkboxes, true
 		}
 	}
 }
