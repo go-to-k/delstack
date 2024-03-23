@@ -125,7 +125,7 @@ func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperat
 		if err != nil {
 			return sortedStackNames, err
 		}
-		copy(sortedStackNames, stackNames)
+		sortedStackNames = append(sortedStackNames, stackNames...)
 	} else if a.InteractiveMode {
 		keyword := a.inputKeywordForFilter()
 		stacks, err := cloudformationStackOperator.ListStacksFilteredByKeyword(ctx, aws.String(keyword))
@@ -136,7 +136,7 @@ func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperat
 		// The `ListStacksFilteredByKeyword` with SDK's `DescribeStacks` returns the stacks in descending order of CreationTime.
 		// Therefore, by deleting stacks in the same order, we can delete from a new stack that is not depended on by any stack.
 		stackNames := a.selectStackNames(stacks)
-		copy(sortedStackNames, stackNames)
+		sortedStackNames = append(sortedStackNames, stackNames...)
 	}
 
 	return sortedStackNames, nil
