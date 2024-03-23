@@ -107,12 +107,6 @@ func (a *App) getAction() func(c *cli.Context) error {
 			}
 		}
 
-		if a.InteractiveMode {
-			resourceTypesMsg := "Select ResourceTypes you wish to delete even if DELETE_FAILED.\n" +
-				"However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type. "
-			io.Logger.Info().Msg(resourceTypesMsg)
-		}
-
 		type stackItem struct {
 			stackName           string
 			targetResourceTypes []string
@@ -161,7 +155,12 @@ func (a *App) inputKeywordForFilter() string {
 func (a *App) selectResourceTypes(stackName string) ([]string, bool) {
 	var checkboxes []string
 
-	label := stackName + "\n"
+	label := stackName +
+		"\n" +
+		"Select ResourceTypes you wish to delete even if DELETE_FAILED.\n" +
+		"However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type. " +
+		"\n"
+
 	opts := resourcetype.GetResourceTypes()
 
 	for {
