@@ -136,7 +136,20 @@ func (a *App) getAction() func(c *cli.Context) error {
 				}
 			}
 			io.Logger.Info().Msg("The stacks are removed in order of the latest creation time, taking into account dependencies.")
-		} else {
+		}
+		if a.InteractiveMode && len(a.StackNames.Value()) == 0 {
+			for _, stackName := range sortedStackNameList {
+				targetResourceTypes, continuation := a.selectResourceTypes(stackName)
+				if !continuation {
+					return nil
+				}
+				stackItemList = append(stackItemList, stackItem{
+					stackName:           stackName,
+					targetResourceTypes: targetResourceTypes,
+				})
+			}
+		}
+		if !a.InteractiveMode {
 			for _, stackName := range sortedStackNameList {
 				targetResourceTypes := resourcetype.GetResourceTypes()
 				stackItemList = append(stackItemList, stackItem{
