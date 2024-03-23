@@ -146,7 +146,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 		return false, err
 	}
 	if len(stacksAfterDelete) == 0 {
-		io.Logger.Info().Msg("No resources were DELETE_FAILED.")
+		io.Logger.Info().Msgf("%v: No resources were DELETE_FAILED.", *stackName)
 		return true, nil
 	}
 	if stacksAfterDelete[0].StackStatus != "DELETE_FAILED" {
@@ -160,20 +160,45 @@ func (o *CloudFormationStackOperator) GetStackNamesSorted(ctx context.Context, s
 	var sortedStackNames []string
 	var gotStacks []types.Stack
 	var notFoundStacks []string
+	var stacksInProgress []struct {
+		stackName   string
+		stackStatus types.StackStatus
+	}
 
 	for _, stackName := range stackNames {
 		stack, err := o.client.DescribeStacks(ctx, aws.String(stackName))
 		if err != nil {
 			return sortedStackNames, err
 		}
+
 		if len(stack) == 0 {
 			notFoundStacks = append(notFoundStacks, stackName)
+			continue
+		}
+		if o.isExceptedByStackStatus(stack[0].StackStatus) {
+			stacksInProgress = append(stacksInProgress, struct {
+				stackName   string
+				stackStatus types.StackStatus
+			}{
+				stackName:   stackName,
+				stackStatus: stack[0].StackStatus,
+			})
+			continue
 		}
 		gotStacks = append(gotStacks, stack[0]) // DescribeStacks returns a stack with a single element
 	}
+
 	if len(notFoundStacks) > 0 {
 		errMsg := fmt.Sprintf("%s stack not found.", strings.Join(notFoundStacks, ", "))
 		return sortedStackNames, fmt.Errorf("NotExistsError: %v", errMsg)
+	}
+	if len(stacksInProgress) > 0 {
+		var stacksWithStatus []string
+		for _, stack := range stacksInProgress {
+			stacksWithStatus = append(stacksWithStatus, fmt.Sprintf("%s: %s", stack.stackStatus, stack.stackName))
+		}
+		errMsg := fmt.Sprintf("Stacks with XxxInProgress cannot be deleted, but %s", strings.Join(stacksWithStatus, ", "))
+		return sortedStackNames, fmt.Errorf("OperationInProgressError: %v", errMsg)
 	}
 
 	// Sort gotStacks in descending order by stack.CreationTime

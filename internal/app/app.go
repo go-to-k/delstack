@@ -81,12 +81,12 @@ func (a *App) getAction() func(c *cli.Context) error {
 		}
 
 		operatorFactory := operation.NewOperatorFactory(config)
-		var stackNameList []string
+		var sortedStackNameList []string
 
 		if len(a.StackNames.Value()) != 0 {
 			cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(resourcetype.GetResourceTypes())
 
-			stackNameList, err = cloudformationStackOperator.GetStackNamesSorted(c.Context, a.StackNames.Value())
+			sortedStackNameList, err = cloudformationStackOperator.GetStackNamesSorted(c.Context, a.StackNames.Value())
 			if err != nil {
 				return err
 			}
@@ -106,10 +106,10 @@ func (a *App) getAction() func(c *cli.Context) error {
 
 			// The `ListStacksFilteredByKeyword` with SDK's `DescribeStacks` returns the stacks in descending order of CreationTime.
 			// Therefore, by deleting stacks in the same order, we can delete from a new stack that is not depended on by any stack.
-			stackNameList = a.selectStackNames(stacks)
+			sortedStackNameList = a.selectStackNames(stacks)
 
 			// The case for interruption(Ctrl + C)
-			if len(stackNameList) == 0 {
+			if len(sortedStackNameList) == 0 {
 				return nil
 			}
 		}
@@ -119,21 +119,36 @@ func (a *App) getAction() func(c *cli.Context) error {
 			targetResourceTypes []string
 		}
 		var stackItemList []stackItem
-		for _, stackName := range stackNameList {
-			var targetResourceTypes []string
-			continuation := true
-			if a.InteractiveMode {
-				targetResourceTypes, continuation = a.selectResourceTypes(stackName)
-			} else {
-				targetResourceTypes = resourcetype.GetResourceTypes()
+
+		// If stackNames are specified with an interactive mode option, select ResourceTypes in the order specified (not sorted order).
+		if a.InteractiveMode && len(a.StackNames.Value()) != 0 {
+			var selectedResourceTypes []stackItem
+			for _, stackName := range a.StackNames.Value() {
+				targetResourceTypes, continuation := a.selectResourceTypes(stackName)
+				if !continuation {
+					return nil
+				}
+				selectedResourceTypes = append(selectedResourceTypes, stackItem{
+					stackName:           stackName,
+					targetResourceTypes: targetResourceTypes,
+				})
 			}
-			if !continuation {
-				return nil
+			for _, stackName := range sortedStackNameList {
+				for _, selectedResourceType := range selectedResourceTypes {
+					if stackName == selectedResourceType.stackName {
+						stackItemList = append(stackItemList, selectedResourceType)
+					}
+				}
 			}
-			stackItemList = append(stackItemList, stackItem{
-				stackName:           stackName,
-				targetResourceTypes: targetResourceTypes,
-			})
+			io.Logger.Info().Msg("The stacks are removed in order of the latest creation time, taking into account dependencies.")
+		} else {
+			for _, stackName := range sortedStackNameList {
+				targetResourceTypes := resourcetype.GetResourceTypes()
+				stackItemList = append(stackItemList, stackItem{
+					stackName:           stackName,
+					targetResourceTypes: targetResourceTypes,
+				})
+			}
 		}
 
 		isRootStack := true
