@@ -147,29 +147,6 @@ However, if a resource can be deleted without becoming DELETE_FAILED by the norm
 ## GitHub Actions
 
 You can use delstack with parameters **"stack-name" and "region"** in GitHub Actions Workflow.
-
-```yaml
-jobs:
-  delstack:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
-          # Or specify access keys.
-          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - name: Delete stack
-        uses: go-to-k/delstack@main # Or specify the version instead of main
-        with:
-          stack-name: YourStack
-          region: us-east-1
-```
-
 To delete multiple stacks, specify stack names separated by commas.
 
 ```yaml
@@ -190,7 +167,8 @@ jobs:
       - name: Delete stack
         uses: go-to-k/delstack@main # Or specify the version instead of main
         with:
-          stack-name: YourStack1, YourStack2, YourStack3
+          stack-name: YourStack
+          # stack-name: YourStack1, YourStack2, YourStack3 # To delete multiple stacks
           region: us-east-1
 ```
 
