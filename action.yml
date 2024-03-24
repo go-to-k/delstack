@@ -6,7 +6,7 @@ branding:
   color: "blue"
 inputs:
   stack-name:
-    description: "Name of the stack you want to delete"
+    description: "Names of one or multiple stacks you want to delete (comma separated)"
     required: false
   region:
     description: "AWS Region"
@@ -29,5 +29,9 @@ runs:
           rm ${FILENAME}
         fi        
         if [ -n "${{ inputs.stack-name }}" ]; then
-          delstack -s ${{ inputs.stack-name }} -r ${{ inputs.region }}
+          stacks=""
+          for stack in $(echo ${{ inputs.stack-name }} | tr ',' ' '); do
+            stacks="${stacks} -s ${stack}"
+          done
+          delstack $stacks -r ${{ inputs.region }}
         fi

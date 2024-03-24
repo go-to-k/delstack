@@ -147,6 +147,7 @@ However, if a resource can be deleted without becoming DELETE_FAILED by the norm
 ## GitHub Actions
 
 You can use delstack with parameters **"stack-name" and "region"** in GitHub Actions Workflow.
+To delete multiple stacks, specify stack names separated by commas.
 
 ```yaml
 jobs:
@@ -167,6 +168,7 @@ jobs:
         uses: go-to-k/delstack@main # Or specify the version instead of main
         with:
           stack-name: YourStack
+          # stack-name: YourStack1, YourStack2, YourStack3 # To delete multiple stacks
           region: us-east-1
 ```
 
@@ -191,6 +193,7 @@ jobs:
         uses: go-to-k/delstack@main # Or specify the version instead of main
       - name: Run delstack
         run: |
-          delstack -s YourStack1 -r us-east-1
-          delstack -s YourStack2 -r us-east-1
+          echo "delstack"
+          delstack -v
+          delstack -s YourStack1 -s YourStack2 -r us-east-1
 ```
