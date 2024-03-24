@@ -170,6 +170,30 @@ jobs:
           region: us-east-1
 ```
 
+To delete multiple stacks, specify stack names separated by commas.
+
+```yaml
+jobs:
+  delstack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
+          # Or specify access keys.
+          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Delete stack
+        uses: go-to-k/delstack@main # Or specify the version instead of main
+        with:
+          stack-name: YourStack1, YourStack2, YourStack3
+          region: us-east-1
+```
+
 You can also run raw commands after installing the delstack binary.
 
 ```yaml
@@ -191,6 +215,7 @@ jobs:
         uses: go-to-k/delstack@main # Or specify the version instead of main
       - name: Run delstack
         run: |
-          delstack -s YourStack1 -r us-east-1
-          delstack -s YourStack2 -r us-east-1
+          echo "delstack"
+          delstack -v
+          delstack -s YourStack1 -s YourStack2 -r us-east-1
 ```
