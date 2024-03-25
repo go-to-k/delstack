@@ -31,7 +31,7 @@ runs:
         if [ -n "${{ inputs.stack-name }}" ]; then
           stacks=""
           for stack in $(echo ${{ inputs.stack-name }} | tr ',' ' '); do
-            stacks="${stacks} -s ${stack}"
+            stacks="${stacks}-s ${stack} "
           done
-          delstack $stacks -r ${{ inputs.region }}
+          delstack -r ${{ inputs.region }} $stacks
         fi
