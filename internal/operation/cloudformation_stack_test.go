@@ -289,7 +289,7 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 				)
 			},
 			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
-			want:                         fmt.Errorf("NotExistsError: test stack not found."),
+			want:                         fmt.Errorf("NotExistsError: test not found"),
 			wantErr:                      true,
 		},
 		{
@@ -1234,7 +1234,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			want: want{
 				got: false,
-				err: fmt.Errorf("NotExistsError: test stack not found."),
+				err: fmt.Errorf("NotExistsError: test not found"),
 			},
 			wantErr: true,
 		},
@@ -1705,7 +1705,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
-				err:              fmt.Errorf("NotExistsError: Stack2, Stack4 stack not found."),
+				err:              fmt.Errorf("NotExistsError: Stack2, Stack4 not found"),
 			},
 			wantErr: true,
 		},
@@ -1894,7 +1894,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
-				err:              fmt.Errorf("NotExistsError: Stack4 stack not found."),
+				err:              fmt.Errorf("NotExistsError: Stack4 not found"),
 			},
 			wantErr: true,
 		},
@@ -1952,7 +1952,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
-				err:              fmt.Errorf("NotExistsError: Stack4 stack not found."),
+				err:              fmt.Errorf("NotExistsError: Stack4 not found"),
 			},
 			wantErr: true,
 		},
@@ -2011,7 +2011,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
-				err:              fmt.Errorf("NotExistsError: Stack4 stack not found."),
+				err:              fmt.Errorf("NotExistsError: Stack4 not found"),
 			},
 			wantErr: true,
 		},
@@ -2247,7 +2247,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			want: want{
 				filteredStacks: []string{},
-				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)."),
+				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)"),
 			},
 			wantErr: true,
 		},
@@ -2352,7 +2352,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			want: want{
 				filteredStacks: []string{},
-				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)."),
+				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)"),
 			},
 			wantErr: true,
 		},
@@ -2367,7 +2367,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			want: want{
 				filteredStacks: []string{},
-				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword ()."),
+				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword ()"),
 			},
 			wantErr: true,
 		},
@@ -2424,7 +2424,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			want: want{
 				filteredStacks: []string{},
-				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)."),
+				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)"),
 			},
 			wantErr: true,
 		},
@@ -2484,7 +2484,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			want: want{
 				filteredStacks: []string{},
-				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)."),
+				err:            fmt.Errorf("NotExistsError: No stacks matching the keyword (TestStack)"),
 			},
 			wantErr: true,
 		},

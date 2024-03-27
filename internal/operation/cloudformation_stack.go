@@ -123,7 +123,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 		return false, err
 	}
 	if len(stacksBeforeDelete) == 0 && isRootStack {
-		errMsg := fmt.Sprintf("%s stack not found.", *stackName)
+		errMsg := fmt.Sprintf("%s not found", *stackName)
 		return false, fmt.Errorf("NotExistsError: %v", errMsg)
 	}
 	if len(stacksBeforeDelete) == 0 {
@@ -198,7 +198,7 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 	}
 
 	if len(notFoundStackNames) > 0 {
-		errMsg := fmt.Sprintf("%s stack not found.", strings.Join(notFoundStackNames, ", "))
+		errMsg := fmt.Sprintf("%s not found", strings.Join(notFoundStackNames, ", "))
 		return sortedStackNames, fmt.Errorf("NotExistsError: %v", errMsg)
 	}
 	if len(terminationProtectionStackNames) > 0 {
@@ -258,7 +258,7 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 	}
 
 	if len(filteredStacks) == 0 {
-		errMsg := fmt.Sprintf("No stacks matching the keyword (%s).", *keyword)
+		errMsg := fmt.Sprintf("No stacks matching the keyword (%s)", *keyword)
 		return filteredStacks, fmt.Errorf("NotExistsError: %v", errMsg)
 	}
 
