@@ -160,6 +160,7 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 	sortedStackNames := []string{}
 	gotStacks := []types.Stack{}
 	notFoundStackNames := []string{}
+	terminationProtectionStackNames := []string{}
 
 	type stackNameInProgress struct {
 		stackName   string
@@ -177,6 +178,14 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 			notFoundStackNames = append(notFoundStackNames, stackName)
 			continue
 		}
+
+		// except the stacks with EnableTerminationProtection
+		if stack[0].EnableTerminationProtection != nil && *stack[0].EnableTerminationProtection {
+			terminationProtectionStackNames = append(terminationProtectionStackNames, stackName)
+			continue
+		}
+
+		// except the stacks that are in the exception list
 		if o.isExceptedByStackStatus(stack[0].StackStatus) {
 			stackNamesInProgress = append(stackNamesInProgress, stackNameInProgress{
 				stackName:   stackName,
@@ -184,12 +193,16 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 			})
 			continue
 		}
+
 		gotStacks = append(gotStacks, stack[0]) // DescribeStacks returns a stack with a single element
 	}
 
 	if len(notFoundStackNames) > 0 {
 		errMsg := fmt.Sprintf("%s stack not found.", strings.Join(notFoundStackNames, ", "))
 		return sortedStackNames, fmt.Errorf("NotExistsError: %v", errMsg)
+	}
+	if len(terminationProtectionStackNames) > 0 {
+		return sortedStackNames, fmt.Errorf("TerminationProtectionIsEnabled: %v", strings.Join(terminationProtectionStackNames, ", "))
 	}
 	if len(stackNamesInProgress) > 0 {
 		var stackNamesWithStatus []string
