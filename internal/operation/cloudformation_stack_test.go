@@ -115,7 +115,7 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 				)
 			},
 			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
-			want:                         fmt.Errorf("TerminationProtectionIsEnabled: test"),
+			want:                         fmt.Errorf("TerminationProtectionIsEnabledError: test"),
 			wantErr:                      true,
 		},
 		{
@@ -138,7 +138,7 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 				)
 			},
 			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
-			want:                         fmt.Errorf("TerminationProtectionIsEnabled: test"),
+			want:                         fmt.Errorf("TerminationProtectionIsEnabledError: test"),
 			wantErr:                      true,
 		},
 		{
@@ -1044,7 +1044,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			want: want{
 				got: false,
-				err: fmt.Errorf("TerminationProtectionIsEnabled: test"),
+				err: fmt.Errorf("TerminationProtectionIsEnabledError: test"),
 			},
 			wantErr: true,
 		},
@@ -1069,7 +1069,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			want: want{
 				got: false,
-				err: fmt.Errorf("TerminationProtectionIsEnabled: test"),
+				err: fmt.Errorf("TerminationProtectionIsEnabledError: test"),
 			},
 			wantErr: true,
 		},
@@ -1771,7 +1771,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
-				err:              fmt.Errorf("TerminationProtectionIsEnabled: Stack2, Stack4"),
+				err:              fmt.Errorf("TerminationProtectionIsEnabledError: Stack2, Stack4"),
 			},
 			wantErr: true,
 		},
@@ -2076,7 +2076,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
-				err:              fmt.Errorf("TerminationProtectionIsEnabled: Stack3"),
+				err:              fmt.Errorf("TerminationProtectionIsEnabledError: Stack3"),
 			},
 			wantErr: true,
 		},
