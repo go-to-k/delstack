@@ -1840,6 +1840,247 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "sort stacks failure for stacks with some errors (not found, termination protection, and excepted status)",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack1", "Stack2", "Stack3", "Stack4", "Stack5"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack1"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-40 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack2"),
+							StackStatus:  types.StackStatusUpdateInProgress,
+							CreationTime: aws.Time(time.Now().Add(-30 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("Stack3"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							CreationTime:                aws.Time(time.Now().Add(-20 * time.Minute)),
+							EnableTerminationProtection: aws.Bool(true),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack4")).Return(
+					[]types.Stack{},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack5")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack5"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now()),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				sortedStackNames: []string{},
+				err:              fmt.Errorf("NotExistsError: Stack4 stack not found."),
+			},
+			wantErr: true,
+		},
+		{
+			name: "sort stacks failure for stacks with some errors (not found and excepted status)",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack1", "Stack2", "Stack3", "Stack4", "Stack5"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack1"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-40 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack2"),
+							StackStatus:  types.StackStatusUpdateInProgress,
+							CreationTime: aws.Time(time.Now().Add(-30 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack3"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-20 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack4")).Return(
+					[]types.Stack{},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack5")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack5"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now()),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				sortedStackNames: []string{},
+				err:              fmt.Errorf("NotExistsError: Stack4 stack not found."),
+			},
+			wantErr: true,
+		},
+		{
+			name: "sort stacks failure for stacks with some errors (not found and termination protection)",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack1", "Stack2", "Stack3", "Stack4", "Stack5"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack1"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-40 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack2"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-30 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("Stack3"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							CreationTime:                aws.Time(time.Now().Add(-20 * time.Minute)),
+							EnableTerminationProtection: aws.Bool(true),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack4")).Return(
+					[]types.Stack{},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack5")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack5"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now()),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				sortedStackNames: []string{},
+				err:              fmt.Errorf("NotExistsError: Stack4 stack not found."),
+			},
+			wantErr: true,
+		},
+		{
+			name: "sort stacks failure for stacks with some errors (termination protection and excepted status)",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack1", "Stack2", "Stack3", "Stack4", "Stack5"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack1"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-40 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack2"),
+							StackStatus:  types.StackStatusUpdateInProgress,
+							CreationTime: aws.Time(time.Now().Add(-30 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("Stack3"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							CreationTime:                aws.Time(time.Now().Add(-20 * time.Minute)),
+							EnableTerminationProtection: aws.Bool(true),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack4")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack4"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-10 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack5")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack5"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now()),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				sortedStackNames: []string{},
+				err:              fmt.Errorf("TerminationProtectionIsEnabled: Stack3"),
+			},
+			wantErr: true,
+		},
+		{
 			name: "sort stacks failure for DescribeStacksError",
 			args: args{
 				ctx:        ctx,
