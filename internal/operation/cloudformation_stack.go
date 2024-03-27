@@ -123,7 +123,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 		return false, err
 	}
 	if len(stacksBeforeDelete) == 0 && isRootStack {
-		errMsg := fmt.Sprintf("%s stack not found.", *stackName)
+		errMsg := fmt.Sprintf("%s not found", *stackName)
 		return false, fmt.Errorf("NotExistsError: %v", errMsg)
 	}
 	if len(stacksBeforeDelete) == 0 {
@@ -131,7 +131,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 	}
 
 	if stacksBeforeDelete[0].EnableTerminationProtection != nil && *stacksBeforeDelete[0].EnableTerminationProtection {
-		return false, fmt.Errorf("TerminationProtectionIsEnabled: %v", *stackName)
+		return false, fmt.Errorf("TerminationProtectionError: %v", *stackName)
 	}
 	if o.isExceptedByStackStatus(stacksBeforeDelete[0].StackStatus) {
 		return false, fmt.Errorf("OperationInProgressError: Stacks with XxxInProgress cannot be deleted, but %v: %v", stacksBeforeDelete[0].StackStatus, *stackName)
@@ -160,6 +160,7 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 	sortedStackNames := []string{}
 	gotStacks := []types.Stack{}
 	notFoundStackNames := []string{}
+	terminationProtectionStackNames := []string{}
 
 	type stackNameInProgress struct {
 		stackName   string
@@ -177,6 +178,14 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 			notFoundStackNames = append(notFoundStackNames, stackName)
 			continue
 		}
+
+		// except the stacks with EnableTerminationProtection
+		if stack[0].EnableTerminationProtection != nil && *stack[0].EnableTerminationProtection {
+			terminationProtectionStackNames = append(terminationProtectionStackNames, stackName)
+			continue
+		}
+
+		// except the stacks that are in the exception list
 		if o.isExceptedByStackStatus(stack[0].StackStatus) {
 			stackNamesInProgress = append(stackNamesInProgress, stackNameInProgress{
 				stackName:   stackName,
@@ -184,12 +193,16 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 			})
 			continue
 		}
+
 		gotStacks = append(gotStacks, stack[0]) // DescribeStacks returns a stack with a single element
 	}
 
 	if len(notFoundStackNames) > 0 {
-		errMsg := fmt.Sprintf("%s stack not found.", strings.Join(notFoundStackNames, ", "))
+		errMsg := fmt.Sprintf("%s not found", strings.Join(notFoundStackNames, ", "))
 		return sortedStackNames, fmt.Errorf("NotExistsError: %v", errMsg)
+	}
+	if len(terminationProtectionStackNames) > 0 {
+		return sortedStackNames, fmt.Errorf("TerminationProtectionError: %v", strings.Join(terminationProtectionStackNames, ", "))
 	}
 	if len(stackNamesInProgress) > 0 {
 		var stackNamesWithStatus []string
@@ -245,7 +258,7 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 	}
 
 	if len(filteredStacks) == 0 {
-		errMsg := fmt.Sprintf("No stacks matching the keyword (%s).", *keyword)
+		errMsg := fmt.Sprintf("No stacks matching the keyword (%s)", *keyword)
 		return filteredStacks, fmt.Errorf("NotExistsError: %v", errMsg)
 	}
 
