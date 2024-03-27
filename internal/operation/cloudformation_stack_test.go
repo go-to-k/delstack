@@ -1658,6 +1658,38 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "sort stacks failure for non existent stacks",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack1", "Stack2", "Stack3"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
+					[]types.Stack{},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack3"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now()),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				sortedStackNames: []string{},
+				err:              fmt.Errorf("NotExistsError: Stack1, Stack2 stack not found."),
+			},
+			wantErr: true,
+		},
+		{
 			name: "sort stacks failure for stacks in progress",
 			args: args{
 				ctx:        ctx,
@@ -1698,38 +1730,6 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			want: want{
 				sortedStackNames: []string{},
 				err:              fmt.Errorf("OperationInProgressError: Stacks with XxxInProgress cannot be deleted, but UPDATE_IN_PROGRESS: Stack1, ROLLBACK_IN_PROGRESS: Stack3"),
-			},
-			wantErr: true,
-		},
-		{
-			name: "sort stacks failure for non existent stacks",
-			args: args{
-				ctx:        ctx,
-				stackNames: []string{"Stack1", "Stack2", "Stack3"},
-			},
-			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
-					[]types.Stack{},
-					nil,
-				)
-				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
-					[]types.Stack{},
-					nil,
-				)
-				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
-					[]types.Stack{
-						{
-							StackName:    aws.String("Stack3"),
-							StackStatus:  types.StackStatusCreateComplete,
-							CreationTime: aws.Time(time.Now()),
-						},
-					},
-					nil,
-				)
-			},
-			want: want{
-				sortedStackNames: []string{},
-				err:              fmt.Errorf("NotExistsError: Stack1, Stack2 stack not found."),
 			},
 			wantErr: true,
 		},
