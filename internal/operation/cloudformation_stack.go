@@ -131,7 +131,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 	}
 
 	if stacksBeforeDelete[0].EnableTerminationProtection != nil && *stacksBeforeDelete[0].EnableTerminationProtection {
-		return false, fmt.Errorf("TerminationProtectionIsEnabledError: %v", *stackName)
+		return false, fmt.Errorf("TerminationProtectionError: %v", *stackName)
 	}
 	if o.isExceptedByStackStatus(stacksBeforeDelete[0].StackStatus) {
 		return false, fmt.Errorf("OperationInProgressError: Stacks with XxxInProgress cannot be deleted, but %v: %v", stacksBeforeDelete[0].StackStatus, *stackName)
@@ -202,7 +202,7 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 		return sortedStackNames, fmt.Errorf("NotExistsError: %v", errMsg)
 	}
 	if len(terminationProtectionStackNames) > 0 {
-		return sortedStackNames, fmt.Errorf("TerminationProtectionIsEnabledError: %v", strings.Join(terminationProtectionStackNames, ", "))
+		return sortedStackNames, fmt.Errorf("TerminationProtectionError: %v", strings.Join(terminationProtectionStackNames, ", "))
 	}
 	if len(stackNamesInProgress) > 0 {
 		var stackNamesWithStatus []string

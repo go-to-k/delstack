@@ -115,7 +115,7 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 				)
 			},
 			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
-			want:                         fmt.Errorf("TerminationProtectionIsEnabledError: test"),
+			want:                         fmt.Errorf("TerminationProtectionError: test"),
 			wantErr:                      true,
 		},
 		{
@@ -138,7 +138,7 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 				)
 			},
 			prepareMockOperatorManagerFn: func(m *MockIOperatorManager) {},
-			want:                         fmt.Errorf("TerminationProtectionIsEnabledError: test"),
+			want:                         fmt.Errorf("TerminationProtectionError: test"),
 			wantErr:                      true,
 		},
 		{
@@ -1044,7 +1044,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			want: want{
 				got: false,
-				err: fmt.Errorf("TerminationProtectionIsEnabledError: test"),
+				err: fmt.Errorf("TerminationProtectionError: test"),
 			},
 			wantErr: true,
 		},
@@ -1069,7 +1069,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			want: want{
 				got: false,
-				err: fmt.Errorf("TerminationProtectionIsEnabledError: test"),
+				err: fmt.Errorf("TerminationProtectionError: test"),
 			},
 			wantErr: true,
 		},
@@ -1771,7 +1771,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
-				err:              fmt.Errorf("TerminationProtectionIsEnabledError: Stack2, Stack4"),
+				err:              fmt.Errorf("TerminationProtectionError: Stack2, Stack4"),
 			},
 			wantErr: true,
 		},
@@ -2076,7 +2076,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
-				err:              fmt.Errorf("TerminationProtectionIsEnabledError: Stack3"),
+				err:              fmt.Errorf("TerminationProtectionError: Stack3"),
 			},
 			wantErr: true,
 		},
