@@ -4,23 +4,11 @@ package client
 import (
 	"context"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"golang.org/x/sync/errgroup"
-	"golang.org/x/sync/semaphore"
-)
-
-const (
-	S3DeleteObjectsSizeLimit = 1000
-
-	// S3 API can achieve at least 3,500 PUT/COPY/POST/DELETE or 5,500 GET/HEAD requests per second per partitioned prefix.
-	// Values above that threshold cause many 503 errors.
-	// So limit DeleteObjects to 3 parallels of 1000 objects at a time.
-	// https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimizing-performance.html
-	MaxS3DeleteObjectsParallelsCount = 3
 )
 
 var SleepTimeSecForS3 = 10
@@ -29,6 +17,17 @@ type IS3 interface {
 	DeleteBucket(ctx context.Context, bucketName *string) error
 	DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error)
 	ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error)
+	ListObjectVersionsByPage(
+		ctx context.Context,
+		bucketName *string,
+		keyMarker *string,
+		versionIdMarker *string,
+	) (
+		objectIdentifiers []types.ObjectIdentifier,
+		nextKeyMarker *string,
+		nextVersionIdMarker *string,
+		err error,
+	)
 	CheckBucketExists(ctx context.Context, bucketName *string) (bool, error)
 }
 
@@ -59,94 +58,78 @@ func (s *S3) DeleteBucket(ctx context.Context, bucketName *string) error {
 	return nil
 }
 
-func (s *S3) DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error) {
+func (s *S3) DeleteObjects(
+	ctx context.Context,
+	bucketName *string,
+	objects []types.ObjectIdentifier,
+) ([]types.Error, error) {
 	errors := []types.Error{}
-	if len(objects) == 0 {
-		return errors, nil
-	}
-
-	eg, ctx := errgroup.WithContext(ctx)
-	outputsCh := make(chan *s3.DeleteObjectsOutput, MaxS3DeleteObjectsParallelsCount)
-	sem := semaphore.NewWeighted(int64(MaxS3DeleteObjectsParallelsCount))
-	wg := sync.WaitGroup{}
-
-	nextObjects := make([]types.ObjectIdentifier, len(objects))
-	copy(nextObjects, objects)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for outputErrors := range outputsCh {
-			outputErrors := outputErrors
-			if len(outputErrors.Errors) > 0 {
-				errors = append(errors, outputErrors.Errors...)
-			}
-		}
-	}()
+	retryCounts := 0
 
 	for {
-		inputObjects := []types.ObjectIdentifier{}
-
-		if len(nextObjects) > S3DeleteObjectsSizeLimit {
-			inputObjects = append(inputObjects, nextObjects[:S3DeleteObjectsSizeLimit]...)
-			nextObjects = nextObjects[S3DeleteObjectsSizeLimit:]
-		} else {
-			inputObjects = append(inputObjects, nextObjects...)
-			nextObjects = nil
+		// Assuming that the number of objects received as an argument does not
+		// exceed 1000, so no slice splitting and validation whether exceeds
+		// 1000 or not are good.
+		if len(objects) == 0 {
+			break
 		}
 
 		input := &s3.DeleteObjectsInput{
 			Bucket: bucketName,
 			Delete: &types.Delete{
-				Objects: inputObjects,
+				Objects: objects,
 				Quiet:   aws.Bool(true),
 			},
 		}
 
-		if err := sem.Acquire(ctx, 1); err != nil {
-			return errors, &ClientError{
+		retryable := func(err error) bool {
+			isErrorRetryable := strings.Contains(err.Error(), "api error SlowDown")
+			return isErrorRetryable
+		}
+		retryer := NewRetryer(retryable, SleepTimeSecForS3)
+		optFn := func(o *s3.Options) {
+			o.Retryer = retryer
+		}
+
+		output, err := s.client.DeleteObjects(ctx, input, optFn)
+		if err != nil {
+			return []types.Error{}, &ClientError{
 				ResourceName: bucketName,
 				Err:          err,
 			}
 		}
-		eg.Go(func() error {
-			defer sem.Release(1)
 
-			retryable := func(err error) bool {
-				return strings.Contains(err.Error(), "api error SlowDown")
-			}
-			optFn := func(o *s3.Options) {
-				o.Retryer = NewRetryer(retryable, SleepTimeSecForS3)
-			}
-
-			output, err := s.client.DeleteObjects(ctx, input, optFn)
-			if err != nil {
-				return err // return non wrapping error because wrap after eg.Wait()
-			}
-
-			outputsCh <- output
-			return nil
-		})
-
-		if len(nextObjects) == 0 {
+		if len(output.Errors) == 0 {
 			break
 		}
-	}
 
-	go func() {
-		eg.Wait()
-		close(outputsCh)
-	}()
+		retryCounts++
 
-	if err := eg.Wait(); err != nil {
-		return nil, &ClientError{
-			ResourceName: bucketName,
-			Err:          err,
+		if retryCounts > retryer.MaxAttempts() {
+			errors = append(errors, output.Errors...)
+			break
+		}
+
+		objects = []types.ObjectIdentifier{}
+		for _, err := range output.Errors {
+			// Error example:
+			// 	 Code: InternalError
+			// 	 Message: We encountered an internal error. Please try again.
+			if strings.Contains(*err.Message, "Please try again") {
+				objects = append(objects, types.ObjectIdentifier{
+					Key:       err.Key,
+					VersionId: err.VersionId,
+				})
+			} else {
+				errors = append(errors, err)
+			}
+		}
+		// random sleep
+		if len(objects) > 0 {
+			sleepTime, _ := retryer.RetryDelay(0, nil)
+			time.Sleep(sleepTime)
 		}
 	}
-
-	// wait errors set before access an errors var at below return (for race)
-	wg.Wait()
 
 	return errors, nil
 }
@@ -166,38 +149,20 @@ func (s *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]type
 		default:
 		}
 
-		input := &s3.ListObjectVersionsInput{
-			Bucket:          bucketName,
-			KeyMarker:       keyMarker,
-			VersionIdMarker: versionIdMarker,
-		}
-
-		output, err := s.client.ListObjectVersions(ctx, input)
+		objectIdentifiersByPage, nextKeyMarker, nextVersionIdMarker, err :=
+			s.ListObjectVersionsByPage(
+				ctx,
+				bucketName,
+				keyMarker,
+				versionIdMarker,
+			)
 		if err != nil {
-			return nil, &ClientError{
-				ResourceName: bucketName,
-				Err:          err,
-			}
+			return nil, err // ListObjectVersionsByPage already wraps the error
 		}
 
-		for _, version := range output.Versions {
-			objectIdentifier := types.ObjectIdentifier{
-				Key:       version.Key,
-				VersionId: version.VersionId,
-			}
-			objectIdentifiers = append(objectIdentifiers, objectIdentifier)
-		}
-
-		for _, deleteMarker := range output.DeleteMarkers {
-			objectIdentifier := types.ObjectIdentifier{
-				Key:       deleteMarker.Key,
-				VersionId: deleteMarker.VersionId,
-			}
-			objectIdentifiers = append(objectIdentifiers, objectIdentifier)
-		}
-
-		keyMarker = output.NextKeyMarker
-		versionIdMarker = output.NextVersionIdMarker
+		objectIdentifiers = append(objectIdentifiers, objectIdentifiersByPage...)
+		keyMarker = nextKeyMarker
+		versionIdMarker = nextVersionIdMarker
 
 		if keyMarker == nil && versionIdMarker == nil {
 			break
@@ -205,6 +170,54 @@ func (s *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]type
 	}
 
 	return objectIdentifiers, nil
+}
+
+func (s *S3) ListObjectVersionsByPage(
+	ctx context.Context,
+	bucketName *string,
+	keyMarker *string,
+	versionIdMarker *string,
+) (
+	objectIdentifiers []types.ObjectIdentifier,
+	nextKeyMarker *string,
+	nextVersionIdMarker *string,
+	err error,
+) {
+	objectIdentifiers = []types.ObjectIdentifier{}
+	input := &s3.ListObjectVersionsInput{
+		Bucket:          bucketName,
+		KeyMarker:       keyMarker,
+		VersionIdMarker: versionIdMarker,
+	}
+
+	output, err := s.client.ListObjectVersions(ctx, input)
+	if err != nil {
+		return nil, nextKeyMarker, nextVersionIdMarker, &ClientError{
+			ResourceName: bucketName,
+			Err:          err,
+		}
+	}
+
+	for _, version := range output.Versions {
+		objectIdentifier := types.ObjectIdentifier{
+			Key:       version.Key,
+			VersionId: version.VersionId,
+		}
+		objectIdentifiers = append(objectIdentifiers, objectIdentifier)
+	}
+
+	for _, deleteMarker := range output.DeleteMarkers {
+		objectIdentifier := types.ObjectIdentifier{
+			Key:       deleteMarker.Key,
+			VersionId: deleteMarker.VersionId,
+		}
+		objectIdentifiers = append(objectIdentifiers, objectIdentifier)
+	}
+
+	nextKeyMarker = output.NextKeyMarker
+	nextVersionIdMarker = output.NextVersionIdMarker
+
+	return objectIdentifiers, nextKeyMarker, nextVersionIdMarker, nil
 }
 
 func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
