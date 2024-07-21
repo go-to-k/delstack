@@ -40,7 +40,7 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIS3) {
 				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().ListObjectVersions(gomock.Any(), aws.String("test")).Return(
+				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
 							Key:       aws.String("KeyForVersions"),
@@ -50,7 +50,7 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 							Key:       aws.String("KeyForDeleteMarkers"),
 							VersionId: aws.String("VersionIdForDeleteMarkers"),
 						},
-					}, nil)
+					}, nil, nil, nil)
 				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, nil)
 				m.EXPECT().DeleteBucket(gomock.Any(), aws.String("test")).Return(nil)
 			},
@@ -89,9 +89,9 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIS3) {
 				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().ListObjectVersions(gomock.Any(), aws.String("test")).Return(nil, fmt.Errorf("ListObjectVersionsError"))
+				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(nil, nil, nil, fmt.Errorf("ListObjectVersionsByPageError"))
 			},
-			want:    fmt.Errorf("ListObjectVersionsError"),
+			want:    fmt.Errorf("ListObjectVersionsByPageError"),
 			wantErr: true,
 		},
 		{
@@ -102,7 +102,7 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIS3) {
 				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().ListObjectVersions(gomock.Any(), aws.String("test")).Return(
+				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
 							Key:       aws.String("KeyForVersions"),
@@ -112,25 +112,11 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 							Key:       aws.String("KeyForDeleteMarkers"),
 							VersionId: aws.String("VersionIdForDeleteMarkers"),
 						},
-					}, nil)
+					}, nil, nil, nil)
 				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, fmt.Errorf("DeleteObjectsError"))
 			},
 			want:    fmt.Errorf("DeleteObjectsError"),
 			wantErr: true,
-		},
-		{
-			name: "delete bucket successfully for ListObjectVersions with zero length",
-			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
-			},
-			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().ListObjectVersions(gomock.Any(), aws.String("test")).Return([]types.ObjectIdentifier{}, nil)
-				m.EXPECT().DeleteBucket(gomock.Any(), aws.String("test")).Return(nil)
-			},
-			want:    nil,
-			wantErr: false,
 		},
 		{
 			name: "delete bucket failure for delete objects output errors",
@@ -140,7 +126,7 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIS3) {
 				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().ListObjectVersions(gomock.Any(), aws.String("test")).Return(
+				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
 							Key:       aws.String("KeyForVersions"),
@@ -150,7 +136,7 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 							Key:       aws.String("KeyForDeleteMarkers"),
 							VersionId: aws.String("VersionIdForDeleteMarkers"),
 						},
-					}, nil)
+					}, nil, nil, nil)
 				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{
 					{
 						Key:       aws.String("Key"),
@@ -160,7 +146,7 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 					},
 				}, nil)
 			},
-			want:    fmt.Errorf("DeleteObjectsError: followings\n\nBucketName: test\nCode: Code\nKey: Key\nVersionId: VersionId\nMessage: Message\n"),
+			want:    fmt.Errorf("[resource test] DeleteObjectsError: 1 objects with errors were found. \nBucketName: test\nCode: Code\nKey: Key\nVersionId: VersionId\nMessage: Message\n"),
 			wantErr: true,
 		},
 		{
@@ -171,7 +157,7 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIS3) {
 				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().ListObjectVersions(gomock.Any(), aws.String("test")).Return(
+				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
 							Key:       aws.String("KeyForVersions"),
@@ -181,11 +167,211 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 							Key:       aws.String("KeyForDeleteMarkers"),
 							VersionId: aws.String("VersionIdForDeleteMarkers"),
 						},
-					}, nil)
+					}, nil, nil, nil)
 				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, nil)
 				m.EXPECT().DeleteBucket(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteBucketError"))
 			},
 			want:    fmt.Errorf("DeleteBucketError"),
+			wantErr: true,
+		},
+		{
+			name: "delete bucket successfully for ListObjectVersionsByPage with zero length",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+			},
+			prepareMockFn: func(m *client.MockIS3) {
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return([]types.ObjectIdentifier{}, nil, nil, nil)
+				m.EXPECT().DeleteBucket(gomock.Any(), aws.String("test")).Return(nil)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete bucket failure for ListObjectVersionsByPage with zero length",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+			},
+			prepareMockFn: func(m *client.MockIS3) {
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return([]types.ObjectIdentifier{}, nil, nil, nil)
+				m.EXPECT().DeleteBucket(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteBucketError"))
+			},
+			want:    fmt.Errorf("DeleteBucketError"),
+			wantErr: true,
+		},
+		{
+			name: "delete bucket successfully if several loops are executed",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+			},
+			prepareMockFn: func(m *client.MockIS3) {
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
+					[]types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions1"),
+							VersionId: aws.String("VersionIdForVersions1"),
+						},
+					},
+					aws.String("NextKeyMarker1"),
+					aws.String("NextVersionIdMarker1"),
+					nil,
+				)
+				m.EXPECT().ListObjectVersionsByPage(
+					gomock.Any(),
+					aws.String("test"),
+					aws.String("NextKeyMarker1"),
+					aws.String("NextVersionIdMarker1"),
+				).Return(
+					[]types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions2"),
+							VersionId: aws.String("VersionIdForVersions2"),
+						},
+					},
+					aws.String("NextKeyMarker2"),
+					aws.String("NextVersionIdMarker2"),
+					nil,
+				)
+				m.EXPECT().ListObjectVersionsByPage(
+					gomock.Any(),
+					aws.String("test"),
+					aws.String("NextKeyMarker2"),
+					aws.String("NextVersionIdMarker2"),
+				).Return(
+					[]types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions3"),
+							VersionId: aws.String("VersionIdForVersions3"),
+						},
+					}, nil, nil, nil)
+				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, nil)
+				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, nil)
+				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, nil)
+				m.EXPECT().DeleteBucket(gomock.Any(), aws.String("test")).Return(nil)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete bucket failure for delete objects outputs errors if several loops are executed",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+			},
+			prepareMockFn: func(m *client.MockIS3) {
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
+					[]types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions1"),
+							VersionId: aws.String("VersionIdForVersions1"),
+						},
+					},
+					aws.String("NextKeyMarker1"),
+					aws.String("NextVersionIdMarker1"),
+					nil,
+				)
+				m.EXPECT().ListObjectVersionsByPage(
+					gomock.Any(),
+					aws.String("test"),
+					aws.String("NextKeyMarker1"),
+					aws.String("NextVersionIdMarker1"),
+				).Return(
+					[]types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions2"),
+							VersionId: aws.String("VersionIdForVersions2"),
+						},
+					},
+					aws.String("NextKeyMarker2"),
+					aws.String("NextVersionIdMarker2"),
+					nil,
+				)
+				m.EXPECT().ListObjectVersionsByPage(
+					gomock.Any(),
+					aws.String("test"),
+					aws.String("NextKeyMarker2"),
+					aws.String("NextVersionIdMarker2"),
+				).Return(
+					[]types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions3"),
+							VersionId: aws.String("VersionIdForVersions3"),
+						},
+					}, nil, nil, nil)
+				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, nil)
+				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, nil)
+				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return(
+					[]types.Error{
+						{
+							Key:       aws.String("Key"),
+							Code:      aws.String("Code"),
+							Message:   aws.String("Message"),
+							VersionId: aws.String("VersionId"),
+						},
+					}, nil,
+				)
+			},
+			want:    fmt.Errorf("[resource test] DeleteObjectsError: 1 objects with errors were found. \nBucketName: test\nCode: Code\nKey: Key\nVersionId: VersionId\nMessage: Message\n"),
+			wantErr: true,
+		},
+		{
+			name: "delete bucket failure for delete objects errors if several loops are executed",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+			},
+			prepareMockFn: func(m *client.MockIS3) {
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test")).Return(true, nil)
+				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
+					[]types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions1"),
+							VersionId: aws.String("VersionIdForVersions1"),
+						},
+					},
+					aws.String("NextKeyMarker1"),
+					aws.String("NextVersionIdMarker1"),
+					nil,
+				)
+				m.EXPECT().ListObjectVersionsByPage(
+					gomock.Any(),
+					aws.String("test"),
+					aws.String("NextKeyMarker1"),
+					aws.String("NextVersionIdMarker1"),
+				).Return(
+					[]types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions2"),
+							VersionId: aws.String("VersionIdForVersions2"),
+						},
+					},
+					aws.String("NextKeyMarker2"),
+					aws.String("NextVersionIdMarker2"),
+					nil,
+				)
+				m.EXPECT().ListObjectVersionsByPage(
+					gomock.Any(),
+					aws.String("test"),
+					aws.String("NextKeyMarker2"),
+					aws.String("NextVersionIdMarker2"),
+				).Return(
+					[]types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions3"),
+							VersionId: aws.String("VersionIdForVersions3"),
+						},
+					}, nil, nil, nil)
+				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, nil)
+				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, nil)
+				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, fmt.Errorf("DeleteObjectsError"))
+			},
+			want:    fmt.Errorf("DeleteObjectsError"),
 			wantErr: true,
 		},
 	}
@@ -232,7 +418,7 @@ func TestS3BucketOperator_DeleteResourcesForS3Bucket(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIS3) {
 				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("PhysicalResourceId1")).Return(true, nil)
-				m.EXPECT().ListObjectVersions(gomock.Any(), aws.String("PhysicalResourceId1")).Return(
+				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("PhysicalResourceId1"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
 							Key:       aws.String("KeyForVersions"),
@@ -242,7 +428,7 @@ func TestS3BucketOperator_DeleteResourcesForS3Bucket(t *testing.T) {
 							Key:       aws.String("KeyForDeleteMarkers"),
 							VersionId: aws.String("VersionIdForDeleteMarkers"),
 						},
-					}, nil)
+					}, nil, nil, nil)
 				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("PhysicalResourceId1"), gomock.Any()).Return([]types.Error{}, nil)
 				m.EXPECT().DeleteBucket(gomock.Any(), aws.String("PhysicalResourceId1")).Return(nil)
 			},
