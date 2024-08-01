@@ -108,6 +108,34 @@ func TestS3_DeleteBucket(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "delete bucket failure for api error SlowDown",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteBucketApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+										Result: nil,
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error SlowDown"),
+									}
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error S3: DeleteBucket, exceeded maximum number of attempts, 10, api error SlowDown"),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range cases {
@@ -253,7 +281,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete objects failure for api error",
+			name: "delete objects failure for api error SlowDown",
 			args: args{
 				ctx:        context.Background(),
 				bucketName: aws.String("test"),
@@ -754,6 +782,37 @@ func TestS3_ListObjectVersions(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "list objects versions failure for api error SlowDown",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectVersionsApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+										Result: &s3.ListObjectVersionsOutput{},
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error SlowDown"),
+									}
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error S3: ListObjectVersions, exceeded maximum number of attempts, 10, api error SlowDown"),
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "list objects versions successfully(empty)",
 			args: args{
 				ctx:        context.Background(),
@@ -1170,6 +1229,41 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "list objects versions failure for api error SlowDown",
+			args: args{
+				ctx:             context.Background(),
+				bucketName:      aws.String("test"),
+				keyMarker:       nil,
+				versionIdMarker: nil,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectVersionsApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+										Result: &s3.ListObjectVersionsOutput{},
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error SlowDown"),
+									}
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output:              nil,
+				nextKeyMarker:       nil,
+				nextVersionIdMarker: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error S3: ListObjectVersions, exceeded maximum number of attempts, 10, api error SlowDown"),
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "list objects versions successfully(empty)",
 			args: args{
 				ctx:             context.Background(),
@@ -1522,6 +1616,37 @@ func TestS3_CheckBucketExists(t *testing.T) {
 				err: &ClientError{
 					ResourceName: aws.String("test"),
 					Err:          fmt.Errorf("operation error S3: ListBuckets, ListBucketsError"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "check bucket exists failure for api error SlowDown",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListBucketsApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+										Result: nil,
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error SlowDown"),
+									}
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: false,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error S3: ListBuckets, exceeded maximum number of attempts, 10, api error SlowDown"),
 				},
 			},
 			wantErr: true,
