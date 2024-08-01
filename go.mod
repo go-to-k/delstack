@@ -14,7 +14,7 @@ require (
 	github.com/aws/smithy-go v1.20.3
 	github.com/golang/mock v1.6.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/rs/zerolog v1.32.0
+	github.com/rs/zerolog v1.33.0
 	github.com/urfave/cli/v2 v2.25.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/sync v0.5.0
