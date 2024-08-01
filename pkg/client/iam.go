@@ -22,12 +22,19 @@ type IIam interface {
 var _ IIam = (*Iam)(nil)
 
 type Iam struct {
-	client *iam.Client
+	client  *iam.Client
+	retryer *Retryer
 }
 
 func NewIam(client *iam.Client) *Iam {
+	retryable := func(err error) bool {
+		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
+	}
+	retryer := NewRetryer(retryable, SleepTimeSecForIam)
+
 	return &Iam{
 		client,
+		retryer,
 	}
 }
 
@@ -36,11 +43,8 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName *string) error {
 		RoleName: roleName,
 	}
 
-	retryable := func(err error) bool {
-		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
-	}
 	optFn := func(o *iam.Options) {
-		o.Retryer = NewRetryer(retryable, SleepTimeSecForIam)
+		o.Retryer = i.retryer
 	}
 
 	_, err := i.client.DeleteRole(ctx, input, optFn)
@@ -72,11 +76,8 @@ func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([
 			Marker:   marker,
 		}
 
-		retryable := func(err error) bool {
-			return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
-		}
 		optFn := func(o *iam.Options) {
-			o.Retryer = NewRetryer(retryable, SleepTimeSecForIam)
+			o.Retryer = i.retryer
 		}
 
 		output, err := i.client.ListAttachedRolePolicies(ctx, input, optFn)
@@ -114,11 +115,8 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 		RoleName:  roleName,
 	}
 
-	retryable := func(err error) bool {
-		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
-	}
 	optFn := func(o *iam.Options) {
-		o.Retryer = NewRetryer(retryable, SleepTimeSecForIam)
+		o.Retryer = i.retryer
 	}
 
 	_, err := i.client.DetachRolePolicy(ctx, input, optFn)
@@ -136,11 +134,8 @@ func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, erro
 		RoleName: roleName,
 	}
 
-	retryable := func(err error) bool {
-		return strings.Contains(err.Error(), "api error Throttling: Rate exceeded")
-	}
 	optFn := func(o *iam.Options) {
-		o.Retryer = NewRetryer(retryable, SleepTimeSecForIam)
+		o.Retryer = i.retryer
 	}
 
 	_, err := i.client.GetRole(ctx, input, optFn)
