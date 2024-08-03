@@ -16,7 +16,6 @@ var SleepTimeSecForS3 = 10
 type IS3 interface {
 	DeleteBucket(ctx context.Context, bucketName *string) error
 	DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error)
-	ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error)
 	ListObjectVersionsByPage(
 		ctx context.Context,
 		bucketName *string,
@@ -137,44 +136,6 @@ func (s *S3) DeleteObjects(
 	}
 
 	return errors, nil
-}
-
-func (s *S3) ListObjectVersions(ctx context.Context, bucketName *string) ([]types.ObjectIdentifier, error) {
-	var keyMarker *string
-	var versionIdMarker *string
-	objectIdentifiers := []types.ObjectIdentifier{}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return objectIdentifiers, &ClientError{
-				ResourceName: bucketName,
-				Err:          ctx.Err(),
-			}
-		default:
-		}
-
-		objectIdentifiersByPage, nextKeyMarker, nextVersionIdMarker, err :=
-			s.ListObjectVersionsByPage(
-				ctx,
-				bucketName,
-				keyMarker,
-				versionIdMarker,
-			)
-		if err != nil {
-			return nil, err // ListObjectVersionsByPage already wraps the error
-		}
-
-		objectIdentifiers = append(objectIdentifiers, objectIdentifiersByPage...)
-		keyMarker = nextKeyMarker
-		versionIdMarker = nextVersionIdMarker
-
-		if keyMarker == nil && versionIdMarker == nil {
-			break
-		}
-	}
-
-	return objectIdentifiers, nil
 }
 
 func (s *S3) ListObjectVersionsByPage(
