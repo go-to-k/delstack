@@ -14,22 +14,6 @@ import (
 	"github.com/aws/smithy-go/middleware"
 )
 
-type keyMarkerKeyForS3 struct{}
-type versionIdMarkerKeyForS3 struct{}
-
-func getNextMarkerForS3Initialize(
-	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
-) (
-	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
-) {
-	switch v := in.Parameters.(type) {
-	case *s3.ListObjectVersionsInput:
-		ctx = middleware.WithStackValue(ctx, keyMarkerKeyForS3{}, v.KeyMarker)
-		ctx = middleware.WithStackValue(ctx, versionIdMarkerKeyForS3{}, v.VersionIdMarker)
-	}
-	return next.HandleInitialize(ctx, in)
-}
-
 type targetObjectsForDeleteObjects struct{}
 
 func setTargetObjectsForDeleteObjectsInitialize(
