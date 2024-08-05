@@ -20,7 +20,8 @@ All resources that do not fail normal deletion can be deleted as is.
 
 |  RESOURCE TYPE  |  DETAILS  |
 | ---- | ---- |
-|  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled** and DeletionPolicy **not Retain**.(Because "Retain" buckets should not be deleted.)  |
+|  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled** and DeletionPolicy **not Retain**. (Because "Retain" buckets should not be deleted.)  |
+|  AWS::S3Express::DirectoryBucket  |  S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty and DeletionPolicy not Retain. (Because "Retain" buckets should not be deleted.)  |
 |  AWS::IAM::Role  |  IAM Roles, including roles **with policies from outside the stack**.  |
 |  AWS::ECR::Repository  |  ECR Repositories, including repositories **containing images**.  |
 |  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
@@ -137,6 +138,7 @@ Select ResourceTypes you wish to delete even if DELETE_FAILED.
 However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type.
   [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
   [x]  AWS::S3::Bucket
+  [ ]  AWS::S3Express::DirectoryBucket
   [ ]  AWS::IAM::Role
 > [x]  AWS::ECR::Repository
   [ ]  AWS::Backup::BackupVault
