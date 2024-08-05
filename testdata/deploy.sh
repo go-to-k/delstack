@@ -7,7 +7,7 @@ profile=""
 stage=""
 profile_option=""
 
-REGION="ap-northeast-1"
+REGION="us-east-1"
 
 while getopts p:s: OPT; do
 	case $OPT in
@@ -35,7 +35,7 @@ CFN_STACK_NAME="${CFN_PJ_PREFIX}-TestStack"
 sam_bucket=$(echo "${CFN_STACK_NAME}" | tr '[:upper:]' '[:lower:]')
 
 if [ -n "${profile}" ]; then
-	profile_option="--profile ${profile}"
+	profile_option="--profile ${profile} --region ${REGION}"
 fi
 
 account_id=$(aws sts get-caller-identity \
@@ -124,7 +124,7 @@ function attach_policy() {
 
 function build_upload() {
 	local repository_name=$(echo "${CFN_PJ_PREFIX}-ECR" | tr '[:upper:]' '[:lower:]')
-	local ecr_repository_enddpoint="${account_id}.dkr.ecr.ap-northeast-1.amazonaws.com"
+	local ecr_repository_enddpoint="${account_id}.dkr.ecr.${REGION}.amazonaws.com"
 	local ecr_repository_uri="${ecr_repository_enddpoint}/${repository_name}"
 
 	local ecr_tag="test"
@@ -133,7 +133,7 @@ function build_upload() {
 
 	docker tag ${repository_name}:latest ${ecr_repository_uri}:${ecr_tag}
 
-	aws ecr get-login-password --region ${REGION} ${profile_option} |
+	aws ecr get-login-password ${profile_option} |
 		docker login --username AWS --password-stdin ${ecr_repository_enddpoint}
 
 	docker push ${ecr_repository_uri}:${ecr_tag}
