@@ -21,8 +21,9 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 	io.NewLogger(false)
 
 	type args struct {
-		ctx        context.Context
-		bucketName *string
+		ctx                  context.Context
+		bucketName           *string
+		directoryBucketsFlag bool
 	}
 
 	cases := []struct {
@@ -35,11 +36,12 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 		{
 			name: "delete bucket successfully",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil)
 				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
@@ -58,13 +60,38 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete bucket failure for check bucket exists errors",
+			name: "delete bucket on directory buckets flag successfully",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: true,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(false, fmt.Errorf("ListBucketsError")) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), true).Return(true, nil)
+				m.EXPECT().ListObjectsByPage(gomock.Any(), aws.String("test"), nil).Return(
+					[]types.ObjectIdentifier{
+						{
+							Key: aws.String("Key1"),
+						},
+						{
+							Key: aws.String("Key2"),
+						},
+					}, nil, nil)
+				m.EXPECT().DeleteObjects(gomock.Any(), aws.String("test"), gomock.Any()).Return([]types.Error{}, nil)
+				m.EXPECT().DeleteBucket(gomock.Any(), aws.String("test")).Return(nil)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete bucket failure for check bucket exists errors",
+			args: args{
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
+			},
+			prepareMockFn: func(m *client.MockIS3) {
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(false, fmt.Errorf("ListBucketsError"))
 			},
 			want:    fmt.Errorf("ListBucketsError"),
 			wantErr: true,
@@ -72,11 +99,12 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 		{
 			name: "delete bucket successfully for bucket not exists",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(false, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(false, nil)
 			},
 			want:    nil,
 			wantErr: false,
@@ -84,11 +112,12 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 		{
 			name: "delete bucket failure for list object versions errors",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil)
 				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(nil, nil, nil, fmt.Errorf("ListObjectVersionsByPageError"))
 			},
 			want:    fmt.Errorf("ListObjectVersionsByPageError"),
@@ -97,11 +126,12 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 		{
 			name: "delete bucket failure for delete objects errors",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil)
 				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
@@ -121,11 +151,12 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 		{
 			name: "delete bucket failure for delete objects output errors",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil)
 				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
@@ -152,11 +183,12 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 		{
 			name: "delete bucket failure for delete bucket errors",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil)
 				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
@@ -177,11 +209,12 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 		{
 			name: "delete bucket successfully for ListObjectVersionsByPage with zero length",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil)
 				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return([]types.ObjectIdentifier{}, nil, nil, nil)
 				m.EXPECT().DeleteBucket(gomock.Any(), aws.String("test")).Return(nil)
 			},
@@ -191,11 +224,12 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 		{
 			name: "delete bucket failure for ListObjectVersionsByPage with zero length",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil)
 				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return([]types.ObjectIdentifier{}, nil, nil, nil)
 				m.EXPECT().DeleteBucket(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteBucketError"))
 			},
@@ -205,11 +239,12 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 		{
 			name: "delete bucket successfully if several loops are executed",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil)
 				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
@@ -260,11 +295,12 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 		{
 			name: "delete bucket failure for delete objects outputs errors if several loops are executed",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil)
 				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
@@ -323,11 +359,12 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 		{
 			name: "delete bucket failure for delete objects errors if several loops are executed",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("test"), false).Return(true, nil)
 				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("test"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
@@ -384,6 +421,10 @@ func TestS3BucketOperator_DeleteS3Bucket(t *testing.T) {
 
 			s3BucketOperator := NewS3BucketOperator(s3Mock)
 
+			if tt.args.directoryBucketsFlag {
+				s3BucketOperator.SetDirectoryBucketsFlag()
+			}
+
 			err := s3BucketOperator.DeleteS3Bucket(tt.args.ctx, tt.args.bucketName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
@@ -417,7 +458,7 @@ func TestS3BucketOperator_DeleteResourcesForS3Bucket(t *testing.T) {
 				ctx: context.Background(),
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("PhysicalResourceId1"), false).Return(true, nil) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("PhysicalResourceId1"), false).Return(true, nil)
 				m.EXPECT().ListObjectVersionsByPage(gomock.Any(), aws.String("PhysicalResourceId1"), nil, nil).Return(
 					[]types.ObjectIdentifier{
 						{
@@ -441,7 +482,7 @@ func TestS3BucketOperator_DeleteResourcesForS3Bucket(t *testing.T) {
 				ctx: context.Background(),
 			},
 			prepareMockFn: func(m *client.MockIS3) {
-				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("PhysicalResourceId1"), false).Return(false, fmt.Errorf("ListBucketsError")) // FIXME: args
+				m.EXPECT().CheckBucketExists(gomock.Any(), aws.String("PhysicalResourceId1"), false).Return(false, fmt.Errorf("ListBucketsError"))
 			},
 			want:    fmt.Errorf("ListBucketsError"),
 			wantErr: true,
