@@ -29,6 +29,13 @@ Resources:
       VersioningConfiguration:
         Status: Enabled
 
+  DescendTwoS3DirectoryBucket:
+    Type: "AWS::S3Express::DirectoryBucket"
+    Properties:
+      BucketName: !Sub "${PJPrefix}-descendtwo--use1-az4--x-s3"
+      DataRedundancy: "SingleAvailabilityZone"
+      LocationName: "use1-az4"
+
   DescendTwoLambdaRole:
     Type: "AWS::IAM::Role"
     Properties:

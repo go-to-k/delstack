@@ -34,6 +34,13 @@ Resources:
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
 
+  ChildTwoS3DirectoryBucket:
+    Type: "AWS::S3Express::DirectoryBucket"
+    Properties:
+      BucketName: !Sub "${PJPrefix}-childtwo--use1-az4--x-s3"
+      DataRedundancy: "SingleAvailabilityZone"
+      LocationName: "use1-az4"
+
   ChildTwoLambdaRole:
     Type: "AWS::IAM::Role"
     Properties:

@@ -157,6 +157,12 @@ function object_upload() {
 			jq -s '.'
 	)
 
+	local directory_bucket_resources=$(
+		echo "${resources}" |
+			jq '.[] | select(.ResourceType == "AWS::S3Express::DirectoryBucket") | .PhysicalResourceId' |
+			jq -s '.'
+	)
+
 	local nested_stack_resources=$(
 		echo "${resources}" |
 			jq '.[] | select(.ResourceType == "AWS::CloudFormation::Stack") | .PhysicalResourceId' |
@@ -164,13 +170,21 @@ function object_upload() {
 	)
 
 	local bucket_resource_len=$(echo $bucket_resources | jq length)
+	local directory_bucket_resource_len=$(echo $directory_bucket_resources | jq length)
 	local nested_stack_resourceLen=$(echo $nested_stack_resources | jq length)
 	local bucket_name_array=()
+	local directory_bucket_name_array=()
 	local nested_own_stackname_array=()
 
 	if [ ${bucket_resource_len} -gt 0 ]; then
 		for i in $(seq 0 $(($bucket_resource_len - 1))); do
 			bucket_name_array+=($(echo $bucket_resources | jq -r ".[$i]"))
+		done
+	fi
+
+	if [ ${directory_bucket_resource_len} -gt 0 ]; then
+		for i in $(seq 0 $(($directory_bucket_resource_len - 1))); do
+			directory_bucket_name_array+=($(echo $directory_bucket_resources | jq -r ".[$i]"))
 		done
 	fi
 
@@ -196,6 +210,12 @@ function object_upload() {
 		aws s3 cp ${dir} s3://${bucket_name_array[$i]}/ --recursive ${profile_option} >/dev/null
 		aws s3 cp ${dir} s3://${bucket_name_array[$i]}/ --recursive ${profile_option} >/dev/null # version
 		aws s3 rm s3://${bucket_name_array[$i]}/ --recursive ${profile_option} >/dev/null        # delete marker
+	done
+
+	for i in ${!directory_bucket_name_array[@]}; do
+		# Do not terminate by using (`| :`) even in the event of an error because the following error will occur.
+		### upload failed: testfiles/5594.txt to s3://dev-goto-002-descend--use1-az4--x-s3/5594.txt An error occurred (400) when calling the PutObject operation: Bad Request
+		aws s3 cp ${dir} s3://${directory_bucket_name_array[$i]}/ --recursive ${profile_option} | : >/dev/null
 	done
 }
 

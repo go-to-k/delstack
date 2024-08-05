@@ -43,6 +43,13 @@ Resources:
       VersioningConfiguration:
         Status: Enabled
 
+  ChildS3DirectoryBucket:
+    Type: "AWS::S3Express::DirectoryBucket"
+    Properties:
+      BucketName: !Sub "${PJPrefix}-child--use1-az4--x-s3"
+      DataRedundancy: "SingleAvailabilityZone"
+      LocationName: "use1-az4"
+
   ChildLambdaRole:
     Type: "AWS::IAM::Role"
     Properties:

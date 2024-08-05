@@ -69,6 +69,13 @@ Resources:
       VersioningConfiguration:
         Status: Enabled
 
+  RootS3DirectoryBucket:
+    Type: "AWS::S3Express::DirectoryBucket"
+    Properties:
+      BucketName: !Sub "${PJPrefix}-root--use1-az4--x-s3"
+      DataRedundancy: "SingleAvailabilityZone"
+      LocationName: "use1-az4"
+
   RootLambdaRole:
     Type: "AWS::IAM::Role"
     Properties:
