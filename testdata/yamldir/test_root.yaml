@@ -12,6 +12,15 @@ Metadata:
 Parameters:
   PJPrefix:
     Type: String
+  DirectoryBucketMode:
+    Type: String
+    Default: "off"
+    AllowedValues:
+      - "on"
+      - "off"
+
+Conditions:
+  IsDirectoryBucketMode: !Equals [!Ref DirectoryBucketMode, "on"]
 
 Resources:
   ECR:
@@ -46,6 +55,7 @@ Resources:
       Location: ./test_child.yaml
       Parameters:
         PJPrefix: !Sub "${PJPrefix}"
+        DirectoryBucketMode: !Ref DirectoryBucketMode
 
   ChildTwoStack:
     Type: AWS::Serverless::Application
@@ -53,6 +63,7 @@ Resources:
       Location: ./test_child2.yaml
       Parameters:
         PJPrefix: !Sub "${PJPrefix}"
+        DirectoryBucketMode: !Ref DirectoryBucketMode
 
   RootS3Bucket:
     Type: "AWS::S3::Bucket"
@@ -70,6 +81,7 @@ Resources:
         Status: Enabled
 
   RootS3DirectoryBucket:
+    Condition: IsDirectoryBucketMode
     Type: "AWS::S3Express::DirectoryBucket"
     Properties:
       BucketName: !Sub "${PJPrefix}-root--use1-az4--x-s3"

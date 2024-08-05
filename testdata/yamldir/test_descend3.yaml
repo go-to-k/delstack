@@ -12,6 +12,15 @@ Metadata:
 Parameters:
   PJPrefix:
     Type: String
+  DirectoryBucketMode:
+    Type: String
+    Default: "off"
+    AllowedValues:
+      - "on"
+      - "off"
+
+Conditions:
+  IsDirectoryBucketMode: !Equals [!Ref DirectoryBucketMode, "on"]
 
 Resources:
   DescendThreeS3Bucket:
@@ -31,6 +40,7 @@ Resources:
 
   ### Only 10 can be created in one AWS account, so the 6th one here will not be created.
   # DescendThreeS3DirectoryBucket:
+  # Condition: IsDirectoryBucketMode
   #   Type: "AWS::S3Express::DirectoryBucket"
   #   Properties:
   #     BucketName: !Sub "${PJPrefix}-descendthree--use1-az4--x-s3"

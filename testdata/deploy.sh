@@ -6,16 +6,20 @@ cd $(dirname $0)
 profile=""
 stage=""
 profile_option=""
+directory_bucket_mode="off"
 
 REGION="us-east-1"
 
-while getopts p:s: OPT; do
+while getopts p:s:d: OPT; do
 	case $OPT in
 	p)
 		profile="$OPTARG"
 		;;
 	s)
 		stage="$OPTARG"
+		;;
+	d)
+		directory_bucket_mode="$OPTARG"
 		;;
 	esac
 done
@@ -24,6 +28,12 @@ if [ -z "${stage}" ]; then
 	echo "stage option (-s) is required"
 	exit 1
 fi
+
+if [ "${directory_bucket_mode}" != "on" ] && [ "${directory_bucket_mode}" != "off" ]; then
+	echo "directory_bucket_mode option (-d) is required ([on|off] default=off)"
+	exit 1
+fi
+echo "=== directory_bucket_mode: ${directory_bucket_mode} ==="
 
 CFN_TEMPLATE="./yamldir/test_root.yaml"
 CFN_OUTPUT_TEMPLATE="./yamldir/test_root_output.yaml"
@@ -238,6 +248,7 @@ sam deploy \
 	--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
 	--parameter-overrides \
 	PJPrefix=${CFN_PJ_PREFIX} \
+	DirectoryBucketMode=${directory_bucket_mode} \
 	${profile_option}
 
 attach_policy "${CFN_STACK_NAME}"
