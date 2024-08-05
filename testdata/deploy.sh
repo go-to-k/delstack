@@ -43,7 +43,7 @@ account_id=$(aws sts get-caller-identity \
 	--output text \
 	${profile_option})
 
-dir="./testfiles"
+dir="./testfiles/${CFN_STACK_NAME}"
 mkdir -p ${dir}
 touch ${dir}/{1..10000}.txt
 
