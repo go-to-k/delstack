@@ -3,6 +3,7 @@ package client
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"time"
 
@@ -27,7 +28,16 @@ type IS3 interface {
 		nextVersionIdMarker *string,
 		err error,
 	)
-	CheckBucketExists(ctx context.Context, bucketName *string) (bool, error)
+	ListObjectsByPage(
+		ctx context.Context,
+		bucketName *string,
+		marker *string,
+	) (
+		objectIdentifiers []types.ObjectIdentifier,
+		nextMarker *string,
+		err error,
+	)
+	CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error)
 }
 
 var _ IS3 = (*S3)(nil)
@@ -189,13 +199,52 @@ func (s *S3) ListObjectVersionsByPage(
 	return objectIdentifiers, nextKeyMarker, nextVersionIdMarker, nil
 }
 
-func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
-	input := &s3.ListBucketsInput{}
+func (s *S3) ListObjectsByPage(
+	ctx context.Context,
+	bucketName *string,
+	token *string,
+) (
+	objectIdentifiers []types.ObjectIdentifier,
+	nextToken *string,
+	err error,
+) {
+	objectIdentifiers = []types.ObjectIdentifier{}
+	input := &s3.ListObjectsV2Input{
+		Bucket:            bucketName,
+		ContinuationToken: token,
+	}
 
 	optFn := func(o *s3.Options) {
 		o.Retryer = s.retryer
 	}
-	output, err := s.client.ListBuckets(ctx, input, optFn)
+
+	output, err := s.client.ListObjectsV2(ctx, input, optFn)
+	if err != nil {
+		return nil, nextToken, &ClientError{
+			ResourceName: bucketName,
+			Err:          err,
+		}
+	}
+
+	for _, object := range output.Contents {
+		objectIdentifier := types.ObjectIdentifier{
+			Key: object.Key,
+		}
+		objectIdentifiers = append(objectIdentifiers, objectIdentifier)
+	}
+
+	return objectIdentifiers, output.NextContinuationToken, nil
+}
+
+func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error) {
+	var listBucketsFunc func(ctx context.Context) ([]types.Bucket, error)
+	if directoryBucketsFlag {
+		listBucketsFunc = s.listDirectoryBuckets
+	} else {
+		listBucketsFunc = s.listBuckets
+	}
+
+	buckets, err := listBucketsFunc(ctx)
 	if err != nil {
 		return false, &ClientError{
 			ResourceName: bucketName,
@@ -203,11 +252,66 @@ func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, e
 		}
 	}
 
-	for _, bucket := range output.Buckets {
+	for _, bucket := range buckets {
 		if *bucket.Name == *bucketName {
 			return true, nil
 		}
 	}
 
 	return false, nil
+}
+
+func (s *S3) listBuckets(ctx context.Context) ([]types.Bucket, error) {
+	input := &s3.ListBucketsInput{}
+
+	optFn := func(o *s3.Options) {
+		o.Retryer = s.retryer
+	}
+
+	output, err := s.client.ListBuckets(ctx, input, optFn)
+	if err != nil {
+		return []types.Bucket{}, err
+	}
+
+	return output.Buckets, nil
+}
+
+func (s *S3) listDirectoryBuckets(ctx context.Context) ([]types.Bucket, error) {
+	buckets := []types.Bucket{}
+	var continuationToken *string
+
+	for {
+		select {
+		case <-ctx.Done():
+			return buckets, ctx.Err()
+		default:
+		}
+
+		input := &s3.ListDirectoryBucketsInput{
+			ContinuationToken: continuationToken,
+		}
+
+		optFn := func(o *s3.Options) {
+			o.Retryer = s.retryer
+		}
+
+		output, err := s.client.ListDirectoryBuckets(ctx, input, optFn)
+		if err != nil {
+			return buckets, err
+		}
+
+		buckets = append(buckets, output.Buckets...)
+
+		if output.ContinuationToken == nil {
+			break
+		}
+		continuationToken = output.ContinuationToken
+	}
+
+	// sort by bucket name
+	sort.Slice(buckets, func(i, j int) bool {
+		return *buckets[i].Name < *buckets[j].Name
+	})
+
+	return buckets, nil
 }

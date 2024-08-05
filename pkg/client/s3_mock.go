@@ -35,18 +35,18 @@ func (m *MockIS3) EXPECT() *MockIS3MockRecorder {
 }
 
 // CheckBucketExists mocks base method.
-func (m *MockIS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+func (m *MockIS3) CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckBucketExists", ctx, bucketName)
+	ret := m.ctrl.Call(m, "CheckBucketExists", ctx, bucketName, directoryBucketsFlag)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CheckBucketExists indicates an expected call of CheckBucketExists.
-func (mr *MockIS3MockRecorder) CheckBucketExists(ctx, bucketName interface{}) *gomock.Call {
+func (mr *MockIS3MockRecorder) CheckBucketExists(ctx, bucketName, directoryBucketsFlag interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckBucketExists", reflect.TypeOf((*MockIS3)(nil).CheckBucketExists), ctx, bucketName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckBucketExists", reflect.TypeOf((*MockIS3)(nil).CheckBucketExists), ctx, bucketName, directoryBucketsFlag)
 }
 
 // DeleteBucket mocks base method.
@@ -93,4 +93,20 @@ func (m *MockIS3) ListObjectVersionsByPage(ctx context.Context, bucketName, keyM
 func (mr *MockIS3MockRecorder) ListObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjectVersionsByPage", reflect.TypeOf((*MockIS3)(nil).ListObjectVersionsByPage), ctx, bucketName, keyMarker, versionIdMarker)
+}
+
+// ListObjectsByPage mocks base method.
+func (m *MockIS3) ListObjectsByPage(ctx context.Context, bucketName, marker *string) ([]types.ObjectIdentifier, *string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListObjectsByPage", ctx, bucketName, marker)
+	ret0, _ := ret[0].([]types.ObjectIdentifier)
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListObjectsByPage indicates an expected call of ListObjectsByPage.
+func (mr *MockIS3MockRecorder) ListObjectsByPage(ctx, bucketName, marker interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjectsByPage", reflect.TypeOf((*MockIS3)(nil).ListObjectsByPage), ctx, bucketName, marker)
 }

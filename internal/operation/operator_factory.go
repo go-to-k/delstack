@@ -91,6 +91,24 @@ func (f *OperatorFactory) CreateS3BucketOperator() *S3BucketOperator {
 	)
 }
 
+func (f *OperatorFactory) CreateS3DirectoryBucketOperator() *S3BucketOperator {
+	sdkS3Client := s3.NewFromConfig(f.config, func(o *s3.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	// Basically, each operator should be used separately, but the S3DirectoryBucket uses the same operator (s3BucketOperator)
+	// since the process is almost the same.
+	operator := NewS3BucketOperator(
+		client.NewS3(
+			sdkS3Client,
+		),
+	)
+	operator.SetDirectoryBucketsFlag()
+
+	return operator
+}
+
 func (f *OperatorFactory) CreateCustomOperator() *CustomOperator {
 	return NewCustomOperator() // Implicit instances that do not actually delete resources
 }
