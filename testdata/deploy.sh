@@ -213,9 +213,11 @@ function object_upload() {
 	done
 
 	for i in ${!directory_bucket_name_array[@]}; do
-		# Do not terminate by using (`| :`) even in the event of an error because the following error will occur.
+		# Do not finish even in the event of an error because the following error will occur.
 		### upload failed: testfiles/5594.txt to s3://dev-goto-002-descend--use1-az4--x-s3/5594.txt An error occurred (400) when calling the PutObject operation: Bad Request
-		aws s3 cp ${dir} s3://${directory_bucket_name_array[$i]}/ --recursive ${profile_option} | : >/dev/null
+		set +e
+		aws s3 cp ${dir} s3://${directory_bucket_name_array[$i]}/ --recursive ${profile_option} >/dev/null
+		set -e
 	done
 }
 
