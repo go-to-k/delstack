@@ -16,24 +16,16 @@ var SleepTimeSecForS3 = 10
 type IS3 interface {
 	DeleteBucket(ctx context.Context, bucketName *string) error
 	DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error)
-	ListObjectVersionsByPage(
+	ListObjectsOrVersionsByPage(
 		ctx context.Context,
 		bucketName *string,
 		keyMarker *string,
 		versionIdMarker *string,
+		directoryBucketsFlag bool,
 	) (
 		objectIdentifiers []types.ObjectIdentifier,
 		nextKeyMarker *string,
 		nextVersionIdMarker *string,
-		err error,
-	)
-	ListObjectsByPage(
-		ctx context.Context,
-		bucketName *string,
-		marker *string,
-	) (
-		objectIdentifiers []types.ObjectIdentifier,
-		nextMarker *string,
 		err error,
 	)
 	CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error)
@@ -147,7 +139,27 @@ func (s *S3) DeleteObjects(
 	return errors, nil
 }
 
-func (s *S3) ListObjectVersionsByPage(
+func (s *S3) ListObjectsOrVersionsByPage(
+	ctx context.Context,
+	bucketName *string,
+	keyMarker *string,
+	versionIdMarker *string,
+	directoryBucketsFlag bool,
+) (
+	objectIdentifiers []types.ObjectIdentifier,
+	nextKeyMarker *string,
+	nextVersionIdMarker *string,
+	err error,
+) {
+	if !directoryBucketsFlag {
+		return s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
+	} else {
+		objectIdentifiers, nextKeyMarker, err = s.listObjectsByPage(ctx, bucketName, keyMarker)
+		return objectIdentifiers, nextKeyMarker, nil, err
+	}
+}
+
+func (s *S3) listObjectVersionsByPage(
 	ctx context.Context,
 	bucketName *string,
 	keyMarker *string,
@@ -198,7 +210,7 @@ func (s *S3) ListObjectVersionsByPage(
 	return objectIdentifiers, nextKeyMarker, nextVersionIdMarker, nil
 }
 
-func (s *S3) ListObjectsByPage(
+func (s *S3) listObjectsByPage(
 	ctx context.Context,
 	bucketName *string,
 	token *string,

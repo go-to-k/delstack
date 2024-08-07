@@ -672,7 +672,169 @@ func TestS3_DeleteObjects(t *testing.T) {
 	}
 }
 
-func TestS3_ListObjectVersionsByPage(t *testing.T) {
+func TestS3_ListObjectsOrVersionsByPage(t *testing.T) {
+	type args struct {
+		ctx                  context.Context
+		bucketName           *string
+		keyMarker            *string
+		versionIdMarker      *string
+		directoryBucketsFlag bool
+		withAPIOptionsFunc   func(*middleware.Stack) error
+	}
+
+	type want struct {
+		output              []types.ObjectIdentifier
+		nextKeyMarker       *string
+		nextVersionIdMarker *string
+		err                 error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "listObjectVersionsByPage is called when directoryBucketsFlag is false",
+			args: args{
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				keyMarker:            nil,
+				versionIdMarker:      nil,
+				directoryBucketsFlag: false,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectVersionsMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListObjectVersionsOutput{
+										Versions: []types.ObjectVersion{
+											{
+												Key:       aws.String("KeyForVersions"),
+												VersionId: aws.String("VersionIdForVersions"),
+											},
+										},
+										DeleteMarkers: []types.DeleteMarkerEntry{
+											{
+												Key:       aws.String("KeyForDeleteMarkers"),
+												VersionId: aws.String("VersionIdForDeleteMarkers"),
+											},
+										},
+										NextKeyMarker:       aws.String("NextKeyMarker"),
+										NextVersionIdMarker: aws.String("NextVersionIdMarker"),
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: []types.ObjectIdentifier{
+					{
+						Key:       aws.String("KeyForVersions"),
+						VersionId: aws.String("VersionIdForVersions"),
+					},
+					{
+						Key:       aws.String("KeyForDeleteMarkers"),
+						VersionId: aws.String("VersionIdForDeleteMarkers"),
+					},
+				},
+				nextKeyMarker:       aws.String("NextKeyMarker"),
+				nextVersionIdMarker: aws.String("NextVersionIdMarker"),
+				err:                 nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "listObjectsByPage is called when directoryBucketsFlag is true",
+			args: args{
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				keyMarker:            nil,
+				versionIdMarker:      nil,
+				directoryBucketsFlag: true,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectsV2Mock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListObjectsV2Output{
+										Contents: []types.Object{
+											{
+												Key: aws.String("Key1"),
+											},
+											{
+												Key: aws.String("Key2"),
+											},
+										},
+										NextContinuationToken: aws.String("NextContinuationToken"),
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: []types.ObjectIdentifier{
+					{
+						Key: aws.String("Key1"),
+					},
+					{
+						Key: aws.String("Key2"),
+					},
+				},
+				nextKeyMarker:       aws.String("NextContinuationToken"),
+				nextVersionIdMarker: nil,
+				err:                 nil,
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := s3.NewFromConfig(cfg)
+			s3Client := NewS3(client)
+
+			output, nextKeyMarker, nextVersionIdMarker, err := s3Client.ListObjectsOrVersionsByPage(tt.args.ctx, tt.args.bucketName, tt.args.keyMarker, tt.args.versionIdMarker, tt.args.directoryBucketsFlag)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.output) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.output)
+			}
+			if !reflect.DeepEqual(nextKeyMarker, tt.want.nextKeyMarker) {
+				t.Errorf("nextKeyMarker = %#v, want %#v", nextKeyMarker, tt.want.nextKeyMarker)
+			}
+			if !reflect.DeepEqual(nextVersionIdMarker, tt.want.nextVersionIdMarker) {
+				t.Errorf("nextVersionIdMarker = %#v, want %#v", nextVersionIdMarker, tt.want.nextVersionIdMarker)
+			}
+		})
+	}
+}
+
+func TestS3_listObjectVersionsByPage(t *testing.T) {
 	type args struct {
 		ctx                context.Context
 		bucketName         *string
@@ -1035,7 +1197,7 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 			client := s3.NewFromConfig(cfg)
 			s3Client := NewS3(client)
 
-			output, nextKeyMarker, nextVersionIdMarker, err := s3Client.ListObjectVersionsByPage(tt.args.ctx, tt.args.bucketName, tt.args.keyMarker, tt.args.versionIdMarker)
+			output, nextKeyMarker, nextVersionIdMarker, err := s3Client.listObjectVersionsByPage(tt.args.ctx, tt.args.bucketName, tt.args.keyMarker, tt.args.versionIdMarker)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -1057,7 +1219,7 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 	}
 }
 
-func TestS3_ListObjectsByPage(t *testing.T) {
+func TestS3_listObjectsByPage(t *testing.T) {
 	type args struct {
 		ctx                context.Context
 		bucketName         *string
@@ -1303,7 +1465,7 @@ func TestS3_ListObjectsByPage(t *testing.T) {
 			client := s3.NewFromConfig(cfg)
 			s3Client := NewS3(client)
 
-			output, nextToken, err := s3Client.ListObjectsByPage(tt.args.ctx, tt.args.bucketName, tt.args.token)
+			output, nextToken, err := s3Client.listObjectsByPage(tt.args.ctx, tt.args.bucketName, tt.args.token)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
