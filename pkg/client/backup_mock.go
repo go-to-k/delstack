@@ -63,20 +63,6 @@ func (mr *MockIBackupMockRecorder) DeleteBackupVault(ctx, backupVaultName interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBackupVault", reflect.TypeOf((*MockIBackup)(nil).DeleteBackupVault), ctx, backupVaultName)
 }
 
-// DeleteRecoveryPoint mocks base method.
-func (m *MockIBackup) DeleteRecoveryPoint(ctx context.Context, backupVaultName, recoveryPointArn *string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteRecoveryPoint", ctx, backupVaultName, recoveryPointArn)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteRecoveryPoint indicates an expected call of DeleteRecoveryPoint.
-func (mr *MockIBackupMockRecorder) DeleteRecoveryPoint(ctx, backupVaultName, recoveryPointArn interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRecoveryPoint", reflect.TypeOf((*MockIBackup)(nil).DeleteRecoveryPoint), ctx, backupVaultName, recoveryPointArn)
-}
-
 // DeleteRecoveryPoints mocks base method.
 func (m *MockIBackup) DeleteRecoveryPoints(ctx context.Context, backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
 	m.ctrl.T.Helper()

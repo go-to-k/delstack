@@ -15,7 +15,6 @@ type IIam interface {
 	DeleteRole(ctx context.Context, roleName *string) error
 	ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error)
 	DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy) error
-	DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn *string) error
 	CheckRoleExists(ctx context.Context, roleName *string) (bool, error)
 }
 
@@ -101,15 +100,18 @@ func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([
 
 func (i *Iam) DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy) error {
 	for _, policy := range policies {
-		if err := i.DetachRolePolicy(ctx, roleName, policy.PolicyArn); err != nil {
-			return err // return non wrapping error because already wrapped error in DetachRolePolicy
+		if err := i.detachRolePolicy(ctx, roleName, policy.PolicyArn); err != nil {
+			return &ClientError{
+				ResourceName: roleName,
+				Err:          err,
+			}
 		}
 	}
 
 	return nil
 }
 
-func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn *string) error {
+func (i *Iam) detachRolePolicy(ctx context.Context, roleName *string, PolicyArn *string) error {
 	input := &iam.DetachRolePolicyInput{
 		PolicyArn: PolicyArn,
 		RoleName:  roleName,
@@ -121,10 +123,7 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, PolicyArn 
 
 	_, err := i.client.DetachRolePolicy(ctx, input, optFn)
 	if err != nil {
-		return &ClientError{
-			ResourceName: roleName,
-			Err:          err,
-		}
+		return err
 	}
 	return nil
 }
