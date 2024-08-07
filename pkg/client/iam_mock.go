@@ -77,20 +77,6 @@ func (mr *MockIIamMockRecorder) DetachRolePolicies(ctx, roleName, policies inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachRolePolicies", reflect.TypeOf((*MockIIam)(nil).DetachRolePolicies), ctx, roleName, policies)
 }
 
-// DetachRolePolicy mocks base method.
-func (m *MockIIam) DetachRolePolicy(ctx context.Context, roleName, PolicyArn *string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DetachRolePolicy", ctx, roleName, PolicyArn)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DetachRolePolicy indicates an expected call of DetachRolePolicy.
-func (mr *MockIIamMockRecorder) DetachRolePolicy(ctx, roleName, PolicyArn interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachRolePolicy", reflect.TypeOf((*MockIIam)(nil).DetachRolePolicy), ctx, roleName, PolicyArn)
-}
-
 // ListAttachedRolePolicies mocks base method.
 func (m *MockIIam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error) {
 	m.ctrl.T.Helper()

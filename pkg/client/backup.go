@@ -11,7 +11,6 @@ import (
 type IBackup interface {
 	ListRecoveryPointsByBackupVault(ctx context.Context, backupVaultName *string) ([]types.RecoveryPointByBackupVault, error)
 	DeleteRecoveryPoints(ctx context.Context, backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error
-	DeleteRecoveryPoint(ctx context.Context, backupVaultName *string, recoveryPointArn *string) error
 	DeleteBackupVault(ctx context.Context, backupVaultName *string) error
 	CheckBackupVaultExists(ctx context.Context, backupVaultName *string) (bool, error)
 }
@@ -67,14 +66,17 @@ func (b *Backup) ListRecoveryPointsByBackupVault(ctx context.Context, backupVaul
 
 func (b *Backup) DeleteRecoveryPoints(ctx context.Context, backupVaultName *string, recoveryPoints []types.RecoveryPointByBackupVault) error {
 	for _, recoveryPoint := range recoveryPoints {
-		if err := b.DeleteRecoveryPoint(ctx, backupVaultName, recoveryPoint.RecoveryPointArn); err != nil {
-			return err // return non wrapping error because already wrapped error in DeleteRecoveryPoint
+		if err := b.deleteRecoveryPoint(ctx, backupVaultName, recoveryPoint.RecoveryPointArn); err != nil {
+			return &ClientError{
+				ResourceName: backupVaultName,
+				Err:          err,
+			}
 		}
 	}
 	return nil
 }
 
-func (b *Backup) DeleteRecoveryPoint(ctx context.Context, backupVaultName *string, recoveryPointArn *string) error {
+func (b *Backup) deleteRecoveryPoint(ctx context.Context, backupVaultName *string, recoveryPointArn *string) error {
 	input := &backup.DeleteRecoveryPointInput{
 		BackupVaultName:  backupVaultName,
 		RecoveryPointArn: recoveryPointArn,
@@ -82,10 +84,7 @@ func (b *Backup) DeleteRecoveryPoint(ctx context.Context, backupVaultName *strin
 
 	_, err := b.client.DeleteRecoveryPoint(ctx, input)
 	if err != nil {
-		return &ClientError{
-			ResourceName: backupVaultName,
-			Err:          err,
-		}
+		return err
 	}
 	return nil
 }
