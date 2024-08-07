@@ -152,10 +152,10 @@ func (s *S3) ListObjectsOrVersionsByPage(
 	clientError error,
 ) {
 	var err error
-	if !directoryBucketsFlag {
-		objectIdentifiers, nextKeyMarker, nextVersionIdMarker, err = s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
-	} else {
+	if directoryBucketsFlag {
 		objectIdentifiers, nextKeyMarker, err = s.listObjectsByPage(ctx, bucketName, keyMarker)
+	} else {
+		objectIdentifiers, nextKeyMarker, nextVersionIdMarker, err = s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
 	}
 	if err != nil {
 		clientError = &ClientError{
