@@ -140,12 +140,7 @@ func (s *S3) ListObjectsOrVersionsByPage(
 	keyMarker *string,
 	versionIdMarker *string,
 	directoryBucketsFlag bool,
-) (
-	[]types.ObjectIdentifier,
-	*string,
-	*string,
-	error,
-) {
+) ([]types.ObjectIdentifier, *string, *string, error) {
 	if !directoryBucketsFlag {
 		return s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
 	} else {
