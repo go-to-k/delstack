@@ -87,6 +87,7 @@ func (f *OperatorFactory) CreateS3BucketOperator() *S3BucketOperator {
 	return NewS3BucketOperator(
 		client.NewS3(
 			sdkS3Client,
+			false,
 		),
 	)
 }
@@ -98,14 +99,14 @@ func (f *OperatorFactory) CreateS3DirectoryBucketOperator() *S3BucketOperator {
 	})
 
 	// Basically, a separate operator should be defined for each resource type,
-	// but the S3DirectoryBucket uses the same operator as s3BucketOperator
+	// but the S3DirectoryBucket uses the same operator as the S3BucketOperator
 	// since the process is almost the same.
 	operator := NewS3BucketOperator(
 		client.NewS3(
 			sdkS3Client,
+			true,
 		),
 	)
-	operator.SetDirectoryBucketsFlag()
 
 	return operator
 }

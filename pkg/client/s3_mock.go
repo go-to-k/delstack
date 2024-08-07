@@ -35,18 +35,18 @@ func (m *MockIS3) EXPECT() *MockIS3MockRecorder {
 }
 
 // CheckBucketExists mocks base method.
-func (m *MockIS3) CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error) {
+func (m *MockIS3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckBucketExists", ctx, bucketName, directoryBucketsFlag)
+	ret := m.ctrl.Call(m, "CheckBucketExists", ctx, bucketName)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CheckBucketExists indicates an expected call of CheckBucketExists.
-func (mr *MockIS3MockRecorder) CheckBucketExists(ctx, bucketName, directoryBucketsFlag interface{}) *gomock.Call {
+func (mr *MockIS3MockRecorder) CheckBucketExists(ctx, bucketName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckBucketExists", reflect.TypeOf((*MockIS3)(nil).CheckBucketExists), ctx, bucketName, directoryBucketsFlag)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckBucketExists", reflect.TypeOf((*MockIS3)(nil).CheckBucketExists), ctx, bucketName)
 }
 
 // DeleteBucket mocks base method.
@@ -78,17 +78,31 @@ func (mr *MockIS3MockRecorder) DeleteObjects(ctx, bucketName, objects interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObjects", reflect.TypeOf((*MockIS3)(nil).DeleteObjects), ctx, bucketName, objects)
 }
 
-// ListObjectsOrVersionsByPage mocks base method.
-func (m *MockIS3) ListObjectsOrVersionsByPage(ctx context.Context, bucketName, keyMarker, versionIdMarker *string, directoryBucketsFlag bool) (*ListObjectsOrVersionsByPageOutput, error) {
+// GetDirectoryBucketsFlag mocks base method.
+func (m *MockIS3) GetDirectoryBucketsFlag() bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListObjectsOrVersionsByPage", ctx, bucketName, keyMarker, versionIdMarker, directoryBucketsFlag)
+	ret := m.ctrl.Call(m, "GetDirectoryBucketsFlag")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// GetDirectoryBucketsFlag indicates an expected call of GetDirectoryBucketsFlag.
+func (mr *MockIS3MockRecorder) GetDirectoryBucketsFlag() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDirectoryBucketsFlag", reflect.TypeOf((*MockIS3)(nil).GetDirectoryBucketsFlag))
+}
+
+// ListObjectsOrVersionsByPage mocks base method.
+func (m *MockIS3) ListObjectsOrVersionsByPage(ctx context.Context, bucketName, keyMarker, versionIdMarker *string) (*ListObjectsOrVersionsByPageOutput, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListObjectsOrVersionsByPage", ctx, bucketName, keyMarker, versionIdMarker)
 	ret0, _ := ret[0].(*ListObjectsOrVersionsByPageOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListObjectsOrVersionsByPage indicates an expected call of ListObjectsOrVersionsByPage.
-func (mr *MockIS3MockRecorder) ListObjectsOrVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker, directoryBucketsFlag interface{}) *gomock.Call {
+func (mr *MockIS3MockRecorder) ListObjectsOrVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjectsOrVersionsByPage", reflect.TypeOf((*MockIS3)(nil).ListObjectsOrVersionsByPage), ctx, bucketName, keyMarker, versionIdMarker, directoryBucketsFlag)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjectsOrVersionsByPage", reflect.TypeOf((*MockIS3)(nil).ListObjectsOrVersionsByPage), ctx, bucketName, keyMarker, versionIdMarker)
 }

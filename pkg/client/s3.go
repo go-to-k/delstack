@@ -36,19 +36,20 @@ type IS3 interface {
 		bucketName *string,
 		keyMarker *string,
 		versionIdMarker *string,
-		directoryBucketsFlag bool,
 	) (*ListObjectsOrVersionsByPageOutput, error)
-	CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error)
+	CheckBucketExists(ctx context.Context, bucketName *string) (bool, error)
+	GetDirectoryBucketsFlag() bool
 }
 
 var _ IS3 = (*S3)(nil)
 
 type S3 struct {
-	client  *s3.Client
-	retryer *Retryer
+	client               *s3.Client
+	directoryBucketsFlag bool
+	retryer              *Retryer
 }
 
-func NewS3(client *s3.Client) *S3 {
+func NewS3(client *s3.Client, directoryBucketsFlag bool) *S3 {
 	retryable := func(err error) bool {
 		isErrorRetryable := strings.Contains(err.Error(), "api error SlowDown")
 		return isErrorRetryable
@@ -57,6 +58,7 @@ func NewS3(client *s3.Client) *S3 {
 
 	return &S3{
 		client,
+		directoryBucketsFlag,
 		retryer,
 	}
 }
@@ -154,13 +156,12 @@ func (s *S3) ListObjectsOrVersionsByPage(
 	bucketName *string,
 	keyMarker *string,
 	versionIdMarker *string,
-	directoryBucketsFlag bool,
 ) (*ListObjectsOrVersionsByPageOutput, error) {
 	var objectIdentifiers []types.ObjectIdentifier
 	var nextKeyMarker *string
 	var nextVersionIdMarker *string
 
-	if directoryBucketsFlag {
+	if s.directoryBucketsFlag {
 		output, err := s.listObjectsByPage(ctx, bucketName, keyMarker)
 		if err != nil {
 			return nil, err
@@ -268,9 +269,9 @@ func (s *S3) listObjectsByPage(
 	}, nil
 }
 
-func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error) {
+func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
 	var listBucketsFunc func(ctx context.Context) ([]types.Bucket, error)
-	if directoryBucketsFlag {
+	if s.directoryBucketsFlag {
 		listBucketsFunc = s.listDirectoryBuckets
 	} else {
 		listBucketsFunc = s.listBuckets
@@ -341,4 +342,8 @@ func (s *S3) listDirectoryBuckets(ctx context.Context) ([]types.Bucket, error) {
 	}
 
 	return buckets, nil
+}
+
+func (s *S3) GetDirectoryBucketsFlag() bool {
+	return s.directoryBucketsFlag
 }

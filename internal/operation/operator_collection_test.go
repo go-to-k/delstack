@@ -1173,7 +1173,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			for _, operator := range operatorCollection.GetOperators() {
 				switch operator := operator.(type) {
 				case *S3BucketOperator:
-					if operator.directoryBucketsFlag {
+					if operator.GetDirectoryBucketsFlag() {
 						s3DirectoryBucketOperatorResourcesLength += operator.GetResourcesLength()
 					} else {
 						s3BucketOperatorResourcesLength += operator.GetResourcesLength()

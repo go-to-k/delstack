@@ -16,9 +16,8 @@ import (
 var _ IOperator = (*S3BucketOperator)(nil)
 
 type S3BucketOperator struct {
-	client               client.IS3
-	resources            []*cfntypes.StackResourceSummary
-	directoryBucketsFlag bool
+	client    client.IS3
+	resources []*cfntypes.StackResourceSummary
 }
 
 func NewS3BucketOperator(client client.IS3) *S3BucketOperator {
@@ -56,7 +55,7 @@ func (o *S3BucketOperator) DeleteResources(ctx context.Context) error {
 }
 
 func (o *S3BucketOperator) DeleteS3Bucket(ctx context.Context, bucketName *string) error {
-	exists, err := o.client.CheckBucketExists(ctx, bucketName, o.directoryBucketsFlag)
+	exists, err := o.client.CheckBucketExists(ctx, bucketName)
 	if err != nil {
 		return err
 	}
@@ -80,7 +79,6 @@ func (o *S3BucketOperator) DeleteS3Bucket(ctx context.Context, bucketName *strin
 			bucketName,
 			keyMarker,
 			versionIdMarker,
-			o.directoryBucketsFlag,
 		)
 		if err != nil {
 			return err
@@ -145,6 +143,6 @@ func (o *S3BucketOperator) DeleteS3Bucket(ctx context.Context, bucketName *strin
 	return nil
 }
 
-func (o *S3BucketOperator) SetDirectoryBucketsFlag() {
-	o.directoryBucketsFlag = true
+func (o *S3BucketOperator) GetDirectoryBucketsFlag() bool {
+	return o.client.GetDirectoryBucketsFlag()
 }

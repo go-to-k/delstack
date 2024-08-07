@@ -134,7 +134,7 @@ func TestS3_DeleteBucket(t *testing.T) {
 			}
 
 			client := s3.NewFromConfig(cfg)
-			s3Client := NewS3(client)
+			s3Client := NewS3(client, false)
 
 			err = s3Client.DeleteBucket(tt.args.ctx, tt.args.bucketName)
 			if (err != nil) != tt.wantErr {
@@ -654,7 +654,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 			}
 
 			client := s3.NewFromConfig(cfg)
-			s3Client := NewS3(client)
+			s3Client := NewS3(client, false)
 
 			output, err := s3Client.DeleteObjects(tt.args.ctx, tt.args.bucketName, tt.args.objects)
 			if (err != nil) != tt.wantErr {
@@ -812,9 +812,9 @@ func TestS3_ListObjectsOrVersionsByPage(t *testing.T) {
 			}
 
 			client := s3.NewFromConfig(cfg)
-			s3Client := NewS3(client)
+			s3Client := NewS3(client, tt.args.directoryBucketsFlag)
 
-			output, err := s3Client.ListObjectsOrVersionsByPage(tt.args.ctx, tt.args.bucketName, tt.args.keyMarker, tt.args.versionIdMarker, tt.args.directoryBucketsFlag)
+			output, err := s3Client.ListObjectsOrVersionsByPage(tt.args.ctx, tt.args.bucketName, tt.args.keyMarker, tt.args.versionIdMarker)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -1199,7 +1199,7 @@ func TestS3_listObjectVersionsByPage(t *testing.T) {
 			}
 
 			client := s3.NewFromConfig(cfg)
-			s3Client := NewS3(client)
+			s3Client := NewS3(client, false)
 
 			output, err := s3Client.listObjectVersionsByPage(tt.args.ctx, tt.args.bucketName, tt.args.keyMarker, tt.args.versionIdMarker)
 			if (err != nil) != tt.wantErr {
@@ -1469,7 +1469,7 @@ func TestS3_listObjectsByPage(t *testing.T) {
 			}
 
 			client := s3.NewFromConfig(cfg)
-			s3Client := NewS3(client)
+			s3Client := NewS3(client, true)
 
 			output, err := s3Client.listObjectsByPage(tt.args.ctx, tt.args.bucketName, tt.args.token)
 			if (err != nil) != tt.wantErr {
@@ -1689,9 +1689,9 @@ func TestS3_CheckBucketExists(t *testing.T) {
 			}
 
 			client := s3.NewFromConfig(cfg)
-			s3Client := NewS3(client)
+			s3Client := NewS3(client, tt.args.directoryBucketsFlag)
 
-			output, err := s3Client.CheckBucketExists(tt.args.ctx, tt.args.bucketName, tt.args.directoryBucketsFlag)
+			output, err := s3Client.CheckBucketExists(tt.args.ctx, tt.args.bucketName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
