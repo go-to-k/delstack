@@ -149,17 +149,18 @@ func (s *S3) ListObjectsOrVersionsByPage(
 	objectIdentifiers []types.ObjectIdentifier,
 	nextKeyMarker *string,
 	nextVersionIdMarker *string,
-	apiError error,
+	clientError error,
 ) {
+	var err error
 	if !directoryBucketsFlag {
-		objectIdentifiers, nextKeyMarker, nextVersionIdMarker, apiError = s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
+		objectIdentifiers, nextKeyMarker, nextVersionIdMarker, err = s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
 	} else {
-		objectIdentifiers, nextKeyMarker, apiError = s.listObjectsByPage(ctx, bucketName, keyMarker)
+		objectIdentifiers, nextKeyMarker, err = s.listObjectsByPage(ctx, bucketName, keyMarker)
 	}
-	if apiError != nil {
-		apiError = &ClientError{
+	if err != nil {
+		clientError = &ClientError{
 			ResourceName: bucketName,
-			Err:          apiError,
+			Err:          err,
 		}
 	}
 	return
@@ -174,7 +175,7 @@ func (s *S3) listObjectVersionsByPage(
 	objectIdentifiers []types.ObjectIdentifier,
 	nextKeyMarker *string,
 	nextVersionIdMarker *string,
-	apiError error,
+	clientError error,
 ) {
 	objectIdentifiers = []types.ObjectIdentifier{}
 	input := &s3.ListObjectVersionsInput{
@@ -188,7 +189,7 @@ func (s *S3) listObjectVersionsByPage(
 	}
 	output, err := s.client.ListObjectVersions(ctx, input, optFn)
 	if err != nil {
-		apiError = err
+		clientError = err
 		return
 	}
 
@@ -221,7 +222,7 @@ func (s *S3) listObjectsByPage(
 ) (
 	objectIdentifiers []types.ObjectIdentifier,
 	nextToken *string,
-	apiError error,
+	clientError error,
 ) {
 	objectIdentifiers = []types.ObjectIdentifier{}
 	input := &s3.ListObjectsV2Input{
@@ -235,7 +236,7 @@ func (s *S3) listObjectsByPage(
 
 	output, err := s.client.ListObjectsV2(ctx, input, optFn)
 	if err != nil {
-		apiError = err
+		clientError = err
 		return
 	}
 
