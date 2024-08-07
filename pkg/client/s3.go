@@ -243,8 +243,9 @@ func (s *S3) listObjectsByPage(
 		}
 		objectIdentifiers = append(objectIdentifiers, objectIdentifier)
 	}
+	nextToken = output.NextContinuationToken
 
-	return objectIdentifiers, output.NextContinuationToken, nil
+	return objectIdentifiers, nextToken, nil
 }
 
 func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error) {
