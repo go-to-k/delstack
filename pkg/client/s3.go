@@ -182,10 +182,11 @@ func (s *S3) listObjectVersionsByPage(
 	}
 	output, err := s.client.ListObjectVersions(ctx, input, optFn)
 	if err != nil {
-		return nil, nextKeyMarker, nextVersionIdMarker, &ClientError{
+		err = &ClientError{
 			ResourceName: bucketName,
 			Err:          err,
 		}
+		return
 	}
 
 	for _, version := range output.Versions {
@@ -207,7 +208,7 @@ func (s *S3) listObjectVersionsByPage(
 	nextKeyMarker = output.NextKeyMarker
 	nextVersionIdMarker = output.NextVersionIdMarker
 
-	return objectIdentifiers, nextKeyMarker, nextVersionIdMarker, nil
+	return
 }
 
 func (s *S3) listObjectsByPage(
@@ -231,10 +232,11 @@ func (s *S3) listObjectsByPage(
 
 	output, err := s.client.ListObjectsV2(ctx, input, optFn)
 	if err != nil {
-		return nil, nextToken, &ClientError{
+		err = &ClientError{
 			ResourceName: bucketName,
 			Err:          err,
 		}
+		return
 	}
 
 	for _, object := range output.Contents {
@@ -245,7 +247,7 @@ func (s *S3) listObjectsByPage(
 	}
 	nextToken = output.NextContinuationToken
 
-	return objectIdentifiers, nextToken, nil
+	return
 }
 
 func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error) {

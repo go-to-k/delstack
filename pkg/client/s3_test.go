@@ -931,7 +931,7 @@ func TestS3_listObjectVersionsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output:              nil,
+				output:              []types.ObjectIdentifier{},
 				nextKeyMarker:       nil,
 				nextVersionIdMarker: nil,
 				err: &ClientError{
@@ -966,7 +966,7 @@ func TestS3_listObjectVersionsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output:              nil,
+				output:              []types.ObjectIdentifier{},
 				nextKeyMarker:       nil,
 				nextVersionIdMarker: nil,
 				err: &ClientError{
@@ -1171,7 +1171,7 @@ func TestS3_listObjectVersionsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output:              nil,
+				output:              []types.ObjectIdentifier{},
 				nextKeyMarker:       nil,
 				nextVersionIdMarker: nil,
 				err: &ClientError{
@@ -1304,7 +1304,7 @@ func TestS3_listObjectsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output:    nil,
+				output:    []types.ObjectIdentifier{},
 				nextToken: nil,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
@@ -1337,7 +1337,7 @@ func TestS3_listObjectsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output:    nil,
+				output:    []types.ObjectIdentifier{},
 				nextToken: nil,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
@@ -1440,7 +1440,7 @@ func TestS3_listObjectsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output:    nil,
+				output:    []types.ObjectIdentifier{},
 				nextToken: nil,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
