@@ -12,6 +12,15 @@ Metadata:
 Parameters:
   PJPrefix:
     Type: String
+  DirectoryBucketMode:
+    Type: String
+    Default: "off"
+    AllowedValues:
+      - "on"
+      - "off"
+
+Conditions:
+  IsDirectoryBucketMode: !Equals [!Ref DirectoryBucketMode, "on"]
 
 Resources:
   DescendS3Bucket:
@@ -27,6 +36,14 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+
+  DescendS3DirectoryBucket:
+    Condition: IsDirectoryBucketMode
+    Type: "AWS::S3Express::DirectoryBucket"
+    Properties:
+      BucketName: !Sub "${PJPrefix}-descend--use1-az4--x-s3"
+      DataRedundancy: "SingleAvailabilityZone"
+      LocationName: "use1-az4"
 
   DescendLambdaRole:
     Type: "AWS::IAM::Role"

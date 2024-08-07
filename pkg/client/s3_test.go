@@ -134,7 +134,7 @@ func TestS3_DeleteBucket(t *testing.T) {
 			}
 
 			client := s3.NewFromConfig(cfg)
-			s3Client := NewS3(client)
+			s3Client := NewS3(client, false)
 
 			err = s3Client.DeleteBucket(tt.args.ctx, tt.args.bucketName)
 			if (err != nil) != tt.wantErr {
@@ -654,7 +654,7 @@ func TestS3_DeleteObjects(t *testing.T) {
 			}
 
 			client := s3.NewFromConfig(cfg)
-			s3Client := NewS3(client)
+			s3Client := NewS3(client, false)
 
 			output, err := s3Client.DeleteObjects(tt.args.ctx, tt.args.bucketName, tt.args.objects)
 			if (err != nil) != tt.wantErr {
@@ -672,7 +672,171 @@ func TestS3_DeleteObjects(t *testing.T) {
 	}
 }
 
-func TestS3_ListObjectVersionsByPage(t *testing.T) {
+func TestS3_ListObjectsOrVersionsByPage(t *testing.T) {
+	type args struct {
+		ctx                  context.Context
+		bucketName           *string
+		keyMarker            *string
+		versionIdMarker      *string
+		directoryBucketsFlag bool
+		withAPIOptionsFunc   func(*middleware.Stack) error
+	}
+
+	type want struct {
+		output *ListObjectsOrVersionsByPageOutput
+		err    error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "listObjectVersionsByPage is called when directoryBucketsFlag is false",
+			args: args{
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				keyMarker:            nil,
+				versionIdMarker:      nil,
+				directoryBucketsFlag: false,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectVersionsMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListObjectVersionsOutput{
+										Versions: []types.ObjectVersion{
+											{
+												Key:       aws.String("KeyForVersions"),
+												VersionId: aws.String("VersionIdForVersions"),
+											},
+										},
+										DeleteMarkers: []types.DeleteMarkerEntry{
+											{
+												Key:       aws.String("KeyForDeleteMarkers"),
+												VersionId: aws.String("VersionIdForDeleteMarkers"),
+											},
+										},
+										NextKeyMarker:       aws.String("NextKeyMarker"),
+										NextVersionIdMarker: aws.String("NextVersionIdMarker"),
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: &ListObjectsOrVersionsByPageOutput{
+					ObjectIdentifiers: []types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions"),
+							VersionId: aws.String("VersionIdForVersions"),
+						},
+						{
+							Key:       aws.String("KeyForDeleteMarkers"),
+							VersionId: aws.String("VersionIdForDeleteMarkers"),
+						},
+					},
+					NextKeyMarker:       aws.String("NextKeyMarker"),
+					NextVersionIdMarker: aws.String("NextVersionIdMarker"),
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "listObjectsByPage is called when directoryBucketsFlag is true",
+			args: args{
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				keyMarker:            nil,
+				versionIdMarker:      nil,
+				directoryBucketsFlag: true,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectsV2Mock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListObjectsV2Output{
+										Contents: []types.Object{
+											{
+												Key: aws.String("Key1"),
+											},
+											{
+												Key: aws.String("Key2"),
+											},
+										},
+										NextContinuationToken: aws.String("NextContinuationToken"),
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: &ListObjectsOrVersionsByPageOutput{
+					ObjectIdentifiers: []types.ObjectIdentifier{
+						{
+							Key: aws.String("Key1"),
+						},
+						{
+							Key: aws.String("Key2"),
+						},
+					},
+					NextKeyMarker:       aws.String("NextContinuationToken"),
+					NextVersionIdMarker: nil,
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := s3.NewFromConfig(cfg)
+			s3Client := NewS3(client, tt.args.directoryBucketsFlag)
+
+			output, err := s3Client.ListObjectsOrVersionsByPage(tt.args.ctx, tt.args.bucketName, tt.args.keyMarker, tt.args.versionIdMarker)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.output) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.output)
+			}
+			if tt.want.output != nil && !reflect.DeepEqual(output.NextKeyMarker, tt.want.output.NextKeyMarker) {
+				t.Errorf("nextKeyMarker = %#v, want %#v", output.NextKeyMarker, tt.want.output.NextKeyMarker)
+			}
+			if tt.want.output != nil && !reflect.DeepEqual(output.NextVersionIdMarker, tt.want.output.NextVersionIdMarker) {
+				t.Errorf("nextVersionIdMarker = %#v, want %#v", output.NextVersionIdMarker, tt.want.output.NextVersionIdMarker)
+			}
+		})
+	}
+}
+
+func TestS3_listObjectVersionsByPage(t *testing.T) {
 	type args struct {
 		ctx                context.Context
 		bucketName         *string
@@ -682,10 +846,8 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 	}
 
 	type want struct {
-		output              []types.ObjectIdentifier
-		nextKeyMarker       *string
-		nextVersionIdMarker *string
-		err                 error
+		output *listObjectVersionsByPageOutput
+		err    error
 	}
 
 	cases := []struct {
@@ -731,19 +893,21 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output: []types.ObjectIdentifier{
-					{
-						Key:       aws.String("KeyForVersions"),
-						VersionId: aws.String("VersionIdForVersions"),
+				output: &listObjectVersionsByPageOutput{
+					ObjectIdentifiers: []types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions"),
+							VersionId: aws.String("VersionIdForVersions"),
+						},
+						{
+							Key:       aws.String("KeyForDeleteMarkers"),
+							VersionId: aws.String("VersionIdForDeleteMarkers"),
+						},
 					},
-					{
-						Key:       aws.String("KeyForDeleteMarkers"),
-						VersionId: aws.String("VersionIdForDeleteMarkers"),
-					},
+					NextKeyMarker:       aws.String("NextKeyMarker"),
+					NextVersionIdMarker: aws.String("NextVersionIdMarker"),
 				},
-				nextKeyMarker:       aws.String("NextKeyMarker"),
-				nextVersionIdMarker: aws.String("NextVersionIdMarker"),
-				err:                 nil,
+				err: nil,
 			},
 			wantErr: false,
 		},
@@ -769,9 +933,7 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output:              nil,
-				nextKeyMarker:       nil,
-				nextVersionIdMarker: nil,
+				output: nil,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
 					Err:          fmt.Errorf("operation error S3: ListObjectVersions, ListObjectVersionsError"),
@@ -804,9 +966,7 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output:              nil,
-				nextKeyMarker:       nil,
-				nextVersionIdMarker: nil,
+				output: nil,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
 					Err:          fmt.Errorf("operation error S3: ListObjectVersions, exceeded maximum number of attempts, 10, api error SlowDown"),
@@ -839,10 +999,12 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output:              []types.ObjectIdentifier{},
-				nextKeyMarker:       nil,
-				nextVersionIdMarker: nil,
-				err:                 nil,
+				output: &listObjectVersionsByPageOutput{
+					ObjectIdentifiers:   []types.ObjectIdentifier{},
+					NextKeyMarker:       nil,
+					NextVersionIdMarker: nil,
+				},
+				err: nil,
 			},
 			wantErr: false,
 		},
@@ -878,15 +1040,17 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output: []types.ObjectIdentifier{
-					{
-						Key:       aws.String("KeyForVersions"),
-						VersionId: aws.String("VersionIdForVersions"),
+				output: &listObjectVersionsByPageOutput{
+					ObjectIdentifiers: []types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions"),
+							VersionId: aws.String("VersionIdForVersions"),
+						},
 					},
+					NextKeyMarker:       aws.String("NextKeyMarker"),
+					NextVersionIdMarker: aws.String("NextVersionIdMarker"),
 				},
-				nextKeyMarker:       aws.String("NextKeyMarker"),
-				nextVersionIdMarker: aws.String("NextVersionIdMarker"),
-				err:                 nil,
+				err: nil,
 			},
 			wantErr: false,
 		},
@@ -922,15 +1086,17 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output: []types.ObjectIdentifier{
-					{
-						Key:       aws.String("KeyForDeleteMarkers"),
-						VersionId: aws.String("VersionIdForDeleteMarkers"),
+				output: &listObjectVersionsByPageOutput{
+					ObjectIdentifiers: []types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForDeleteMarkers"),
+							VersionId: aws.String("VersionIdForDeleteMarkers"),
+						},
 					},
+					NextKeyMarker:       aws.String("NextKeyMarker"),
+					NextVersionIdMarker: aws.String("NextVersionIdMarker"),
 				},
-				nextKeyMarker:       aws.String("NextKeyMarker"),
-				nextVersionIdMarker: aws.String("NextVersionIdMarker"),
-				err:                 nil,
+				err: nil,
 			},
 			wantErr: false,
 		},
@@ -971,19 +1137,21 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output: []types.ObjectIdentifier{
-					{
-						Key:       aws.String("KeyForVersions"),
-						VersionId: aws.String("VersionIdForVersions"),
+				output: &listObjectVersionsByPageOutput{
+					ObjectIdentifiers: []types.ObjectIdentifier{
+						{
+							Key:       aws.String("KeyForVersions"),
+							VersionId: aws.String("VersionIdForVersions"),
+						},
+						{
+							Key:       aws.String("KeyForDeleteMarkers"),
+							VersionId: aws.String("VersionIdForDeleteMarkers"),
+						},
 					},
-					{
-						Key:       aws.String("KeyForDeleteMarkers"),
-						VersionId: aws.String("VersionIdForDeleteMarkers"),
-					},
+					NextKeyMarker:       nil,
+					NextVersionIdMarker: nil,
 				},
-				nextKeyMarker:       nil,
-				nextVersionIdMarker: nil,
-				err:                 nil,
+				err: nil,
 			},
 			wantErr: false,
 		},
@@ -1009,9 +1177,7 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 				},
 			},
 			want: want{
-				output:              nil,
-				nextKeyMarker:       nil,
-				nextVersionIdMarker: nil,
+				output: nil,
 				err: &ClientError{
 					ResourceName: aws.String("test"),
 					Err:          fmt.Errorf("operation error S3: ListObjectVersions, ListObjectVersionsError"),
@@ -1033,9 +1199,9 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 			}
 
 			client := s3.NewFromConfig(cfg)
-			s3Client := NewS3(client)
+			s3Client := NewS3(client, false)
 
-			output, nextKeyMarker, nextVersionIdMarker, err := s3Client.ListObjectVersionsByPage(tt.args.ctx, tt.args.bucketName, tt.args.keyMarker, tt.args.versionIdMarker)
+			output, err := s3Client.listObjectVersionsByPage(tt.args.ctx, tt.args.bucketName, tt.args.keyMarker, tt.args.versionIdMarker)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -1047,11 +1213,278 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 			if !reflect.DeepEqual(output, tt.want.output) {
 				t.Errorf("output = %#v, want %#v", output, tt.want.output)
 			}
-			if !reflect.DeepEqual(nextKeyMarker, tt.want.nextKeyMarker) {
-				t.Errorf("nextKeyMarker = %#v, want %#v", nextKeyMarker, tt.want.nextKeyMarker)
+			if tt.want.output != nil && !reflect.DeepEqual(output.NextKeyMarker, tt.want.output.NextKeyMarker) {
+				t.Errorf("nextKeyMarker = %#v, want %#v", output.NextKeyMarker, tt.want.output.NextKeyMarker)
 			}
-			if !reflect.DeepEqual(nextVersionIdMarker, tt.want.nextVersionIdMarker) {
-				t.Errorf("nextVersionIdMarker = %#v, want %#v", nextVersionIdMarker, tt.want.nextVersionIdMarker)
+			if tt.want.output != nil && !reflect.DeepEqual(output.NextVersionIdMarker, tt.want.output.NextVersionIdMarker) {
+				t.Errorf("nextVersionIdMarker = %#v, want %#v", output.NextVersionIdMarker, tt.want.output.NextVersionIdMarker)
+			}
+		})
+	}
+}
+
+func TestS3_listObjectsByPage(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		bucketName         *string
+		token              *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	type want struct {
+		output *listObjectsByPageOutput
+		err    error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "list objects successfully",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+				token:      nil,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectsV2Mock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListObjectsV2Output{
+										Contents: []types.Object{
+											{
+												Key: aws.String("Key1"),
+											},
+											{
+												Key: aws.String("Key2"),
+											},
+										},
+										NextContinuationToken: aws.String("NextContinuationToken"),
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: &listObjectsByPageOutput{
+					ObjectIdentifiers: []types.ObjectIdentifier{
+						{
+							Key: aws.String("Key1"),
+						},
+						{
+							Key: aws.String("Key2"),
+						},
+					},
+					NextToken: aws.String("NextContinuationToken"),
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list objects failure",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+				token:      nil,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectsV2ErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListObjectsV2Output{},
+								}, middleware.Metadata{}, fmt.Errorf("ListObjectsV2Error")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error S3: ListObjectsV2, ListObjectsV2Error"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "list objects failure for api error SlowDown",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+				token:      nil,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectsV2ApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+										Result: &s3.ListObjectsV2Output{},
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error SlowDown"),
+									}
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error S3: ListObjectsV2, exceeded maximum number of attempts, 10, api error SlowDown"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "list objects successfully(empty)",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+				token:      nil,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectsV2EmptyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListObjectsV2Output{
+										Contents: []types.Object{},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: &listObjectsByPageOutput{
+					ObjectIdentifiers: []types.ObjectIdentifier{},
+					NextToken:         nil,
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list objects with token successfully",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+				token:      aws.String("Token"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectsV2Mock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListObjectsV2Output{
+										Contents: []types.Object{
+											{
+												Key: aws.String("Key1"),
+											},
+											{
+												Key: aws.String("Key2"),
+											},
+										},
+										NextContinuationToken: nil,
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: &listObjectsByPageOutput{
+					ObjectIdentifiers: []types.ObjectIdentifier{
+						{
+							Key: aws.String("Key1"),
+						},
+						{
+							Key: aws.String("Key2"),
+						},
+					},
+					NextToken: nil,
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list objects with token failure",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test"),
+				token:      aws.String("Token"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListObjectsV2Mock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListObjectsV2Output{},
+								}, middleware.Metadata{}, fmt.Errorf("ListObjectsV2Error")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error S3: ListObjectsV2, ListObjectsV2Error"),
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := s3.NewFromConfig(cfg)
+			s3Client := NewS3(client, true)
+
+			output, err := s3Client.listObjectsByPage(tt.args.ctx, tt.args.bucketName, tt.args.token)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.output) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.output)
+			}
+			if tt.want.output != nil && !reflect.DeepEqual(output.NextToken, tt.want.output.NextToken) {
+				t.Errorf("nextToken = %#v, want %#v", output.NextToken, tt.want.output.NextToken)
 			}
 		})
 	}
@@ -1059,9 +1492,10 @@ func TestS3_ListObjectVersionsByPage(t *testing.T) {
 
 func TestS3_CheckBucketExists(t *testing.T) {
 	type args struct {
-		ctx                context.Context
-		bucketName         *string
-		withAPIOptionsFunc func(*middleware.Stack) error
+		ctx                  context.Context
+		bucketName           *string
+		directoryBucketsFlag bool
+		withAPIOptionsFunc   func(*middleware.Stack) error
 	}
 
 	type want struct {
@@ -1078,8 +1512,9 @@ func TestS3_CheckBucketExists(t *testing.T) {
 		{
 			name: "check bucket for bucket exists",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -1110,10 +1545,46 @@ func TestS3_CheckBucketExists(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "check bucket for bucket exists on directory buckets flag",
+			args: args{
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: true,
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListDirectoryBuckets",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.ListDirectoryBucketsOutput{
+										Buckets: []types.Bucket{
+											{
+												Name: aws.String("test"),
+											},
+											{
+												Name: aws.String("test2"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: true,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
 			name: "check bucket for bucket do not exist",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -1146,8 +1617,9 @@ func TestS3_CheckBucketExists(t *testing.T) {
 		{
 			name: "check bucket exists failure",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -1174,8 +1646,9 @@ func TestS3_CheckBucketExists(t *testing.T) {
 		{
 			name: "check bucket exists failure for api error SlowDown",
 			args: args{
-				ctx:        context.Background(),
-				bucketName: aws.String("test"),
+				ctx:                  context.Background(),
+				bucketName:           aws.String("test"),
+				directoryBucketsFlag: false,
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -1216,7 +1689,7 @@ func TestS3_CheckBucketExists(t *testing.T) {
 			}
 
 			client := s3.NewFromConfig(cfg)
-			s3Client := NewS3(client)
+			s3Client := NewS3(client, tt.args.directoryBucketsFlag)
 
 			output, err := s3Client.CheckBucketExists(tt.args.ctx, tt.args.bucketName)
 			if (err != nil) != tt.wantErr {

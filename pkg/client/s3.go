@@ -13,31 +13,43 @@ import (
 
 var SleepTimeSecForS3 = 10
 
+type ListObjectsOrVersionsByPageOutput struct {
+	ObjectIdentifiers   []types.ObjectIdentifier
+	NextKeyMarker       *string
+	NextVersionIdMarker *string
+}
+type listObjectVersionsByPageOutput struct {
+	ObjectIdentifiers   []types.ObjectIdentifier
+	NextKeyMarker       *string
+	NextVersionIdMarker *string
+}
+type listObjectsByPageOutput struct {
+	ObjectIdentifiers []types.ObjectIdentifier
+	NextToken         *string
+}
+
 type IS3 interface {
 	DeleteBucket(ctx context.Context, bucketName *string) error
 	DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error)
-	ListObjectVersionsByPage(
+	ListObjectsOrVersionsByPage(
 		ctx context.Context,
 		bucketName *string,
 		keyMarker *string,
 		versionIdMarker *string,
-	) (
-		objectIdentifiers []types.ObjectIdentifier,
-		nextKeyMarker *string,
-		nextVersionIdMarker *string,
-		err error,
-	)
+	) (*ListObjectsOrVersionsByPageOutput, error)
 	CheckBucketExists(ctx context.Context, bucketName *string) (bool, error)
+	GetDirectoryBucketsFlag() bool
 }
 
 var _ IS3 = (*S3)(nil)
 
 type S3 struct {
-	client  *s3.Client
-	retryer *Retryer
+	client               *s3.Client
+	directoryBucketsFlag bool
+	retryer              *Retryer
 }
 
-func NewS3(client *s3.Client) *S3 {
+func NewS3(client *s3.Client, directoryBucketsFlag bool) *S3 {
 	retryable := func(err error) bool {
 		isErrorRetryable := strings.Contains(err.Error(), "api error SlowDown")
 		return isErrorRetryable
@@ -46,6 +58,7 @@ func NewS3(client *s3.Client) *S3 {
 
 	return &S3{
 		client,
+		directoryBucketsFlag,
 		retryer,
 	}
 }
@@ -138,18 +151,49 @@ func (s *S3) DeleteObjects(
 	return errors, nil
 }
 
-func (s *S3) ListObjectVersionsByPage(
+func (s *S3) ListObjectsOrVersionsByPage(
 	ctx context.Context,
 	bucketName *string,
 	keyMarker *string,
 	versionIdMarker *string,
-) (
-	objectIdentifiers []types.ObjectIdentifier,
-	nextKeyMarker *string,
-	nextVersionIdMarker *string,
-	err error,
-) {
-	objectIdentifiers = []types.ObjectIdentifier{}
+) (*ListObjectsOrVersionsByPageOutput, error) {
+	var objectIdentifiers []types.ObjectIdentifier
+	var nextKeyMarker *string
+	var nextVersionIdMarker *string
+
+	if s.directoryBucketsFlag {
+		output, err := s.listObjectsByPage(ctx, bucketName, keyMarker)
+		if err != nil {
+			return nil, err
+		}
+
+		objectIdentifiers = output.ObjectIdentifiers
+		nextKeyMarker = output.NextToken
+	} else {
+		output, err := s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
+		if err != nil {
+			return nil, err
+		}
+
+		objectIdentifiers = output.ObjectIdentifiers
+		nextKeyMarker = output.NextKeyMarker
+		nextVersionIdMarker = output.NextVersionIdMarker
+	}
+
+	return &ListObjectsOrVersionsByPageOutput{
+		ObjectIdentifiers:   objectIdentifiers,
+		NextKeyMarker:       nextKeyMarker,
+		NextVersionIdMarker: nextVersionIdMarker,
+	}, nil
+}
+
+func (s *S3) listObjectVersionsByPage(
+	ctx context.Context,
+	bucketName *string,
+	keyMarker *string,
+	versionIdMarker *string,
+) (*listObjectVersionsByPageOutput, error) {
+	objectIdentifiers := []types.ObjectIdentifier{}
 	input := &s3.ListObjectVersionsInput{
 		Bucket:          bucketName,
 		KeyMarker:       keyMarker,
@@ -161,7 +205,7 @@ func (s *S3) ListObjectVersionsByPage(
 	}
 	output, err := s.client.ListObjectVersions(ctx, input, optFn)
 	if err != nil {
-		return nil, nextKeyMarker, nextVersionIdMarker, &ClientError{
+		return nil, &ClientError{
 			ResourceName: bucketName,
 			Err:          err,
 		}
@@ -183,19 +227,57 @@ func (s *S3) ListObjectVersionsByPage(
 		objectIdentifiers = append(objectIdentifiers, objectIdentifier)
 	}
 
-	nextKeyMarker = output.NextKeyMarker
-	nextVersionIdMarker = output.NextVersionIdMarker
-
-	return objectIdentifiers, nextKeyMarker, nextVersionIdMarker, nil
+	return &listObjectVersionsByPageOutput{
+		ObjectIdentifiers:   objectIdentifiers,
+		NextKeyMarker:       output.NextKeyMarker,
+		NextVersionIdMarker: output.NextVersionIdMarker,
+	}, nil
 }
 
-func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
-	input := &s3.ListBucketsInput{}
+func (s *S3) listObjectsByPage(
+	ctx context.Context,
+	bucketName *string,
+	token *string,
+) (*listObjectsByPageOutput, error) {
+	objectIdentifiers := []types.ObjectIdentifier{}
+	input := &s3.ListObjectsV2Input{
+		Bucket:            bucketName,
+		ContinuationToken: token,
+	}
 
 	optFn := func(o *s3.Options) {
 		o.Retryer = s.retryer
 	}
-	output, err := s.client.ListBuckets(ctx, input, optFn)
+
+	output, err := s.client.ListObjectsV2(ctx, input, optFn)
+	if err != nil {
+		return nil, &ClientError{
+			ResourceName: bucketName,
+			Err:          err,
+		}
+	}
+
+	for _, object := range output.Contents {
+		objectIdentifier := types.ObjectIdentifier{
+			Key: object.Key,
+		}
+		objectIdentifiers = append(objectIdentifiers, objectIdentifier)
+	}
+	return &listObjectsByPageOutput{
+		ObjectIdentifiers: objectIdentifiers,
+		NextToken:         output.NextContinuationToken,
+	}, nil
+}
+
+func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, error) {
+	var listBucketsFunc func(ctx context.Context) ([]types.Bucket, error)
+	if s.directoryBucketsFlag {
+		listBucketsFunc = s.listDirectoryBuckets
+	} else {
+		listBucketsFunc = s.listBuckets
+	}
+
+	buckets, err := listBucketsFunc(ctx)
 	if err != nil {
 		return false, &ClientError{
 			ResourceName: bucketName,
@@ -203,11 +285,65 @@ func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string) (bool, e
 		}
 	}
 
-	for _, bucket := range output.Buckets {
+	for _, bucket := range buckets {
 		if *bucket.Name == *bucketName {
 			return true, nil
 		}
 	}
 
 	return false, nil
+}
+
+func (s *S3) listBuckets(ctx context.Context) ([]types.Bucket, error) {
+	input := &s3.ListBucketsInput{}
+
+	optFn := func(o *s3.Options) {
+		o.Retryer = s.retryer
+	}
+
+	output, err := s.client.ListBuckets(ctx, input, optFn)
+	if err != nil {
+		return []types.Bucket{}, err
+	}
+
+	return output.Buckets, nil
+}
+
+func (s *S3) listDirectoryBuckets(ctx context.Context) ([]types.Bucket, error) {
+	buckets := []types.Bucket{}
+	var continuationToken *string
+
+	for {
+		select {
+		case <-ctx.Done():
+			return buckets, ctx.Err()
+		default:
+		}
+
+		input := &s3.ListDirectoryBucketsInput{
+			ContinuationToken: continuationToken,
+		}
+
+		optFn := func(o *s3.Options) {
+			o.Retryer = s.retryer
+		}
+
+		output, err := s.client.ListDirectoryBuckets(ctx, input, optFn)
+		if err != nil {
+			return buckets, err
+		}
+
+		buckets = append(buckets, output.Buckets...)
+
+		if output.ContinuationToken == nil {
+			break
+		}
+		continuationToken = output.ContinuationToken
+	}
+
+	return buckets, nil
+}
+
+func (s *S3) GetDirectoryBucketsFlag() bool {
+	return s.directoryBucketsFlag
 }

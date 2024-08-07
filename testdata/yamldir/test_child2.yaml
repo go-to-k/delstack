@@ -12,6 +12,15 @@ Metadata:
 Parameters:
   PJPrefix:
     Type: String
+  DirectoryBucketMode:
+    Type: String
+    Default: "off"
+    AllowedValues:
+      - "on"
+      - "off"
+
+Conditions:
+  IsDirectoryBucketMode: !Equals [!Ref DirectoryBucketMode, "on"]
 
 Resources:
   DescendTwoStack:
@@ -20,6 +29,7 @@ Resources:
       Location: ./test_descend2.yaml
       Parameters:
         PJPrefix: !Sub "${PJPrefix}"
+        DirectoryBucketMode: !Ref DirectoryBucketMode
 
   ChildTwoS3Bucket:
     Type: "AWS::S3::Bucket"
@@ -33,6 +43,14 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+
+  ChildTwoS3DirectoryBucket:
+    Condition: IsDirectoryBucketMode
+    Type: "AWS::S3Express::DirectoryBucket"
+    Properties:
+      BucketName: !Sub "${PJPrefix}-childtwo--use1-az4--x-s3"
+      DataRedundancy: "SingleAvailabilityZone"
+      LocationName: "use1-az4"
 
   ChildTwoLambdaRole:
     Type: "AWS::IAM::Role"

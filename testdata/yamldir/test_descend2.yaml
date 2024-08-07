@@ -12,6 +12,15 @@ Metadata:
 Parameters:
   PJPrefix:
     Type: String
+  DirectoryBucketMode:
+    Type: String
+    Default: "off"
+    AllowedValues:
+      - "on"
+      - "off"
+
+Conditions:
+  IsDirectoryBucketMode: !Equals [!Ref DirectoryBucketMode, "on"]
 
 Resources:
   DescendTwoS3Bucket:
@@ -28,6 +37,14 @@ Resources:
         RestrictPublicBuckets: True
       VersioningConfiguration:
         Status: Enabled
+
+  DescendTwoS3DirectoryBucket:
+    Condition: IsDirectoryBucketMode
+    Type: "AWS::S3Express::DirectoryBucket"
+    Properties:
+      BucketName: !Sub "${PJPrefix}-descendtwo--use1-az4--x-s3"
+      DataRedundancy: "SingleAvailabilityZone"
+      LocationName: "use1-az4"
 
   DescendTwoLambdaRole:
     Type: "AWS::IAM::Role"

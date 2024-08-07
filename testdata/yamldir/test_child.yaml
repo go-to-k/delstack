@@ -12,6 +12,15 @@ Metadata:
 Parameters:
   PJPrefix:
     Type: String
+  DirectoryBucketMode:
+    Type: String
+    Default: "off"
+    AllowedValues:
+      - "on"
+      - "off"
+
+Conditions:
+  IsDirectoryBucketMode: !Equals [!Ref DirectoryBucketMode, "on"]
 
 Resources:
   DescendStack:
@@ -20,6 +29,7 @@ Resources:
       Location: ./test_descend.yaml
       Parameters:
         PJPrefix: !Sub "${PJPrefix}"
+        DirectoryBucketMode: !Ref DirectoryBucketMode
 
   DescendThreeStack:
     Type: AWS::Serverless::Application
@@ -27,6 +37,7 @@ Resources:
       Location: ./test_descend3.yaml
       Parameters:
         PJPrefix: !Sub "${PJPrefix}"
+        DirectoryBucketMode: !Ref DirectoryBucketMode
 
   ChildS3Bucket:
     Type: "AWS::S3::Bucket"
@@ -42,6 +53,14 @@ Resources:
         RestrictPublicBuckets: True
       VersioningConfiguration:
         Status: Enabled
+
+  ChildS3DirectoryBucket:
+    Condition: IsDirectoryBucketMode
+    Type: "AWS::S3Express::DirectoryBucket"
+    Properties:
+      BucketName: !Sub "${PJPrefix}-child--use1-az4--x-s3"
+      DataRedundancy: "SingleAvailabilityZone"
+      LocationName: "use1-az4"
 
   ChildLambdaRole:
     Type: "AWS::IAM::Role"

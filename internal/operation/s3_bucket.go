@@ -70,11 +70,11 @@ func (o *S3BucketOperator) DeleteS3Bucket(ctx context.Context, bucketName *strin
 	var keyMarker *string
 	var versionIdMarker *string
 	for {
-		var versions []s3types.ObjectIdentifier
+		var objects []s3types.ObjectIdentifier
 
-		// ListObjectVersions API can only retrieve up to 1000 items, so it is good to pass it
+		// ListObjectVersions/ListObjectsV2 API can only retrieve up to 1000 items, so it is good to pass it
 		// directly to DeleteObjects, which can only delete up to 1000 items.
-		versions, keyMarker, versionIdMarker, err = o.client.ListObjectVersionsByPage(
+		output, err := o.client.ListObjectsOrVersionsByPage(
 			ctx,
 			bucketName,
 			keyMarker,
@@ -83,7 +83,12 @@ func (o *S3BucketOperator) DeleteS3Bucket(ctx context.Context, bucketName *strin
 		if err != nil {
 			return err
 		}
-		if len(versions) == 0 {
+
+		objects = output.ObjectIdentifiers
+		keyMarker = output.NextKeyMarker
+		versionIdMarker = output.NextVersionIdMarker
+
+		if len(objects) == 0 {
 			break
 		}
 
@@ -92,7 +97,7 @@ func (o *S3BucketOperator) DeleteS3Bucket(ctx context.Context, bucketName *strin
 			// the next loop. Therefore, there seems to be no throttling concern, so the number of
 			// parallels is not limited by semaphore. (Throttling occurs at about 3500 deletions
 			// per second.)
-			gotErrors, err := o.client.DeleteObjects(ctx, bucketName, versions)
+			gotErrors, err := o.client.DeleteObjects(ctx, bucketName, objects)
 			if err != nil {
 				return err
 			}
@@ -136,4 +141,8 @@ func (o *S3BucketOperator) DeleteS3Bucket(ctx context.Context, bucketName *strin
 	}
 
 	return nil
+}
+
+func (o *S3BucketOperator) GetDirectoryBucketsFlag() bool {
+	return o.client.GetDirectoryBucketsFlag()
 }
