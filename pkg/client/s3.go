@@ -22,7 +22,12 @@ type IS3 interface {
 		keyMarker *string,
 		versionIdMarker *string,
 		directoryBucketsFlag bool,
-	) ([]types.ObjectIdentifier, *string, *string, error)
+	) (
+		objectIdentifiers []types.ObjectIdentifier,
+		nextKeyMarker *string,
+		nextVersionIdMarker *string,
+		err error,
+	)
 	CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error)
 }
 
@@ -140,13 +145,18 @@ func (s *S3) ListObjectsOrVersionsByPage(
 	keyMarker *string,
 	versionIdMarker *string,
 	directoryBucketsFlag bool,
-) ([]types.ObjectIdentifier, *string, *string, error) {
+) (
+	objectIdentifiers []types.ObjectIdentifier,
+	nextKeyMarker *string,
+	nextVersionIdMarker *string,
+	err error,
+) {
 	if !directoryBucketsFlag {
-		return s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
+		objectIdentifiers, nextKeyMarker, nextVersionIdMarker, err = s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
 	} else {
-		objectIdentifiers, nextKeyMarker, err := s.listObjectsByPage(ctx, bucketName, keyMarker)
-		return objectIdentifiers, nextKeyMarker, nil, err
+		objectIdentifiers, nextKeyMarker, err = s.listObjectsByPage(ctx, bucketName, keyMarker)
 	}
+	return
 }
 
 func (s *S3) listObjectVersionsByPage(
