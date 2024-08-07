@@ -40,7 +40,7 @@ CFN_OUTPUT_TEMPLATE="./yamldir/test_root_output.yaml"
 
 CFN_PJ_PREFIX="dev-${stage}"
 
-CFN_STACK_NAME="${CFN_PJ_PREFIX}-TestStack"
+CFN_STACK_NAME="${CFN_PJ_PREFIX}-${directory_bucket_mode}-TestStack"
 
 sam_bucket=$(echo "${CFN_STACK_NAME}" | tr '[:upper:]' '[:lower:]')
 
