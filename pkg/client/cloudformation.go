@@ -16,7 +16,6 @@ type ICloudFormation interface {
 	DeleteStack(ctx context.Context, stackName *string, retainResources []string) error
 	DescribeStacks(ctx context.Context, stackName *string) ([]types.Stack, error)
 	ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error)
-	ListStacks(ctx context.Context, stackStatusFilter []types.StackStatus) ([]types.StackSummary, error)
 }
 
 var _ ICloudFormation = (*CloudFormation)(nil)
@@ -149,44 +148,4 @@ func (c *CloudFormation) ListStackResources(ctx context.Context, stackName *stri
 	}
 
 	return stackResourceSummaries, nil
-}
-
-func (c *CloudFormation) ListStacks(ctx context.Context, stackStatusFilter []types.StackStatus) ([]types.StackSummary, error) {
-	var nextToken *string
-	stackSummaries := []types.StackSummary{}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return stackSummaries, &ClientError{
-				Err: ctx.Err(),
-			}
-		default:
-		}
-
-		input := &cloudformation.ListStacksInput{
-			StackStatusFilter: stackStatusFilter,
-			NextToken:         nextToken,
-		}
-
-		output, err := c.client.ListStacks(ctx, input)
-		if err != nil {
-			return stackSummaries, &ClientError{
-				Err: err,
-			}
-		}
-
-		if len(stackSummaries) == 0 && len(output.StackSummaries) == 0 {
-			return stackSummaries, nil
-		}
-
-		stackSummaries = append(stackSummaries, output.StackSummaries...)
-		nextToken = output.NextToken
-
-		if nextToken == nil {
-			break
-		}
-	}
-
-	return stackSummaries, nil
 }

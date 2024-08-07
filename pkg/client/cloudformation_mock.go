@@ -77,18 +77,3 @@ func (mr *MockICloudFormationMockRecorder) ListStackResources(ctx, stackName int
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStackResources", reflect.TypeOf((*MockICloudFormation)(nil).ListStackResources), ctx, stackName)
 }
-
-// ListStacks mocks base method.
-func (m *MockICloudFormation) ListStacks(ctx context.Context, stackStatusFilter []types.StackStatus) ([]types.StackSummary, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListStacks", ctx, stackStatusFilter)
-	ret0, _ := ret[0].([]types.StackSummary)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListStacks indicates an expected call of ListStacks.
-func (mr *MockICloudFormationMockRecorder) ListStacks(ctx, stackStatusFilter interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStacks", reflect.TypeOf((*MockICloudFormation)(nil).ListStacks), ctx, stackStatusFilter)
-}
