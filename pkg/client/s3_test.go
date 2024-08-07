@@ -934,10 +934,7 @@ func TestS3_listObjectVersionsByPage(t *testing.T) {
 				output:              []types.ObjectIdentifier{},
 				nextKeyMarker:       nil,
 				nextVersionIdMarker: nil,
-				err: &ClientError{
-					ResourceName: aws.String("test"),
-					Err:          fmt.Errorf("operation error S3: ListObjectVersions, ListObjectVersionsError"),
-				},
+				err:                 fmt.Errorf("operation error S3: ListObjectVersions, ListObjectVersionsError"),
 			},
 			wantErr: true,
 		},
@@ -969,10 +966,7 @@ func TestS3_listObjectVersionsByPage(t *testing.T) {
 				output:              []types.ObjectIdentifier{},
 				nextKeyMarker:       nil,
 				nextVersionIdMarker: nil,
-				err: &ClientError{
-					ResourceName: aws.String("test"),
-					Err:          fmt.Errorf("operation error S3: ListObjectVersions, exceeded maximum number of attempts, 10, api error SlowDown"),
-				},
+				err:                 fmt.Errorf("operation error S3: ListObjectVersions, exceeded maximum number of attempts, 10, api error SlowDown"),
 			},
 			wantErr: true,
 		},
@@ -1174,10 +1168,7 @@ func TestS3_listObjectVersionsByPage(t *testing.T) {
 				output:              []types.ObjectIdentifier{},
 				nextKeyMarker:       nil,
 				nextVersionIdMarker: nil,
-				err: &ClientError{
-					ResourceName: aws.String("test"),
-					Err:          fmt.Errorf("operation error S3: ListObjectVersions, ListObjectVersionsError"),
-				},
+				err:                 fmt.Errorf("operation error S3: ListObjectVersions, ListObjectVersionsError"),
 			},
 			wantErr: true,
 		},
@@ -1306,10 +1297,7 @@ func TestS3_listObjectsByPage(t *testing.T) {
 			want: want{
 				output:    []types.ObjectIdentifier{},
 				nextToken: nil,
-				err: &ClientError{
-					ResourceName: aws.String("test"),
-					Err:          fmt.Errorf("operation error S3: ListObjectsV2, ListObjectsV2Error"),
-				},
+				err:       fmt.Errorf("operation error S3: ListObjectsV2, ListObjectsV2Error"),
 			},
 			wantErr: true,
 		},
@@ -1339,10 +1327,7 @@ func TestS3_listObjectsByPage(t *testing.T) {
 			want: want{
 				output:    []types.ObjectIdentifier{},
 				nextToken: nil,
-				err: &ClientError{
-					ResourceName: aws.String("test"),
-					Err:          fmt.Errorf("operation error S3: ListObjectsV2, exceeded maximum number of attempts, 10, api error SlowDown"),
-				},
+				err:       fmt.Errorf("operation error S3: ListObjectsV2, exceeded maximum number of attempts, 10, api error SlowDown"),
 			},
 			wantErr: true,
 		},
@@ -1442,10 +1427,7 @@ func TestS3_listObjectsByPage(t *testing.T) {
 			want: want{
 				output:    []types.ObjectIdentifier{},
 				nextToken: nil,
-				err: &ClientError{
-					ResourceName: aws.String("test"),
-					Err:          fmt.Errorf("operation error S3: ListObjectsV2, ListObjectsV2Error"),
-				},
+				err:       fmt.Errorf("operation error S3: ListObjectsV2, ListObjectsV2Error"),
 			},
 			wantErr: true,
 		},
