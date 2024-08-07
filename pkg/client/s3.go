@@ -22,12 +22,7 @@ type IS3 interface {
 		keyMarker *string,
 		versionIdMarker *string,
 		directoryBucketsFlag bool,
-	) (
-		objectIdentifiers []types.ObjectIdentifier,
-		nextKeyMarker *string,
-		nextVersionIdMarker *string,
-		err error,
-	)
+	) ([]types.ObjectIdentifier, *string, *string, error)
 	CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error)
 }
 
