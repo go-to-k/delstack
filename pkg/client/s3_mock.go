@@ -79,14 +79,12 @@ func (mr *MockIS3MockRecorder) DeleteObjects(ctx, bucketName, objects interface{
 }
 
 // ListObjectsOrVersionsByPage mocks base method.
-func (m *MockIS3) ListObjectsOrVersionsByPage(ctx context.Context, bucketName, keyMarker, versionIdMarker *string, directoryBucketsFlag bool) ([]types.ObjectIdentifier, *string, *string, error) {
+func (m *MockIS3) ListObjectsOrVersionsByPage(ctx context.Context, bucketName, keyMarker, versionIdMarker *string, directoryBucketsFlag bool) (*ListObjectsOrVersionsByPageOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListObjectsOrVersionsByPage", ctx, bucketName, keyMarker, versionIdMarker, directoryBucketsFlag)
-	ret0, _ := ret[0].([]types.ObjectIdentifier)
-	ret1, _ := ret[1].(*string)
-	ret2, _ := ret[2].(*string)
-	ret3, _ := ret[3].(error)
-	return ret0, ret1, ret2, ret3
+	ret0, _ := ret[0].(*ListObjectsOrVersionsByPageOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ListObjectsOrVersionsByPage indicates an expected call of ListObjectsOrVersionsByPage.

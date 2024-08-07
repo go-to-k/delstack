@@ -75,7 +75,7 @@ func (o *S3BucketOperator) DeleteS3Bucket(ctx context.Context, bucketName *strin
 
 		// ListObjectVersions/ListObjectsV2 API can only retrieve up to 1000 items, so it is good to pass it
 		// directly to DeleteObjects, which can only delete up to 1000 items.
-		objects, keyMarker, versionIdMarker, err = o.client.ListObjectsOrVersionsByPage(
+		output, err := o.client.ListObjectsOrVersionsByPage(
 			ctx,
 			bucketName,
 			keyMarker,
@@ -85,6 +85,10 @@ func (o *S3BucketOperator) DeleteS3Bucket(ctx context.Context, bucketName *strin
 		if err != nil {
 			return err
 		}
+
+		objects = output.ObjectIdentifiers
+		keyMarker = output.NextKeyMarker
+		versionIdMarker = output.NextVersionIdMarker
 
 		if len(objects) == 0 {
 			break

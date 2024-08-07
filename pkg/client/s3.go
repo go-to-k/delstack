@@ -13,6 +13,21 @@ import (
 
 var SleepTimeSecForS3 = 10
 
+type ListObjectsOrVersionsByPageOutput struct {
+	ObjectIdentifiers   []types.ObjectIdentifier
+	NextKeyMarker       *string
+	NextVersionIdMarker *string
+}
+type listObjectVersionsByPageOutput struct {
+	ObjectIdentifiers   []types.ObjectIdentifier
+	NextKeyMarker       *string
+	NextVersionIdMarker *string
+}
+type listObjectsByPageOutput struct {
+	ObjectIdentifiers []types.ObjectIdentifier
+	NextToken         *string
+}
+
 type IS3 interface {
 	DeleteBucket(ctx context.Context, bucketName *string) error
 	DeleteObjects(ctx context.Context, bucketName *string, objects []types.ObjectIdentifier) ([]types.Error, error)
@@ -22,12 +37,7 @@ type IS3 interface {
 		keyMarker *string,
 		versionIdMarker *string,
 		directoryBucketsFlag bool,
-	) (
-		objectIdentifiers []types.ObjectIdentifier,
-		nextKeyMarker *string,
-		nextVersionIdMarker *string,
-		clientError error,
-	)
+	) (*ListObjectsOrVersionsByPageOutput, error)
 	CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error)
 }
 
@@ -145,25 +155,35 @@ func (s *S3) ListObjectsOrVersionsByPage(
 	keyMarker *string,
 	versionIdMarker *string,
 	directoryBucketsFlag bool,
-) (
-	objectIdentifiers []types.ObjectIdentifier,
-	nextKeyMarker *string,
-	nextVersionIdMarker *string,
-	clientError error,
-) {
-	var err error
+) (*ListObjectsOrVersionsByPageOutput, error) {
+	var objectIdentifiers []types.ObjectIdentifier
+	var nextKeyMarker *string
+	var nextVersionIdMarker *string
+
 	if directoryBucketsFlag {
-		objectIdentifiers, nextKeyMarker, err = s.listObjectsByPage(ctx, bucketName, keyMarker)
-	} else {
-		objectIdentifiers, nextKeyMarker, nextVersionIdMarker, err = s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
-	}
-	if err != nil {
-		clientError = &ClientError{
-			ResourceName: bucketName,
-			Err:          err,
+		output, err := s.listObjectsByPage(ctx, bucketName, keyMarker)
+		if err != nil {
+			return nil, err
 		}
+
+		objectIdentifiers = output.ObjectIdentifiers
+		nextKeyMarker = output.NextToken
+	} else {
+		output, err := s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
+		if err != nil {
+			return nil, err
+		}
+
+		objectIdentifiers = output.ObjectIdentifiers
+		nextKeyMarker = output.NextKeyMarker
+		nextVersionIdMarker = output.NextVersionIdMarker
 	}
-	return
+
+	return &ListObjectsOrVersionsByPageOutput{
+		ObjectIdentifiers:   objectIdentifiers,
+		NextKeyMarker:       nextKeyMarker,
+		NextVersionIdMarker: nextVersionIdMarker,
+	}, nil
 }
 
 func (s *S3) listObjectVersionsByPage(
@@ -171,13 +191,8 @@ func (s *S3) listObjectVersionsByPage(
 	bucketName *string,
 	keyMarker *string,
 	versionIdMarker *string,
-) (
-	objectIdentifiers []types.ObjectIdentifier,
-	nextKeyMarker *string,
-	nextVersionIdMarker *string,
-	clientError error,
-) {
-	objectIdentifiers = []types.ObjectIdentifier{}
+) (*listObjectVersionsByPageOutput, error) {
+	objectIdentifiers := []types.ObjectIdentifier{}
 	input := &s3.ListObjectVersionsInput{
 		Bucket:          bucketName,
 		KeyMarker:       keyMarker,
@@ -189,8 +204,10 @@ func (s *S3) listObjectVersionsByPage(
 	}
 	output, err := s.client.ListObjectVersions(ctx, input, optFn)
 	if err != nil {
-		clientError = err
-		return
+		return nil, &ClientError{
+			ResourceName: bucketName,
+			Err:          err,
+		}
 	}
 
 	for _, version := range output.Versions {
@@ -209,22 +226,19 @@ func (s *S3) listObjectVersionsByPage(
 		objectIdentifiers = append(objectIdentifiers, objectIdentifier)
 	}
 
-	nextKeyMarker = output.NextKeyMarker
-	nextVersionIdMarker = output.NextVersionIdMarker
-
-	return
+	return &listObjectVersionsByPageOutput{
+		ObjectIdentifiers:   objectIdentifiers,
+		NextKeyMarker:       output.NextKeyMarker,
+		NextVersionIdMarker: output.NextVersionIdMarker,
+	}, nil
 }
 
 func (s *S3) listObjectsByPage(
 	ctx context.Context,
 	bucketName *string,
 	token *string,
-) (
-	objectIdentifiers []types.ObjectIdentifier,
-	nextToken *string,
-	clientError error,
-) {
-	objectIdentifiers = []types.ObjectIdentifier{}
+) (*listObjectsByPageOutput, error) {
+	objectIdentifiers := []types.ObjectIdentifier{}
 	input := &s3.ListObjectsV2Input{
 		Bucket:            bucketName,
 		ContinuationToken: token,
@@ -236,8 +250,10 @@ func (s *S3) listObjectsByPage(
 
 	output, err := s.client.ListObjectsV2(ctx, input, optFn)
 	if err != nil {
-		clientError = err
-		return
+		return nil, &ClientError{
+			ResourceName: bucketName,
+			Err:          err,
+		}
 	}
 
 	for _, object := range output.Contents {
@@ -246,9 +262,10 @@ func (s *S3) listObjectsByPage(
 		}
 		objectIdentifiers = append(objectIdentifiers, objectIdentifier)
 	}
-	nextToken = output.NextContinuationToken
-
-	return
+	return &listObjectsByPageOutput{
+		ObjectIdentifiers: objectIdentifiers,
+		NextToken:         output.NextContinuationToken,
+	}, nil
 }
 
 func (s *S3) CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error) {
