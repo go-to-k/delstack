@@ -26,7 +26,7 @@ type IS3 interface {
 		objectIdentifiers []types.ObjectIdentifier,
 		nextKeyMarker *string,
 		nextVersionIdMarker *string,
-		err error,
+		clientError error,
 	)
 	CheckBucketExists(ctx context.Context, bucketName *string, directoryBucketsFlag bool) (bool, error)
 }
