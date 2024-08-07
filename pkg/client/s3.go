@@ -146,15 +146,15 @@ func (s *S3) ListObjectsOrVersionsByPage(
 	versionIdMarker *string,
 	directoryBucketsFlag bool,
 ) (
-	objectIdentifiers []types.ObjectIdentifier,
-	nextKeyMarker *string,
-	nextVersionIdMarker *string,
-	err error,
+	[]types.ObjectIdentifier,
+	*string,
+	*string,
+	error,
 ) {
 	if !directoryBucketsFlag {
 		return s.listObjectVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker)
 	} else {
-		objectIdentifiers, nextKeyMarker, err = s.listObjectsByPage(ctx, bucketName, keyMarker)
+		objectIdentifiers, nextKeyMarker, err := s.listObjectsByPage(ctx, bucketName, keyMarker)
 		return objectIdentifiers, nextKeyMarker, nil, err
 	}
 }
