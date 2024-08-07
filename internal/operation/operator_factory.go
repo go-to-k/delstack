@@ -97,7 +97,8 @@ func (f *OperatorFactory) CreateS3DirectoryBucketOperator() *S3BucketOperator {
 		o.RetryMode = aws.RetryModeStandard
 	})
 
-	// Basically, each operator should be used separately, but the S3DirectoryBucket uses the same operator (s3BucketOperator)
+	// Basically, a separate operator should be defined for each resource type,
+	// but the S3DirectoryBucket uses the same operator as s3BucketOperator
 	// since the process is almost the same.
 	operator := NewS3BucketOperator(
 		client.NewS3(
