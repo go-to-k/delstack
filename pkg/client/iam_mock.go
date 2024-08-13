@@ -34,6 +34,21 @@ func (m *MockIIam) EXPECT() *MockIIamMockRecorder {
 	return m.recorder
 }
 
+// CheckGroupExists mocks base method.
+func (m *MockIIam) CheckGroupExists(ctx context.Context, groupName *string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckGroupExists", ctx, groupName)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckGroupExists indicates an expected call of CheckGroupExists.
+func (mr *MockIIamMockRecorder) CheckGroupExists(ctx, groupName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckGroupExists", reflect.TypeOf((*MockIIam)(nil).CheckGroupExists), ctx, groupName)
+}
+
 // CheckRoleExists mocks base method.
 func (m *MockIIam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
 	m.ctrl.T.Helper()
@@ -47,6 +62,20 @@ func (m *MockIIam) CheckRoleExists(ctx context.Context, roleName *string) (bool,
 func (mr *MockIIamMockRecorder) CheckRoleExists(ctx, roleName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckRoleExists", reflect.TypeOf((*MockIIam)(nil).CheckRoleExists), ctx, roleName)
+}
+
+// DeleteGroup mocks base method.
+func (m *MockIIam) DeleteGroup(ctx context.Context, groupName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteGroup", ctx, groupName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteGroup indicates an expected call of DeleteGroup.
+func (mr *MockIIamMockRecorder) DeleteGroup(ctx, groupName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroup", reflect.TypeOf((*MockIIam)(nil).DeleteGroup), ctx, groupName)
 }
 
 // DeleteRole mocks base method.
@@ -63,6 +92,20 @@ func (mr *MockIIamMockRecorder) DeleteRole(ctx, roleName interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRole", reflect.TypeOf((*MockIIam)(nil).DeleteRole), ctx, roleName)
 }
 
+// DetachGroupPolicies mocks base method.
+func (m *MockIIam) DetachGroupPolicies(ctx context.Context, groupName *string, policies []types.AttachedPolicy) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DetachGroupPolicies", ctx, groupName, policies)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DetachGroupPolicies indicates an expected call of DetachGroupPolicies.
+func (mr *MockIIamMockRecorder) DetachGroupPolicies(ctx, groupName, policies interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachGroupPolicies", reflect.TypeOf((*MockIIam)(nil).DetachGroupPolicies), ctx, groupName, policies)
+}
+
 // DetachRolePolicies mocks base method.
 func (m *MockIIam) DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy) error {
 	m.ctrl.T.Helper()
@@ -75,6 +118,36 @@ func (m *MockIIam) DetachRolePolicies(ctx context.Context, roleName *string, pol
 func (mr *MockIIamMockRecorder) DetachRolePolicies(ctx, roleName, policies interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachRolePolicies", reflect.TypeOf((*MockIIam)(nil).DetachRolePolicies), ctx, roleName, policies)
+}
+
+// GetGroupUsers mocks base method.
+func (m *MockIIam) GetGroupUsers(ctx context.Context, groupName *string) ([]types.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGroupUsers", ctx, groupName)
+	ret0, _ := ret[0].([]types.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroupUsers indicates an expected call of GetGroupUsers.
+func (mr *MockIIamMockRecorder) GetGroupUsers(ctx, groupName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupUsers", reflect.TypeOf((*MockIIam)(nil).GetGroupUsers), ctx, groupName)
+}
+
+// ListAttachedGroupPolicies mocks base method.
+func (m *MockIIam) ListAttachedGroupPolicies(ctx context.Context, groupName *string) ([]types.AttachedPolicy, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAttachedGroupPolicies", ctx, groupName)
+	ret0, _ := ret[0].([]types.AttachedPolicy)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAttachedGroupPolicies indicates an expected call of ListAttachedGroupPolicies.
+func (mr *MockIIamMockRecorder) ListAttachedGroupPolicies(ctx, groupName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAttachedGroupPolicies", reflect.TypeOf((*MockIIam)(nil).ListAttachedGroupPolicies), ctx, groupName)
 }
 
 // ListAttachedRolePolicies mocks base method.
@@ -90,4 +163,18 @@ func (m *MockIIam) ListAttachedRolePolicies(ctx context.Context, roleName *strin
 func (mr *MockIIamMockRecorder) ListAttachedRolePolicies(ctx, roleName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAttachedRolePolicies", reflect.TypeOf((*MockIIam)(nil).ListAttachedRolePolicies), ctx, roleName)
+}
+
+// RemoveUsersFromGroup mocks base method.
+func (m *MockIIam) RemoveUsersFromGroup(ctx context.Context, groupName *string, users []types.User) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveUsersFromGroup", ctx, groupName, users)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveUsersFromGroup indicates an expected call of RemoveUsersFromGroup.
+func (mr *MockIIamMockRecorder) RemoveUsersFromGroup(ctx, groupName, users interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUsersFromGroup", reflect.TypeOf((*MockIIam)(nil).RemoveUsersFromGroup), ctx, groupName, users)
 }
