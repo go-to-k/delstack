@@ -22,7 +22,7 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 
 	type args struct {
 		ctx       context.Context
-		GroupName *string
+		groupName *string
 	}
 
 	cases := []struct {
@@ -36,7 +36,7 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 			name: "delete group successfully",
 			args: args{
 				ctx:       context.Background(),
-				GroupName: aws.String("test"),
+				groupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(true, nil)
@@ -59,7 +59,7 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 			name: "delete group failure for CheckGroupExists errors",
 			args: args{
 				ctx:       context.Background(),
-				GroupName: aws.String("test"),
+				groupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(false, fmt.Errorf("GetGroupError"))
@@ -71,7 +71,7 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 			name: "delete group failure for CheckGroupExists (not exists)",
 			args: args{
 				ctx:       context.Background(),
-				GroupName: aws.String("test"),
+				groupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(false, nil)
@@ -83,7 +83,7 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 			name: "delete group failure for GetGroupUsers errors",
 			args: args{
 				ctx:       context.Background(),
-				GroupName: aws.String("test"),
+				groupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(true, nil)
@@ -96,7 +96,7 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 			name: "delete group failure for RemoveUsersFromGroup errors",
 			args: args{
 				ctx:       context.Background(),
-				GroupName: aws.String("test"),
+				groupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(true, nil)
@@ -118,7 +118,7 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 			name: "delete group successfully for GetGroupUsers with zero length",
 			args: args{
 				ctx:       context.Background(),
-				GroupName: aws.String("test"),
+				groupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(true, nil)
@@ -132,7 +132,7 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 			name: "delete group failure for DeleteGroup errors",
 			args: args{
 				ctx:       context.Background(),
-				GroupName: aws.String("test"),
+				groupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(true, nil)
@@ -161,7 +161,7 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 
 			iamGroupOperator := NewIamGroupOperator(iamMock)
 
-			err := iamGroupOperator.DeleteIamGroup(tt.args.ctx, tt.args.GroupName)
+			err := iamGroupOperator.DeleteIamGroup(tt.args.ctx, tt.args.groupName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
