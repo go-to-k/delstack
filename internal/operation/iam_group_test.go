@@ -33,32 +33,30 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name: "delete Group successfully",
+			name: "delete group successfully",
 			args: args{
 				ctx:       context.Background(),
 				GroupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().ListAttachedGroupPolicies(gomock.Any(), aws.String("test")).Return(
-					[]types.AttachedPolicy{
+				m.EXPECT().GetGroupUsers(gomock.Any(), aws.String("test")).Return(
+					[]types.User{
 						{
-							PolicyArn:  aws.String("PolicyArn1"),
-							PolicyName: aws.String("PolicyName1"),
+							UserName: aws.String("UserName1"),
 						},
 						{
-							PolicyArn:  aws.String("PolicyArn2"),
-							PolicyName: aws.String("PolicyName2"),
+							UserName: aws.String("UserName2"),
 						},
 					}, nil)
-				m.EXPECT().DetachGroupPolicies(gomock.Any(), aws.String("test"), gomock.Any()).Return(nil)
+				m.EXPECT().RemoveUsersFromGroup(gomock.Any(), aws.String("test"), gomock.Any()).Return(nil)
 				m.EXPECT().DeleteGroup(gomock.Any(), aws.String("test")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
 		},
 		{
-			name: "delete Group failure for check Group exists errors",
+			name: "delete group failure for CheckGroupExists errors",
 			args: args{
 				ctx:       context.Background(),
 				GroupName: aws.String("test"),
@@ -70,7 +68,7 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete Group failure for check Group not exists",
+			name: "delete group failure for CheckGroupExists (not exists)",
 			args: args{
 				ctx:       context.Background(),
 				GroupName: aws.String("test"),
@@ -82,76 +80,72 @@ func TestIamGroupOperator_DeleteIamGroup(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete Group failure for list attached Group policies errors",
+			name: "delete group failure for GetGroupUsers errors",
 			args: args{
 				ctx:       context.Background(),
 				GroupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().ListAttachedGroupPolicies(gomock.Any(), aws.String("test")).Return(nil, fmt.Errorf("ListAttachedGroupPoliciesError"))
+				m.EXPECT().GetGroupUsers(gomock.Any(), aws.String("test")).Return(nil, fmt.Errorf("GetGroupUsersError"))
 			},
-			want:    fmt.Errorf("ListAttachedGroupPoliciesError"),
+			want:    fmt.Errorf("GetGroupUsersError"),
 			wantErr: true,
 		},
 		{
-			name: "delete Group failure for detach Group errors",
+			name: "delete group failure for RemoveUsersFromGroup errors",
 			args: args{
 				ctx:       context.Background(),
 				GroupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().ListAttachedGroupPolicies(gomock.Any(), aws.String("test")).Return(
-					[]types.AttachedPolicy{
+				m.EXPECT().GetGroupUsers(gomock.Any(), aws.String("test")).Return(
+					[]types.User{
 						{
-							PolicyArn:  aws.String("PolicyArn1"),
-							PolicyName: aws.String("PolicyName1"),
+							UserName: aws.String("UserName1"),
 						},
 						{
-							PolicyArn:  aws.String("PolicyArn2"),
-							PolicyName: aws.String("PolicyName2"),
+							UserName: aws.String("UserName2"),
 						},
 					}, nil)
-				m.EXPECT().DetachGroupPolicies(gomock.Any(), aws.String("test"), gomock.Any()).Return(fmt.Errorf("DetachGroupPoliciesError"))
+				m.EXPECT().RemoveUsersFromGroup(gomock.Any(), aws.String("test"), gomock.Any()).Return(fmt.Errorf("RemoveUsersFromGroupError"))
 			},
-			want:    fmt.Errorf("DetachGroupPoliciesError"),
+			want:    fmt.Errorf("RemoveUsersFromGroupError"),
 			wantErr: true,
 		},
 		{
-			name: "delete Group successfully for ListAttachedGroupPolicies with zero length",
+			name: "delete group successfully for GetGroupUsers with zero length",
 			args: args{
 				ctx:       context.Background(),
 				GroupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().ListAttachedGroupPolicies(gomock.Any(), aws.String("test")).Return([]types.AttachedPolicy{}, nil)
+				m.EXPECT().GetGroupUsers(gomock.Any(), aws.String("test")).Return([]types.User{}, nil)
 				m.EXPECT().DeleteGroup(gomock.Any(), aws.String("test")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
 		},
 		{
-			name: "delete Group failure for delete Group errors",
+			name: "delete group failure for DeleteGroup errors",
 			args: args{
 				ctx:       context.Background(),
 				GroupName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().ListAttachedGroupPolicies(gomock.Any(), aws.String("test")).Return(
-					[]types.AttachedPolicy{
+				m.EXPECT().GetGroupUsers(gomock.Any(), aws.String("test")).Return(
+					[]types.User{
 						{
-							PolicyArn:  aws.String("PolicyArn1"),
-							PolicyName: aws.String("PolicyName1"),
+							UserName: aws.String("UserName1"),
 						},
 						{
-							PolicyArn:  aws.String("PolicyArn2"),
-							PolicyName: aws.String("PolicyName2"),
+							UserName: aws.String("UserName2"),
 						},
 					}, nil)
-				m.EXPECT().DetachGroupPolicies(gomock.Any(), aws.String("test"), gomock.Any()).Return(nil)
+				m.EXPECT().RemoveUsersFromGroup(gomock.Any(), aws.String("test"), gomock.Any()).Return(nil)
 				m.EXPECT().DeleteGroup(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteGroupError"))
 			},
 			want:    fmt.Errorf("DeleteGroupError"),
@@ -201,18 +195,16 @@ func TestIamGroupOperator_DeleteResourcesForIamGroup(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckGroupExists(gomock.Any(), aws.String("PhysicalResourceId1")).Return(true, nil)
-				m.EXPECT().ListAttachedGroupPolicies(gomock.Any(), aws.String("PhysicalResourceId1")).Return(
-					[]types.AttachedPolicy{
+				m.EXPECT().GetGroupUsers(gomock.Any(), aws.String("PhysicalResourceId1")).Return(
+					[]types.User{
 						{
-							PolicyArn:  aws.String("PolicyArn1"),
-							PolicyName: aws.String("PolicyName1"),
+							UserName: aws.String("UserName1"),
 						},
 						{
-							PolicyArn:  aws.String("PolicyArn2"),
-							PolicyName: aws.String("PolicyName2"),
+							UserName: aws.String("UserName2"),
 						},
 					}, nil)
-				m.EXPECT().DetachGroupPolicies(gomock.Any(), aws.String("PhysicalResourceId1"), gomock.Any()).Return(nil)
+				m.EXPECT().RemoveUsersFromGroup(gomock.Any(), aws.String("PhysicalResourceId1"), gomock.Any()).Return(nil)
 				m.EXPECT().DeleteGroup(gomock.Any(), aws.String("PhysicalResourceId1")).Return(nil)
 			},
 			want:    nil,

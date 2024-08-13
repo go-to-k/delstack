@@ -427,8 +427,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                   7,
-				unsupportedStackResourcesLength:            4,
+				logicalResourceIdsLength:                   8,
+				unsupportedStackResourcesLength:            5,
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				iamRoleOperatorResourcesLength:             1,
