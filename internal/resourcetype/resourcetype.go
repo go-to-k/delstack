@@ -4,6 +4,7 @@ const (
 	S3Bucket            = "AWS::S3::Bucket"
 	S3DirectoryBucket   = "AWS::S3Express::DirectoryBucket"
 	IamRole             = "AWS::IAM::Role"
+	IamGroup            = "AWS::IAM::Group"
 	EcrRepository       = "AWS::ECR::Repository"
 	BackupVault         = "AWS::Backup::BackupVault"
 	CloudformationStack = "AWS::CloudFormation::Stack"
@@ -15,6 +16,7 @@ func GetResourceTypes() []string {
 		S3Bucket,
 		S3DirectoryBucket,
 		IamRole,
+		IamGroup,
 		EcrRepository,
 		BackupVault,
 		CloudformationStack,
