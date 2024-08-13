@@ -132,22 +132,8 @@ function attach_policy_to_role() {
 	done
 }
 
-function attach_policy_and_user_to_group() {
+function attach_user_to_group() {
 	local own_stackname="${1}"
-
-	local attach_policy_arn="arn:aws:iam::${account_id}:policy/DelstackTestPolicy"
-	local exists_policy=$(aws iam get-policy \
-		--policy-arn "${attach_policy_arn}" \
-		--output text \
-		${profile_option} 2>/dev/null || :)
-
-	if [ -z "${exists_policy}" ]; then
-		aws iam create-policy \
-			--policy-name "DelstackTestPolicy" \
-			--policy-document file://./policy_document.json \
-			--description "test policy" \
-			${profile_option} 1>/dev/null
-	fi
 
 	local attach_user_name="DelstackTestUser"
 	local exists_user=$(aws iam get-user \
@@ -205,18 +191,13 @@ function attach_policy_and_user_to_group() {
 
 		local pids=()
 		for i in ${!nested_own_stackname_array[@]}; do
-			attach_policy_and_user_to_group "${nested_own_stackname_array[$i]}" &
+			attach_user_to_group "${nested_own_stackname_array[$i]}" &
 			pids[$!]=$!
 		done
 		wait ${pids[@]}
 	fi
 
 	for i in ${!iam_group_name_array[@]}; do
-		aws iam attach-group-policy \
-			--group-name "${iam_group_name_array[$i]}" \
-			--policy-arn "${attach_policy_arn}" \
-			${profile_option}
-
 		aws iam add-user-to-group \
 			--group-name "${iam_group_name_array[$i]}" \
 			--user-name "${attach_user_name}" \
@@ -345,7 +326,7 @@ sam deploy \
 
 attach_policy_to_role "${CFN_STACK_NAME}"
 
-attach_policy_and_user_to_group "${CFN_STACK_NAME}"
+attach_user_to_group "${CFN_STACK_NAME}"
 
 object_upload "${CFN_STACK_NAME}"
 
