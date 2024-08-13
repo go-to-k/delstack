@@ -60,16 +60,6 @@ func (o *IamGroupOperator) DeleteIamGroup(ctx context.Context, GroupName *string
 		return nil
 	}
 
-	policies, err := o.client.ListAttachedGroupPolicies(ctx, GroupName)
-	if err != nil {
-		return err
-	}
-	if len(policies) > 0 {
-		if err := o.client.DetachGroupPolicies(ctx, GroupName, policies); err != nil {
-			return err
-		}
-	}
-
 	users, err := o.client.GetGroupUsers(ctx, GroupName)
 	if err != nil {
 		return err

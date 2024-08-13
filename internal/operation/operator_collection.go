@@ -123,7 +123,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.S3Bucket, "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
 		{resourcetype.S3DirectoryBucket, "S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty and DeletionPolicy not Retain."},
 		{resourcetype.IamRole, "IAM Roles, including roles with IAM policies from outside the stack."},
-		{resourcetype.IamGroup, "IAM Groups, including groups with IAM users and policies from outside the stack."},
+		{resourcetype.IamGroup, "IAM Groups, including groups with IAM users from outside the stack."},
 		{resourcetype.EcrRepository, "ECR Repositories, including repositories containing images."},
 		{resourcetype.BackupVault, "Backup Vaults, including vaults containing recovery points."},
 		{resourcetype.CloudformationStack, "Nested Child Stacks that failed to delete."},

@@ -92,20 +92,6 @@ func (mr *MockIIamMockRecorder) DeleteRole(ctx, roleName interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRole", reflect.TypeOf((*MockIIam)(nil).DeleteRole), ctx, roleName)
 }
 
-// DetachGroupPolicies mocks base method.
-func (m *MockIIam) DetachGroupPolicies(ctx context.Context, groupName *string, policies []types.AttachedPolicy) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DetachGroupPolicies", ctx, groupName, policies)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DetachGroupPolicies indicates an expected call of DetachGroupPolicies.
-func (mr *MockIIamMockRecorder) DetachGroupPolicies(ctx, groupName, policies interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachGroupPolicies", reflect.TypeOf((*MockIIam)(nil).DetachGroupPolicies), ctx, groupName, policies)
-}
-
 // DetachRolePolicies mocks base method.
 func (m *MockIIam) DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy) error {
 	m.ctrl.T.Helper()
@@ -133,21 +119,6 @@ func (m *MockIIam) GetGroupUsers(ctx context.Context, groupName *string) ([]type
 func (mr *MockIIamMockRecorder) GetGroupUsers(ctx, groupName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupUsers", reflect.TypeOf((*MockIIam)(nil).GetGroupUsers), ctx, groupName)
-}
-
-// ListAttachedGroupPolicies mocks base method.
-func (m *MockIIam) ListAttachedGroupPolicies(ctx context.Context, groupName *string) ([]types.AttachedPolicy, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAttachedGroupPolicies", ctx, groupName)
-	ret0, _ := ret[0].([]types.AttachedPolicy)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListAttachedGroupPolicies indicates an expected call of ListAttachedGroupPolicies.
-func (mr *MockIIamMockRecorder) ListAttachedGroupPolicies(ctx, groupName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAttachedGroupPolicies", reflect.TypeOf((*MockIIam)(nil).ListAttachedGroupPolicies), ctx, groupName)
 }
 
 // ListAttachedRolePolicies mocks base method.

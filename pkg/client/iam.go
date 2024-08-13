@@ -17,8 +17,6 @@ type IIam interface {
 	DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy) error
 	CheckRoleExists(ctx context.Context, roleName *string) (bool, error)
 	DeleteGroup(ctx context.Context, groupName *string) error
-	ListAttachedGroupPolicies(ctx context.Context, groupName *string) ([]types.AttachedPolicy, error)
-	DetachGroupPolicies(ctx context.Context, groupName *string, policies []types.AttachedPolicy) error
 	CheckGroupExists(ctx context.Context, groupName *string) (bool, error)
 	GetGroupUsers(ctx context.Context, groupName *string) ([]types.User, error)
 	RemoveUsersFromGroup(ctx context.Context, groupName *string, users []types.User) error
@@ -175,78 +173,6 @@ func (i *Iam) DeleteGroup(ctx context.Context, groupName *string) error {
 			ResourceName: groupName,
 			Err:          err,
 		}
-	}
-	return nil
-}
-
-func (i *Iam) ListAttachedGroupPolicies(ctx context.Context, groupName *string) ([]types.AttachedPolicy, error) {
-	var marker *string
-	policies := []types.AttachedPolicy{}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return policies, &ClientError{
-				ResourceName: groupName,
-				Err:          ctx.Err(),
-			}
-		default:
-		}
-
-		input := &iam.ListAttachedGroupPoliciesInput{
-			GroupName: groupName,
-			Marker:    marker,
-		}
-
-		optFn := func(o *iam.Options) {
-			o.Retryer = i.retryer
-		}
-
-		output, err := i.client.ListAttachedGroupPolicies(ctx, input, optFn)
-		if err != nil {
-			return nil, &ClientError{
-				ResourceName: groupName,
-				Err:          err,
-			}
-		}
-
-		policies = append(policies, output.AttachedPolicies...)
-
-		marker = output.Marker
-		if marker == nil {
-			break
-		}
-	}
-
-	return policies, nil
-}
-
-func (i *Iam) DetachGroupPolicies(ctx context.Context, groupName *string, policies []types.AttachedPolicy) error {
-	for _, policy := range policies {
-		if err := i.detachGroupPolicy(ctx, groupName, policy.PolicyArn); err != nil {
-			return &ClientError{
-				ResourceName: groupName,
-				Err:          err,
-			}
-		}
-	}
-
-	return nil
-}
-
-func (i *Iam) detachGroupPolicy(ctx context.Context, groupName *string, policyArn *string) error {
-	input := &iam.DetachGroupPolicyInput{
-		PolicyArn: policyArn,
-		GroupName: groupName,
-	}
-
-	optFn := func(o *iam.Options) {
-		o.Retryer = i.retryer
-	}
-
-	_, err := i.client.DetachGroupPolicy(ctx, input, optFn)
-	if err != nil {
-		return err
 	}
 	return nil
 }
