@@ -240,9 +240,9 @@ func (i *Iam) RemoveUsersFromGroup(ctx context.Context, groupName *string, users
 	return nil
 }
 
-func (i *Iam) removeUserFromGroup(ctx context.Context, groupName *string, useName *string) error {
+func (i *Iam) removeUserFromGroup(ctx context.Context, groupName *string, userName *string) error {
 	input := &iam.RemoveUserFromGroupInput{
-		UserName:  useName,
+		UserName:  userName,
 		GroupName: groupName,
 	}
 
