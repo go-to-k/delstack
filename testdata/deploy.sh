@@ -60,7 +60,7 @@ touch ${dir}/{1..10000}.txt
 function attach_policy_to_role() {
 	local own_stackname="${1}"
 
-	local attach_policy_arn="arn:aws:iam::${account_id}:policy/${CFN_PJ_PREFIX}-TestPolicy"
+	local attach_policy_arn="arn:aws:iam::${account_id}:policy/DelstackTestPolicy"
 	local exists_policy=$(aws iam get-policy \
 		--policy-arn "${attach_policy_arn}" \
 		--output text \
@@ -68,7 +68,7 @@ function attach_policy_to_role() {
 
 	if [ -z "${exists_policy}" ]; then
 		aws iam create-policy \
-			--policy-name "${CFN_PJ_PREFIX}-TestPolicy" \
+			--policy-name "DelstackTestPolicy" \
 			--policy-document file://./policy_document.json \
 			--description "test policy" \
 			${profile_option} 1>/dev/null
@@ -135,7 +135,7 @@ function attach_policy_to_role() {
 function attach_policy_and_user_to_group() {
 	local own_stackname="${1}"
 
-	local attach_policy_arn="arn:aws:iam::${account_id}:policy/${CFN_PJ_PREFIX}-TestPolicy"
+	local attach_policy_arn="arn:aws:iam::${account_id}:policy/DelstackTestPolicy"
 	local exists_policy=$(aws iam get-policy \
 		--policy-arn "${attach_policy_arn}" \
 		--output text \
@@ -143,13 +143,13 @@ function attach_policy_and_user_to_group() {
 
 	if [ -z "${exists_policy}" ]; then
 		aws iam create-policy \
-			--policy-name "${CFN_PJ_PREFIX}-TestPolicy" \
+			--policy-name "DelstackTestPolicy" \
 			--policy-document file://./policy_document.json \
 			--description "test policy" \
 			${profile_option} 1>/dev/null
 	fi
 
-	local attach_user_name="${CFN_PJ_PREFIX}-TestUser"
+	local attach_user_name="DelstackTestUser"
 	local exists_user=$(aws iam get-user \
 		--user-name "${attach_user_name}" \
 		--output text \
