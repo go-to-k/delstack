@@ -78,6 +78,19 @@ func (f *OperatorFactory) CreateIamRoleOperator() *IamRoleOperator {
 	)
 }
 
+func (f *OperatorFactory) CreateIamGroupOperator() *IamGroupOperator {
+	sdkIamClient := iam.NewFromConfig(f.config, func(o *iam.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	return NewIamGroupOperator(
+		client.NewIam(
+			sdkIamClient,
+		),
+	)
+}
+
 func (f *OperatorFactory) CreateS3BucketOperator() *S3BucketOperator {
 	sdkS3Client := s3.NewFromConfig(f.config, func(o *s3.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts

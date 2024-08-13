@@ -62,6 +62,11 @@ Resources:
       DataRedundancy: "SingleAvailabilityZone"
       LocationName: "use1-az4"
 
+  ChildIamGroup:
+    Type: "AWS::IAM::Group"
+    Properties:
+      GroupName: !Sub "${PJPrefix}-child-group"
+
   ChildLambdaRole:
     Type: "AWS::IAM::Role"
     Properties:

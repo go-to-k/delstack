@@ -88,6 +88,11 @@ Resources:
       DataRedundancy: "SingleAvailabilityZone"
       LocationName: "use1-az4"
 
+  RootIamGroup:
+    Type: "AWS::IAM::Group"
+    Properties:
+      GroupName: !Sub "${PJPrefix}-root-group"
+
   RootLambdaRole:
     Type: "AWS::IAM::Role"
     Properties:
