@@ -57,7 +57,7 @@ dir="./testfiles/${CFN_STACK_NAME}"
 mkdir -p ${dir}
 touch ${dir}/{1..10000}.txt
 
-function attach_policy() {
+function attach_policy_to_role() {
 	local own_stackname="${1}"
 
 	local attach_policy_arn="arn:aws:iam::${account_id}:policy/${CFN_PJ_PREFIX}-TestPolicy"
@@ -118,7 +118,7 @@ function attach_policy() {
 
 		local pids=()
 		for i in ${!nested_own_stackname_array[@]}; do
-			attach_policy "${nested_own_stackname_array[$i]}" &
+			attach_policy_to_role "${nested_own_stackname_array[$i]}" &
 			pids[$!]=$!
 		done
 		wait ${pids[@]}
@@ -128,6 +128,98 @@ function attach_policy() {
 		aws iam attach-role-policy \
 			--role-name "${iam_role_name_array[$i]}" \
 			--policy-arn "${attach_policy_arn}" \
+			${profile_option}
+	done
+}
+
+function attach_policy_and_user_to_group() {
+	local own_stackname="${1}"
+
+	local attach_policy_arn="arn:aws:iam::${account_id}:policy/${CFN_PJ_PREFIX}-TestPolicy"
+	local exists_policy=$(aws iam get-policy \
+		--policy-arn "${attach_policy_arn}" \
+		--output text \
+		${profile_option} 2>/dev/null || :)
+
+	if [ -z "${exists_policy}" ]; then
+		aws iam create-policy \
+			--policy-name "${CFN_PJ_PREFIX}-TestPolicy" \
+			--policy-document file://./policy_document.json \
+			--description "test policy" \
+			${profile_option} 1>/dev/null
+	fi
+
+	local attach_user_name="${CFN_PJ_PREFIX}-TestUser"
+	local exists_user=$(aws iam get-user \
+		--user-name "${attach_user_name}" \
+		--output text \
+		${profile_option} 2>/dev/null || :)
+
+	if [ -z "${exists_user}" ]; then
+		aws iam create-user \
+			--user-name "${attach_user_name}" \
+			${profile_option} 1>/dev/null
+	fi
+
+	local resources=$(
+		aws cloudformation list-stack-resources \
+			--stack-name ${own_stackname} \
+			--query "StackResourceSummaries" \
+			${profile_option} |
+			jq '.[] | {LogicalResourceId:.LogicalResourceId, PhysicalResourceId:.PhysicalResourceId, ResourceType:.ResourceType}' |
+			jq -s '.'
+	)
+
+	local iam_group_resources=$(
+		echo "${resources}" |
+			jq '.[] | select(.ResourceType == "AWS::IAM::Group") | .PhysicalResourceId' |
+			jq -s '.'
+	)
+
+	local nested_stack_resources=$(
+		echo "${resources}" |
+			jq '.[] | select(.ResourceType == "AWS::CloudFormation::Stack") | .PhysicalResourceId' |
+			jq -s '.'
+	)
+
+	local iam_group_resource_len=$(echo $iam_group_resources | jq length)
+	local nested_stack_resourceLen=$(echo $nested_stack_resources | jq length)
+	local iam_group_name_array=()
+	local nested_own_stackname_array=()
+
+	if [ ${iam_group_resource_len} -gt 0 ]; then
+		for i in $(seq 0 $(($iam_group_resource_len - 1))); do
+			iam_group_name_array+=($(echo $iam_group_resources | jq -r ".[$i]"))
+		done
+	fi
+
+	if [ ${nested_stack_resourceLen} -gt 0 ]; then
+		for i in $(seq 0 $(($nested_stack_resourceLen - 1))); do
+			nested_own_stackname_array+=($(
+				echo $nested_stack_resources |
+					jq -r ".[$i]" |
+					sed -e "s/^arn:aws:cloudformation:[^:]*:[0-9]*:stack\/\([^\/]*\)\/.*$/\1/g"
+			)
+			)
+		done
+
+		local pids=()
+		for i in ${!nested_own_stackname_array[@]}; do
+			attach_policy_and_user_to_group "${nested_own_stackname_array[$i]}" &
+			pids[$!]=$!
+		done
+		wait ${pids[@]}
+	fi
+
+	for i in ${!iam_group_name_array[@]}; do
+		aws iam attach-group-policy \
+			--group-name "${iam_group_name_array[$i]}" \
+			--policy-arn "${attach_policy_arn}" \
+			${profile_option}
+
+		aws iam add-user-to-group \
+			--group-name "${iam_group_name_array[$i]}" \
+			--user-name "${attach_user_name}" \
 			${profile_option}
 	done
 }
@@ -251,7 +343,9 @@ sam deploy \
 	DirectoryBucketMode=${directory_bucket_mode} \
 	${profile_option}
 
-attach_policy "${CFN_STACK_NAME}"
+attach_policy_to_role "${CFN_STACK_NAME}"
+
+attach_policy_and_user_to_group "${CFN_STACK_NAME}"
 
 object_upload "${CFN_STACK_NAME}"
 
