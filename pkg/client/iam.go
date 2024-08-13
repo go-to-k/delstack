@@ -193,19 +193,15 @@ func (i *Iam) CheckGroupExists(ctx context.Context, groupName *string) (bool, er
 }
 
 func (i *Iam) GetGroupUsers(ctx context.Context, groupName *string) ([]types.User, error) {
-	users := []types.User{}
-
 	output, err := i.getGroup(ctx, groupName)
 	if err != nil {
-		return users, &ClientError{
+		return nil, &ClientError{
 			ResourceName: groupName,
 			Err:          err,
 		}
 	}
 
-	users = append(users, output.Users...)
-
-	return users, nil
+	return output.Users, nil
 }
 
 func (i *Iam) getGroup(ctx context.Context, groupName *string) (*iam.GetGroupOutput, error) {
