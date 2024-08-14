@@ -12,10 +12,6 @@ import (
 var SleepTimeSecForIam = 5
 
 type IIam interface {
-	DeleteRole(ctx context.Context, roleName *string) error
-	ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error)
-	DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy) error
-	CheckRoleExists(ctx context.Context, roleName *string) (bool, error)
 	DeleteGroup(ctx context.Context, groupName *string) error
 	CheckGroupExists(ctx context.Context, groupName *string) (bool, error)
 	GetGroupUsers(ctx context.Context, groupName *string) ([]types.User, error)
@@ -41,121 +37,6 @@ func NewIam(client *iam.Client) *Iam {
 		retryer,
 		nil,
 	}
-}
-
-func (i *Iam) DeleteRole(ctx context.Context, roleName *string) error {
-	input := &iam.DeleteRoleInput{
-		RoleName: roleName,
-	}
-
-	optFn := func(o *iam.Options) {
-		o.Retryer = i.retryer
-	}
-
-	_, err := i.client.DeleteRole(ctx, input, optFn)
-	if err != nil {
-		return &ClientError{
-			ResourceName: roleName,
-			Err:          err,
-		}
-	}
-	return nil
-}
-
-func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string) ([]types.AttachedPolicy, error) {
-	var marker *string
-	policies := []types.AttachedPolicy{}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return policies, &ClientError{
-				ResourceName: roleName,
-				Err:          ctx.Err(),
-			}
-		default:
-		}
-
-		input := &iam.ListAttachedRolePoliciesInput{
-			RoleName: roleName,
-			Marker:   marker,
-		}
-
-		optFn := func(o *iam.Options) {
-			o.Retryer = i.retryer
-		}
-
-		output, err := i.client.ListAttachedRolePolicies(ctx, input, optFn)
-		if err != nil {
-			return nil, &ClientError{
-				ResourceName: roleName,
-				Err:          err,
-			}
-		}
-
-		policies = append(policies, output.AttachedPolicies...)
-
-		marker = output.Marker
-		if marker == nil {
-			break
-		}
-	}
-
-	return policies, nil
-}
-
-func (i *Iam) DetachRolePolicies(ctx context.Context, roleName *string, policies []types.AttachedPolicy) error {
-	for _, policy := range policies {
-		if err := i.detachRolePolicy(ctx, roleName, policy.PolicyArn); err != nil {
-			return &ClientError{
-				ResourceName: roleName,
-				Err:          err,
-			}
-		}
-	}
-
-	return nil
-}
-
-func (i *Iam) detachRolePolicy(ctx context.Context, roleName *string, policyArn *string) error {
-	input := &iam.DetachRolePolicyInput{
-		PolicyArn: policyArn,
-		RoleName:  roleName,
-	}
-
-	optFn := func(o *iam.Options) {
-		o.Retryer = i.retryer
-	}
-
-	_, err := i.client.DetachRolePolicy(ctx, input, optFn)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
-	input := &iam.GetRoleInput{
-		RoleName: roleName,
-	}
-
-	optFn := func(o *iam.Options) {
-		o.Retryer = i.retryer
-	}
-
-	_, err := i.client.GetRole(ctx, input, optFn)
-
-	if err != nil && strings.Contains(err.Error(), "NoSuchEntity") {
-		return false, nil
-	}
-	if err != nil {
-		return false, &ClientError{
-			ResourceName: roleName,
-			Err:          err,
-		}
-	}
-
-	return true, nil
 }
 
 func (i *Iam) DeleteGroup(ctx context.Context, groupName *string) error {

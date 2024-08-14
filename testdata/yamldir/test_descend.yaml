@@ -223,12 +223,14 @@ Resources:
             responseData = {}
 
             try:
-              # if event['RequestType'] == "Delete":
+              if event['RequestType'] == "Delete":
                 # DeletePolicy(PolicyName)
-              # if event['RequestType'] == "Create":
+                responseData['Data'] = "FAILED"
+                status=cfnresponse.FAILED
+              if event['RequestType'] == "Create":
                 # PutPolicy(CloudWatchLogsLogGroupArns, PolicyName, ServiceName)
-              responseData['Data'] = "SUCCESS"
-              status=cfnresponse.SUCCESS
+                responseData['Data'] = "SUCCESS"
+                status=cfnresponse.SUCCESS
             except ClientError as e:
               responseData['Data'] = "FAILED"
               status=cfnresponse.FAILED
@@ -246,9 +248,11 @@ Resources:
         - !GetAtt DescendLogGroup.Arn
       PolicyName: !Sub "${PJPrefix}DescendResourcePolicyForDNSLog"
       ServiceName: "route53.amazonaws.com"
+      ServiceTimeout: "5"
 
   DescendLogGroup:
     Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
     Properties:
       LogGroupName: !Sub "${PJPrefix}-Descend-log"
       RetentionInDays: 14

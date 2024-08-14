@@ -55,8 +55,9 @@ account_id=$(aws sts get-caller-identity \
 
 dir="./testfiles/${CFN_STACK_NAME}"
 mkdir -p ${dir}
-touch ${dir}/{1..10000}.txt
+touch ${dir}/{1..1000}.txt
 
+# The following function is no longer needed as the IAM role no longer fails on normal deletion, but it is left in place just in case.
 function attach_policy_to_role() {
 	local own_stackname="${1}"
 
@@ -304,6 +305,37 @@ function object_upload() {
 	done
 }
 
+function create_backup() {
+	local backup_vault_name="${CFN_PJ_PREFIX}-Backup-Vault"
+	local resource_arn="arn:aws:dynamodb:${REGION}:${account_id}:table/${CFN_PJ_PREFIX}-Table"
+	local iam_role_arn="arn:aws:iam::${account_id}:role/service-role/${CFN_PJ_PREFIX}-AWSBackupServiceRole"
+
+	local backup_job_id=$(
+		aws backup start-backup-job \
+			--backup-vault-name "${backup_vault_name}" \
+			--resource-arn "${resource_arn}" \
+			--iam-role-arn "${iam_role_arn}" \
+			${profile_option} |
+			jq -r '.BackupJobId'
+	)
+
+	while true; do
+		local state=$(
+			aws backup describe-backup-job \
+				--backup-job-id "${backup_job_id}" \
+				${profile_option} |
+				jq -r '.State'
+		)
+		if [ "${state}" = "COMPLETED" ]; then
+			break
+		elif [ "${state}" = "FAILED" ]; then
+			echo "Backup failed !!"
+			exit 1
+		fi
+		sleep 10
+	done
+}
+
 if [ -z "$(aws s3 ls ${profile_option} | grep ${sam_bucket})" ]; then
 	echo ${profile_option}
 	aws s3 mb s3://${sam_bucket} ${profile_option}
@@ -324,12 +356,15 @@ sam deploy \
 	DirectoryBucketMode=${directory_bucket_mode} \
 	${profile_option}
 
-attach_policy_to_role "${CFN_STACK_NAME}"
-
 attach_user_to_group "${CFN_STACK_NAME}"
 
 object_upload "${CFN_STACK_NAME}"
 
 build_upload
+
+create_backup
+
+# The following function is no longer needed as the IAM role no longer fails on normal deletion, but it is left in place just in case.
+attach_policy_to_role "${CFN_STACK_NAME}"
 
 rm -rf ${dir}
