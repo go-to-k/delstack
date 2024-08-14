@@ -65,19 +65,6 @@ func (f *OperatorFactory) CreateEcrRepositoryOperator() *EcrRepositoryOperator {
 	)
 }
 
-func (f *OperatorFactory) CreateIamRoleOperator() *IamRoleOperator {
-	sdkIamClient := iam.NewFromConfig(f.config, func(o *iam.Options) {
-		o.RetryMaxAttempts = SDKRetryMaxAttempts
-		o.RetryMode = aws.RetryModeStandard
-	})
-
-	return NewIamRoleOperator(
-		client.NewIam(
-			sdkIamClient,
-		),
-	)
-}
-
 func (f *OperatorFactory) CreateIamGroupOperator() *IamGroupOperator {
 	sdkIamClient := iam.NewFromConfig(f.config, func(o *iam.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts

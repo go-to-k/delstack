@@ -41,7 +41,6 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 
 	s3BucketOperator := c.operatorFactory.CreateS3BucketOperator()
 	s3DirectoryBucketOperator := c.operatorFactory.CreateS3DirectoryBucketOperator()
-	iamRoleOperator := c.operatorFactory.CreateIamRoleOperator()
 	iamGroupOperator := c.operatorFactory.CreateIamGroupOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
@@ -61,8 +60,6 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 					s3BucketOperator.AddResource(&stackResource)
 				case resourcetype.S3DirectoryBucket:
 					s3DirectoryBucketOperator.AddResource(&stackResource)
-				case resourcetype.IamRole:
-					iamRoleOperator.AddResource(&stackResource)
 				case resourcetype.IamGroup:
 					iamGroupOperator.AddResource(&stackResource)
 				case resourcetype.EcrRepository:
@@ -82,7 +79,6 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 
 	c.operators = append(c.operators, s3BucketOperator)
 	c.operators = append(c.operators, s3DirectoryBucketOperator)
-	c.operators = append(c.operators, iamRoleOperator)
 	c.operators = append(c.operators, iamGroupOperator)
 	c.operators = append(c.operators, ecrRepositoryOperator)
 	c.operators = append(c.operators, backupVaultOperator)
@@ -122,12 +118,11 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 	supportedStackResourcesData := [][]string{
 		{resourcetype.S3Bucket, "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
 		{resourcetype.S3DirectoryBucket, "S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty and DeletionPolicy not Retain."},
-		{resourcetype.IamRole, "IAM Roles, including roles with IAM policies from outside the stack."},
 		{resourcetype.IamGroup, "IAM Groups, including groups with IAM users from outside the stack."},
-		{resourcetype.EcrRepository, "ECR Repositories, including repositories containing images."},
+		{resourcetype.EcrRepository, "ECR Repositories, including repositories that contain images and where the `EmptyOnDelete` is not true."},
 		{resourcetype.BackupVault, "Backup Vaults, including vaults containing recovery points."},
 		{resourcetype.CloudformationStack, "Nested Child Stacks that failed to delete."},
-		{"Custom::Xxx", "Custom Resources, but they will be deleted on its own."},
+		{"Custom::Xxx", "Custom Resources, including resources that do not return a SUCCESS status."},
 	}
 	supportedStackResources := "\nSupported resources for force deletion of DELETE_FAILED resources are followings.\n" + *io.ToStringAsTableFormat(supportedStackResourcesHeader, supportedStackResourcesData)
 

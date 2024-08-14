@@ -27,6 +27,7 @@ Resources:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Sub "${PJPrefix}-ecr"
+      EmptyOnDelete: false
       LifecyclePolicy:
         LifecyclePolicyText: |
           {
@@ -271,12 +272,14 @@ Resources:
             responseData = {}
 
             try:
-              # if event['RequestType'] == "Delete":
+              if event['RequestType'] == "Delete":
                 # DeletePolicy(PolicyName)
-              # if event['RequestType'] == "Create":
+                responseData['Data'] = "FAILED"
+                status=cfnresponse.FAILED
+              if event['RequestType'] == "Create":
                 # PutPolicy(CloudWatchLogsLogGroupArns, PolicyName, ServiceName)
-              responseData['Data'] = "SUCCESS"
-              status=cfnresponse.SUCCESS
+                responseData['Data'] = "SUCCESS"
+                status=cfnresponse.SUCCESS
             except ClientError as e:
               responseData['Data'] = "FAILED"
               status=cfnresponse.FAILED
@@ -294,9 +297,11 @@ Resources:
         - !GetAtt RootLogGroup.Arn
       PolicyName: !Sub "${PJPrefix}RootResourcePolicyForDNSLog"
       ServiceName: "route53.amazonaws.com"
+      ServiceTimeout: "5"
 
   RootLogGroup:
     Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
     Properties:
       LogGroupName: !Sub "${PJPrefix}-Root-log"
       RetentionInDays: 14
@@ -319,6 +324,7 @@ Resources:
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForBackup"
         - "arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForRestores"
+        - "arn:aws:iam::aws:policy/AmazonDynamoDBReadOnlyAccess"
 
   BackupVaultWithThinBackups:
     Type: AWS::Backup::BackupVault
@@ -355,6 +361,20 @@ Resources:
             ConditionKey: "Test"
             ConditionValue: "Test"
       BackupPlanId: !Ref BackupPlanWithThinBackups
+
+  TableForBackup:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      TableName: !Sub "${PJPrefix}-Table"
+      AttributeDefinitions:
+        - AttributeName: "Id"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "Id"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
 
 Outputs:
   ECRArn:

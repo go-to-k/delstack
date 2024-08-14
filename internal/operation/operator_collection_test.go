@@ -13,7 +13,6 @@ import (
 var targetResourceTypesForAllServices = []string{
 	"AWS::S3::Bucket",
 	"AWS::S3Express::DirectoryBucket",
-	"AWS::IAM::Role",
 	"AWS::IAM::Group",
 	"AWS::ECR::Repository",
 	"AWS::Backup::BackupVault",
@@ -23,7 +22,7 @@ var targetResourceTypesForAllServices = []string{
 
 var targetResourceTypesForPartialServices = []string{
 	"AWS::S3::Bucket",
-	"AWS::IAM::Role",
+	"AWS::IAM::Group",
 	"Custom::",
 }
 
@@ -46,7 +45,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		unsupportedStackResourcesLength            int
 		s3BucketOperatorResourcesLength            int
 		s3DirectoryBucketOperatorResourcesLength   int
-		iamRoleOperatorResourcesLength             int
 		iamGroupOperatorResourcesLength            int
 		ecrRepositoryOperatorResourcesLength       int
 		backupVaultOperatorResourcesLength         int
@@ -87,41 +85,34 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId4"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::IAM::Role"),
+						ResourceType:       aws.String("AWS::IAM::Group"),
 						PhysicalResourceId: aws.String("PhysicalResourceId4"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId5"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::IAM::Group"),
+						ResourceType:       aws.String("AWS::ECR::Repository"),
 						PhysicalResourceId: aws.String("PhysicalResourceId5"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId6"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::ECR::Repository"),
+						ResourceType:       aws.String("AWS::Backup::BackupVault"),
 						PhysicalResourceId: aws.String("PhysicalResourceId6"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId7"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::Backup::BackupVault"),
-						PhysicalResourceId: aws.String("PhysicalResourceId7"),
-					},
-					{
-						LogicalResourceId:  aws.String("LogicalResourceId8"),
-						ResourceStatus:     "DELETE_FAILED",
 						ResourceType:       aws.String("Custom::CustomResource"),
-						PhysicalResourceId: aws.String("PhysicalResourceId8"),
+						PhysicalResourceId: aws.String("PhysicalResourceId7"),
 					},
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                   8,
+				logicalResourceIdsLength:                   7,
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   1,
-				iamRoleOperatorResourcesLength:             1,
 				iamGroupOperatorResourcesLength:            1,
 				ecrRepositoryOperatorResourcesLength:       1,
 				backupVaultOperatorResourcesLength:         1,
@@ -155,7 +146,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            1,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -201,7 +191,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            2,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -235,7 +224,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            1,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -281,7 +269,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            2,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -315,7 +302,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -361,7 +347,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -397,42 +382,35 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId4"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::IAM::Role"),
+						ResourceType:       aws.String("AWS::IAM::Group"),
 						PhysicalResourceId: aws.String("PhysicalResourceId4"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId5"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::IAM::Group"),
+						ResourceType:       aws.String("AWS::ECR::Repository"),
 						PhysicalResourceId: aws.String("PhysicalResourceId5"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId6"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::ECR::Repository"),
+						ResourceType:       aws.String("AWS::Backup::BackupVault"),
 						PhysicalResourceId: aws.String("PhysicalResourceId6"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId7"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::Backup::BackupVault"),
-						PhysicalResourceId: aws.String("PhysicalResourceId7"),
-					},
-					{
-						LogicalResourceId:  aws.String("LogicalResourceId8"),
-						ResourceStatus:     "DELETE_FAILED",
 						ResourceType:       aws.String("Custom::CustomResource"),
-						PhysicalResourceId: aws.String("PhysicalResourceId8"),
+						PhysicalResourceId: aws.String("PhysicalResourceId7"),
 					},
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                   8,
-				unsupportedStackResourcesLength:            5,
+				logicalResourceIdsLength:                   7,
+				unsupportedStackResourcesLength:            4,
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             1,
-				iamGroupOperatorResourcesLength:            0,
+				iamGroupOperatorResourcesLength:            1,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				cloudformationStackOperatorResourcesLength: 0,
@@ -465,7 +443,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            2,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -511,7 +488,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            4,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -545,7 +521,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            1,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -591,7 +566,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            2,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -625,7 +599,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            1,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -671,7 +644,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            2,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -680,7 +652,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			},
 		},
 		{
-			name: "resource counts check 8 for partial target resource types",
+			name: "resource counts check 7 for partial target resource types",
 			args: args{
 				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
@@ -705,7 +677,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            1,
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -751,7 +722,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            2,
 				s3BucketOperatorResourcesLength:            2,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -785,7 +755,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            1,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -831,7 +800,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            2,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -865,7 +833,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -911,7 +878,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            2,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -945,7 +911,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            1,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -991,7 +956,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            2,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -1025,7 +989,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            1,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -1071,7 +1034,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            2,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -1080,7 +1042,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			},
 		},
 		{
-			name: "resource counts check 18 for partial target resource types",
+			name: "resource counts check 17 for partial target resource types",
 			args: args{
 				ctx:                 context.Background(),
 				stackName:           aws.String("test"),
@@ -1105,7 +1067,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -1151,7 +1112,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -1185,7 +1145,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            1,
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   0,
-				iamRoleOperatorResourcesLength:             0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
@@ -1205,7 +1164,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 
 			s3BucketOperatorResourcesLength := 0
 			s3DirectoryBucketOperatorResourcesLength := 0
-			iamRoleOperatorResourcesLength := 0
 			iamGroupOperatorResourcesLength := 0
 			ecrRepositoryOperatorResourcesLength := 0
 			backupVaultOperatorResourcesLength := 0
@@ -1220,8 +1178,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					} else {
 						s3BucketOperatorResourcesLength += operator.GetResourcesLength()
 					}
-				case *IamRoleOperator:
-					iamRoleOperatorResourcesLength += operator.GetResourcesLength()
 				case *IamGroupOperator:
 					iamGroupOperatorResourcesLength += operator.GetResourcesLength()
 				case *EcrRepositoryOperator:
@@ -1241,7 +1197,6 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				unsupportedStackResourcesLength:            len(operatorCollection.unsupportedStackResources),
 				s3BucketOperatorResourcesLength:            s3BucketOperatorResourcesLength,
 				s3DirectoryBucketOperatorResourcesLength:   s3DirectoryBucketOperatorResourcesLength,
-				iamRoleOperatorResourcesLength:             iamRoleOperatorResourcesLength,
 				iamGroupOperatorResourcesLength:            iamGroupOperatorResourcesLength,
 				ecrRepositoryOperatorResourcesLength:       ecrRepositoryOperatorResourcesLength,
 				backupVaultOperatorResourcesLength:         backupVaultOperatorResourcesLength,
@@ -1288,16 +1243,6 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 				stackName:           aws.String("test"),
 				targetResourceTypes: targetResourceTypesForAllServices,
 				resource:            "AWS::S3Express::DirectoryBucket",
-			},
-			want: true,
-		},
-		{
-			name: "IAM Role for all target resource types",
-			args: args{
-				ctx:                 context.Background(),
-				stackName:           aws.String("test"),
-				targetResourceTypes: targetResourceTypesForAllServices,
-				resource:            "AWS::IAM::Role",
 			},
 			want: true,
 		},
