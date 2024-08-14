@@ -328,7 +328,7 @@ function create_backup() {
 		)
 		if [ "${state}" = "COMPLETED" ]; then
 			break
-		elif [ "${state}" = "FAILED" ]; then
+		elif [ "${state}" = "FAILED" ] || [ "${state}" = "ABORTED" ]; then
 			echo "Backup failed !!"
 			exit 1
 		fi
