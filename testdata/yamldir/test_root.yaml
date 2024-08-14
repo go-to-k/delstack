@@ -362,7 +362,7 @@ Resources:
             ConditionValue: "Test"
       BackupPlanId: !Ref BackupPlanWithThinBackups
 
-  TableforBackup:
+  TableForBackup:
     Type: "AWS::DynamoDB::Table"
     Properties:
       TableName: !Sub "${PJPrefix}-Table"
