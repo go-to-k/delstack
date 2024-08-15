@@ -12,15 +12,6 @@ Metadata:
 Parameters:
   PJPrefix:
     Type: String
-  DirectoryBucketMode:
-    Type: String
-    Default: "off"
-    AllowedValues:
-      - "on"
-      - "off"
-
-Conditions:
-  IsDirectoryBucketMode: !Equals [!Ref DirectoryBucketMode, "on"]
 
 Resources:
   DescendTwoS3Bucket:
@@ -37,14 +28,6 @@ Resources:
         RestrictPublicBuckets: True
       VersioningConfiguration:
         Status: Enabled
-
-  DescendTwoS3DirectoryBucket:
-    Condition: IsDirectoryBucketMode
-    Type: "AWS::S3Express::DirectoryBucket"
-    Properties:
-      BucketName: !Sub "${PJPrefix}-descendtwo--use1-az4--x-s3"
-      DataRedundancy: "SingleAvailabilityZone"
-      LocationName: "use1-az4"
 
   DescendTwoLambdaRole:
     Type: "AWS::IAM::Role"
@@ -63,97 +46,6 @@ Resources:
     Type: "AWS::IAM::Role"
     Properties:
       RoleName: !Sub "${PJPrefix}-descend2-role-2"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  DescendTwoLambdaRole3:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-descend2-role-3"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  DescendTwoLambdaRole4:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-descend2-role-4"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  DescendTwoLambdaRole5:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-descend2-role-5"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  DescendTwoLambdaRole6:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-descend2-role-6"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  DescendTwoLambdaRole7:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-descend2-role-7"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  DescendTwoLambdaRole8:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-descend2-role-8"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  DescendTwoLambdaRole9:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-descend2-role-9"
       Path: "/"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"

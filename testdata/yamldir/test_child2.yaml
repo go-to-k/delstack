@@ -12,15 +12,6 @@ Metadata:
 Parameters:
   PJPrefix:
     Type: String
-  DirectoryBucketMode:
-    Type: String
-    Default: "off"
-    AllowedValues:
-      - "on"
-      - "off"
-
-Conditions:
-  IsDirectoryBucketMode: !Equals [!Ref DirectoryBucketMode, "on"]
 
 Resources:
   DescendTwoStack:
@@ -29,7 +20,6 @@ Resources:
       Location: ./test_descend2.yaml
       Parameters:
         PJPrefix: !Sub "${PJPrefix}"
-        DirectoryBucketMode: !Ref DirectoryBucketMode
 
   ChildTwoS3Bucket:
     Type: "AWS::S3::Bucket"
@@ -43,14 +33,6 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
-
-  ChildTwoS3DirectoryBucket:
-    Condition: IsDirectoryBucketMode
-    Type: "AWS::S3Express::DirectoryBucket"
-    Properties:
-      BucketName: !Sub "${PJPrefix}-childtwo--use1-az4--x-s3"
-      DataRedundancy: "SingleAvailabilityZone"
-      LocationName: "use1-az4"
 
   ChildTwoLambdaRole:
     Type: "AWS::IAM::Role"
@@ -69,97 +51,6 @@ Resources:
     Type: "AWS::IAM::Role"
     Properties:
       RoleName: !Sub "${PJPrefix}-child2-role-2"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  ChildTwoLambdaRole3:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-child2-role-3"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  ChildTwoLambdaRole4:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-child2-role-4"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  ChildTwoLambdaRole5:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-child2-role-5"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  ChildTwoLambdaRole6:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-child2-role-6"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  ChildTwoLambdaRole7:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-child2-role-7"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  ChildTwoLambdaRole8:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-child2-role-8"
-      Path: "/"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-
-  ChildTwoLambdaRole9:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Sub "${PJPrefix}-child2-role-9"
       Path: "/"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
