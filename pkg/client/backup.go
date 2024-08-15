@@ -75,7 +75,8 @@ func (b *Backup) DeleteRecoveryPoints(ctx context.Context, backupVaultName *stri
 		}
 	}
 
-	// Deleting the backup vault immediately after deleting a recovery point causes an error, so wait a certain amount of time
+	// Deleting the backup vault immediately after deleting recovery points causes an error, so wait a certain amount of time.
+	// See: https://github.com/go-to-k/delstack/issues/370
 	time.Sleep(time.Duration(5) * time.Second)
 
 	return nil
