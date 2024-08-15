@@ -1,4 +1,10 @@
 #!/bin/bash
+
+# This script allows you to deploy the stack for delstack testing.
+# Due to quota limitations, only up to [5 test stacks] can be created by this script at the same time.
+# Contains [2 AWS::S3Express::DirectoryBucket] : Directory bucket can only have up to 10 buckets created per AWS account (per region).
+# Contains [2 AWS::IAM::Group] : 1 IAM user can only belong to 10 IAM groups.  In this script, 1 IAM user is used across multiple script runs.
+
 set -eu
 
 cd $(dirname $0)
@@ -6,20 +12,16 @@ cd $(dirname $0)
 profile=""
 stage=""
 profile_option=""
-directory_bucket_mode="off"
 
 REGION="us-east-1"
 
-while getopts p:s:d: OPT; do
+while getopts p:s: OPT; do
 	case $OPT in
 	p)
 		profile="$OPTARG"
 		;;
 	s)
 		stage="$OPTARG"
-		;;
-	d)
-		directory_bucket_mode="$OPTARG"
 		;;
 	esac
 done
@@ -29,18 +31,12 @@ if [ -z "${stage}" ]; then
 	exit 1
 fi
 
-if [ "${directory_bucket_mode}" != "on" ] && [ "${directory_bucket_mode}" != "off" ]; then
-	echo "directory_bucket_mode option (-d) is required ([on|off] default=off)"
-	exit 1
-fi
-echo "=== directory_bucket_mode: ${directory_bucket_mode} ==="
-
 CFN_TEMPLATE="./yamldir/test_root.yaml"
 CFN_OUTPUT_TEMPLATE="./yamldir/test_root_output.yaml"
 
 CFN_PJ_PREFIX="dev-${stage}"
 
-CFN_STACK_NAME="${CFN_PJ_PREFIX}-${directory_bucket_mode}-TestStack"
+CFN_STACK_NAME="${CFN_PJ_PREFIX}-TestStack"
 
 sam_bucket=$(echo "${CFN_STACK_NAME}" | tr '[:upper:]' '[:lower:]')
 
@@ -53,9 +49,18 @@ account_id=$(aws sts get-caller-identity \
 	--output text \
 	${profile_option})
 
+### for S3 Buckets
 dir="./testfiles/${CFN_STACK_NAME}"
 mkdir -p ${dir}
-touch ${dir}/{1..1000}.txt
+touch ${dir}/{1..1500}.txt
+
+### for ECR
+ecr_repository_enddpoint="${account_id}.dkr.ecr.${REGION}.amazonaws.com"
+aws ecr get-login-password ${profile_option} |
+	docker login --username AWS --password-stdin ${ecr_repository_enddpoint}
+
+image_tag="delstack-test"
+docker build -t ${image_tag} .
 
 # The following function is no longer needed as the IAM role no longer fails on normal deletion, but it is left in place just in case.
 function attach_policy_to_role() {
@@ -207,20 +212,65 @@ function attach_user_to_group() {
 }
 
 function build_upload() {
-	local repository_name=$(echo "${CFN_PJ_PREFIX}-ECR" | tr '[:upper:]' '[:lower:]')
-	local ecr_repository_enddpoint="${account_id}.dkr.ecr.${REGION}.amazonaws.com"
-	local ecr_repository_uri="${ecr_repository_enddpoint}/${repository_name}"
+	local own_stackname="${1}"
 
-	local ecr_tag="test"
+	local resources=$(
+		aws cloudformation list-stack-resources \
+			--stack-name ${own_stackname} \
+			--query "StackResourceSummaries" \
+			${profile_option} |
+			jq '.[] | {LogicalResourceId:.LogicalResourceId, PhysicalResourceId:.PhysicalResourceId, ResourceType:.ResourceType}' |
+			jq -s '.'
+	)
 
-	docker build -t ${repository_name} .
+	local ecr_resources=$(
+		echo "${resources}" |
+			jq '.[] | select(.ResourceType == "AWS::ECR::Repository") | .PhysicalResourceId' |
+			jq -s '.'
+	)
 
-	docker tag ${repository_name}:latest ${ecr_repository_uri}:${ecr_tag}
+	local nested_stack_resources=$(
+		echo "${resources}" |
+			jq '.[] | select(.ResourceType == "AWS::CloudFormation::Stack") | .PhysicalResourceId' |
+			jq -s '.'
+	)
 
-	aws ecr get-login-password ${profile_option} |
-		docker login --username AWS --password-stdin ${ecr_repository_enddpoint}
+	local ecr_resource_len=$(echo $ecr_resources | jq length)
+	local nested_stack_resourceLen=$(echo $nested_stack_resources | jq length)
+	local ecr_name_array=()
+	local nested_own_stackname_array=()
 
-	docker push ${ecr_repository_uri}:${ecr_tag}
+	if [ ${ecr_resource_len} -gt 0 ]; then
+		for i in $(seq 0 $(($ecr_resource_len - 1))); do
+			ecr_name_array+=($(echo $ecr_resources | jq -r ".[$i]"))
+		done
+	fi
+
+	if [ ${nested_stack_resourceLen} -gt 0 ]; then
+		for i in $(seq 0 $(($nested_stack_resourceLen - 1))); do
+			nested_own_stackname_array+=($(
+				echo $nested_stack_resources |
+					jq -r ".[$i]" |
+					sed -e "s/^arn:aws:cloudformation:[^:]*:[0-9]*:stack\/\([^\/]*\)\/.*$/\1/g"
+			)
+			)
+		done
+
+		local pids=()
+		for i in ${!nested_own_stackname_array[@]}; do
+			build_upload "${nested_own_stackname_array[$i]}" &
+			pids[$!]=$!
+		done
+		wait ${pids[@]}
+	fi
+
+	for i in ${!ecr_name_array[@]}; do
+		local ecr_repository_uri="${ecr_repository_enddpoint}/${ecr_name_array[$i]}"
+		local ecr_tag="test"
+		local uri_tag="${ecr_repository_uri}:${ecr_tag}"
+		docker tag ${image_tag}:latest ${uri_tag}
+		docker push ${uri_tag}
+	done
 }
 
 function object_upload() {
@@ -305,34 +355,86 @@ function object_upload() {
 	done
 }
 
-function create_backup() {
-	local backup_vault_name="${CFN_PJ_PREFIX}-Backup-Vault"
-	local resource_arn="arn:aws:dynamodb:${REGION}:${account_id}:table/${CFN_PJ_PREFIX}-Table"
-	local iam_role_arn="arn:aws:iam::${account_id}:role/service-role/${CFN_PJ_PREFIX}-AWSBackupServiceRole"
+function start_backup() {
+	local own_stackname="${1}"
 
-	local backup_job_id=$(
-		aws backup start-backup-job \
-			--backup-vault-name "${backup_vault_name}" \
-			--resource-arn "${resource_arn}" \
-			--iam-role-arn "${iam_role_arn}" \
+	local resources=$(
+		aws cloudformation list-stack-resources \
+			--stack-name ${own_stackname} \
+			--query "StackResourceSummaries" \
 			${profile_option} |
-			jq -r '.BackupJobId'
+			jq '.[] | {LogicalResourceId:.LogicalResourceId, PhysicalResourceId:.PhysicalResourceId, ResourceType:.ResourceType}' |
+			jq -s '.'
 	)
 
-	while true; do
-		local state=$(
-			aws backup describe-backup-job \
-				--backup-job-id "${backup_job_id}" \
+	local back_vault_resources=$(
+		echo "${resources}" |
+			jq '.[] | select(.ResourceType == "AWS::Backup::BackupVault") | .PhysicalResourceId' |
+			jq -s '.'
+	)
+
+	local nested_stack_resources=$(
+		echo "${resources}" |
+			jq '.[] | select(.ResourceType == "AWS::CloudFormation::Stack") | .PhysicalResourceId' |
+			jq -s '.'
+	)
+
+	local back_vault_resource_len=$(echo $back_vault_resources | jq length)
+	local nested_stack_resourceLen=$(echo $nested_stack_resources | jq length)
+	local back_vault_name_array=()
+	local nested_own_stackname_array=()
+
+	if [ ${back_vault_resource_len} -gt 0 ]; then
+		for i in $(seq 0 $(($back_vault_resource_len - 1))); do
+			back_vault_name_array+=($(echo $back_vault_resources | jq -r ".[$i]"))
+		done
+	fi
+
+	if [ ${nested_stack_resourceLen} -gt 0 ]; then
+		for i in $(seq 0 $(($nested_stack_resourceLen - 1))); do
+			nested_own_stackname_array+=($(
+				echo $nested_stack_resources |
+					jq -r ".[$i]" |
+					sed -e "s/^arn:aws:cloudformation:[^:]*:[0-9]*:stack\/\([^\/]*\)\/.*$/\1/g"
+			)
+			)
+		done
+
+		local pids=()
+		for i in ${!nested_own_stackname_array[@]}; do
+			start_backup "${nested_own_stackname_array[$i]}" &
+			pids[$!]=$!
+		done
+		wait ${pids[@]}
+	fi
+
+	local resource_arn="arn:aws:dynamodb:${REGION}:${account_id}:table/${CFN_PJ_PREFIX}-Table"
+	local iam_role_arn="arn:aws:iam::${account_id}:role/service-role/${CFN_PJ_PREFIX}-AWSBackupServiceRole"
+	for i in ${!back_vault_name_array[@]}; do
+		local backup_job_id=$(
+			aws backup start-backup-job \
+				--backup-vault-name "${back_vault_name_array[$i]}" \
+				--resource-arn "${resource_arn}" \
+				--iam-role-arn "${iam_role_arn}" \
 				${profile_option} |
-				jq -r '.State'
+				jq -r '.BackupJobId'
 		)
-		if [ "${state}" = "COMPLETED" ]; then
-			break
-		elif [ "${state}" = "FAILED" ] || [ "${state}" = "ABORTED" ]; then
-			echo "Backup failed !!"
-			exit 1
-		fi
-		sleep 10
+
+		while true; do
+			local state=$(
+				aws backup describe-backup-job \
+					--backup-job-id "${backup_job_id}" \
+					${profile_option} |
+					jq -r '.State'
+			)
+			if [ "${state}" = "COMPLETED" ]; then
+				break
+			elif [ "${state}" = "FAILED" ] || [ "${state}" = "ABORTED" ]; then
+				echo "Backup failed !!"
+				exit 1
+			fi
+			sleep 10
+		done
 	done
 }
 
@@ -341,30 +443,34 @@ if [ -z "$(aws s3 ls ${profile_option} | grep ${sam_bucket})" ]; then
 	aws s3 mb s3://${sam_bucket} ${profile_option}
 fi
 
-sam package \
-	--template-file ${CFN_TEMPLATE} \
-	--output-template-file ${CFN_OUTPUT_TEMPLATE} \
-	--s3-bucket ${sam_bucket} \
-	${profile_option}
+# sam package \
+# 	--template-file ${CFN_TEMPLATE} \
+# 	--output-template-file ${CFN_OUTPUT_TEMPLATE} \
+# 	--s3-bucket ${sam_bucket} \
+# 	${profile_option}
 
-sam deploy \
-	--template-file ${CFN_OUTPUT_TEMPLATE} \
-	--stack-name ${CFN_STACK_NAME} \
-	--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
-	--parameter-overrides \
-	PJPrefix=${CFN_PJ_PREFIX} \
-	DirectoryBucketMode=${directory_bucket_mode} \
-	${profile_option}
+# sam deploy \
+# 	--template-file ${CFN_OUTPUT_TEMPLATE} \
+# 	--stack-name ${CFN_STACK_NAME} \
+# 	--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
+# 	--parameter-overrides \
+# 	PJPrefix=${CFN_PJ_PREFIX} \
+# 	${profile_option}
 
-attach_user_to_group "${CFN_STACK_NAME}"
+# echo "=== attach_user_to_group ==="
+# attach_user_to_group "${CFN_STACK_NAME}"
 
-object_upload "${CFN_STACK_NAME}"
+# echo "=== object_upload ==="
+# object_upload "${CFN_STACK_NAME}"
 
-build_upload
+# echo "=== build_upload ==="
+# build_upload "${CFN_STACK_NAME}"
 
-create_backup
+echo "=== start_backup ==="
+start_backup "${CFN_STACK_NAME}"
 
 # The following function is no longer needed as the IAM role no longer fails on normal deletion, but it is left in place just in case.
+echo "=== attach_policy_to_role ==="
 attach_policy_to_role "${CFN_STACK_NAME}"
 
 rm -rf ${dir}
