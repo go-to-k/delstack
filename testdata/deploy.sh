@@ -443,28 +443,28 @@ if [ -z "$(aws s3 ls ${profile_option} | grep ${sam_bucket})" ]; then
 	aws s3 mb s3://${sam_bucket} ${profile_option}
 fi
 
-# sam package \
-# 	--template-file ${CFN_TEMPLATE} \
-# 	--output-template-file ${CFN_OUTPUT_TEMPLATE} \
-# 	--s3-bucket ${sam_bucket} \
-# 	${profile_option}
+sam package \
+	--template-file ${CFN_TEMPLATE} \
+	--output-template-file ${CFN_OUTPUT_TEMPLATE} \
+	--s3-bucket ${sam_bucket} \
+	${profile_option}
 
-# sam deploy \
-# 	--template-file ${CFN_OUTPUT_TEMPLATE} \
-# 	--stack-name ${CFN_STACK_NAME} \
-# 	--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
-# 	--parameter-overrides \
-# 	PJPrefix=${CFN_PJ_PREFIX} \
-# 	${profile_option}
+sam deploy \
+	--template-file ${CFN_OUTPUT_TEMPLATE} \
+	--stack-name ${CFN_STACK_NAME} \
+	--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM \
+	--parameter-overrides \
+	PJPrefix=${CFN_PJ_PREFIX} \
+	${profile_option}
 
-# echo "=== attach_user_to_group ==="
-# attach_user_to_group "${CFN_STACK_NAME}"
+echo "=== attach_user_to_group ==="
+attach_user_to_group "${CFN_STACK_NAME}"
 
-# echo "=== object_upload ==="
-# object_upload "${CFN_STACK_NAME}"
+echo "=== object_upload ==="
+object_upload "${CFN_STACK_NAME}"
 
-# echo "=== build_upload ==="
-# build_upload "${CFN_STACK_NAME}"
+echo "=== build_upload ==="
+build_upload "${CFN_STACK_NAME}"
 
 echo "=== start_backup ==="
 start_backup "${CFN_STACK_NAME}"
