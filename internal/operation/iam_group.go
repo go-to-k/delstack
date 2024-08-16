@@ -51,8 +51,8 @@ func (o *IamGroupOperator) DeleteResources(ctx context.Context) error {
 	return eg.Wait()
 }
 
-func (o *IamGroupOperator) DeleteIamGroup(ctx context.Context, GroupName *string) error {
-	exists, err := o.client.CheckGroupExists(ctx, GroupName)
+func (o *IamGroupOperator) DeleteIamGroup(ctx context.Context, groupName *string) error {
+	exists, err := o.client.CheckGroupExists(ctx, groupName)
 	if err != nil {
 		return err
 	}
@@ -60,17 +60,17 @@ func (o *IamGroupOperator) DeleteIamGroup(ctx context.Context, GroupName *string
 		return nil
 	}
 
-	users, err := o.client.GetGroupUsers(ctx, GroupName)
+	users, err := o.client.GetGroupUsers(ctx, groupName)
 	if err != nil {
 		return err
 	}
 	if len(users) > 0 {
-		if err := o.client.RemoveUsersFromGroup(ctx, GroupName, users); err != nil {
+		if err := o.client.RemoveUsersFromGroup(ctx, groupName, users); err != nil {
 			return err
 		}
 	}
 
-	if err := o.client.DeleteGroup(ctx, GroupName); err != nil {
+	if err := o.client.DeleteGroup(ctx, groupName); err != nil {
 		return err
 	}
 
