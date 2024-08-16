@@ -1,5 +1,8 @@
 # Changelog
 
+## [v1.13.2](https://github.com/go-to-k/delstack/compare/v1.13.1...v1.13.2) - 2024-08-16
+- chore: add deadcode script by @go-to-k in https://github.com/go-to-k/delstack/pull/382
+
 ## [v1.13.1](https://github.com/go-to-k/delstack/compare/v1.13.0...v1.13.1) - 2024-08-16
 - chore: use math/rand/v2 by @go-to-k in https://github.com/go-to-k/delstack/pull/377
 - chore: use new gomock by @go-to-k in https://github.com/go-to-k/delstack/pull/378
