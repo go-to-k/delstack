@@ -1,5 +1,5 @@
 # for manual release (No triggering when tagpr is used.)
-name: release
+name: manual
 on:
   push:
     tags:
