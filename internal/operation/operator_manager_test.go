@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-to-k/delstack/internal/io"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 /*
