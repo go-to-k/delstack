@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.13.3](https://github.com/go-to-k/delstack/compare/v1.13.2...v1.13.3) - 2024-08-16
+- ci(deps): upgrade to goreleaser-action@v6 by @go-to-k in https://github.com/go-to-k/delstack/pull/384
+- ci: PR-Lint for PR titles by @go-to-k in https://github.com/go-to-k/delstack/pull/386
+
 ## [v1.13.1](https://github.com/go-to-k/delstack/compare/v1.13.0...v1.13.1) - 2024-08-16
 - chore: use math/rand/v2 by @go-to-k in https://github.com/go-to-k/delstack/pull/377
 - chore: use new gomock by @go-to-k in https://github.com/go-to-k/delstack/pull/378
