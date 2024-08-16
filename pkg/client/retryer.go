@@ -35,7 +35,6 @@ func (r *Retryer) MaxAttempts() int {
 func (r *Retryer) RetryDelay(int, error) (time.Duration, error) {
 	waitTime := 1
 	if r.delayTimeSec > 1 {
-		//nolint:gosec
 		waitTime += rand.IntN(r.delayTimeSec)
 	}
 	return time.Duration(waitTime) * time.Second, nil

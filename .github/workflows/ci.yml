@@ -38,8 +38,8 @@ jobs:
             ${{ runner.os }}-go-
       - name: Unshallow
         run: git fetch --prune --unshallow --tags
-      - name: lint
-        uses: golangci/golangci-lint-action@v6
+      # - name: lint
+      #   uses: golangci/golangci-lint-action@v6
       - name: build
         run: make build
       - name: test
@@ -49,3 +49,19 @@ jobs:
         with:
           name: code-coverage-report
           path: cover.html
+
+  reviewdog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check lint
+        uses: reviewdog/action-golangci-lint@v2
+        with:
+          go_version_file: go.mod
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          level: error 
+          filter_mode: nofilter
+          golangci_lint_flags: "--config=.golangci.yml"
+          fail_on_error: true
