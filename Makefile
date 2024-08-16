@@ -40,6 +40,8 @@ shadow:
 	find . -type f -name '*.go' | sed -e "s/\/[^\.\/]*\.go//g" | uniq | xargs shadow
 cognit:
 	gocognit -top 10 ./ | grep -v "_test.go"
+deadcode:
+	deadcode ./...
 run:
 	go mod tidy
 	go run -ldflags "$(LDFLAGS)" cmd/delstack/main.go $${OPT}
