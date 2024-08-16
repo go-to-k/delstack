@@ -38,8 +38,6 @@ jobs:
             ${{ runner.os }}-go-
       - name: Unshallow
         run: git fetch --prune --unshallow --tags
-      # - name: lint
-      #   uses: golangci/golangci-lint-action@v6
       - name: build
         run: make build
       - name: test
@@ -55,7 +53,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Check lint
+      - name: lint
         uses: reviewdog/action-golangci-lint@v2
         with:
           go_version_file: go.mod
