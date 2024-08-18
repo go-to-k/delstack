@@ -90,16 +90,18 @@ func (a *App) getAction() func(c *cli.Context) error {
 
 		deduplicatedStackNames := a.deduplicateStackNames()
 
-		sortedStackNames, err := a.getSortedStackNames(c.Context, cloudformationStackOperator, deduplicatedStackNames)
+		sortedStackNames, continuation, err := a.getSortedStackNames(c.Context, cloudformationStackOperator, deduplicatedStackNames)
 		if err != nil {
 			return err
 		}
-		// The case for interruption(Ctrl + C)
-		if len(sortedStackNames) == 0 {
+		if !continuation {
 			return nil
 		}
 
-		targetStacks := a.attachTargetResourceTypes(sortedStackNames, deduplicatedStackNames)
+		targetStacks, err := a.attachTargetResourceTypes(sortedStackNames, deduplicatedStackNames)
+		if err != nil {
+			return err
+		}
 		// Explanation of deletion order in the case of multiple stacks
 		if len(targetStacks) > 1 {
 			io.Logger.Info().Msg("The stacks are removed in order of the latest creation time, taking into account dependencies.")
@@ -142,41 +144,49 @@ func (a *App) deduplicateStackNames() []string {
 	return deduplicatedStackNames
 }
 
-func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperator *operation.CloudFormationStackOperator, specifiedStackNames []string) ([]string, error) {
-	sortedStackNames := []string{}
-
+func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperator *operation.CloudFormationStackOperator, specifiedStackNames []string) ([]string, bool, error) {
 	if len(specifiedStackNames) != 0 {
 		stackNames, err := cloudformationStackOperator.GetSortedStackNames(ctx, specifiedStackNames)
 		if err != nil {
-			return sortedStackNames, err
+			return nil, false, err
 		}
-		sortedStackNames = append(sortedStackNames, stackNames...)
-	} else if a.InteractiveMode {
+		return stackNames, true, nil
+	}
+
+	if a.InteractiveMode {
 		keyword := a.inputKeywordForFilter()
 		stacks, err := cloudformationStackOperator.ListStacksFilteredByKeyword(ctx, aws.String(keyword))
 		if err != nil {
-			return sortedStackNames, err
+			return nil, false, err
 		}
 
 		// The `ListStacksFilteredByKeyword` with SDK's `DescribeStacks` returns the stacks in descending order of CreationTime.
 		// Therefore, by deleting stacks in the same order, we can delete from a new stack that is not depended on by any stack.
-		stackNames := a.selectStackNames(stacks)
-		sortedStackNames = append(sortedStackNames, stackNames...)
+		stackNames, continuation, err := a.selectStackNames(stacks)
+		if err != nil {
+			return nil, false, err
+		}
+
+		return stackNames, continuation, nil
 	}
 
-	return sortedStackNames, nil
+	// never reach here
+	return nil, false, nil
 }
 
-func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStackNames []string) []targetStack {
+func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStackNames []string) ([]targetStack, error) {
 	targetStacks := []targetStack{}
 
 	// If stackNames are specified with an interactive mode option, select ResourceTypes in the order specified (not sorted order).
 	if a.InteractiveMode && len(specifiedStackNames) != 0 {
 		var selectedResourceTypes []targetStack
 		for _, stackName := range specifiedStackNames {
-			targetResourceTypes, continuation := a.selectResourceTypes(stackName)
+			targetResourceTypes, continuation, err := a.selectResourceTypes(stackName)
+			if err != nil {
+				return nil, err
+			}
 			if !continuation {
-				return nil
+				return nil, nil
 			}
 			selectedResourceTypes = append(selectedResourceTypes, targetStack{
 				stackName:           stackName,
@@ -193,9 +203,12 @@ func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStac
 	}
 	if a.InteractiveMode && len(specifiedStackNames) == 0 {
 		for _, stackName := range sortedStackNames {
-			targetResourceTypes, continuation := a.selectResourceTypes(stackName)
+			targetResourceTypes, continuation, err := a.selectResourceTypes(stackName)
+			if err != nil {
+				return nil, err
+			}
 			if !continuation {
-				return nil
+				return nil, nil
 			}
 			targetStacks = append(targetStacks, targetStack{
 				stackName:           stackName,
@@ -213,7 +226,7 @@ func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStac
 		}
 	}
 
-	return targetStacks
+	return targetStacks, nil
 }
 
 func (a *App) inputKeywordForFilter() string {
@@ -221,65 +234,33 @@ func (a *App) inputKeywordForFilter() string {
 	return io.InputKeywordForFilter(label)
 }
 
-func (a *App) selectResourceTypes(stackName string) ([]string, bool) {
+func (a *App) selectResourceTypes(stackName string) ([]string, bool, error) {
 	var checkboxes []string
 
-	label := stackName +
-		"\n" +
-		"Select ResourceTypes you wish to delete even if DELETE_FAILED.\n" +
-		"However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type. " +
-		"\n"
+	label := []string{
+		stackName,
+		"Select ResourceTypes you wish to delete even if DELETE_FAILED.",
+		"However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type.",
+	}
 
 	opts := resourcetype.GetResourceTypes()
 
-	for {
-		checkboxes = io.GetCheckboxes(label, opts)
-
-		if len(checkboxes) == 0 {
-			ok := io.GetYesNo("No selection?")
-			if ok {
-				return checkboxes, true
-			}
-
-			// The case for interruption(Ctrl + C)
-			ok = io.GetYesNo("Do you want to finish?")
-			if ok {
-				io.Logger.Info().Msg("Finished...")
-				return checkboxes, false
-			}
-			continue
-		}
-
-		ok := io.GetYesNo("OK?")
-		if ok {
-			return checkboxes, true
-		}
+	checkboxes, continuation, err := io.GetCheckboxes(label, opts, true)
+	if err != nil {
+		return nil, false, err
 	}
+	return checkboxes, continuation, nil
 }
 
-func (a *App) selectStackNames(stackNames []string) []string {
-	var selectedStackNames []string
-
-	label := "Select StackNames." + "\n" +
-		"Nested child stacks, XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks and EnableTerminationProtection stacks are not displayed." +
-		"\n"
-
-	for {
-		selectedStackNames = io.GetCheckboxes(label, stackNames)
-
-		if len(selectedStackNames) == 0 {
-			// The case for interruption(Ctrl + C)
-			ok := io.GetYesNo("Do you want to finish?")
-			if ok {
-				io.Logger.Info().Msg("Finished...")
-				return selectedStackNames
-			}
-			continue
-		}
-
-		ok := io.GetYesNo("OK?")
-		if ok {
-			return selectedStackNames
-		}
+func (a *App) selectStackNames(stackNames []string) ([]string, bool, error) {
+	label := []string{
+		"Select StackNames.",
+		"Nested child stacks, XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks and EnableTerminationProtection stacks are not displayed.",
 	}
+
+	selectedStackNames, continuation, err := io.GetCheckboxes(label, stackNames, false)
+	if err != nil {
+		return nil, false, err
+	}
+	return selectedStackNames, continuation, nil
 }
