@@ -34,9 +34,9 @@ jobs:
             deps
             main
             app
-            action
             io
-            types
+            operation
+            resourcetype
             version
             client
           requireScope: false
