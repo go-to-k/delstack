@@ -40,6 +40,8 @@ jobs:
             version
             client
           requireScope: false
+          ignoreLabels: |
+            tagpr
 
   label:
     name: Manage labels
