@@ -1,5 +1,18 @@
 # Changelog
 
+## [v1.14.0](https://github.com/go-to-k/delstack/compare/v1.13.3...v1.14.0) - 2024-08-26
+- ci: tweak for pr-lint by @go-to-k in https://github.com/go-to-k/delstack/pull/387
+- ci: Manage labels in PR lint by @go-to-k in https://github.com/go-to-k/delstack/pull/389
+- ci: tweak for semantic-pull-request workflow by @go-to-k in https://github.com/go-to-k/delstack/pull/390
+- ci: fix bug that labels are not created by @go-to-k in https://github.com/go-to-k/delstack/pull/391
+- ci: ignore lint on tagpr PR by @go-to-k in https://github.com/go-to-k/delstack/pull/392
+- ci: add revert type in prlint by @go-to-k in https://github.com/go-to-k/delstack/pull/394
+- ci: change token for tagpr by @go-to-k in https://github.com/go-to-k/delstack/pull/397
+- ci: don't run CI in PR actions by @go-to-k in https://github.com/go-to-k/delstack/pull/398
+- ci: add error linters by @go-to-k in https://github.com/go-to-k/delstack/pull/395
+- ci: change token for tagpr by @go-to-k in https://github.com/go-to-k/delstack/pull/400
+- feat(io): redesign UI implementation with a new library by @go-to-k in https://github.com/go-to-k/delstack/pull/393
+
 ## [v1.13.3](https://github.com/go-to-k/delstack/compare/v1.13.2...v1.13.3) - 2024-08-16
 - ci(deps): upgrade to goreleaser-action@v6 by @go-to-k in https://github.com/go-to-k/delstack/pull/384
 - ci: PR-Lint for PR titles by @go-to-k in https://github.com/go-to-k/delstack/pull/386
