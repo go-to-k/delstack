@@ -8,7 +8,7 @@ The description in **English** is available on the following blog page. -> [Blog
 
 ## What is
 
-Tool to force delete the **entire** AWS CloudFormation stack, **even if it contains resources that fail to delete by the CloudFormation delete operation**.
+Tool to force delete the **entire** AWS CloudFormation stack, even if it contains resources that **fail to delete** by the CloudFormation delete operation.
 
 ## Resource Types that can be forced to delete
 
@@ -23,12 +23,12 @@ All resources that do not fail normal deletion can be deleted as is.
 |  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled** and DeletionPolicy **not Retain**. (Because "Retain" buckets should not be deleted.)  |
 |  AWS::S3Express::DirectoryBucket  |  S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty and DeletionPolicy not Retain. (Because "Retain" buckets should not be deleted.)  |
 |  AWS::IAM::Group  |  IAM Groups, including groups **with IAM users from outside the stack.**  |
-|  AWS::ECR::Repository  |  ECR Repositories, including repositories that **contain images** and where **the `EmptyOnDelete` is not true.**  |
+|  AWS::ECR::Repository  |  ECR Repositories, including repositories that contain images and where **the `EmptyOnDelete` is not true.**  |
 |  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
 |  AWS::CloudFormation::Stack  |  **Nested Child Stacks** that failed to delete. If any of the other resources are included in the child stack, **they too will be deleted**.  |
 |  Custom::Xxx  |  Custom Resources, including resources that **do not return a SUCCESS status.**  |
 
-- This tool can be used **even for stacks that do not contain any of the above targets** for forced deletion.
+- This tool can be used even for stacks that do not contain any of the above targets for forced deletion.
   - So **all stack deletions can basically be done with this tool!!**
 - If there are resources other than those listed above that result in DELETE_FAILED, the deletion will fail.
 - **"Termination Protection" stacks will not be deleted.** Because it probably really should not want to delete it.
