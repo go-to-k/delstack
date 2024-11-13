@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.14.1](https://github.com/go-to-k/delstack/compare/v1.14.0...v1.14.1) - 2024-11-13
+- ci: change PR label names for release by @go-to-k in https://github.com/go-to-k/delstack/pull/456
+- docs: improve style for README by @go-to-k in https://github.com/go-to-k/delstack/pull/455
+- docs: improve description for AWS::IAM::Group in README by @go-to-k in https://github.com/go-to-k/delstack/pull/473
+
 ## [v1.14.0](https://github.com/go-to-k/delstack/compare/v1.13.3...v1.14.0) - 2024-08-26
 - ci: tweak for pr-lint by @go-to-k in https://github.com/go-to-k/delstack/pull/387
 - ci: Manage labels in PR lint by @go-to-k in https://github.com/go-to-k/delstack/pull/389
