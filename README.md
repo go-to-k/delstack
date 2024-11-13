@@ -22,7 +22,7 @@ All resources that do not fail normal deletion can be deleted as is.
 | ---- | ---- |
 |  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled** and DeletionPolicy **not Retain**. (Because "Retain" buckets should not be deleted.)  |
 |  AWS::S3Express::DirectoryBucket  |  S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty and DeletionPolicy not Retain. (Because "Retain" buckets should not be deleted.)  |
-|  AWS::IAM::Group  |  IAM Groups, including groups **with IAM users from outside the stack.**  |
+|  AWS::IAM::Group  |  IAM Groups, including groups **with IAM users from outside the stack.** In that case, this tool detaches the IAM users and then deletes the IAM group (but not the IAM users themselves).  |
 |  AWS::ECR::Repository  |  ECR Repositories, including repositories that contain images and where **the `EmptyOnDelete` is not true.**  |
 |  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
 |  AWS::CloudFormation::Stack  |  **Nested Child Stacks** that failed to delete. If any of the other resources are included in the child stack, **they too will be deleted**.  |
