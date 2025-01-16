@@ -10,6 +10,8 @@ The description in **English** is available on the following blog page. -> [Blog
 
 Tool to force delete the **entire** AWS CloudFormation stack, even if it contains resources that **fail to delete** by the CloudFormation delete operation.
 
+![delstack](https://github.com/user-attachments/assets/61dd23ce-5fc2-4c5f-bcb8-f74f621f8756)
+
 ## Resource Types that can be forced to delete
 
 Among the resources that **fail in the normal CloudFormation stack deletion**, this tool supports the following resources.
