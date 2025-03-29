@@ -93,14 +93,10 @@ func (s *S3) DeleteObjects(
 	errors := []types.Error{}
 	retryCounts := 0
 
-	for {
-		// Assuming that the number of objects received as an argument does not
-		// exceed 1000, so no slice splitting and validation whether exceeds
-		// 1000 or not are good.
-		if len(objects) == 0 {
-			break
-		}
-
+	// Assuming that the number of objects received as an argument does not
+	// exceed 1000, so no slice splitting and validation whether exceeds
+	// 1000 or not are good.
+	for len(objects) > 0 {
 		input := &s3.DeleteObjectsInput{
 			Bucket: bucketName,
 			Delete: &types.Delete{
