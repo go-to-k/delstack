@@ -1,54 +1,17 @@
-# Delstack Test Data Generation
+# Delstack Test Environment
 
-This directory contains tools for generating test data for Delstack. You can use these tools to easily generate test data for S3 buckets.
+This directory contains a tool for creating a test environment for `delstack`. This tool (`deploy.go`) deploys AWS CloudFormation stacks with various resources that can be used to test the stack deletion functionality of `delstack`.
 
-## How to Generate Test Data
+## Test Stack Deployment
 
-You can generate test data using the following make command:
+You can deploy test CloudFormation stacks using the included `deploy.go` script. This script creates a CloudFormation stack containing various resources that typically cause deletion issues, including:
 
-```bash
-make testgen OPT="[options]"
-```
-
-### Options
-
-- `-b <bucket>` : S3 bucket name to upload test data (required)
-- `-p <profile>` : AWS CLI profile name to use
-- `-r <region>` : AWS region (default: us-east-1)
-- `-n <num>` : Number of files to generate (default: 100)
-- `-t <type>` : Bucket type: general (standard S3) or directory (S3 Express) (default: general)
-- `-prefix <prefix>` : Prefix for S3 object keys
-- `-o <size>` : Size of each object in bytes (default: 1024)
-
-## Usage Examples
-
-### Generate test data for a standard S3 bucket
-
-```bash
-make testgen OPT="-b my-test-bucket -n 500 -o 2048 -prefix test-data/"
-```
-
-### Generate test data for an S3 Express Directory bucket
-
-```bash
-make testgen OPT="-b my-bucket--az4--x-s3 -t directory -n 20 -o 512"
-```
-
-### Use specific AWS profile and region
-
-```bash
-make testgen OPT="-b my-test-bucket -p devprofile -r us-west-2 -n 100"
-```
-
-## Display help for test data generation
-
-```bash
-make testgen_help
-```
-
-## Deploy Test Stacks
-
-You can also deploy CloudFormation test stacks using `deploy.go`. This script deploys a CloudFormation stack containing test S3 buckets, IAM groups, ECR repositories, backup vaults, and more.
+- S3 buckets with contents
+- S3 Express Directory buckets
+- IAM groups
+- ECR repositories with images
+- AWS Backup vaults with recovery points
+- And more
 
 ```bash
 go run testdata/deploy.go -s <stage> [-p <profile>]
@@ -56,8 +19,20 @@ go run testdata/deploy.go -s <stage> [-p <profile>]
 
 ### Options
 
-- `-s <stage>` : Stage name (required)
-- `-p <profile>` : AWS CLI profile name (optional)
+- `-s <stage>` : Stage name, used as part of stack naming (required)
+- `-p <profile>` : AWS CLI profile name to use (optional)
+
+### Using the Makefile
+
+For convenience, you can also use the Makefile target:
+
+```bash
+# Deploy with default stage and profile
+make testgen
+
+# Deploy with custom stage and profile
+make testgen OPT="-s my-stage -p my-profile"
+```
 
 ### Notes
 
@@ -65,12 +40,46 @@ go run testdata/deploy.go -s <stage> [-p <profile>]
 - The script includes 2 `AWS::S3Express::DirectoryBucket` resources; an AWS account can have at most 10 directory buckets per region.
 - The script includes 2 `AWS::IAM::Group` resources; one IAM user can only belong to 10 IAM groups.
 
+## Testing Delstack with the Test Environment
+
+After deploying test stacks, you can test the `delstack` functionality by attempting to delete these stacks. The resources created are specifically designed to simulate real-world scenarios where CloudFormation deletion fails.
+
+Common resources that will cause DELETE_FAILED in CloudFormation, but can be force-deleted by `delstack`:
+
+1. **S3 buckets with content**
+2. **IAM Groups with users**
+3. **ECR repositories with images**
+4. **Backup vaults with recovery points**
+5. **Nested stacks with DELETE_FAILED resources**
+
+## Implementation Details
+
+The `deploy.go` script uses AWS SDK Go v2 for most operations, but also uses some shell commands (AWS CLI, SAM CLI, Docker) for certain operations. The script:
+
+1. Deploys CloudFormation stacks using SAM CLI
+2. Creates test resources across various services
+3. Populates S3 buckets with objects
+4. Pushes images to ECR repositories
+5. Creates backup recovery points
+
 ## Areas for Improvement
 
-The current `deploy.go` uses shell commands (AWS CLI, SAM CLI, Docker) for some operations, but the following could be improved by implementing directly with AWS SDK Go v2:
+The current implementation could be enhanced by:
 
-1. **S3 bucket operations** - Use `s3Client.PutObject` and `s3Client.DeleteObject` for uploading and deleting objects in S3 buckets
-2. **ECR integration** - Implement ECR login and image pushing using ECR SDK and Docker engine API
-3. **CloudFormation operations** - Use CloudFormation AWS SDK directly instead of SAM commands
+1. **Replacing SAM commands** - Use CloudFormation AWS SDK directly instead of SAM commands
+2. **Streamlining Docker interactions** - Implement ECR login and image pushing using ECR SDK and Docker engine API integration
+3. **Adding more resource types** - Extend with additional resource types that are challenging to delete
 
-These improvements would reduce dependency on shell commands and enhance cross-platform compatibility and error handling.
+## Cleaning Up
+
+When you're done testing, you can use `delstack` itself to clean up the test environment:
+
+```bash
+delstack -s dev-<stage>-TestStack -p <profile>
+```
+
+Or use the interactive mode:
+
+```bash
+delstack -i -p <profile>
+```
