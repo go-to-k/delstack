@@ -70,5 +70,6 @@ testgen_help:
 	@echo "  testgen         - Run the test stack generator"
 	@echo ""
 	@echo "Example usage:"
+	@echo "  make testgen"
 	@echo "  make testgen OPT=\"-s my-stage\""
-	@echo "  make testgen OPT=\"-s my-stage -p my-profile\""
+	@echo "  make testgen OPT=\"-p my-profile\""
