@@ -53,10 +53,13 @@ func NewS3(client *s3.Client, directoryBucketsFlag bool) *S3 {
 	retryable := func(err error) bool {
 		if directoryBucketsFlag {
 			// See: https://github.com/go-to-k/delstack/issues/373
-			return strings.Contains(err.Error(), "api error SlowDown") || strings.Contains(err.Error(), "https response error StatusCode: 0")
+			return strings.Contains(err.Error(), "api error SlowDown") ||
+				strings.Contains(err.Error(), "https response error StatusCode: 0") ||
+				strings.Contains(err.Error(), "connection reset by peer")
 		}
 
-		return strings.Contains(err.Error(), "api error SlowDown")
+		return strings.Contains(err.Error(), "api error SlowDown") ||
+			strings.Contains(err.Error(), "connection reset by peer")
 	}
 	retryer := NewRetryer(retryable, SleepTimeSecForS3)
 
