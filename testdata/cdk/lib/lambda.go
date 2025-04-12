@@ -11,16 +11,13 @@ import (
 )
 
 // NewLambdaResources creates required Lambda resources and CloudWatch log groups
-func NewLambdaResources(scope constructs.Construct, pjPrefix string, iamResources map[string]awscdk.IResource) map[string]awscdk.IResource {
-	resources := make(map[string]awscdk.IResource)
-
+func NewLambdaResources(scope constructs.Construct, pjPrefix string, iamResources map[string]awscdk.IResource) {
 	// Create CloudWatch log group
 	rootLogGroup := awslogs.NewLogGroup(scope, jsii.String("RootLogGroup"), &awslogs.LogGroupProps{
 		LogGroupName:  jsii.String(pjPrefix + "-Root-log"),
 		Retention:     awslogs.RetentionDays_TWO_WEEKS,
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
-	resources["RootLogGroup"] = rootLogGroup
 
 	// Get the Lambda role
 	lambdaRole, ok := iamResources["RootLambdaRole"].(awsiam.Role)
@@ -85,14 +82,13 @@ func NewLambdaResources(scope constructs.Construct, pjPrefix string, iamResource
 		Role:         lambdaRole,
 		FunctionName: jsii.String(pjPrefix + "-resource-policy-lambda"),
 	})
-	resources["RootResourcePolicyLambdaForLogs"] = rootResourcePolicyLambda
 
 	// Create custom resource
 	provider := customresources.NewProvider(scope, jsii.String("RootCustomResourceProvider"), &customresources.ProviderProps{
 		OnEventHandler: rootResourcePolicyLambda,
 	})
 
-	customResource := awscdk.NewCustomResource(scope, jsii.String("RootAddResourcePolicy"), &awscdk.CustomResourceProps{
+	awscdk.NewCustomResource(scope, jsii.String("RootAddResourcePolicy"), &awscdk.CustomResourceProps{
 		ServiceToken: provider.ServiceToken(),
 		Properties: &map[string]interface{}{
 			"CloudWatchLogsLogGroupArn": []interface{}{rootLogGroup.LogGroupArn()},
@@ -102,7 +98,4 @@ func NewLambdaResources(scope constructs.Construct, pjPrefix string, iamResource
 		},
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
-	resources["RootAddResourcePolicy"] = customResource
-
-	return resources
 }

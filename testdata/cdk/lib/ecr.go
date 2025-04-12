@@ -13,10 +13,9 @@ func NewECRRepositories(scope constructs.Construct, pjPrefix string) map[string]
 
 	// Create ECR1
 	ecr1 := awsecr.NewRepository(scope, jsii.String("ECR1"), &awsecr.RepositoryProps{
-		RepositoryName:   jsii.String(pjPrefix + "-ecr1"),
-		EmptyOnDelete:    jsii.Bool(false),
-		RemovalPolicy:    awscdk.RemovalPolicy_DESTROY,
-		AutoDeleteImages: jsii.Bool(false),
+		RepositoryName: jsii.String(pjPrefix + "-ecr1"),
+		EmptyOnDelete:  jsii.Bool(false),
+		RemovalPolicy:  awscdk.RemovalPolicy_DESTROY,
 	})
 
 	// Add lifecycle policy
@@ -37,10 +36,9 @@ func NewECRRepositories(scope constructs.Construct, pjPrefix string) map[string]
 
 	// Create ECR2
 	ecr2 := awsecr.NewRepository(scope, jsii.String("ECR2"), &awsecr.RepositoryProps{
-		RepositoryName:   jsii.String(pjPrefix + "-ecr2"),
-		EmptyOnDelete:    jsii.Bool(false),
-		RemovalPolicy:    awscdk.RemovalPolicy_DESTROY,
-		AutoDeleteImages: jsii.Bool(false),
+		RepositoryName: jsii.String(pjPrefix + "-ecr2"),
+		EmptyOnDelete:  jsii.Bool(false),
+		RemovalPolicy:  awscdk.RemovalPolicy_DESTROY,
 	})
 
 	// Add lifecycle policy

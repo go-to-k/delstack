@@ -9,7 +9,7 @@ import (
 )
 
 // NewBackupResources creates required AWS Backup resources
-func NewBackupResources(scope constructs.Construct, pjPrefix string, iamResources map[string]awscdk.IResource) map[string]interface{} {
+func NewBackupResources(scope constructs.Construct, pjPrefix string, iamResources map[string]awscdk.IResource) {
 	resources := make(map[string]interface{})
 
 	// Get the AWS Backup role
@@ -70,7 +70,7 @@ func NewBackupResources(scope constructs.Construct, pjPrefix string, iamResource
 
 	// Create backup selection 1 using L1 constructs
 	selectionName1 := pjPrefix + "-Backup-Selection1"
-	cfnSelection1 := awsbackup.NewCfnBackupSelection(scope, jsii.String("TagBasedBackupSelection1"), &awsbackup.CfnBackupSelectionProps{
+	awsbackup.NewCfnBackupSelection(scope, jsii.String("TagBasedBackupSelection1"), &awsbackup.CfnBackupSelectionProps{
 		BackupPlanId: backupPlan1.AttrBackupPlanId(),
 		BackupSelection: &awsbackup.CfnBackupSelection_BackupSelectionResourceTypeProperty{
 			SelectionName: jsii.String(selectionName1),
@@ -87,7 +87,7 @@ func NewBackupResources(scope constructs.Construct, pjPrefix string, iamResource
 
 	// Create backup selection 2 using L1 constructs
 	selectionName2 := pjPrefix + "-Backup-Selection2"
-	cfnSelection2 := awsbackup.NewCfnBackupSelection(scope, jsii.String("TagBasedBackupSelection2"), &awsbackup.CfnBackupSelectionProps{
+	awsbackup.NewCfnBackupSelection(scope, jsii.String("TagBasedBackupSelection2"), &awsbackup.CfnBackupSelectionProps{
 		BackupPlanId: backupPlan2.AttrBackupPlanId(),
 		BackupSelection: &awsbackup.CfnBackupSelection_BackupSelectionResourceTypeProperty{
 			SelectionName: jsii.String(selectionName2),
@@ -101,11 +101,4 @@ func NewBackupResources(scope constructs.Construct, pjPrefix string, iamResource
 			},
 		},
 	})
-
-	resources["BackupPlanWithThinBackups1"] = backupPlan1
-	resources["BackupPlanWithThinBackups2"] = backupPlan2
-	resources["TagBasedBackupSelection1"] = cfnSelection1
-	resources["TagBasedBackupSelection2"] = cfnSelection2
-
-	return resources
 }

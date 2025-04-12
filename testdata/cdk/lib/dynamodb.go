@@ -8,11 +8,9 @@ import (
 )
 
 // NewDynamoDBResources creates DynamoDB resources
-func NewDynamoDBResources(scope constructs.Construct, pjPrefix string) map[string]awscdk.IResource {
-	resources := make(map[string]awscdk.IResource)
-
+func NewDynamoDBResources(scope constructs.Construct, pjPrefix string) {
 	// Create DynamoDB table for backup
-	table := awsdynamodb.NewTable(scope, jsii.String("TableForBackup"), &awsdynamodb.TableProps{
+	awsdynamodb.NewTable(scope, jsii.String("TableForBackup"), &awsdynamodb.TableProps{
 		TableName: jsii.String(pjPrefix + "-Table"),
 		PartitionKey: &awsdynamodb.Attribute{
 			Name: jsii.String("Id"),
@@ -23,8 +21,4 @@ func NewDynamoDBResources(scope constructs.Construct, pjPrefix string) map[strin
 		WriteCapacity: jsii.Number(5),
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
-
-	resources["TableForBackup"] = table
-
-	return resources
 }

@@ -37,27 +37,27 @@ func NewTestStack(scope constructs.Construct, id string, props *TestStackProps) 
 	ecrResources := lib.NewECRRepositories(stack, *pjPrefix)
 
 	// Create S3 resources
-	s3Resources := lib.NewS3Resources(stack, *pjPrefix)
+	lib.NewS3Resources(stack, *pjPrefix)
 
 	// Create IAM resources
 	iamResources := lib.NewIAMResources(stack, *pjPrefix)
 
 	// Create Lambda related resources
-	lambdaResources := lib.NewLambdaResources(stack, *pjPrefix, iamResources)
+	lib.NewLambdaResources(stack, *pjPrefix, iamResources)
 
 	// Create DynamoDB resources
-	dynamoResources := lib.NewDynamoDBResources(stack, *pjPrefix)
+	lib.NewDynamoDBResources(stack, *pjPrefix)
 
 	// Create AWS Backup resources
-	backupResources := lib.NewBackupResources(stack, *pjPrefix, iamResources)
+	lib.NewBackupResources(stack, *pjPrefix, iamResources)
 
 	// Create first nested stack
-	childStack := lib.NewChildStack(stack, "ChildStack", &lib.ChildStackProps{
+	lib.NewChildStack(stack, "ChildStack", &lib.ChildStackProps{
 		PjPrefix: *pjPrefix,
 	})
 
 	// Create second nested stack
-	childStack2 := lib.NewChildStack2(stack, "ChildTwoStack", &lib.ChildStack2Props{
+	lib.NewChildStack2(stack, "ChildTwoStack", &lib.ChildStack2Props{
 		PjPrefix: *pjPrefix,
 	})
 
@@ -69,14 +69,6 @@ func NewTestStack(scope constructs.Construct, id string, props *TestStackProps) 
 	awscdk.NewCfnOutput(stack, jsii.String("S3BucketName"), &awscdk.CfnOutputProps{
 		Value: jsii.String(*pjPrefix + "-root--use1-az4--x-s3"),
 	})
-
-	// Use variables to avoid unused variable warnings (use appropriately in actual code)
-	_ = s3Resources
-	_ = lambdaResources
-	_ = dynamoResources
-	_ = backupResources
-	_ = childStack
-	_ = childStack2
 
 	return stack
 }
