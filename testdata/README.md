@@ -1,0 +1,41 @@
+# Delstack Test Environment
+
+This directory contains a tool for creating a test environment for `delstack`. This tool (`deploy.go`) deploys AWS CloudFormation stacks with various resources that can be used to test the stack deletion functionality of `delstack`.
+
+## Test Stack Deployment
+
+You can deploy test CloudFormation stacks using the included `deploy.go` script. This script creates a CloudFormation stack containing various resources that typically cause deletion issues, including:
+
+- S3 buckets with contents
+- S3 Express Directory buckets
+- IAM groups
+- ECR repositories with images
+- AWS Backup vaults with recovery points
+- And more
+
+```bash
+go run testdata/deploy.go -s <stage> [-p <profile>]
+```
+
+### Options
+
+- `-s <stage>` : Stage name, used as part of stack naming (optional)
+- `-p <profile>` : AWS CLI profile name to use (optional)
+
+### Using the Makefile
+
+For convenience, you can also use the Makefile target:
+
+```bash
+# Deploy with default stage and profile
+make testgen
+
+# Deploy with custom stage and profile
+make testgen OPT="-s my-stage -p my-profile"
+```
+
+### Notes
+
+- Due to AWS quota limitations, only up to 5 test stacks can be created simultaneously with this script.
+- The script includes 2 `AWS::S3Express::DirectoryBucket` resources; an AWS account can have at most 10 directory buckets per region.
+- The script includes 2 `AWS::IAM::Group` resources; one IAM user can only belong to 10 IAM groups.

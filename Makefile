@@ -20,6 +20,8 @@ TEST_COV_RESULT := "$$(go test -race -cover -v ./... -coverpkg=./... -coverprofi
 
 FAIL_CHECK := "^[^\s\t]*FAIL[^\s\t]*$$"
 
+.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen testgen_help
+
 test_diff:
 	@! echo $(TEST_DIFF_RESULT) | $(COLORIZE_PASS) | $(COLORIZE_FAIL) | tee /dev/stderr | grep $(FAIL_CHECK) > /dev/null
 test:
@@ -53,3 +55,21 @@ install:
 clean:
 	go clean
 	rm -f delstack
+
+# Test stack generation commands
+# ==================================
+
+# Run test stack generator
+testgen:
+	@echo "Running test stack generator..."
+	@cd testdata && go mod tidy && go run deploy.go $(OPT)
+
+# Help for test stack generation
+testgen_help:
+	@echo "Test stack generation targets:"
+	@echo "  testgen         - Run the test stack generator"
+	@echo ""
+	@echo "Example usage:"
+	@echo "  make testgen"
+	@echo "  make testgen OPT=\"-s my-stage\""
+	@echo "  make testgen OPT=\"-p my-profile\""
