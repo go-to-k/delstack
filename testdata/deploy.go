@@ -706,14 +706,13 @@ func (s *DeployStackService) deleteS3BucketContents(bucketName string) error {
 	var wg sync.WaitGroup
 	errorChan := make(chan error, 100)
 
-	// Process objects in batches of 100 (AWS DeleteObjects can handle up to 1000,
-	// but we're using smaller batches for more parallelism)
-	batchSize := 100
+	// Process objects in batches of 1000 (AWS DeleteObjects can handle up to 1000)
+	batchSize := 1000
 	totalObjects := len(listObjOutput.Contents)
 	totalBatches := (totalObjects + batchSize - 1) / batchSize
 
 	// Process each batch in parallel
-	for i := 0; i < totalBatches; i++ {
+	for i := range totalBatches {
 		wg.Add(1)
 
 		// Determine batch range
