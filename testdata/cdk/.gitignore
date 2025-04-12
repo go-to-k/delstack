@@ -17,3 +17,6 @@
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# This directory is only used for testing purposes.
+cdk.context.json
