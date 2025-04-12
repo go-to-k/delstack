@@ -79,7 +79,7 @@ func main() {
 	app := awscdk.NewApp(nil)
 
 	// Get stack name from environment variables or use default value
-	pjPrefix := os.Getenv("PJ_PREFIX")
+	pjPrefix := app.Node().TryGetContext(jsii.String("PJ_PREFIX")).(string)
 	if pjPrefix == "" {
 		pjPrefix = "dev-delstack-test"
 	}
