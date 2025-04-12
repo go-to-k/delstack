@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -43,7 +42,6 @@ type DeployStackService struct {
 	SamBucket         string
 	AccountID         string
 	ProfileOption     string
-	DirPath           string
 	Ctx               context.Context
 	CfnClient         *cloudformation.Client
 	S3Client          *s3.Client
@@ -146,8 +144,6 @@ func NewDeployStackService(ctx context.Context, options Options) *DeployStackSer
 		profileOption = fmt.Sprintf("--profile %s --region %s", options.Profile, region)
 	}
 
-	dirPath := filepath.Join("testfiles", cfnStackName)
-
 	return &DeployStackService{
 		Options:           options,
 		CfnTemplate:       "./yamldir/test_root.yaml",
@@ -156,7 +152,6 @@ func NewDeployStackService(ctx context.Context, options Options) *DeployStackSer
 		CfnStackName:      cfnStackName,
 		SamBucket:         samBucket,
 		ProfileOption:     profileOption,
-		DirPath:           dirPath,
 		Ctx:               ctx,
 	}
 }
@@ -233,12 +228,6 @@ func (s *DeployStackService) ensureS3Bucket() error {
 }
 
 func (s *DeployStackService) packageAndDeploy() error {
-	// No need to create physical test files anymore
-	// Directory still needed for SAM-related files
-	if err := os.MkdirAll(s.DirPath, 0755); err != nil {
-		return fmt.Errorf("failed to create directory: %v", err)
-	}
-
 	// Login to ECR using AWS SDK
 	if err := s.loginToECR(); err != nil {
 		return fmt.Errorf("failed to login to ECR: %v", err)
@@ -565,7 +554,7 @@ func (s *DeployStackService) objectUpload(stackName string) error {
 			// First upload
 			go func(bucket string) {
 				defer uploadWg.Done()
-				if err := s.uploadDirectoryToS3(s.DirPath, bucket, false); err != nil {
+				if err := s.uploadDirectoryToS3(bucket, false); err != nil {
 					uploadErrorChan <- fmt.Errorf("failed to upload files to S3 bucket: %v", err)
 				}
 			}(bucketName)
@@ -573,7 +562,7 @@ func (s *DeployStackService) objectUpload(stackName string) error {
 			// Second upload (for versioning)
 			go func(bucket string) {
 				defer uploadWg.Done()
-				if err := s.uploadDirectoryToS3(s.DirPath, bucket, false); err != nil {
+				if err := s.uploadDirectoryToS3(bucket, false); err != nil {
 					uploadErrorChan <- fmt.Errorf("failed to upload files to S3 bucket (version): %v", err)
 				}
 			}(bucketName)
@@ -598,7 +587,7 @@ func (s *DeployStackService) objectUpload(stackName string) error {
 			bucketName := resource["PhysicalResourceId"]
 
 			// Upload files to directory bucket (ignore errors)
-			_ = s.uploadDirectoryToS3(s.DirPath, bucketName, true)
+			_ = s.uploadDirectoryToS3(bucketName, true)
 		}
 	}
 
@@ -606,7 +595,7 @@ func (s *DeployStackService) objectUpload(stackName string) error {
 }
 
 // uploadDirectoryToS3 - Upload virtual test files to S3 bucket
-func (s *DeployStackService) uploadDirectoryToS3(dirPath string, bucketName string, ignoreErrors bool) error {
+func (s *DeployStackService) uploadDirectoryToS3(bucketName string, ignoreErrors bool) error {
 	var uploadCount int
 	var errorCount int
 	var mu sync.Mutex
