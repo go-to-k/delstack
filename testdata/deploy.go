@@ -51,6 +51,10 @@ type DeployStackService struct {
 	BackupClient      *backup.Client
 }
 
+// This script allows you to deploy the stack for delstack testing.
+// Due to quota limitations, only up to [5 test stacks] can be created by this script at the same time.
+// Contains [2 AWS::S3Express::DirectoryBucket] : Directory bucket can only have up to 10 buckets created per AWS account (per region).
+// Contains [2 AWS::IAM::Group] : 1 IAM user can only belong to 10 IAM groups.  In this script, 1 IAM user is used across multiple script runs.
 func main() {
 	ctx := context.Background()
 	options := parseArgs()
@@ -111,6 +115,7 @@ func main() {
 	}
 
 	// Attach policy to role
+	// The following function is no longer needed as the IAM role no longer fails on normal deletion, but it is left in place just in case.
 	color.Green("=== attach_policy_to_role ===")
 	if err := service.attachPolicyToRole(service.CfnStackName); err != nil {
 		color.Red("Failed to attach policy to role: %v", err)
@@ -306,6 +311,7 @@ func (s *DeployStackService) loginToECR() error {
 	return nil
 }
 
+// The following function is no longer needed as the IAM role no longer fails on normal deletion, but it is left in place just in case.
 func (s *DeployStackService) attachPolicyToRole(stackName string) error {
 	// Get resources in the stack
 	resources, nestedStackNames, err := s.getStackResources(stackName)
@@ -586,7 +592,9 @@ func (s *DeployStackService) objectUpload(stackName string) error {
 		} else if resource["ResourceType"] == "AWS::S3Express::DirectoryBucket" {
 			bucketName := resource["PhysicalResourceId"]
 
-			// Upload files to directory bucket (ignore errors)
+			// Upload files to directory bucket.
+			// Ignore errors even in the event of an error because the following error will occur.
+			// upload failed: testfiles/5594.txt to s3://dev-goto-002-descend--use1-az4--x-s3/5594.txt An error occurred (400) when calling the PutObject operation: Bad Request
 			_ = s.uploadDirectoryToS3(bucketName, true)
 		}
 	}
