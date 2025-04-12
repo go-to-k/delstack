@@ -19,7 +19,7 @@ go run testdata/deploy.go -s <stage> [-p <profile>]
 
 ### Options
 
-- `-s <stage>` : Stage name, used as part of stack naming (required)
+- `-s <stage>` : Stage name, used as part of stack naming (optional)
 - `-p <profile>` : AWS CLI profile name to use (optional)
 
 ### Using the Makefile
