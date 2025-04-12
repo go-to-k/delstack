@@ -53,3 +53,20 @@ install:
 clean:
 	go clean
 	rm -f delstack
+
+# Test stack generation commands
+# ==================================
+
+# Run test stack generator
+testgen:
+	@echo "Running test stack generator..."
+	@cd testdata && go mod tidy && go run deploy.go $(OPT)
+
+# Help for test stack generation
+testgen_help:
+	@echo "Test stack generation targets:"
+	@echo "  testgen         - Run the test stack generator"
+	@echo ""
+	@echo "Example usage:"
+	@echo "  make testgen OPT=\"-s my-stage\""
+	@echo "  make testgen OPT=\"-s my-stage -p my-profile\""
