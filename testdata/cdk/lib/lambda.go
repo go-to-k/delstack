@@ -27,53 +27,53 @@ func NewLambdaResources(scope constructs.Construct, pjPrefix string, iamResource
 
 	// Create Lambda function
 	lambdaCode := `
-	import json
-	import cfnresponse
-	import boto3
-	from botocore.exceptions import ClientError
+import json
+import cfnresponse
+import boto3
+from botocore.exceptions import ClientError
 
-	client = boto3.client("logs")
+client = boto3.client("logs")
 
-	def PutPolicy(arns, policyname, service):
-		arn_str = '","'.join(arns)
-		arn = "[\"" + arn_str + "\"]"
+def PutPolicy(arns, policyname, service):
+	arn_str = '","'.join(arns)
+	arn = "[\"" + arn_str + "\"]"
 
-		response = client.put_resource_policy(
-			policyName=policyname,
-			policyDocument="{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"" + service + "\"},\"Action\":[\"logs:CreateLogStream\",\"logs:PutLogEvents\"],\"Resource\":"+ arn + "}]}",
-		)
-		return
+	response = client.put_resource_policy(
+		policyName=policyname,
+		policyDocument="{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"" + service + "\"},\"Action\":[\"logs:CreateLogStream\",\"logs:PutLogEvents\"],\"Resource\":"+ arn + "}]}",
+	)
+	return
 
-	def DeletePolicy(policyname):
-		response = client.delete_resource_policy(
-			policyName=policyname
-		)
-		return
+def DeletePolicy(policyname):
+	response = client.delete_resource_policy(
+		policyName=policyname
+	)
+	return
 
-	def handler(event, context):
+def handler(event, context):
 
-		CloudWatchLogsLogGroupArns = event['ResourceProperties']['CloudWatchLogsLogGroupArn']
-		PolicyName = event['ResourceProperties']['PolicyName']
-		ServiceName = event['ResourceProperties']['ServiceName']
+	CloudWatchLogsLogGroupArns = event['ResourceProperties']['CloudWatchLogsLogGroupArn']
+	PolicyName = event['ResourceProperties']['PolicyName']
+	ServiceName = event['ResourceProperties']['ServiceName']
 
-		responseData = {}
+	responseData = {}
 
-		try:
-			if event['RequestType'] == "Delete":
-				# DeletePolicy(PolicyName)
-				responseData['Data'] = "FAILED"
-				status=cfnresponse.FAILED
-			if event['RequestType'] == "Create":
-				# PutPolicy(CloudWatchLogsLogGroupArns, PolicyName, ServiceName)
-				responseData['Data'] = "SUCCESS"
-				status=cfnresponse.SUCCESS
-		except ClientError as e:
+	try:
+		if event['RequestType'] == "Delete":
+			# DeletePolicy(PolicyName)
 			responseData['Data'] = "FAILED"
 			status=cfnresponse.FAILED
-			print("Unexpected error: %s" % e)
+		if event['RequestType'] == "Create":
+			# PutPolicy(CloudWatchLogsLogGroupArns, PolicyName, ServiceName)
+			responseData['Data'] = "SUCCESS"
+			status=cfnresponse.SUCCESS
+	except ClientError as e:
+		responseData['Data'] = "FAILED"
+		status=cfnresponse.FAILED
+		print("Unexpected error: %s" % e)
 
-		cfnresponse.send(event, context, status, responseData, "CustomResourcePhysicalID")
-	`
+	cfnresponse.send(event, context, status, responseData, "CustomResourcePhysicalID")
+`
 
 	rootResourcePolicyLambda := awslambda.NewFunction(scope, jsii.String("RootResourcePolicyLambdaForLogs"), &awslambda.FunctionProps{
 		Runtime:      awslambda.Runtime_PYTHON_3_9(),
