@@ -2,7 +2,6 @@ package lib
 
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
-	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/customresources"
@@ -10,23 +9,36 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-// NewLambdaResources creates required Lambda resources and CloudWatch log groups
-func NewLambdaResources(scope constructs.Construct, pjPrefix string, iamResources map[string]awscdk.IResource) {
-	// Create CloudWatch log group
-	rootLogGroup := awslogs.NewLogGroup(scope, jsii.String("RootLogGroup"), &awslogs.LogGroupProps{
-		LogGroupName:  jsii.String(pjPrefix + "-Root-log"),
-		Retention:     awslogs.RetentionDays_TWO_WEEKS,
+func NewCustomResource(scope constructs.Construct) {
+	logGroup := awslogs.NewLogGroup(scope, jsii.String("LogGroup"), &awslogs.LogGroupProps{
+		Retention:     awslogs.RetentionDays_ONE_DAY,
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 
-	// Get the Lambda role
-	lambdaRole, ok := iamResources["RootLambdaRole"].(awsiam.Role)
-	if !ok {
-		panic("RootLambdaRole not found or not a Role")
-	}
+	resourcePolicyLambda := awslambda.NewFunction(scope, jsii.String("ResourcePolicyLambdaForLogs"), &awslambda.FunctionProps{
+		Runtime: awslambda.Runtime_PYTHON_3_13(),
+		Handler: jsii.String("index.handler"),
+		Code:    awslambda.Code_FromInline(jsii.String(getLambdaCode())),
+	})
 
-	// Create Lambda function
-	lambdaCode := `
+	provider := customresources.NewProvider(scope, jsii.String("CustomResourceProvider"), &customresources.ProviderProps{
+		OnEventHandler: resourcePolicyLambda,
+	})
+
+	awscdk.NewCustomResource(scope, jsii.String("AddResourcePolicy"), &awscdk.CustomResourceProps{
+		ServiceToken: provider.ServiceToken(),
+		Properties: &map[string]interface{}{
+			"CloudWatchLogsLogGroupArn": []interface{}{logGroup.LogGroupArn()},
+			"PolicyName":                "ResourcePolicyForDNSLog",
+			"ServiceName":               "route53.amazonaws.com",
+			"ServiceTimeout":            "5",
+		},
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
+	})
+}
+
+func getLambdaCode() string {
+	return `
 import json
 import cfnresponse
 import boto3
@@ -74,28 +86,4 @@ def handler(event, context):
 
 	cfnresponse.send(event, context, status, responseData, "CustomResourcePhysicalID")
 `
-
-	rootResourcePolicyLambda := awslambda.NewFunction(scope, jsii.String("RootResourcePolicyLambdaForLogs"), &awslambda.FunctionProps{
-		Runtime:      awslambda.Runtime_PYTHON_3_9(),
-		Handler:      jsii.String("index.handler"),
-		Code:         awslambda.Code_FromInline(jsii.String(lambdaCode)),
-		Role:         lambdaRole,
-		FunctionName: jsii.String(pjPrefix + "-resource-policy-lambda"),
-	})
-
-	// Create custom resource
-	provider := customresources.NewProvider(scope, jsii.String("RootCustomResourceProvider"), &customresources.ProviderProps{
-		OnEventHandler: rootResourcePolicyLambda,
-	})
-
-	awscdk.NewCustomResource(scope, jsii.String("RootAddResourcePolicy"), &awscdk.CustomResourceProps{
-		ServiceToken: provider.ServiceToken(),
-		Properties: &map[string]interface{}{
-			"CloudWatchLogsLogGroupArn": []interface{}{rootLogGroup.LogGroupArn()},
-			"PolicyName":                pjPrefix + "RootResourcePolicyForDNSLog",
-			"ServiceName":               "route53.amazonaws.com",
-			"ServiceTimeout":            "5",
-		},
-		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
-	})
 }
