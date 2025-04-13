@@ -131,8 +131,8 @@ func parseArgs() Options {
 }
 
 func NewDeployStackService(ctx context.Context, options Options) *DeployStackService {
-	cfnPjPrefix := fmt.Sprintf("dev-%s", options.Stage)
-	cfnStackName := fmt.Sprintf("%s-TestStack", cfnPjPrefix)
+	cfnPjPrefix := options.Stage
+	cfnStackName := fmt.Sprintf("%s-Test-Stack", cfnPjPrefix)
 
 	profileOption := ""
 	if options.Profile != "" {
