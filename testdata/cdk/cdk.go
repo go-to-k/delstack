@@ -26,7 +26,7 @@ func NewTestStack(scope constructs.Construct, id string, props *TestStackProps) 
 	lib.NewS3Bucket(stack)
 	lib.NewS3DirectoryBucket(stack, props.PjPrefix+"-Root")
 	lib.NewIamGroup(stack)
-	lib.NewCustomResource(stack)
+	lib.NewCustomResources(stack)
 	lib.NewDynamoDB(stack)
 	lib.NewBackup(stack, props.PjPrefix+"-Root")
 

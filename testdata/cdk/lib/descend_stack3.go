@@ -18,7 +18,7 @@ func NewDescendStack3(scope constructs.Construct, id string, props *DescendStack
 
 	stack := awscdk.NewNestedStack(scope, &id, &sprops)
 
-	NewCustomResource(stack)
+	NewCustomResources(stack)
 	NewDynamoDB(stack)
 
 	return stack

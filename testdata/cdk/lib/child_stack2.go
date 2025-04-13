@@ -19,7 +19,7 @@ func NewChildStack2(scope constructs.Construct, id string, props *ChildStack2Pro
 	stack := awscdk.NewNestedStack(scope, &id, &sprops)
 
 	NewS3Bucket(stack)
-	NewCustomResource(stack)
+	NewCustomResources(stack)
 
 	NewDescendStack2(stack, "DescendTwo", &DescendStack2Props{
 		PjPrefix: props.PjPrefix,

@@ -21,7 +21,7 @@ func NewChildStack(scope constructs.Construct, id string, props *ChildStackProps
 	NewS3Bucket(stack)
 	NewS3DirectoryBucket(stack, props.PjPrefix+"-Child")
 	NewIamGroup(stack)
-	NewCustomResource(stack)
+	NewCustomResources(stack)
 
 	NewDescendStack(stack, "Descend", &DescendStackProps{
 		PjPrefix: props.PjPrefix,
