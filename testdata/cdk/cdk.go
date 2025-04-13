@@ -7,7 +7,8 @@ import (
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 
-	"cdk/lib"
+	"cdk/lib/nest"
+	"cdk/lib/resource"
 )
 
 type TestStackProps struct {
@@ -22,18 +23,18 @@ func NewTestStack(scope constructs.Construct, id string, props *TestStackProps) 
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	lib.NewEcr(stack)
-	lib.NewS3Bucket(stack)
-	lib.NewS3DirectoryBucket(stack, props.PjPrefix+"-Root")
-	lib.NewIamGroup(stack)
-	lib.NewCustomResources(stack)
-	lib.NewDynamoDB(stack)
-	lib.NewBackup(stack, props.PjPrefix+"-Root")
+	resource.NewEcr(stack)
+	resource.NewS3Bucket(stack)
+	resource.NewS3DirectoryBucket(stack, props.PjPrefix+"-Root")
+	resource.NewIamGroup(stack)
+	resource.NewCustomResources(stack)
+	resource.NewDynamoDB(stack)
+	resource.NewBackup(stack, props.PjPrefix+"-Root")
 
-	lib.NewChildStack(stack, "Child", &lib.ChildStackProps{
+	nest.NewChildStack(stack, "Child", &nest.ChildStackProps{
 		PjPrefix: props.PjPrefix,
 	})
-	lib.NewChildStack2(stack, "ChildTwo", &lib.ChildStack2Props{
+	nest.NewChildStack2(stack, "ChildTwo", &nest.ChildStack2Props{
 		PjPrefix: props.PjPrefix,
 	})
 

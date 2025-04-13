@@ -1,4 +1,4 @@
-package lib
+package resource
 
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
@@ -9,7 +9,7 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-func NewCustomResources(scope constructs.Construct) {
+func NewCustomResource(scope constructs.Construct) {
 	logGroup := awslogs.NewLogGroup(scope, jsii.String("LogGroup"), &awslogs.LogGroupProps{
 		Retention:     awslogs.RetentionDays_ONE_DAY,
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
@@ -37,7 +37,7 @@ func NewCustomResources(scope constructs.Construct) {
 	})
 }
 
-func getCode() string {
+func getLambdaCode() string {
 	return `
 import json
 import cfnresponse

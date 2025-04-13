@@ -1,4 +1,4 @@
-package lib
+package resource
 
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"

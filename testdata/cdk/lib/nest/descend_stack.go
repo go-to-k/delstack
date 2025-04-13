@@ -1,16 +1,18 @@
-package lib
+package nest
 
 import (
+	"cdk/lib/resource"
+
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/constructs-go/constructs/v10"
 )
 
-type DescendStack2Props struct {
+type DescendStackProps struct {
 	awscdk.NestedStackProps
 	PjPrefix string
 }
 
-func NewDescendStack2(scope constructs.Construct, id string, props *DescendStack2Props) awscdk.NestedStack {
+func NewDescendStack(scope constructs.Construct, id string, props *DescendStackProps) awscdk.NestedStack {
 	var sprops awscdk.NestedStackProps
 	if props != nil {
 		sprops = props.NestedStackProps
@@ -18,7 +20,8 @@ func NewDescendStack2(scope constructs.Construct, id string, props *DescendStack
 
 	stack := awscdk.NewNestedStack(scope, &id, &sprops)
 
-	NewEcr(stack)
+	resource.NewS3DirectoryBucket(stack, props.PjPrefix+"-Descend")
+	resource.NewIamGroup(stack)
 
 	return stack
 }
