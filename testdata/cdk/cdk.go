@@ -28,7 +28,7 @@ func NewTestStack(scope constructs.Construct, id string, props *TestStackProps) 
 	resource.NewS3DirectoryBucket(stack, props.PjPrefix+"-Root")
 	resource.NewIamGroup(stack)
 	resource.NewCustomResources(stack)
-	resource.NewDynamoDB(stack)
+	resource.NewDynamoDB(stack, props.PjPrefix+"-Root")
 	resource.NewBackup(stack, props.PjPrefix+"-Root")
 
 	nest.NewChildStack(stack, "Child", &nest.ChildStackProps{

@@ -10,6 +10,7 @@ import (
 
 func NewBackup(scope constructs.Construct, resourcePrefix string) {
 	backupRole := awsiam.NewRole(scope, jsii.String("AWSBackupServiceRole"), &awsiam.RoleProps{
+		RoleName:  jsii.String(resourcePrefix + "-AWSBackupServiceRole"),
 		Path:      jsii.String("/service-role/"),
 		AssumedBy: awsiam.NewServicePrincipal(jsii.String("backup.amazonaws.com"), nil),
 		ManagedPolicies: &[]awsiam.IManagedPolicy{

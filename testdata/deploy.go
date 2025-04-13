@@ -755,8 +755,8 @@ func (s *DeployStackService) startBackup(stackName string) error {
 	}
 
 	// Start backup jobs
-	resourceArn := fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s-Table", region, s.AccountID, s.CfnPjPrefix)
-	iamRoleArn := fmt.Sprintf("arn:aws:iam::%s:role/service-role/%s-AWSBackupServiceRole", s.AccountID, s.CfnPjPrefix)
+	resourceArn := fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s-Root-Table", region, s.AccountID, s.CfnPjPrefix)
+	iamRoleArn := fmt.Sprintf("arn:aws:iam::%s:role/service-role/%s-Root-AWSBackupServiceRole", s.AccountID, s.CfnPjPrefix)
 
 	for _, resource := range resources {
 		if resource["ResourceType"] == "AWS::Backup::BackupVault" {

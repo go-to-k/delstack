@@ -21,7 +21,7 @@ func NewDescendStack3(scope constructs.Construct, id string, props *DescendStack
 	stack := awscdk.NewNestedStack(scope, &id, &sprops)
 
 	resource.NewCustomResources(stack)
-	resource.NewDynamoDB(stack)
+	resource.NewDynamoDB(stack, props.PjPrefix+"-Descend")
 
 	return stack
 }

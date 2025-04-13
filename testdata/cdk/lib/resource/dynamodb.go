@@ -7,8 +7,9 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-func NewDynamoDB(scope constructs.Construct) {
+func NewDynamoDB(scope constructs.Construct, resourcePrefix string) {
 	awsdynamodb.NewTable(scope, jsii.String("TableForBackup"), &awsdynamodb.TableProps{
+		TableName: jsii.String(resourcePrefix + "-Table"),
 		PartitionKey: &awsdynamodb.Attribute{
 			Name: jsii.String("Id"),
 			Type: awsdynamodb.AttributeType_STRING,
