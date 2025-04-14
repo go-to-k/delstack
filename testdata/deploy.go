@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -71,9 +73,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Build Docker image
+	if err := service.buildImage(); err != nil {
+		color.Red("Failed to build Docker image: %v", err)
+		os.Exit(1)
+	}
+
 	// Package and deploy using CDK
 	if err := service.deploy(); err != nil {
-		color.Red("Failed to package and deploy: %v", err)
+		color.Red("Failed to deploy: %v", err)
 		os.Exit(1)
 	}
 
@@ -191,7 +199,7 @@ func (s *DeployStackService) runCommand(command string) error {
 	return cmd.Run()
 }
 
-func (s *DeployStackService) deploy() error {
+func (s *DeployStackService) buildImage() error {
 	// Login to ECR using AWS SDK
 	if err := s.loginToECR(); err != nil {
 		return fmt.Errorf("failed to login to ECR: %v", err)
@@ -203,13 +211,17 @@ func (s *DeployStackService) deploy() error {
 		return fmt.Errorf("failed to build Docker image: %v", err)
 	}
 
+	return nil
+}
+
+func (s *DeployStackService) deploy() error {
 	// Set region
 	os.Setenv("CDK_DEFAULT_REGION", region)
 
 	// Get the account ID
 	os.Setenv("CDK_DEFAULT_ACCOUNT", s.AccountID)
 
-	// Build and deploy with CDK (from the cdk directory)
+	// Deploy with CDK (from the cdk directory)
 	profileOption := ""
 	if s.Options.Profile != "" {
 		profileOption = fmt.Sprintf("--profile %s", s.Options.Profile)
@@ -372,18 +384,13 @@ func (s *DeployStackService) attachUserToGroup(stackName string) error {
 	// Create user if it doesn't exist
 	userName := "DelstackTestUser"
 
-	_, err = s.IamClient.GetUser(s.Ctx, &iam.GetUserInput{
+	_, err = s.IamClient.CreateUser(s.Ctx, &iam.CreateUserInput{
 		UserName: aws.String(userName),
 	})
 
-	if err != nil {
-		_, err = s.IamClient.CreateUser(s.Ctx, &iam.CreateUserInput{
-			UserName: aws.String(userName),
-		})
-
-		if err != nil {
-			return fmt.Errorf("failed to create user: %v", err)
-		}
+	var e *iamtypes.EntityAlreadyExistsException
+	if err != nil && !errors.As(err, &e) {
+		return fmt.Errorf("failed to create user: %v", err)
 	}
 
 	// Add user to IAM groups
