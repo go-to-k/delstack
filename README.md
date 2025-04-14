@@ -24,6 +24,7 @@ All resources that do not fail normal deletion can be deleted as is.
 | ---- | ---- |
 |  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled** and DeletionPolicy **not Retain**. (Because "Retain" buckets should not be deleted.)  |
 |  AWS::S3Express::DirectoryBucket  |  S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty and DeletionPolicy not Retain. (Because "Retain" buckets should not be deleted.)  |
+|  AWS::S3Tables::TableBucket  |  S3 Table Buckets, including buckets with any namespaces or tables and DeletionPolicy not Retain. (Because "Retain" buckets should not be deleted.)  |
 |  AWS::IAM::Group  |  IAM Groups, including groups **with IAM users from outside the stack.** In that case, this tool detaches the IAM users and then deletes the IAM group (but not the IAM users themselves).  |
 |  AWS::ECR::Repository  |  ECR Repositories, including repositories that contain images and where **the `EmptyOnDelete` is not true.**  |
 |  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
@@ -141,6 +142,7 @@ However, if a resource can be deleted without becoming DELETE_FAILED by the norm
   [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
   [x]  AWS::S3::Bucket
   [ ]  AWS::S3Express::DirectoryBucket
+  [ ]  AWS::S3Tables::TableBucket
   [ ]  AWS::IAM::Role
   [ ]  AWS::IAM::Group
 > [x]  AWS::ECR::Repository

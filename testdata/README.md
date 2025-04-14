@@ -13,8 +13,9 @@ npm install -g aws-cdk@latest
 This script creates a CloudFormation stack containing various resources that typically cause deletion issues, including:
 
 - S3 buckets with contents
-- S3 Express Directory buckets
-- IAM groups
+- S3 Express Directory buckets with contents
+- S3 Table buckets with namespaces and tables
+- IAM groups with users
 - ECR repositories with images
 - AWS Backup vaults with recovery points
 - And more
@@ -44,3 +45,4 @@ make testgen OPT="-s my-stage -p my-profile"
 
 - Due to AWS quota limitations, only up to 5 test stacks can be created simultaneously with this script.
 - The script includes 2 `AWS::IAM::Group` resources only; one IAM user (`DelstackTestUser`) can only belong to 10 IAM groups, and we want to be able to make up to 5 stacks.
+- The script includes 2 `AWS::S3Tables::TableBucket` resources; an AWS account can have at most 10 table buckets per region.
