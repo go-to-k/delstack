@@ -30,6 +30,7 @@ type IS3Tables interface {
 	ListTableBuckets(ctx context.Context) ([]types.TableBucketSummary, error)
 	ListNamespacesByPage(ctx context.Context, tableBucketARN *string, continuationToken *string) (*ListNamespacesByPageOutput, error)
 	ListTablesByPage(ctx context.Context, tableBucketARN *string, namespace *string, continuationToken *string) (*ListTablesByPageOutput, error)
+	CheckTableBucketExists(ctx context.Context, tableBucketARN *string) (bool, error)
 }
 
 var _ IS3Tables = (*S3Tables)(nil)
@@ -217,4 +218,57 @@ func (s *S3Tables) ListTablesByPage(ctx context.Context, tableBucketARN *string,
 		Tables:            tables,
 		ContinuationToken: output.ContinuationToken,
 	}, nil
+}
+
+func (s *S3Tables) CheckTableBucketExists(ctx context.Context, tableBucketARN *string) (bool, error) {
+	tableBuckets, err := s.listTableBuckets(ctx)
+	if err != nil {
+		return false, &ClientError{
+			ResourceName: tableBucketARN,
+			Err:          err,
+		}
+	}
+
+	for _, tableBucket := range tableBuckets {
+		if *tableBucket.Arn == *tableBucketARN {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (s *S3Tables) listTableBuckets(ctx context.Context) ([]types.TableBucketSummary, error) {
+	buckets := []types.TableBucketSummary{}
+	var continuationToken *string
+
+	for {
+		select {
+		case <-ctx.Done():
+			return buckets, ctx.Err()
+		default:
+		}
+
+		input := &s3tables.ListTableBucketsInput{
+			ContinuationToken: continuationToken,
+		}
+
+		optFn := func(o *s3tables.Options) {
+			o.Retryer = s.retryer
+		}
+
+		output, err := s.client.ListTableBuckets(ctx, input, optFn)
+		if err != nil {
+			return buckets, err
+		}
+
+		buckets = append(buckets, output.TableBuckets...)
+
+		if output.ContinuationToken == nil {
+			break
+		}
+		continuationToken = output.ContinuationToken
+	}
+
+	return buckets, nil
 }

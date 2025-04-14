@@ -2,25 +2,26 @@ package operation
 
 import (
 	"context"
-	"fmt"
 	"runtime"
-	"sync"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	cfntypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/go-to-k/delstack/pkg/client"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 )
 
+// Too Many Requests error often occurs, so limit the value
+const SemaphoreWeight = 4
+
 var _ IOperator = (*S3TableBucketOperator)(nil)
 
 type S3TableBucketOperator struct {
-	client    client.IS3
+	client    client.IS3Tables
 	resources []*cfntypes.StackResourceSummary
 }
 
-func NewS3TableBucketOperator(client client.IS3) *S3TableBucketOperator {
+func NewS3TableBucketOperator(client client.IS3Tables) *S3TableBucketOperator {
 	return &S3TableBucketOperator{
 		client:    client,
 		resources: []*cfntypes.StackResourceSummary{},
@@ -54,8 +55,8 @@ func (o *S3TableBucketOperator) DeleteResources(ctx context.Context) error {
 	return eg.Wait()
 }
 
-func (o *S3TableBucketOperator) DeleteS3TableBucket(ctx context.Context, bucketName *string) error {
-	exists, err := o.client.CheckBucketExists(ctx, bucketName)
+func (o *S3TableBucketOperator) DeleteS3TableBucket(ctx context.Context, tableBucketArn *string) error {
+	exists, err := o.client.CheckTableBucketExists(ctx, tableBucketArn)
 	if err != nil {
 		return err
 	}
@@ -64,61 +65,44 @@ func (o *S3TableBucketOperator) DeleteS3TableBucket(ctx context.Context, bucketN
 	}
 
 	eg := errgroup.Group{}
-	errorStr := ""
-	errorsCount := 0
-	errorsMtx := sync.Mutex{}
-	var keyMarker *string
-	var versionIdMarker *string
+	sem := semaphore.NewWeighted(SemaphoreWeight)
+	var continuationToken *string
 	for {
-		var objects []s3types.ObjectIdentifier
+		select {
+		case <-ctx.Done():
+			return &client.ClientError{
+				ResourceName: tableBucketArn,
+				Err:          ctx.Err(),
+			}
+		default:
+		}
 
-		// ListObjectVersions/ListObjectsV2 API can only retrieve up to 1000 items, so it is good to pass it
-		// directly to DeleteObjects, which can only delete up to 1000 items.
-		output, err := o.client.ListObjectsOrVersionsByPage(
+		output, err := o.client.ListNamespacesByPage(
 			ctx,
-			bucketName,
-			keyMarker,
-			versionIdMarker,
+			tableBucketArn,
+			continuationToken,
 		)
 		if err != nil {
 			return err
 		}
-
-		objects = output.ObjectIdentifiers
-		keyMarker = output.NextKeyMarker
-		versionIdMarker = output.NextVersionIdMarker
-
-		if len(objects) == 0 {
+		if len(output.Namespaces) == 0 {
 			break
 		}
 
-		eg.Go(func() error {
-			// One DeleteObjects is executed for each loop of the List, and it usually ends during
-			// the next loop. Therefore, there seems to be no throttling concern, so the number of
-			// parallels is not limited by semaphore. (Throttling occurs at about 3500 deletions
-			// per second.)
-			gotErrors, err := o.client.DeleteObjects(ctx, bucketName, objects)
-			if err != nil {
-				return err
-			}
-
-			if len(gotErrors) > 0 {
-				errorsMtx.Lock()
-				errorsCount += len(gotErrors)
-				for _, error := range gotErrors {
-					errorStr += fmt.Sprintf("\nBucketName: %v\n", *bucketName)
-					errorStr += fmt.Sprintf("Code: %v\n", *error.Code)
-					errorStr += fmt.Sprintf("Key: %v\n", *error.Key)
-					errorStr += fmt.Sprintf("VersionId: %v\n", *error.VersionId)
-					errorStr += fmt.Sprintf("Message: %v\n", *error.Message)
+		for _, summary := range output.Namespaces {
+			for _, namespace := range summary.Namespace {
+				if err := sem.Acquire(ctx, 1); err != nil {
+					return err
 				}
-				errorsMtx.Unlock()
+				eg.Go(func() error {
+					defer sem.Release(1)
+					return o.deleteNamespace(ctx, tableBucketArn, aws.String(namespace))
+				})
 			}
+		}
 
-			return nil
-		})
-
-		if keyMarker == nil && versionIdMarker == nil {
+		continuationToken = output.ContinuationToken
+		if continuationToken == nil {
 			break
 		}
 	}
@@ -127,22 +111,62 @@ func (o *S3TableBucketOperator) DeleteS3TableBucket(ctx context.Context, bucketN
 		return err
 	}
 
-	if errorsCount > 0 {
-		// The error is from `DeleteObjectsOutput.Errors`, not `err`.
-		// However, we want to treat it as an error, so we use `client.ClientError`.
-		return &client.ClientError{
-			ResourceName: bucketName,
-			Err:          fmt.Errorf("DeleteObjectsError: %v objects with errors were found. %v", errorsCount, errorStr),
-		}
-	}
-
-	if err := o.client.DeleteBucket(ctx, bucketName); err != nil {
+	if err := o.client.DeleteTableBucket(ctx, tableBucketArn); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (o *S3TableBucketOperator) GetDirectoryBucketsFlag() bool {
-	return o.client.GetDirectoryBucketsFlag()
+func (o *S3TableBucketOperator) deleteNamespace(
+	ctx context.Context,
+	tableBucketArn *string,
+	namespace *string,
+) error {
+	eg := errgroup.Group{}
+	sem := semaphore.NewWeighted(SemaphoreWeight)
+
+	var continuationToken *string
+	for {
+		select {
+		case <-ctx.Done():
+			return &client.ClientError{
+				ResourceName: tableBucketArn,
+				Err:          ctx.Err(),
+			}
+		default:
+		}
+
+		output, err := o.client.ListTablesByPage(ctx, tableBucketArn, namespace, continuationToken)
+		if err != nil {
+			return err
+		}
+		if len(output.Tables) == 0 {
+			break
+		}
+
+		for _, table := range output.Tables {
+			if err := sem.Acquire(ctx, 1); err != nil {
+				return err
+			}
+			eg.Go(func() error {
+				defer sem.Release(1)
+				if err := o.client.DeleteTable(ctx, table.Name, namespace, tableBucketArn); err != nil {
+					return err
+				}
+				return nil
+			})
+		}
+
+		continuationToken = output.ContinuationToken
+		if continuationToken == nil {
+			break
+		}
+	}
+
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
+	return o.client.DeleteNamespace(ctx, namespace, tableBucketArn)
 }
