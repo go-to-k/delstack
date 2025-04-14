@@ -324,8 +324,6 @@ func (s *DeployStackService) attachPolicyToRole(stackName string) error {
 	var e *iamtypes.EntityAlreadyExistsException
 	if err != nil && !errors.As(err, &e) {
 		return fmt.Errorf("failed to create policy: %v", err)
-	} else if err != nil {
-		return nil
 	}
 
 	// Attach policy to IAM roles
