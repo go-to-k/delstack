@@ -79,8 +79,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Package and deploy using CDK
-	if err := service.deploy(); err != nil {
+	// Deploy using CDK
+	if err := service.cdkDeploy(); err != nil {
 		color.Red("Failed to deploy: %v", err)
 		os.Exit(1)
 	}
@@ -214,7 +214,7 @@ func (s *DeployStackService) buildImage() error {
 	return nil
 }
 
-func (s *DeployStackService) deploy() error {
+func (s *DeployStackService) cdkDeploy() error {
 	// Set region
 	os.Setenv("CDK_DEFAULT_REGION", region)
 
@@ -307,32 +307,27 @@ func (s *DeployStackService) attachPolicyToRole(stackName string) error {
 		}
 	}
 
-	// Check if policy exists
-	policyArn := fmt.Sprintf("arn:aws:iam::%s:policy/DelstackTestPolicy", s.AccountID)
+	policyName := "DelstackTestPolicy"
 
-	_, err = s.IamClient.GetPolicy(s.Ctx, &iam.GetPolicyInput{
-		PolicyArn: aws.String(policyArn),
+	// Create policy if it doesn't exist
+	policyDoc, err := os.ReadFile("./policy_document.json")
+	if err != nil {
+		return fmt.Errorf("failed to read policy document: %v", err)
+	}
+
+	_, err = s.IamClient.CreatePolicy(s.Ctx, &iam.CreatePolicyInput{
+		PolicyName:     aws.String(policyName),
+		PolicyDocument: aws.String(string(policyDoc)),
+		Description:    aws.String("test policy"),
 	})
 
-	if err != nil {
-		// Create policy if it doesn't exist
-		policyDoc, readErr := os.ReadFile("./policy_document.json")
-		if readErr != nil {
-			return fmt.Errorf("failed to read policy document: %v", readErr)
-		}
-
-		_, readErr = s.IamClient.CreatePolicy(s.Ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String("DelstackTestPolicy"),
-			PolicyDocument: aws.String(string(policyDoc)),
-			Description:    aws.String("test policy"),
-		})
-
-		if readErr != nil {
-			return fmt.Errorf("failed to create policy: %v", readErr)
-		}
+	var e *iamtypes.EntityAlreadyExistsException
+	if err != nil && !errors.As(err, &e) {
+		return fmt.Errorf("failed to create policy: %v", err)
 	}
 
 	// Attach policy to IAM roles
+	policyArn := fmt.Sprintf("arn:aws:iam::%s:policy/%s", s.AccountID, policyName)
 	for _, resource := range resources {
 		if resource["ResourceType"] == "AWS::IAM::Role" {
 			roleName := resource["PhysicalResourceId"]
