@@ -10,7 +10,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	types "github.com/aws/aws-sdk-go-v2/service/s3tables/types"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -107,21 +106,6 @@ func (m *MockIS3Tables) ListNamespacesByPage(ctx context.Context, tableBucketARN
 func (mr *MockIS3TablesMockRecorder) ListNamespacesByPage(ctx, tableBucketARN, continuationToken any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespacesByPage", reflect.TypeOf((*MockIS3Tables)(nil).ListNamespacesByPage), ctx, tableBucketARN, continuationToken)
-}
-
-// ListTableBuckets mocks base method.
-func (m *MockIS3Tables) ListTableBuckets(ctx context.Context) ([]types.TableBucketSummary, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListTableBuckets", ctx)
-	ret0, _ := ret[0].([]types.TableBucketSummary)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListTableBuckets indicates an expected call of ListTableBuckets.
-func (mr *MockIS3TablesMockRecorder) ListTableBuckets(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTableBuckets", reflect.TypeOf((*MockIS3Tables)(nil).ListTableBuckets), ctx)
 }
 
 // ListTablesByPage mocks base method.
