@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -34,27 +36,22 @@ type Options struct {
 }
 
 type DeployStackService struct {
-	Options           Options
-	CfnTemplate       string
-	CfnOutputTemplate string
-	CfnPjPrefix       string
-	CfnStackName      string
-	SamBucket         string
-	AccountID         string
-	ProfileOption     string
-	Ctx               context.Context
-	CfnClient         *cloudformation.Client
-	S3Client          *s3.Client
-	IamClient         *iam.Client
-	EcrClient         *ecr.Client
-	StsClient         *sts.Client
-	BackupClient      *backup.Client
+	Options       Options
+	CfnPjPrefix   string
+	CfnStackName  string
+	AccountID     string
+	ProfileOption string
+	Ctx           context.Context
+	CfnClient     *cloudformation.Client
+	S3Client      *s3.Client
+	IamClient     *iam.Client
+	EcrClient     *ecr.Client
+	StsClient     *sts.Client
+	BackupClient  *backup.Client
 }
 
 // This script allows you to deploy the stack for delstack testing.
 // Due to quota limitations, only up to [5 test stacks] can be created by this script at the same time.
-// Contains [2 AWS::S3Express::DirectoryBucket] : Directory bucket can only have up to 10 buckets created per AWS account (per region).
-// Contains [2 AWS::IAM::Group] : 1 IAM user can only belong to 10 IAM groups.  In this script, 1 IAM user is used across multiple script runs.
 func main() {
 	ctx := context.Background()
 	options := parseArgs()
@@ -74,15 +71,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Ensure the S3 bucket exists
-	if err := service.ensureS3Bucket(); err != nil {
-		color.Red("Failed to create S3 bucket: %v", err)
+	// Build Docker image
+	if err := service.buildImage(); err != nil {
+		color.Red("Failed to build Docker image: %v", err)
 		os.Exit(1)
 	}
 
-	// Package and deploy using SAM
-	if err := service.packageAndDeploy(); err != nil {
-		color.Red("Failed to package and deploy: %v", err)
+	// Deploy using CDK
+	if err := service.cdkDeploy(); err != nil {
+		color.Red("Failed to deploy: %v", err)
 		os.Exit(1)
 	}
 
@@ -140,9 +137,8 @@ func parseArgs() Options {
 }
 
 func NewDeployStackService(ctx context.Context, options Options) *DeployStackService {
-	cfnPjPrefix := fmt.Sprintf("dev-%s", options.Stage)
-	cfnStackName := fmt.Sprintf("%s-TestStack", cfnPjPrefix)
-	samBucket := strings.ToLower(cfnStackName)
+	cfnPjPrefix := options.Stage
+	cfnStackName := fmt.Sprintf("%s-Test-Stack", cfnPjPrefix)
 
 	profileOption := ""
 	if options.Profile != "" {
@@ -150,14 +146,11 @@ func NewDeployStackService(ctx context.Context, options Options) *DeployStackSer
 	}
 
 	return &DeployStackService{
-		Options:           options,
-		CfnTemplate:       "./yamldir/test_root.yaml",
-		CfnOutputTemplate: "./yamldir/test_root_output.yaml",
-		CfnPjPrefix:       cfnPjPrefix,
-		CfnStackName:      cfnStackName,
-		SamBucket:         samBucket,
-		ProfileOption:     profileOption,
-		Ctx:               ctx,
+		Options:       options,
+		CfnPjPrefix:   cfnPjPrefix,
+		CfnStackName:  cfnStackName,
+		ProfileOption: profileOption,
+		Ctx:           ctx,
 	}
 }
 
@@ -204,35 +197,7 @@ func (s *DeployStackService) runCommand(command string) error {
 	return cmd.Run()
 }
 
-func (s *DeployStackService) ensureS3Bucket() error {
-	// Check if bucket exists
-	listBucketsOutput, err := s.S3Client.ListBuckets(s.Ctx, &s3.ListBucketsInput{})
-	if err != nil {
-		return fmt.Errorf("failed to list S3 buckets: %v", err)
-	}
-
-	bucketExists := false
-	for _, bucket := range listBucketsOutput.Buckets {
-		if *bucket.Name == s.SamBucket {
-			bucketExists = true
-			break
-		}
-	}
-
-	// Create bucket if it doesn't exist
-	if !bucketExists {
-		_, err := s.S3Client.CreateBucket(s.Ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(s.SamBucket),
-		})
-		if err != nil {
-			return fmt.Errorf("failed to create S3 bucket: %v", err)
-		}
-	}
-
-	return nil
-}
-
-func (s *DeployStackService) packageAndDeploy() error {
+func (s *DeployStackService) buildImage() error {
 	// Login to ECR using AWS SDK
 	if err := s.loginToECR(); err != nil {
 		return fmt.Errorf("failed to login to ECR: %v", err)
@@ -244,26 +209,24 @@ func (s *DeployStackService) packageAndDeploy() error {
 		return fmt.Errorf("failed to build Docker image: %v", err)
 	}
 
-	// SAM package
-	packageCmd := fmt.Sprintf("sam package --template-file %s --output-template-file %s --s3-bucket %s %s",
-		s.CfnTemplate,
-		s.CfnOutputTemplate,
-		s.SamBucket,
-		s.ProfileOption)
+	return nil
+}
 
-	if err := s.runCommand(packageCmd); err != nil {
-		return fmt.Errorf("failed to package with SAM: %v", err)
+func (s *DeployStackService) cdkDeploy() error {
+	// Set region
+	os.Setenv("CDK_DEFAULT_REGION", region)
+
+	// Get the account ID
+	os.Setenv("CDK_DEFAULT_ACCOUNT", s.AccountID)
+
+	// Deploy with CDK (from the cdk directory)
+	profileOption := ""
+	if s.Options.Profile != "" {
+		profileOption = fmt.Sprintf("--profile %s", s.Options.Profile)
 	}
-
-	// SAM deploy
-	deployCmd := fmt.Sprintf("sam deploy --template-file %s --stack-name %s --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM --parameter-overrides PJPrefix=%s %s",
-		s.CfnOutputTemplate,
-		s.CfnStackName,
-		s.CfnPjPrefix,
-		s.ProfileOption)
-
+	deployCmd := fmt.Sprintf("cd cdk && npx cdk deploy --all -c PJ_PREFIX=%s --require-approval never %s", s.CfnPjPrefix, profileOption)
 	if err := s.runCommand(deployCmd); err != nil {
-		return fmt.Errorf("failed to deploy with SAM: %v", err)
+		return fmt.Errorf("failed to deploy with CDK: %v", err)
 	}
 
 	return nil
@@ -342,32 +305,27 @@ func (s *DeployStackService) attachPolicyToRole(stackName string) error {
 		}
 	}
 
-	// Check if policy exists
-	policyArn := fmt.Sprintf("arn:aws:iam::%s:policy/DelstackTestPolicy", s.AccountID)
+	policyName := "DelstackTestPolicy"
 
-	_, err = s.IamClient.GetPolicy(s.Ctx, &iam.GetPolicyInput{
-		PolicyArn: aws.String(policyArn),
+	// Create policy if it doesn't exist
+	policyDoc, err := os.ReadFile("./policy_document.json")
+	if err != nil {
+		return fmt.Errorf("failed to read policy document: %v", err)
+	}
+
+	_, err = s.IamClient.CreatePolicy(s.Ctx, &iam.CreatePolicyInput{
+		PolicyName:     aws.String(policyName),
+		PolicyDocument: aws.String(string(policyDoc)),
+		Description:    aws.String("test policy"),
 	})
 
-	if err != nil {
-		// Create policy if it doesn't exist
-		policyDoc, readErr := os.ReadFile("./policy_document.json")
-		if readErr != nil {
-			return fmt.Errorf("failed to read policy document: %v", readErr)
-		}
-
-		_, readErr = s.IamClient.CreatePolicy(s.Ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String("DelstackTestPolicy"),
-			PolicyDocument: aws.String(string(policyDoc)),
-			Description:    aws.String("test policy"),
-		})
-
-		if readErr != nil {
-			return fmt.Errorf("failed to create policy: %v", readErr)
-		}
+	var e *iamtypes.EntityAlreadyExistsException
+	if err != nil && !errors.As(err, &e) {
+		return fmt.Errorf("failed to create policy: %v", err)
 	}
 
 	// Attach policy to IAM roles
+	policyArn := fmt.Sprintf("arn:aws:iam::%s:policy/%s", s.AccountID, policyName)
 	for _, resource := range resources {
 		if resource["ResourceType"] == "AWS::IAM::Role" {
 			roleName := resource["PhysicalResourceId"]
@@ -419,18 +377,13 @@ func (s *DeployStackService) attachUserToGroup(stackName string) error {
 	// Create user if it doesn't exist
 	userName := "DelstackTestUser"
 
-	_, err = s.IamClient.GetUser(s.Ctx, &iam.GetUserInput{
+	_, err = s.IamClient.CreateUser(s.Ctx, &iam.CreateUserInput{
 		UserName: aws.String(userName),
 	})
 
-	if err != nil {
-		_, err = s.IamClient.CreateUser(s.Ctx, &iam.CreateUserInput{
-			UserName: aws.String(userName),
-		})
-
-		if err != nil {
-			return fmt.Errorf("failed to create user: %v", err)
-		}
+	var e *iamtypes.EntityAlreadyExistsException
+	if err != nil && !errors.As(err, &e) {
+		return fmt.Errorf("failed to create user: %v", err)
 	}
 
 	// Add user to IAM groups
@@ -584,7 +537,7 @@ func (s *DeployStackService) objectUpload(stackName string) error {
 				// No errors, continue with deletion
 			}
 
-			// Delete all objects for delete markers
+			// Delete all objects to create delete markers
 			if err := s.deleteS3BucketContents(bucketName); err != nil {
 				return fmt.Errorf("failed to delete objects from S3 bucket: %v", err)
 			}
@@ -802,8 +755,8 @@ func (s *DeployStackService) startBackup(stackName string) error {
 	}
 
 	// Start backup jobs
-	resourceArn := fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s-Table", region, s.AccountID, s.CfnPjPrefix)
-	iamRoleArn := fmt.Sprintf("arn:aws:iam::%s:role/service-role/%s-AWSBackupServiceRole", s.AccountID, s.CfnPjPrefix)
+	resourceArn := fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s-Root-Table", region, s.AccountID, s.CfnPjPrefix)
+	iamRoleArn := fmt.Sprintf("arn:aws:iam::%s:role/service-role/%s-Root-AWSBackupServiceRole", s.AccountID, s.CfnPjPrefix)
 
 	for _, resource := range resources {
 		if resource["ResourceType"] == "AWS::Backup::BackupVault" {
