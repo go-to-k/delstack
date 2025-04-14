@@ -21,8 +21,11 @@ import (
 	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3tables"
+	s3tablesTypes "github.com/aws/aws-sdk-go-v2/service/s3tables/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fatih/color"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -36,18 +39,19 @@ type Options struct {
 }
 
 type DeployStackService struct {
-	Options       Options
-	CfnPjPrefix   string
-	CfnStackName  string
-	AccountID     string
-	ProfileOption string
-	Ctx           context.Context
-	CfnClient     *cloudformation.Client
-	S3Client      *s3.Client
-	IamClient     *iam.Client
-	EcrClient     *ecr.Client
-	StsClient     *sts.Client
-	BackupClient  *backup.Client
+	Options        Options
+	CfnPjPrefix    string
+	CfnStackName   string
+	AccountID      string
+	ProfileOption  string
+	Ctx            context.Context
+	CfnClient      *cloudformation.Client
+	S3Client       *s3.Client
+	S3TablesClient *s3tables.Client
+	IamClient      *iam.Client
+	EcrClient      *ecr.Client
+	StsClient      *sts.Client
+	BackupClient   *backup.Client
 }
 
 // This script allows you to deploy the stack for delstack testing.
@@ -94,6 +98,13 @@ func main() {
 	color.Green("=== object_upload ===")
 	if err := service.objectUpload(service.CfnStackName); err != nil {
 		color.Red("Failed to upload objects: %v", err)
+		os.Exit(1)
+	}
+
+	// Upload tables to table bucket
+	color.Green("=== tables_upload_to_table_bucket ===")
+	if err := service.tablesUploadToTableBucket(service.CfnStackName); err != nil {
+		color.Red("Failed to upload tables to table bucket: %v", err)
 		os.Exit(1)
 	}
 
@@ -175,6 +186,7 @@ func (s *DeployStackService) initAWSClients() error {
 
 	s.CfnClient = cloudformation.NewFromConfig(cfg)
 	s.S3Client = s3.NewFromConfig(cfg)
+	s.S3TablesClient = s3tables.NewFromConfig(cfg)
 	s.IamClient = iam.NewFromConfig(cfg)
 	s.EcrClient = ecr.NewFromConfig(cfg)
 	s.StsClient = sts.NewFromConfig(cfg)
@@ -719,6 +731,106 @@ func (s *DeployStackService) deleteS3BucketContents(bucketName string) error {
 	// Check for errors
 	for err := range errorChan {
 		return err
+	}
+
+	return nil
+}
+
+func (s *DeployStackService) tablesUploadToTableBucket(stackName string) error {
+	// Get resources in the stack
+	resources, nestedStackNames, err := s.getStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	// Process nested stacks in parallel
+	var wg sync.WaitGroup
+	errorChan := make(chan error, len(nestedStackNames))
+
+	for _, nestedStackName := range nestedStackNames {
+		wg.Add(1)
+		go func(name string) {
+			defer wg.Done()
+			if err := s.tablesUploadToTableBucket(name); err != nil {
+				errorChan <- err
+			}
+		}(nestedStackName)
+	}
+
+	wg.Wait()
+	close(errorChan)
+
+	for err := range errorChan {
+		if err != nil {
+			return err
+		}
+	}
+
+	namespaceAmount := 10
+	tableAmount := 10
+
+	// Create namespaces and tables in the table bucket
+	for _, resource := range resources {
+		if resource["ResourceType"] == "AWS::S3Tables::TableBucket" {
+			tableBucketArn := resource["PhysicalResourceId"]
+
+			for i := range namespaceAmount {
+				namespaceName := fmt.Sprintf("namespace_%d", i)
+
+				_, err := s.S3TablesClient.CreateNamespace(s.Ctx, &s3tables.CreateNamespaceInput{
+					TableBucketARN: aws.String(tableBucketArn),
+					Namespace:      []string{namespaceName},
+				})
+				if err != nil {
+					return fmt.Errorf("failed to create namespace: %v", err)
+				}
+
+				var eg errgroup.Group
+
+				for j := range tableAmount {
+					eg.Go(func() error {
+						tableName := fmt.Sprintf("table_%d", j)
+
+						// Create metadata structure for Iceberg table
+						schemaField := s3tablesTypes.SchemaField{
+							Name:     aws.String("column"),
+							Type:     aws.String("int"),
+							Required: false,
+						}
+
+						icebergSchema := &s3tablesTypes.IcebergSchema{
+							Fields: []s3tablesTypes.SchemaField{schemaField},
+						}
+
+						icebergMetadata := &s3tablesTypes.IcebergMetadata{
+							Schema: icebergSchema,
+						}
+
+						tableMetadata := &s3tablesTypes.TableMetadataMemberIceberg{
+							Value: *icebergMetadata,
+						}
+
+						_, err := s.S3TablesClient.CreateTable(s.Ctx, &s3tables.CreateTableInput{
+							TableBucketARN: aws.String(tableBucketArn),
+							Namespace:      aws.String(namespaceName),
+							Name:           aws.String(tableName),
+							Metadata:       tableMetadata,
+							Format:         s3tablesTypes.OpenTableFormatIceberg,
+						})
+
+						if err != nil {
+							return fmt.Errorf("failed to create table: %v", err)
+						}
+
+						return nil
+					})
+				}
+
+				if err := eg.Wait(); err != nil {
+					return fmt.Errorf("failed to create tables: %v", err)
+				}
+			}
+		}
 	}
 
 	return nil
