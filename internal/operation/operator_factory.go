@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3tables"
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
@@ -109,6 +110,19 @@ func (f *OperatorFactory) CreateS3DirectoryBucketOperator() *S3BucketOperator {
 	)
 
 	return operator
+}
+
+func (f *OperatorFactory) CreateS3TableBucketOperator() *S3TableBucketOperator {
+	sdkS3TablesClient := s3tables.NewFromConfig(f.config, func(o *s3tables.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	return NewS3TableBucketOperator(
+		client.NewS3Tables(
+			sdkS3TablesClient,
+		),
+	)
 }
 
 func (f *OperatorFactory) CreateCustomOperator() *CustomOperator {
