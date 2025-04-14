@@ -52,7 +52,6 @@ type DeployStackService struct {
 
 // This script allows you to deploy the stack for delstack testing.
 // Due to quota limitations, only up to [5 test stacks] can be created by this script at the same time.
-// Contains [2 AWS::IAM::Group] : 1 IAM user can only belong to 10 IAM groups.  In this script, 1 IAM user is used across multiple script runs.
 func main() {
 	ctx := context.Background()
 	options := parseArgs()
