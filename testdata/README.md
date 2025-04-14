@@ -4,7 +4,13 @@ This directory contains a tool for creating a test environment for `delstack`. T
 
 ## Test Stack Deployment
 
-You can deploy test CloudFormation stacks using the included `deploy.go` script. This script creates a CloudFormation stack containing various resources that typically cause deletion issues, including:
+You can deploy test CloudFormation stacks using the included `deploy.go` script **with AWS CDK for Go**. So you need to install AWS CDK.
+
+```bash
+npm install -g aws-cdk@latest
+```
+
+This script creates a CloudFormation stack containing various resources that typically cause deletion issues, including:
 
 - S3 buckets with contents
 - S3 Express Directory buckets
