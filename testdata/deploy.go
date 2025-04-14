@@ -544,7 +544,7 @@ func (s *DeployStackService) objectUpload(stackName string) error {
 				// No errors, continue with deletion
 			}
 
-			// Delete all objects for delete markers
+			// Delete all objects to create delete markers
 			if err := s.deleteS3BucketContents(bucketName); err != nil {
 				return fmt.Errorf("failed to delete objects from S3 bucket: %v", err)
 			}
