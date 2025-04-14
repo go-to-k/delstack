@@ -43,5 +43,4 @@ make testgen OPT="-s my-stage -p my-profile"
 ### Notes
 
 - Due to AWS quota limitations, only up to 5 test stacks can be created simultaneously with this script.
-- The script includes 2 `AWS::S3Express::DirectoryBucket` resources; an AWS account can have at most 10 directory buckets per region.
 - The script includes 2 `AWS::IAM::Group` resources; one IAM user can only belong to 10 IAM groups.
