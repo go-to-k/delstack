@@ -66,6 +66,21 @@ func (mr *MockICloudFormationMockRecorder) DescribeStacks(ctx, stackName any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStacks", reflect.TypeOf((*MockICloudFormation)(nil).DescribeStacks), ctx, stackName)
 }
 
+// GetTemplate mocks base method.
+func (m *MockICloudFormation) GetTemplate(ctx context.Context, stackName *string) (*string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTemplate", ctx, stackName)
+	ret0, _ := ret[0].(*string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTemplate indicates an expected call of GetTemplate.
+func (mr *MockICloudFormationMockRecorder) GetTemplate(ctx, stackName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTemplate", reflect.TypeOf((*MockICloudFormation)(nil).GetTemplate), ctx, stackName)
+}
+
 // ListStackResources mocks base method.
 func (m *MockICloudFormation) ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error) {
 	m.ctrl.T.Helper()
@@ -79,4 +94,18 @@ func (m *MockICloudFormation) ListStackResources(ctx context.Context, stackName 
 func (mr *MockICloudFormationMockRecorder) ListStackResources(ctx, stackName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStackResources", reflect.TypeOf((*MockICloudFormation)(nil).ListStackResources), ctx, stackName)
+}
+
+// UpdateStack mocks base method.
+func (m *MockICloudFormation) UpdateStack(ctx context.Context, stackName, templateBody *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStack", ctx, stackName, templateBody)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateStack indicates an expected call of UpdateStack.
+func (mr *MockICloudFormationMockRecorder) UpdateStack(ctx, stackName, templateBody any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStack", reflect.TypeOf((*MockICloudFormation)(nil).UpdateStack), ctx, stackName, templateBody)
 }
