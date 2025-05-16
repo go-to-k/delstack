@@ -644,7 +644,7 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 				cfnWaiter,
 			)
 
-			err = cfnClient.waitDeleteStack(tt.args.ctx, tt.args.stackName)
+			err = cfnClient.waitStackProgress(tt.args.ctx, tt.args.stackName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return

@@ -47,7 +47,7 @@ func (c *CloudFormation) DeleteStack(ctx context.Context, stackName *string, ret
 		}
 	}
 
-	if err := c.waitDeleteStack(ctx, stackName); err != nil {
+	if err := c.waitStackProgress(ctx, stackName); err != nil {
 		return &ClientError{
 			ResourceName: stackName,
 			Err:          err,
@@ -101,7 +101,7 @@ func (c *CloudFormation) DescribeStacks(ctx context.Context, stackName *string) 
 	return stacks, nil
 }
 
-func (c *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string) error {
+func (c *CloudFormation) waitStackProgress(ctx context.Context, stackName *string) error {
 	input := &cloudformation.DescribeStacksInput{
 		StackName: stackName,
 	}
@@ -179,6 +179,13 @@ func (c *CloudFormation) UpdateStack(ctx context.Context, stackName *string, tem
 
 	_, err := c.client.UpdateStack(ctx, input)
 	if err != nil {
+		return &ClientError{
+			ResourceName: stackName,
+			Err:          err,
+		}
+	}
+
+	if err := c.waitStackProgress(ctx, stackName); err != nil {
 		return &ClientError{
 			ResourceName: stackName,
 			Err:          err,

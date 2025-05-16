@@ -277,7 +277,7 @@ func (o *CloudFormationStackOperator) isExceptedByStackStatus(stackStatus types.
 	return false
 }
 
-func (o *CloudFormationStackOperator) RewriteDeletionPolicy(ctx context.Context, stackName *string) error {
+func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, stackName *string) error {
 	stackResourceSummaries, err := o.client.ListStackResources(ctx, stackName)
 	if err != nil {
 		return err
@@ -285,7 +285,7 @@ func (o *CloudFormationStackOperator) RewriteDeletionPolicy(ctx context.Context,
 
 	for _, stackResourceSummary := range stackResourceSummaries {
 		if aws.ToString(stackResourceSummary.ResourceType) == resourcetype.CloudformationStack {
-			if err := o.RewriteDeletionPolicy(ctx, stackResourceSummary.PhysicalResourceId); err != nil {
+			if err := o.RemoveDeletionPolicy(ctx, stackResourceSummary.PhysicalResourceId); err != nil {
 				return err
 			}
 		}
