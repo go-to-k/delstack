@@ -307,7 +307,7 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		return err
 	}
 
-	deletionPolicyRegexp := regexp.MustCompile(`(?m)^\s*(['"]?DeletionPolicy['"]?):\s*(?:"|'|)(Retain|RetainExceptOnCreate)(?:"|'|)[,\n]`)
+	deletionPolicyRegexp := regexp.MustCompile(`(?m)^\s*(['"]?DeletionPolicy['"]?):\s*(?:"|'|)(Retain|RetainExceptOnCreate)(?:"|'|)(?:,|\n|$)`)
 	modifiedTemplate := deletionPolicyRegexp.ReplaceAllString(*template, "")
 	if modifiedTemplate == *template {
 		return nil
