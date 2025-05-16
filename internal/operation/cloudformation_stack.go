@@ -2,6 +2,7 @@ package operation
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"runtime"
@@ -11,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/internal/io"
+	"github.com/go-to-k/delstack/internal/resourcetype"
 	"github.com/go-to-k/delstack/pkg/client"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -273,4 +275,55 @@ func (o *CloudFormationStackOperator) isExceptedByStackStatus(stackStatus types.
 		}
 	}
 	return false
+}
+
+func (o *CloudFormationStackOperator) RewriteDeletionPolicy(ctx context.Context, stackName *string) error {
+	stackResourceSummaries, err := o.client.ListStackResources(ctx, stackName)
+	if err != nil {
+		return err
+	}
+
+	for _, stackResourceSummary := range stackResourceSummaries {
+		if aws.ToString(stackResourceSummary.ResourceType) == resourcetype.CloudformationStack {
+			if err := o.RewriteDeletionPolicy(ctx, stackResourceSummary.PhysicalResourceId); err != nil {
+				return err
+			}
+		}
+	}
+
+	template, err := o.client.GetTemplate(ctx, stackName)
+	if err != nil {
+		return err
+	}
+
+	var templateBody map[string]interface{}
+	if err := json.Unmarshal([]byte(*template), &templateBody); err != nil {
+		return fmt.Errorf("RewriteTemplateError: %w", err)
+	}
+
+	modified := false
+	if resources, ok := templateBody["Resources"].(map[string]interface{}); ok {
+		for _, resource := range resources {
+			if resourceMap, ok := resource.(map[string]interface{}); ok {
+				if deletionPolicy, ok := resourceMap["DeletionPolicy"].(string); ok {
+					if deletionPolicy == "Retain" || deletionPolicy == "RetainExceptOnCreate" {
+						delete(resourceMap, "DeletionPolicy")
+						modified = true
+					}
+				}
+			}
+		}
+	}
+
+	if !modified {
+		return nil
+	}
+
+	modifiedTemplate, err := json.MarshalIndent(templateBody, "", "  ")
+	if err != nil {
+		return fmt.Errorf("RewriteTemplateError: %w", err)
+	}
+
+	modifiedTemplateStr := string(modifiedTemplate)
+	return o.client.UpdateStack(ctx, stackName, &modifiedTemplateStr)
 }

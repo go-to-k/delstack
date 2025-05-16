@@ -19,6 +19,7 @@ type App struct {
 	Profile         string
 	Region          string
 	InteractiveMode bool
+	ForceMode       bool
 }
 
 type targetStack struct {
@@ -58,6 +59,13 @@ func NewApp(version string) *App {
 				Value:       false,
 				Usage:       "Interactive Mode",
 				Destination: &app.InteractiveMode,
+			},
+			&cli.BoolFlag{
+				Name:        "force",
+				Aliases:     []string{"f"},
+				Value:       false,
+				Usage:       "Force Mode to delete stacks even if the deletion policy is Retain or RetainExceptOnCreate",
+				Destination: &app.ForceMode,
 			},
 		},
 	}
@@ -114,6 +122,12 @@ func (a *App) getAction() func(c *cli.Context) error {
 			cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(stack.targetResourceTypes)
 
 			io.Logger.Info().Msgf("%v: Start deletion. Please wait a few minutes...", stack.stackName)
+
+			if a.ForceMode {
+				if err := cloudformationStackOperator.RemoveDeletionPolicy(c.Context, aws.String(stack.stackName)); err != nil {
+					return err
+				}
+			}
 
 			if err := cloudformationStackOperator.DeleteCloudFormationStack(c.Context, aws.String(stack.stackName), isRootStack, operatorManager); err != nil {
 				return err
