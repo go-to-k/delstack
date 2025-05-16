@@ -277,6 +277,18 @@ func (o *CloudFormationStackOperator) isExceptedByStackStatus(stackStatus types.
 }
 
 func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, stackName *string) error {
+	stacks, err := o.client.DescribeStacks(ctx, stackName)
+	if err != nil {
+		return err
+	}
+	if len(stacks) == 0 {
+		return fmt.Errorf("NotExistsError: %v", *stackName)
+	}
+	// If the stack is in the ROLLBACK_COMPLETE state, it is not possible to update the stack.
+	if stacks[0].StackStatus == types.StackStatusRollbackComplete {
+		return nil
+	}
+
 	stackResourceSummaries, err := o.client.ListStackResources(ctx, stackName)
 	if err != nil {
 		return err
@@ -295,7 +307,7 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		return err
 	}
 
-	deletionPolicyRegexp := regexp.MustCompile(`(?m)^\s*(['"]?DeletionPolicy['"]?):\s*(?:"(Retain|RetainExceptOnCreate)"|'(Retain|RetainExceptOnCreate)'|(Retain|RetainExceptOnCreate))[,\n]`)
+	deletionPolicyRegexp := regexp.MustCompile(`(?m)^\s*(['"]?DeletionPolicy['"]?):\s*(?:"|'|)(Retain|RetainExceptOnCreate)(?:"|'|)[,\n]`)
 	modifiedTemplate := deletionPolicyRegexp.ReplaceAllString(*template, "")
 	if modifiedTemplate == *template {
 		return nil
