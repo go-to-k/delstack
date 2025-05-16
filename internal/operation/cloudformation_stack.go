@@ -308,11 +308,11 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 	}
 
 	policies := "(Retain|RetainExceptOnCreate)"
-	// Match both JSON and YAML formats:
-	// 1. JSON: "DeletionPolicy": "Retain"  (with optional spaces and double quotes only)
-	// 2. YAML: DeletionPolicy: Retain      (with optional single or double quotes)
-	// 3. YAML block: DeletionPolicy:\n  Retain
-	deletionPolicyRegexp := regexp.MustCompile(fmt.Sprintf(`(?m)(?:^\s*"DeletionPolicy"\s*:\s*"%[1]s"(?:,|\s*$)|^\s*['"]?DeletionPolicy['"]?\s*:\s*(?:(?:"|')?%[1]s(?:"|')?(?:,|\s*$)|\n\s+(?:"|')?%[1]s(?:"|')?(?:\s*$)))`, policies))
+	// Match both JSON and YAML formats with any level of indentation:
+	// 1. JSON: "DeletionPolicy": "Retain"
+	// 2. YAML: DeletionPolicy: Retain (with optional quotes)
+	// 3. YAML block: DeletionPolicy:\n  Retain (with optional quotes)
+	deletionPolicyRegexp := regexp.MustCompile(fmt.Sprintf(`(?m)(?:\s*["']?DeletionPolicy["']?\s*:\s*(?:["']%[1]s["'](?:,|\s*$)|\s*%[1]s(?:\s*$)|\n\s+["']?%[1]s["']?(?:\s*$)))`, policies))
 	modifiedTemplate := deletionPolicyRegexp.ReplaceAllString(*template, "")
 	if modifiedTemplate == *template {
 		return nil
