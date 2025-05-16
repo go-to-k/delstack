@@ -139,8 +139,8 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 	}
 
 	//nolint:govet
-	if err := o.client.DeleteStack(ctx, stackName, []string{}); err != nil {
-		return false, err
+	if deleteErr := o.client.DeleteStack(ctx, stackName, []string{}); deleteErr != nil {
+		return false, deleteErr
 	}
 
 	stacksAfterDelete, err := o.client.DescribeStacks(ctx, stackName)
@@ -296,8 +296,8 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 
 	for _, stackResourceSummary := range stackResourceSummaries {
 		if aws.ToString(stackResourceSummary.ResourceType) == resourcetype.CloudformationStack {
-			if err := o.RemoveDeletionPolicy(ctx, stackResourceSummary.PhysicalResourceId); err != nil {
-				return err
+			if removeErr := o.RemoveDeletionPolicy(ctx, stackResourceSummary.PhysicalResourceId); removeErr != nil {
+				return removeErr
 			}
 		}
 	}
