@@ -2,7 +2,6 @@ package operation
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"runtime"
@@ -296,34 +295,11 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		return err
 	}
 
-	var templateBody map[string]interface{}
-	if err := json.Unmarshal([]byte(*template), &templateBody); err != nil {
-		return fmt.Errorf("RewriteTemplateError: %w", err)
-	}
-
-	modified := false
-	if resources, ok := templateBody["Resources"].(map[string]interface{}); ok {
-		for _, resource := range resources {
-			if resourceMap, ok := resource.(map[string]interface{}); ok {
-				if deletionPolicy, ok := resourceMap["DeletionPolicy"].(string); ok {
-					if deletionPolicy == "Retain" || deletionPolicy == "RetainExceptOnCreate" {
-						delete(resourceMap, "DeletionPolicy")
-						modified = true
-					}
-				}
-			}
-		}
-	}
-
-	if !modified {
+	deletionPolicyRegexp := regexp.MustCompile(`(?m)^\s*(['"]?DeletionPolicy['"]?):\s*(['"]?)(Retain|RetainExceptOnCreate)\2[,\n]|^\s*(['"]?DeletionPolicy['"]?):\s*\n\s*(['"]?)(Retain|RetainExceptOnCreate)\5[,\n]`)
+	modifiedTemplate := deletionPolicyRegexp.ReplaceAllString(*template, "")
+	if modifiedTemplate == *template {
 		return nil
 	}
 
-	modifiedTemplate, err := json.MarshalIndent(templateBody, "", "  ")
-	if err != nil {
-		return fmt.Errorf("RewriteTemplateError: %w", err)
-	}
-
-	modifiedTemplateStr := string(modifiedTemplate)
-	return o.client.UpdateStack(ctx, stackName, &modifiedTemplateStr)
+	return o.client.UpdateStack(ctx, stackName, &modifiedTemplate)
 }
