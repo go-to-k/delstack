@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 )
@@ -177,7 +178,8 @@ func (c *CloudFormation) UpdateStack(ctx context.Context, stackName *string, tem
 			types.CapabilityCapabilityNamedIam,
 			types.CapabilityCapabilityAutoExpand,
 		},
-		Parameters: parameters,
+		Parameters:           parameters,
+		RetainExceptOnCreate: aws.Bool(false),
 	}
 
 	_, err := c.client.UpdateStack(ctx, input)
