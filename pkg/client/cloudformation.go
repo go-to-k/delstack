@@ -17,7 +17,7 @@ type ICloudFormation interface {
 	DescribeStacks(ctx context.Context, stackName *string) ([]types.Stack, error)
 	ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error)
 	GetTemplate(ctx context.Context, stackName *string) (*string, error)
-	UpdateStack(ctx context.Context, stackName *string, templateBody *string) error
+	UpdateStack(ctx context.Context, stackName *string, templateBody *string, parameters []types.Parameter) error
 }
 
 var _ ICloudFormation = (*CloudFormation)(nil)
@@ -168,13 +168,14 @@ func (c *CloudFormation) GetTemplate(ctx context.Context, stackName *string) (*s
 	return output.TemplateBody, nil
 }
 
-func (c *CloudFormation) UpdateStack(ctx context.Context, stackName *string, templateBody *string) error {
+func (c *CloudFormation) UpdateStack(ctx context.Context, stackName *string, templateBody *string, parameters []types.Parameter) error {
 	input := &cloudformation.UpdateStackInput{
 		StackName:    stackName,
 		TemplateBody: templateBody,
 		Capabilities: []types.Capability{
 			types.CapabilityCapabilityIam,
 		},
+		Parameters: parameters,
 	}
 
 	_, err := c.client.UpdateStack(ctx, input)

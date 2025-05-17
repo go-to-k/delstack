@@ -315,5 +315,5 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		return nil
 	}
 
-	return o.client.UpdateStack(ctx, stackName, &modifiedTemplate)
+	return o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stacks[0].Parameters)
 }
