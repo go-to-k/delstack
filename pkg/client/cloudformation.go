@@ -174,6 +174,8 @@ func (c *CloudFormation) UpdateStack(ctx context.Context, stackName *string, tem
 		TemplateBody: templateBody,
 		Capabilities: []types.Capability{
 			types.CapabilityCapabilityIam,
+			types.CapabilityCapabilityNamedIam,
+			types.CapabilityCapabilityAutoExpand,
 		},
 		Parameters: parameters,
 	}
