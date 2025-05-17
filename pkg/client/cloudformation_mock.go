@@ -97,15 +97,15 @@ func (mr *MockICloudFormationMockRecorder) ListStackResources(ctx, stackName any
 }
 
 // UpdateStack mocks base method.
-func (m *MockICloudFormation) UpdateStack(ctx context.Context, stackName, templateBody *string) error {
+func (m *MockICloudFormation) UpdateStack(ctx context.Context, stackName, templateBody *string, parameters []types.Parameter) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateStack", ctx, stackName, templateBody)
+	ret := m.ctrl.Call(m, "UpdateStack", ctx, stackName, templateBody, parameters)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateStack indicates an expected call of UpdateStack.
-func (mr *MockICloudFormationMockRecorder) UpdateStack(ctx, stackName, templateBody any) *gomock.Call {
+func (mr *MockICloudFormationMockRecorder) UpdateStack(ctx, stackName, templateBody, parameters any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStack", reflect.TypeOf((*MockICloudFormation)(nil).UpdateStack), ctx, stackName, templateBody)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStack", reflect.TypeOf((*MockICloudFormation)(nil).UpdateStack), ctx, stackName, templateBody, parameters)
 }
