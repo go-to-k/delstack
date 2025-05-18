@@ -307,13 +307,17 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		return err
 	}
 
-	policies := "(Retain|RetainExceptOnCreate)"
-	// Match both JSON and YAML formats
-	deletionPolicyRegexp := regexp.MustCompile(fmt.Sprintf(`(?m)\s*["']?DeletionPolicy["']?\s*:\s*(?:["']?%[1]s["']?(?:,|\s*$)|\n\s+["']?%[1]s["']?(?:\s*$))`, policies))
-	modifiedTemplate := deletionPolicyRegexp.ReplaceAllString(*template, "")
+	modifiedTemplate := o.removeDeletionPolicyFromTemplate(template)
 	if modifiedTemplate == *template {
 		return nil
 	}
 
 	return o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stacks[0].Parameters)
+}
+
+func (o *CloudFormationStackOperator) removeDeletionPolicyFromTemplate(template *string) string {
+	policies := "(Retain|RetainExceptOnCreate)"
+	// Match both JSON and YAML formats
+	deletionPolicyRegexp := regexp.MustCompile(fmt.Sprintf(`(?m)(?:,\s*["']?DeletionPolicy["']?\s*:\s*["']?%[1]s["']?|\s*["']?DeletionPolicy["']?\s*:\s*["']?%[1]s["']?,?)`, policies))
+	return deletionPolicyRegexp.ReplaceAllString(*template, "")
 }
