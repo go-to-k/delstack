@@ -233,10 +233,12 @@ func TestCloudFormation_DeleteStack(t *testing.T) {
 			}
 
 			client := cloudformation.NewFromConfig(cfg)
-			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(client)
 			cfnClient := NewCloudFormation(
 				client,
-				cfnWaiter,
+				cfnDeleteWaiter,
+				cfnUpdateWaiter,
 			)
 
 			err = cfnClient.DeleteStack(tt.args.ctx, tt.args.stackName, tt.args.retainResources)
@@ -515,10 +517,12 @@ func TestCloudFormation_DescribeStacks(t *testing.T) {
 			}
 
 			client := cloudformation.NewFromConfig(cfg)
-			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(client)
 			cfnClient := NewCloudFormation(
 				client,
-				cfnWaiter,
+				cfnDeleteWaiter,
+				cfnUpdateWaiter,
 			)
 
 			output, err := cfnClient.DescribeStacks(tt.args.ctx, tt.args.stackName)
@@ -638,13 +642,15 @@ func TestCloudFormation_waitDeleteStack(t *testing.T) {
 			}
 
 			client := cloudformation.NewFromConfig(cfg)
-			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(client)
 			cfnClient := NewCloudFormation(
 				client,
-				cfnWaiter,
+				cfnDeleteWaiter,
+				cfnUpdateWaiter,
 			)
 
-			err = cfnClient.waitStackProgress(tt.args.ctx, tt.args.stackName)
+			err = cfnClient.waitDeleteStack(tt.args.ctx, tt.args.stackName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -982,10 +988,12 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 			}
 
 			client := cloudformation.NewFromConfig(cfg)
-			cfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(client)
 			cfnClient := NewCloudFormation(
 				client,
-				cfnWaiter,
+				cfnDeleteWaiter,
+				cfnUpdateWaiter,
 			)
 
 			output, err := cfnClient.ListStackResources(tt.args.ctx, tt.args.stackName)
@@ -999,6 +1007,264 @@ func TestCloudFormation_ListStackResources(t *testing.T) {
 			}
 			if !reflect.DeepEqual(output, tt.want.output) {
 				t.Errorf("output = %#v, want %#v", output, tt.want.output)
+			}
+		})
+	}
+}
+
+func TestCloudFormation_GetTemplate(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		stackName          *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	type want struct {
+		output *string
+		err    error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "get template successfully",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"GetTemplateMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.GetTemplateOutput{
+										TemplateBody: aws.String("test-template"),
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: aws.String("test-template"),
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "get template failure",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"GetTemplateErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{}, middleware.Metadata{}, fmt.Errorf("GetTemplateError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				output: nil,
+				err:    &ClientError{ResourceName: aws.String("test"), Err: fmt.Errorf("operation error CloudFormation: GetTemplate, GetTemplateError")},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := cloudformation.NewFromConfig(cfg)
+			cfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(client)
+			cfnClient := NewCloudFormation(
+				client,
+				cfnDeleteWaiter,
+				cfnUpdateWaiter,
+			)
+
+			output, err := cfnClient.GetTemplate(tt.args.ctx, tt.args.stackName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.output) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.output)
+			}
+		})
+	}
+}
+
+func TestCloudFormation_UpdateStack(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		stackName          *string
+		templateBody       *string
+		parameters         []types.Parameter
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    error
+		wantErr bool
+	}{
+		{
+			name: "update stack successfully",
+			args: args{
+				ctx:          context.Background(),
+				stackName:    aws.String("test"),
+				templateBody: aws.String("test-template"),
+				parameters: []types.Parameter{
+					{
+						ParameterKey:   aws.String("Key1"),
+						ParameterValue: aws.String("Value1"),
+					},
+				},
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"UpdateStackOrDescribeStacksForWaiterMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								operationName := awsMiddleware.GetOperationName(ctx)
+								if operationName == "UpdateStack" {
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.UpdateStackOutput{},
+									}, middleware.Metadata{}, nil
+								}
+								if operationName == "DescribeStacks" {
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.DescribeStacksOutput{
+											Stacks: []types.Stack{
+												{
+													StackName:   aws.String("test"),
+													StackStatus: "UPDATE_COMPLETE",
+												},
+											},
+										},
+									}, middleware.Metadata{}, nil
+								}
+								return middleware.FinalizeOutput{}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "update stack failure",
+			args: args{
+				ctx:          context.Background(),
+				stackName:    aws.String("test"),
+				templateBody: aws.String("test-template"),
+				parameters:   []types.Parameter{},
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"UpdateStackErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{}, middleware.Metadata{}, fmt.Errorf("UpdateStackError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    &ClientError{ResourceName: aws.String("test"), Err: fmt.Errorf("operation error CloudFormation: UpdateStack, UpdateStackError")},
+			wantErr: true,
+		},
+		{
+			name: "update stack failure for wait errors",
+			args: args{
+				ctx:          context.Background(),
+				stackName:    aws.String("test"),
+				templateBody: aws.String("test-template"),
+				parameters:   []types.Parameter{},
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"UpdateStackOrDescribeStacksForWaiterErrorMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								operationName := awsMiddleware.GetOperationName(ctx)
+								if operationName == "UpdateStack" {
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.UpdateStackOutput{},
+									}, middleware.Metadata{}, nil
+								}
+								if operationName == "DescribeStacks" {
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.DescribeStacksOutput{},
+									}, middleware.Metadata{}, fmt.Errorf("WaitError")
+								}
+								return middleware.FinalizeOutput{}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("expected err to be of type smithy.APIError, got %w", fmt.Errorf("operation error CloudFormation: DescribeStacks, WaitError")),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := cloudformation.NewFromConfig(cfg)
+			cfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(client)
+			cfnClient := NewCloudFormation(
+				client,
+				cfnDeleteWaiter,
+				cfnUpdateWaiter,
+			)
+
+			err = cfnClient.UpdateStack(tt.args.ctx, tt.args.stackName, tt.args.templateBody, tt.args.parameters)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
 			}
 		})
 	}
