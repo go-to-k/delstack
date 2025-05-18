@@ -2523,3 +2523,404 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 		})
 	}
 }
+
+func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
+	io.NewLogger(false)
+
+	type args struct {
+		ctx       context.Context
+		stackName *string
+	}
+
+	cases := []struct {
+		name                        string
+		args                        args
+		prepareMockCloudFormationFn func(m *client.MockICloudFormation)
+		want                        error
+		wantErr                     bool
+	}{
+		{
+			name: "remove deletion policy successfully",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusCreateComplete,
+							Parameters: []types.Parameter{
+								{
+									ParameterKey:   aws.String("Key1"),
+									ParameterValue: aws.String("Value1"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("Resource1"),
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("test-bucket"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test")).Return(
+					aws.String(`{
+						"Resources": {
+							"Resource1": {
+								"Type": "AWS::S3::Bucket",
+								"DeletionPolicy": "Retain"
+							}
+						}
+					}`),
+					nil,
+				)
+
+				m.EXPECT().UpdateStack(gomock.Any(), aws.String("test"), gomock.Any(), gomock.Any()).Return(nil)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "remove deletion policy successfully for no deletion policy",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusCreateComplete,
+							Parameters: []types.Parameter{
+								{
+									ParameterKey:   aws.String("Key1"),
+									ParameterValue: aws.String("Value1"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("Resource1"),
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("test-bucket"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test")).Return(
+					aws.String(`{
+						"Resources": {
+							"Resource1": {
+								"Type": "AWS::S3::Bucket"
+							}
+						}
+					}`),
+					nil,
+				)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "remove deletion policy successfully for nested stack",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusCreateComplete,
+							Parameters: []types.Parameter{
+								{
+									ParameterKey:   aws.String("Key1"),
+									ParameterValue: aws.String("Value1"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("NestedStack"),
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("test-nested"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test-nested")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test-nested"),
+							StackStatus: types.StackStatusCreateComplete,
+							Parameters: []types.Parameter{
+								{
+									ParameterKey:   aws.String("Key1"),
+									ParameterValue: aws.String("Value1"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test-nested")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("Resource1"),
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("test-bucket"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test-nested")).Return(
+					aws.String(`{
+						"Resources": {
+							"Resource1": {
+								"Type": "AWS::S3::Bucket",
+								"DeletionPolicy": "Retain"
+							}
+						}
+					}`),
+					nil,
+				)
+
+				m.EXPECT().UpdateStack(gomock.Any(), aws.String("test-nested"), gomock.Any(), gomock.Any()).Return(nil)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test")).Return(
+					aws.String(`{
+						"Resources": {
+							"NestedStack": {
+								"Type": "AWS::CloudFormation::Stack",
+								"DeletionPolicy": "Retain"
+							}
+						}
+					}`),
+					nil,
+				)
+
+				m.EXPECT().UpdateStack(gomock.Any(), aws.String("test"), gomock.Any(), gomock.Any()).Return(nil)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "remove deletion policy failure for describe stacks error",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{},
+					fmt.Errorf("DescribeStacksError"),
+				)
+			},
+			want:    fmt.Errorf("DescribeStacksError"),
+			wantErr: true,
+		},
+		{
+			name: "remove deletion policy failure for not exists",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{},
+					nil,
+				)
+			},
+			want:    fmt.Errorf("NotExistsError: test"),
+			wantErr: true,
+		},
+		{
+			name: "remove deletion policy successfully for rollback complete",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusRollbackComplete,
+						},
+					},
+					nil,
+				)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "remove deletion policy failure for list stack resources error",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{},
+					fmt.Errorf("ListStackResourcesError"),
+				)
+			},
+			want:    fmt.Errorf("ListStackResourcesError"),
+			wantErr: true,
+		},
+		{
+			name: "remove deletion policy failure for get template error",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("Resource1"),
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("test-bucket"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test")).Return(
+					nil,
+					fmt.Errorf("GetTemplateError"),
+				)
+			},
+			want:    fmt.Errorf("GetTemplateError"),
+			wantErr: true,
+		},
+		{
+			name: "remove deletion policy failure for update stack error",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusCreateComplete,
+							Parameters: []types.Parameter{
+								{
+									ParameterKey:   aws.String("Key1"),
+									ParameterValue: aws.String("Value1"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("Resource1"),
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("test-bucket"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test")).Return(
+					aws.String(`{
+						"Resources": {
+							"Resource1": {
+								"Type": "AWS::S3::Bucket",
+								"DeletionPolicy": "Retain"
+							}
+						}
+					}`),
+					nil,
+				)
+
+				m.EXPECT().UpdateStack(gomock.Any(), aws.String("test"), gomock.Any(), gomock.Any()).Return(fmt.Errorf("UpdateStackError"))
+			},
+			want:    fmt.Errorf("UpdateStackError"),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			cloudformationMock := client.NewMockICloudFormation(ctrl)
+
+			tt.prepareMockCloudFormationFn(cloudformationMock)
+
+			targetResourceTypes := []string{
+				"AWS::S3::Bucket",
+				"AWS::IAM::Role",
+				"AWS::ECR::Repository",
+				"AWS::Backup::BackupVault",
+				"AWS::CloudFormation::Stack",
+				"Custom::",
+			}
+
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, targetResourceTypes)
+
+			err := cloudformationStackOperator.RemoveDeletionPolicy(tt.args.ctx, tt.args.stackName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.Error())
+				return
+			}
+		})
+	}
+}
