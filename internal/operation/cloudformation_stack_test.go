@@ -3104,6 +3104,14 @@ func TestCloudFormationStackOperator_removeDeletionPolicyFromTemplate(t *testing
 			want: want{
 				modifiedTemplate: `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret"}}}`},
 		},
+		{
+			name: "remove deletion policy from minified json format with deletion policy in the middle",
+			args: args{
+				template: aws.String(`{"Resources":{"MyTopic":{"UpdatePolicy":"Retain","DeletionPolicy":"Retain","Type":"AWS::SecretsManager::Secret"}}}`),
+			},
+			want: want{
+				modifiedTemplate: `{"Resources":{"MyTopic":{"UpdatePolicy":"Retain","Type":"AWS::SecretsManager::Secret"}}}`},
+		},
 	}
 
 	for _, tt := range cases {
