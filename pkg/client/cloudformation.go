@@ -23,14 +23,16 @@ type ICloudFormation interface {
 var _ ICloudFormation = (*CloudFormation)(nil)
 
 type CloudFormation struct {
-	client *cloudformation.Client
-	waiter *cloudformation.StackDeleteCompleteWaiter
+	client               *cloudformation.Client
+	deleteCompleteWaiter *cloudformation.StackDeleteCompleteWaiter
+	updateCompleteWaiter *cloudformation.StackUpdateCompleteWaiter
 }
 
-func NewCloudFormation(client *cloudformation.Client, waiter *cloudformation.StackDeleteCompleteWaiter) *CloudFormation {
+func NewCloudFormation(client *cloudformation.Client, deleteCompleteWaiter *cloudformation.StackDeleteCompleteWaiter, updateCompleteWaiter *cloudformation.StackUpdateCompleteWaiter) *CloudFormation {
 	return &CloudFormation{
 		client,
-		waiter,
+		deleteCompleteWaiter,
+		updateCompleteWaiter,
 	}
 }
 
@@ -47,7 +49,7 @@ func (c *CloudFormation) DeleteStack(ctx context.Context, stackName *string, ret
 		}
 	}
 
-	if err := c.waitStackProgress(ctx, stackName); err != nil {
+	if err := c.waitDeleteStack(ctx, stackName); err != nil {
 		return &ClientError{
 			ResourceName: stackName,
 			Err:          err,
@@ -99,19 +101,6 @@ func (c *CloudFormation) DescribeStacks(ctx context.Context, stackName *string) 
 		}
 	}
 	return stacks, nil
-}
-
-func (c *CloudFormation) waitStackProgress(ctx context.Context, stackName *string) error {
-	input := &cloudformation.DescribeStacksInput{
-		StackName: stackName,
-	}
-
-	err := c.waiter.Wait(ctx, input, CloudFormationWaitNanoSecTime)
-	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
-		return err // return non wrapping error because wrap in public callers
-	}
-
-	return nil
 }
 
 func (c *CloudFormation) ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error) {
@@ -188,11 +177,37 @@ func (c *CloudFormation) UpdateStack(ctx context.Context, stackName *string, tem
 		}
 	}
 
-	if err := c.waitStackProgress(ctx, stackName); err != nil {
+	if err := c.waitUpdateStack(ctx, stackName); err != nil {
 		return &ClientError{
 			ResourceName: stackName,
 			Err:          err,
 		}
+	}
+
+	return nil
+}
+
+func (c *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string) error {
+	input := &cloudformation.DescribeStacksInput{
+		StackName: stackName,
+	}
+
+	err := c.deleteCompleteWaiter.Wait(ctx, input, CloudFormationWaitNanoSecTime)
+	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
+		return err // return non wrapping error because wrap in public callers
+	}
+
+	return nil
+}
+
+func (c *CloudFormation) waitUpdateStack(ctx context.Context, stackName *string) error {
+	input := &cloudformation.DescribeStacksInput{
+		StackName: stackName,
+	}
+
+	err := c.updateCompleteWaiter.Wait(ctx, input, CloudFormationWaitNanoSecTime)
+	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
+		return err // return non wrapping error because wrap in public callers
 	}
 
 	return nil

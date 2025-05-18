@@ -28,13 +28,14 @@ func (f *OperatorFactory) CreateCloudFormationStackOperator(targetResourceTypes 
 		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
-	sdkCfnWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
-
+	sdkCfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
+	sdkCfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(sdkCfnClient)
 	return NewCloudFormationStackOperator(
 		f.config,
 		client.NewCloudFormation(
 			sdkCfnClient,
-			sdkCfnWaiter,
+			sdkCfnDeleteWaiter,
+			sdkCfnUpdateWaiter,
 		),
 		targetResourceTypes,
 	)
