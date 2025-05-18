@@ -3051,31 +3051,31 @@ func TestCloudFormationStackOperator_removeDeletionPolicyFromTemplate(t *testing
 			args: args{
 				template: aws.String(`Resources:
   MyTopic:
-	Properties:
-	  Key1: Value1
+    Properties:
+      Key1: Value1
     DeletionPolicy: Retain`),
 			},
 			want: want{
 				modifiedTemplate: `Resources:
   MyTopic:
-	Properties:
-	  Key1: Value1`},
+    Properties:
+      Key1: Value1`},
 		},
 		{
 			name: "remove deletion policy from yaml block format with deletion policy at last",
 			args: args{
 				template: aws.String(`Resources:
   MyTopic:
-	Properties:
-	  Key1: Value1
+    Properties:
+      Key1: Value1
     DeletionPolicy:
-	  Retain`),
+      Retain`),
 			},
 			want: want{
 				modifiedTemplate: `Resources:
   MyTopic:
-	Properties:
-	  Key1: Value1`},
+    Properties:
+      Key1: Value1`},
 		},
 		{
 			name: "remove deletion policy from json format with deletion policy at first",
@@ -3084,7 +3084,7 @@ func TestCloudFormationStackOperator_removeDeletionPolicyFromTemplate(t *testing
   "Resources": {
     "MyTopic": {
       "DeletionPolicy": "Retain",
-	  "Type":"AWS::SecretsManager::Secret"
+      "Type":"AWS::SecretsManager::Secret"
     }
   }
 }`),
@@ -3093,7 +3093,7 @@ func TestCloudFormationStackOperator_removeDeletionPolicyFromTemplate(t *testing
 				modifiedTemplate: `{
   "Resources": {
     "MyTopic": {
-	  "Type":"AWS::SecretsManager::Secret"
+      "Type":"AWS::SecretsManager::Secret"
     }
   }
 }`},
@@ -3105,7 +3105,7 @@ func TestCloudFormationStackOperator_removeDeletionPolicyFromTemplate(t *testing
   "Resources": {
     "MyTopic": {
       "Type":"AWS::SecretsManager::Secret",
-	  "DeletionPolicy": "Retain"
+      "DeletionPolicy": "Retain"
     }
   }
 }`),
@@ -3126,7 +3126,7 @@ func TestCloudFormationStackOperator_removeDeletionPolicyFromTemplate(t *testing
   "Resources": {
     "MyTopic": {
       "UpdatePolicy": "Retain",
-	  "DeletionPolicy": "Retain",
+      "DeletionPolicy": "Retain",
       "Type":"AWS::SecretsManager::Secret"
     }
   }
