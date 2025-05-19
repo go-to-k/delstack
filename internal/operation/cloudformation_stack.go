@@ -294,11 +294,10 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		return err
 	}
 
+	nestedStacks := []string{}
 	for _, stackResourceSummary := range stackResourceSummaries {
 		if aws.ToString(stackResourceSummary.ResourceType) == resourcetype.CloudformationStack {
-			if removeErr := o.RemoveDeletionPolicy(ctx, stackResourceSummary.PhysicalResourceId); removeErr != nil {
-				return removeErr
-			}
+			nestedStacks = append(nestedStacks, *stackResourceSummary.PhysicalResourceId)
 		}
 	}
 
@@ -308,11 +307,26 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 	}
 
 	modifiedTemplate := o.removeDeletionPolicyFromTemplate(template)
-	if modifiedTemplate == *template {
+	if len(nestedStacks) == 0 && modifiedTemplate == *template {
 		return nil
 	}
+	if modifiedTemplate != *template {
+		if err = o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stacks[0].Parameters); err != nil {
+			return err
+		}
+	}
 
-	return o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stacks[0].Parameters)
+	// If we update the child stack first, after the child stack is updated, the parent stack will be updated
+	// and get the old child stack's TemplateURL, causing the child stack update to revert.
+	// Therefore, we should update the parent stack instead of updating the child stack first.
+	// Also, when the child stack is updated, the parent stack is also updated, so this process should be done in sequence.
+	for _, stackName := range nestedStacks {
+		if removeErr := o.RemoveDeletionPolicy(ctx, aws.String(stackName)); removeErr != nil {
+			return removeErr
+		}
+	}
+
+	return nil
 }
 
 func (o *CloudFormationStackOperator) removeDeletionPolicyFromTemplate(template *string) string {
