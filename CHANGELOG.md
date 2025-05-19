@@ -1,5 +1,8 @@
 # Changelog
 
+## [v1.16.0](https://github.com/go-to-k/delstack/compare/v1.15.0...v1.16.0) - 2025-05-19
+- feat: support force (`-f`) option for deletion of Retain resources by @go-to-k in https://github.com/go-to-k/delstack/pull/486
+
 ## [v1.15.0](https://github.com/go-to-k/delstack/compare/v1.14.0...v1.15.0) - 2025-04-14
 - ci: change PR label names for release by @go-to-k in https://github.com/go-to-k/delstack/pull/456
 - docs: improve style for README by @go-to-k in https://github.com/go-to-k/delstack/pull/455
