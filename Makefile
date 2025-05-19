@@ -73,3 +73,4 @@ testgen_help:
 	@echo "  make testgen"
 	@echo "  make testgen OPT=\"-s my-stage\""
 	@echo "  make testgen OPT=\"-p my-profile\""
+	@echo "  make testgen OPT=\"-r\" # Retain mode: make all resources RETAIN to test \`-f\` option for delstack"

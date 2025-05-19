@@ -28,6 +28,7 @@ go run testdata/deploy.go -s <stage> [-p <profile>]
 
 - `-s <stage>` : Stage name, used as part of stack naming (optional)
 - `-p <profile>` : AWS CLI profile name to use (optional)
+- `-r` : Make all resources RETAIN to test `-f` option for delstack (optional)
 
 ### Using the Makefile
 
@@ -39,6 +40,9 @@ make testgen
 
 # Deploy with custom stage and profile
 make testgen OPT="-s my-stage -p my-profile"
+
+# Deploy the stack with all RETAIN resources
+make testgen OPT="-r"
 ```
 
 ### Notes

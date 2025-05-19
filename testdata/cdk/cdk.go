@@ -14,6 +14,7 @@ import (
 type TestStackProps struct {
 	awscdk.StackProps
 	PjPrefix string
+	IsRetain bool
 }
 
 func NewTestStack(scope constructs.Construct, id string, props *TestStackProps) awscdk.Stack {
@@ -22,6 +23,10 @@ func NewTestStack(scope constructs.Construct, id string, props *TestStackProps) 
 		sprops = props.StackProps
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
+
+	if props.IsRetain {
+		awscdk.RemovalPolicies_Of(scope).Retain(nil)
+	}
 
 	resource.NewEcr(stack)
 	resource.NewS3Bucket(stack)
@@ -52,6 +57,14 @@ func main() {
 		pjPrefix = "delstack"
 	}
 
+	retainMode := app.Node().TryGetContext(jsii.String("RETAIN_MODE")).(string)
+	var isRetain bool
+	if retainMode == "true" {
+		isRetain = true
+	} else {
+		isRetain = false
+	}
+
 	stackName := pjPrefix + "-Test-Stack"
 
 	NewTestStack(app, stackName, &TestStackProps{
@@ -60,6 +73,7 @@ func main() {
 			StackName: jsii.String(stackName),
 		},
 		PjPrefix: pjPrefix,
+		IsRetain: isRetain,
 	})
 
 	app.Synth(nil)
