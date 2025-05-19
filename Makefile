@@ -64,6 +64,11 @@ testgen:
 	@echo "Running test stack generator..."
 	@cd testdata && go mod tidy && go run deploy.go $(OPT)
 
+# Run test stack generator for all RETAIN resources to test \`-f\` option 
+testgen_retain:
+	@echo "Running test stack generator for all RETAIN resources..."
+	@cd testdata && go mod tidy && go run deploy.go -r
+
 # Help for test stack generation
 testgen_help:
 	@echo "Test stack generation targets:"

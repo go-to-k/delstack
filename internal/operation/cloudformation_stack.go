@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/internal/io"
+	"github.com/go-to-k/delstack/internal/resourcetype"
 	"github.com/go-to-k/delstack/pkg/client"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -138,8 +139,8 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 	}
 
 	//nolint:govet
-	if err := o.client.DeleteStack(ctx, stackName, []string{}); err != nil {
-		return false, err
+	if deleteErr := o.client.DeleteStack(ctx, stackName, []string{}); deleteErr != nil {
+		return false, deleteErr
 	}
 
 	stacksAfterDelete, err := o.client.DescribeStacks(ctx, stackName)
@@ -273,4 +274,65 @@ func (o *CloudFormationStackOperator) isExceptedByStackStatus(stackStatus types.
 		}
 	}
 	return false
+}
+
+func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, stackName *string) error {
+	stacks, err := o.client.DescribeStacks(ctx, stackName)
+	if err != nil {
+		return err
+	}
+	if len(stacks) == 0 {
+		return fmt.Errorf("NotExistsError: %v", *stackName)
+	}
+	// If the stack is in the ROLLBACK_COMPLETE state, it is not possible to update the stack.
+	if stacks[0].StackStatus == types.StackStatusRollbackComplete {
+		return nil
+	}
+
+	stackResourceSummaries, err := o.client.ListStackResources(ctx, stackName)
+	if err != nil {
+		return err
+	}
+
+	nestedStacks := []string{}
+	for _, stackResourceSummary := range stackResourceSummaries {
+		if aws.ToString(stackResourceSummary.ResourceType) == resourcetype.CloudformationStack {
+			nestedStacks = append(nestedStacks, *stackResourceSummary.PhysicalResourceId)
+		}
+	}
+
+	template, err := o.client.GetTemplate(ctx, stackName)
+	if err != nil {
+		return err
+	}
+
+	modifiedTemplate := o.removeDeletionPolicyFromTemplate(template)
+	if len(nestedStacks) == 0 && modifiedTemplate == *template {
+		return nil
+	}
+	if modifiedTemplate != *template {
+		if err = o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stacks[0].Parameters); err != nil {
+			return err
+		}
+	}
+
+	// If we update the child stack first, after the child stack is updated, the parent stack will be updated
+	// and get the old child stack's TemplateURL, causing the child stack update to revert.
+	// Therefore, we should update the parent stack instead of updating the child stack first.
+	// Also, when the child stack is updated, the parent stack is also updated, so this process should be done in sequence.
+	for _, stackName := range nestedStacks {
+		if removeErr := o.RemoveDeletionPolicy(ctx, aws.String(stackName)); removeErr != nil {
+			return removeErr
+		}
+	}
+
+	return nil
+}
+
+func (o *CloudFormationStackOperator) removeDeletionPolicyFromTemplate(template *string) string {
+	policies := "(Retain|RetainExceptOnCreate)"
+	// Match both JSON and YAML formats
+	base := fmt.Sprintf(`["']?DeletionPolicy["']?\s*:\s*["']?%[1]s["']?`, policies)
+	deletionPolicyRegexp := regexp.MustCompile(fmt.Sprintf(`(?m)(?:,\s*%[1]s|\s*%[1]s,|\s*%[1]s)`, base))
+	return deletionPolicyRegexp.ReplaceAllString(*template, "")
 }

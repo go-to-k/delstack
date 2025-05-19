@@ -16,19 +16,23 @@ type ICloudFormation interface {
 	DeleteStack(ctx context.Context, stackName *string, retainResources []string) error
 	DescribeStacks(ctx context.Context, stackName *string) ([]types.Stack, error)
 	ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error)
+	GetTemplate(ctx context.Context, stackName *string) (*string, error)
+	UpdateStack(ctx context.Context, stackName *string, templateBody *string, parameters []types.Parameter) error
 }
 
 var _ ICloudFormation = (*CloudFormation)(nil)
 
 type CloudFormation struct {
-	client *cloudformation.Client
-	waiter *cloudformation.StackDeleteCompleteWaiter
+	client               *cloudformation.Client
+	deleteCompleteWaiter *cloudformation.StackDeleteCompleteWaiter
+	updateCompleteWaiter *cloudformation.StackUpdateCompleteWaiter
 }
 
-func NewCloudFormation(client *cloudformation.Client, waiter *cloudformation.StackDeleteCompleteWaiter) *CloudFormation {
+func NewCloudFormation(client *cloudformation.Client, deleteCompleteWaiter *cloudformation.StackDeleteCompleteWaiter, updateCompleteWaiter *cloudformation.StackUpdateCompleteWaiter) *CloudFormation {
 	return &CloudFormation{
 		client,
-		waiter,
+		deleteCompleteWaiter,
+		updateCompleteWaiter,
 	}
 }
 
@@ -99,19 +103,6 @@ func (c *CloudFormation) DescribeStacks(ctx context.Context, stackName *string) 
 	return stacks, nil
 }
 
-func (c *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string) error {
-	input := &cloudformation.DescribeStacksInput{
-		StackName: stackName,
-	}
-
-	err := c.waiter.Wait(ctx, input, CloudFormationWaitNanoSecTime)
-	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
-		return err // return non wrapping error because wrap in public callers
-	}
-
-	return nil
-}
-
 func (c *CloudFormation) ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error) {
 	var nextToken *string
 	stackResourceSummaries := []types.StackResourceSummary{}
@@ -148,4 +139,76 @@ func (c *CloudFormation) ListStackResources(ctx context.Context, stackName *stri
 	}
 
 	return stackResourceSummaries, nil
+}
+
+func (c *CloudFormation) GetTemplate(ctx context.Context, stackName *string) (*string, error) {
+	input := &cloudformation.GetTemplateInput{
+		StackName: stackName,
+	}
+
+	output, err := c.client.GetTemplate(ctx, input)
+	if err != nil {
+		return nil, &ClientError{
+			ResourceName: stackName,
+			Err:          err,
+		}
+	}
+
+	return output.TemplateBody, nil
+}
+
+func (c *CloudFormation) UpdateStack(ctx context.Context, stackName *string, templateBody *string, parameters []types.Parameter) error {
+	input := &cloudformation.UpdateStackInput{
+		StackName:    stackName,
+		TemplateBody: templateBody,
+		Capabilities: []types.Capability{
+			types.CapabilityCapabilityIam,
+			types.CapabilityCapabilityNamedIam,
+			types.CapabilityCapabilityAutoExpand,
+		},
+		Parameters: parameters,
+	}
+
+	_, err := c.client.UpdateStack(ctx, input)
+	if err != nil {
+		return &ClientError{
+			ResourceName: stackName,
+			Err:          err,
+		}
+	}
+
+	if err := c.waitUpdateStack(ctx, stackName); err != nil {
+		return &ClientError{
+			ResourceName: stackName,
+			Err:          err,
+		}
+	}
+
+	return nil
+}
+
+func (c *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string) error {
+	input := &cloudformation.DescribeStacksInput{
+		StackName: stackName,
+	}
+
+	err := c.deleteCompleteWaiter.Wait(ctx, input, CloudFormationWaitNanoSecTime)
+	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
+		return err // return non wrapping error because wrap in public callers
+	}
+
+	return nil
+}
+
+func (c *CloudFormation) waitUpdateStack(ctx context.Context, stackName *string) error {
+	input := &cloudformation.DescribeStacksInput{
+		StackName: stackName,
+	}
+
+	err := c.updateCompleteWaiter.Wait(ctx, input, CloudFormationWaitNanoSecTime)
+	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
+		return err // return non wrapping error because wrap in public callers
+	}
+
+	return nil
 }

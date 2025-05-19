@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -34,8 +35,9 @@ const (
 )
 
 type Options struct {
-	Profile string
-	Stage   string
+	Profile    string
+	Stage      string
+	RetainMode bool
 }
 
 type DeployStackService struct {
@@ -141,6 +143,8 @@ func parseArgs() Options {
 		} else if os.Args[i] == "-s" && i+1 < len(os.Args) {
 			options.Stage = os.Args[i+1]
 			i++
+		} else if os.Args[i] == "-r" {
+			options.RetainMode = true
 		}
 	}
 
@@ -236,7 +240,7 @@ func (s *DeployStackService) cdkDeploy() error {
 	if s.Options.Profile != "" {
 		profileOption = fmt.Sprintf("--profile %s", s.Options.Profile)
 	}
-	deployCmd := fmt.Sprintf("cd cdk && npx cdk deploy --all -c PJ_PREFIX=%s --require-approval never %s", s.CfnPjPrefix, profileOption)
+	deployCmd := fmt.Sprintf("cd cdk && npx cdk deploy --all -c PJ_PREFIX=%s -c RETAIN_MODE=%s --require-approval never %s", s.CfnPjPrefix, strconv.FormatBool(s.Options.RetainMode), profileOption)
 	if err := s.runCommand(deployCmd); err != nil {
 		return fmt.Errorf("failed to deploy with CDK: %v", err)
 	}

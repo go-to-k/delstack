@@ -19,6 +19,7 @@ type App struct {
 	Profile         string
 	Region          string
 	InteractiveMode bool
+	ForceMode       bool
 }
 
 type targetStack struct {
@@ -59,6 +60,13 @@ func NewApp(version string) *App {
 				Usage:       "Interactive Mode",
 				Destination: &app.InteractiveMode,
 			},
+			&cli.BoolFlag{
+				Name:        "force",
+				Aliases:     []string{"f"},
+				Value:       false,
+				Usage:       "Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate",
+				Destination: &app.ForceMode,
+			},
 		},
 	}
 
@@ -77,6 +85,10 @@ func (a *App) getAction() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		if !a.InteractiveMode && len(a.StackNames.Value()) == 0 {
 			errMsg := fmt.Sprintln("At least one stack name must be specified in command options (-s) or a flow of the interactive mode (-i).")
+			return fmt.Errorf("InvalidOptionError: %v", errMsg)
+		}
+		if a.ForceMode && a.InteractiveMode && len(a.StackNames.Value()) != 0 {
+			errMsg := fmt.Sprintln("There is no need to specify Force Mode and Interactive Mode at the same time when stack names are specified.")
 			return fmt.Errorf("InvalidOptionError: %v", errMsg)
 		}
 
@@ -114,6 +126,12 @@ func (a *App) getAction() func(c *cli.Context) error {
 			cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(stack.targetResourceTypes)
 
 			io.Logger.Info().Msgf("%v: Start deletion. Please wait a few minutes...", stack.stackName)
+
+			if a.ForceMode {
+				if err := cloudformationStackOperator.RemoveDeletionPolicy(c.Context, aws.String(stack.stackName)); err != nil {
+					return err
+				}
+			}
 
 			if err := cloudformationStackOperator.DeleteCloudFormationStack(c.Context, aws.String(stack.stackName), isRootStack, operatorManager); err != nil {
 				return err
@@ -178,7 +196,7 @@ func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStac
 	targetStacks := []targetStack{}
 
 	// If stackNames are specified with an interactive mode option, select ResourceTypes in the order specified (not sorted order).
-	if a.InteractiveMode && len(specifiedStackNames) != 0 {
+	if a.InteractiveMode && !a.ForceMode && len(specifiedStackNames) != 0 {
 		var selectedResourceTypes []targetStack
 		for _, stackName := range specifiedStackNames {
 			targetResourceTypes, continuation, err := a.selectResourceTypes(stackName)
@@ -201,7 +219,7 @@ func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStac
 			}
 		}
 	}
-	if a.InteractiveMode && len(specifiedStackNames) == 0 {
+	if a.InteractiveMode && !a.ForceMode && len(specifiedStackNames) == 0 {
 		for _, stackName := range sortedStackNames {
 			targetResourceTypes, continuation, err := a.selectResourceTypes(stackName)
 			if err != nil {
@@ -216,7 +234,7 @@ func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStac
 			})
 		}
 	}
-	if !a.InteractiveMode {
+	if !a.InteractiveMode || a.ForceMode {
 		for _, stackName := range sortedStackNames {
 			targetResourceTypes := resourcetype.GetResourceTypes()
 			targetStacks = append(targetStacks, targetStack{

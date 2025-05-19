@@ -22,9 +22,9 @@ All resources that do not fail normal deletion can be deleted as is.
 
 |  RESOURCE TYPE  |  DETAILS  |
 | ---- | ---- |
-|  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled** and DeletionPolicy **not Retain**. (Because "Retain" buckets should not be deleted.)  |
-|  AWS::S3Express::DirectoryBucket  |  S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty and DeletionPolicy not Retain. (Because "Retain" buckets should not be deleted.)  |
-|  AWS::S3Tables::TableBucket  |  S3 Table Buckets, including buckets with any namespaces or tables and DeletionPolicy not Retain. (Because "Retain" buckets should not be deleted.)  |
+|  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled**.  |
+|  AWS::S3Express::DirectoryBucket  |  S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty.  |
+|  AWS::S3Tables::TableBucket  |  S3 Table Buckets, including buckets with any namespaces or tables.  |
 |  AWS::IAM::Group  |  IAM Groups, including groups **with IAM users from outside the stack.** In that case, this tool detaches the IAM users and then deletes the IAM group (but not the IAM users themselves).  |
 |  AWS::ECR::Repository  |  ECR Repositories, including repositories that contain images and where **the `EmptyOnDelete` is not true.**  |
 |  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
@@ -76,7 +76,7 @@ All resources that do not fail normal deletion can be deleted as is.
 ## How to use
 
   ```bash
-  delstack [-s <stackName>] [-p <profile>] [-r <region>] [-i]
+  delstack [-s <stackName>] [-p <profile>] [-r <region>] [-i|--interactive] [-f|--force]
   ```
 
 - -s, --stackName: optional
@@ -92,6 +92,8 @@ All resources that do not fail normal deletion can be deleted as is.
   - AWS Region
 - -i, --interactive: optional
   - Interactive Mode
+- -f, --force: optional
+  - Force Mode to delete stacks including resources with **the deletion policy Retain or RetainExceptOnCreate**
 
 ## Interactive Mode
 
@@ -133,6 +135,8 @@ The `-i, --interactive` option allows you to select the ResourceTypes **you wish
 However, if a resource can be deleted **without becoming DELETE_FAILED** by the **normal** CloudFormation stack deletion feature, the resource will be deleted **even if you do not select that resource type**. This tool is not intended to protect specific resources from the normal CloudFormation stack deletion feature, so I implemented this feature with the nuance that **only those resources that really should not be deleted will not be forced to be deleted**.
 
 If the stack contains resources that will be DELETE_FAILED but is not selected, **all DELETE_FAILED resources including the selected or not selected resources and the stack will remain undeleted**.
+
+Also, if `-f, --force` option is specified together, all supported resource types will be deleted **without the selection prompt**.
 
 ```bash
 ❯ delstack -i -s dev-goto-01-TestStack
@@ -176,6 +180,7 @@ jobs:
         with:
           stack-name: YourStack
           # stack-name: YourStack1, YourStack2, YourStack3 # To delete multiple stacks
+          force: true # Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate (default: false)
           region: us-east-1
 ```
 
