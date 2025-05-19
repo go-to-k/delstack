@@ -87,6 +87,10 @@ func (a *App) getAction() func(c *cli.Context) error {
 			errMsg := fmt.Sprintln("At least one stack name must be specified in command options (-s) or a flow of the interactive mode (-i).")
 			return fmt.Errorf("InvalidOptionError: %v", errMsg)
 		}
+		if a.ForceMode && a.InteractiveMode && len(a.StackNames.Value()) != 0 {
+			errMsg := fmt.Sprintln("There is no need to specify Force Mode and Interactive Mode at the same time when stack names are specified.")
+			return fmt.Errorf("InvalidOptionError: %v", errMsg)
+		}
 
 		config, err := client.LoadAWSConfig(c.Context, a.Region, a.Profile)
 		if err != nil {
@@ -192,7 +196,7 @@ func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStac
 	targetStacks := []targetStack{}
 
 	// If stackNames are specified with an interactive mode option, select ResourceTypes in the order specified (not sorted order).
-	if a.InteractiveMode && len(specifiedStackNames) != 0 {
+	if a.InteractiveMode && !a.ForceMode && len(specifiedStackNames) != 0 {
 		var selectedResourceTypes []targetStack
 		for _, stackName := range specifiedStackNames {
 			targetResourceTypes, continuation, err := a.selectResourceTypes(stackName)
@@ -215,7 +219,7 @@ func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStac
 			}
 		}
 	}
-	if a.InteractiveMode && len(specifiedStackNames) == 0 {
+	if a.InteractiveMode && !a.ForceMode && len(specifiedStackNames) == 0 {
 		for _, stackName := range sortedStackNames {
 			targetResourceTypes, continuation, err := a.selectResourceTypes(stackName)
 			if err != nil {
@@ -230,7 +234,7 @@ func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStac
 			})
 		}
 	}
-	if !a.InteractiveMode {
+	if !a.InteractiveMode || a.ForceMode {
 		for _, stackName := range sortedStackNames {
 			targetResourceTypes := resourcetype.GetResourceTypes()
 			targetStacks = append(targetStacks, targetStack{
