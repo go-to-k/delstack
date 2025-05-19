@@ -61,8 +61,6 @@ func main() {
 	var isRetain bool
 	if retainMode == "true" {
 		isRetain = true
-	} else {
-		isRetain = false
 	}
 
 	stackName := pjPrefix + "-Test-Stack"
