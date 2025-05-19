@@ -2672,6 +2672,20 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 					nil,
 				)
 
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test")).Return(
+					aws.String(`{
+						"Resources": {
+							"NestedStack": {
+								"Type": "AWS::CloudFormation::Stack",
+								"DeletionPolicy": "Retain"
+							}
+						}
+					}`),
+					nil,
+				)
+
+				m.EXPECT().UpdateStack(gomock.Any(), aws.String("test"), gomock.Any(), gomock.Any()).Return(nil)
+
 				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test-nested")).Return(
 					[]types.Stack{
 						{
@@ -2712,12 +2726,69 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 				)
 
 				m.EXPECT().UpdateStack(gomock.Any(), aws.String("test-nested"), gomock.Any(), gomock.Any()).Return(nil)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "remove deletion policy successfully for no template changes with nested stack",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("NestedStack"),
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("test-nested"),
+						},
+					},
+					nil,
+				)
 
 				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test")).Return(
 					aws.String(`{
 						"Resources": {
 							"NestedStack": {
-								"Type": "AWS::CloudFormation::Stack",
+								"Type": "AWS::CloudFormation::Stack"
+							}
+						}
+					}`),
+					nil,
+				)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test-nested")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test-nested"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test-nested")).Return(
+					[]types.StackResourceSummary{},
+					nil,
+				)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test-nested")).Return(
+					aws.String(`{
+						"Resources": {
+							"Resource1": {
+								"Type": "AWS::S3::Bucket",
 								"DeletionPolicy": "Retain"
 							}
 						}
@@ -2725,7 +2796,7 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 					nil,
 				)
 
-				m.EXPECT().UpdateStack(gomock.Any(), aws.String("test"), gomock.Any(), gomock.Any()).Return(nil)
+				m.EXPECT().UpdateStack(gomock.Any(), aws.String("test-nested"), gomock.Any(), gomock.Any()).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
@@ -2890,6 +2961,56 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 				m.EXPECT().UpdateStack(gomock.Any(), aws.String("test"), gomock.Any(), gomock.Any()).Return(fmt.Errorf("UpdateStackError"))
 			},
 			want:    fmt.Errorf("UpdateStackError"),
+			wantErr: true,
+		},
+		{
+			name: "remove deletion policy failure for nested stack error",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusCreateComplete,
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("NestedStack"),
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("test-nested"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test")).Return(
+					aws.String(`{
+						"Resources": {
+							"NestedStack": {
+								"Type": "AWS::CloudFormation::Stack",
+								"DeletionPolicy": "Retain"
+							}
+						}
+					}`),
+					nil,
+				)
+
+				m.EXPECT().UpdateStack(gomock.Any(), aws.String("test"), gomock.Any(), gomock.Any()).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test-nested")).Return(
+					nil,
+					fmt.Errorf("DescribeStacksError"),
+				)
+			},
+			want:    fmt.Errorf("DescribeStacksError"),
 			wantErr: true,
 		},
 	}
