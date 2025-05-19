@@ -12,6 +12,10 @@ inputs:
     description: "AWS Region"
     default: "us-east-1"
     required: false
+  force:
+    description: "Force Mode to delete stacks even if the deletion policy is Retain or RetainExceptOnCreate"
+    default: false
+    required: false
 runs:
   using: "composite"
   steps:
@@ -33,5 +37,9 @@ runs:
           for stack in $(echo ${{ inputs.stack-name }} | tr ',' ' '); do
             stacks="${stacks}-s ${stack} "
           done
-          delstack -r ${{ inputs.region }} $stacks
+          force=""
+          if [ "${{ inputs.force }}" = "true" ]; then
+            force="-f"
+          fi
+          delstack -r ${{ inputs.region }} $stacks $force
         fi

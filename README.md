@@ -176,6 +176,7 @@ jobs:
         with:
           stack-name: YourStack
           # stack-name: YourStack1, YourStack2, YourStack3 # To delete multiple stacks
+          force: true # Force Mode to delete stacks even if the deletion policy is Retain or RetainExceptOnCreate (default: false)
           region: us-east-1
 ```
 
