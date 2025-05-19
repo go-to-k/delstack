@@ -64,7 +64,7 @@ func NewApp(version string) *App {
 				Name:        "force",
 				Aliases:     []string{"f"},
 				Value:       false,
-				Usage:       "Force Mode to delete stacks even if the deletion policy is Retain or RetainExceptOnCreate",
+				Usage:       "Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate",
 				Destination: &app.ForceMode,
 			},
 		},

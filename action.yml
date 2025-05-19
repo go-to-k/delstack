@@ -13,7 +13,7 @@ inputs:
     default: "us-east-1"
     required: false
   force:
-    description: "Force Mode to delete stacks even if the deletion policy is Retain or RetainExceptOnCreate"
+    description: "Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate"
     default: false
     required: false
 runs:
