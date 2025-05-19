@@ -136,7 +136,7 @@ However, if a resource can be deleted **without becoming DELETE_FAILED** by the 
 
 If the stack contains resources that will be DELETE_FAILED but is not selected, **all DELETE_FAILED resources including the selected or not selected resources and the stack will remain undeleted**.
 
-If `-f, --force` option is specified together, all supported resource types will be deleted **without the selection prompt**.
+Also, if `-f, --force` option is specified together, all supported resource types will be deleted **without the selection prompt**.
 
 ```bash
 ❯ delstack -i -s dev-goto-01-TestStack
