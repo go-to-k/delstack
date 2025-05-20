@@ -93,7 +93,7 @@ All resources that do not fail normal deletion can be deleted as is.
 - -i, --interactive: optional
   - Interactive Mode
 - -f, --force: optional
-  - Force Mode to delete stacks including resources with **the deletion policy Retain or RetainExceptOnCreate**
+  - Force Mode to delete stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`**
 
 ## Interactive Mode
 
@@ -154,6 +154,16 @@ However, if a resource can be deleted without becoming DELETE_FAILED by the norm
   [ ]  AWS::CloudFormation::Stack
   [ ]  Custom::
 ```
+
+## Force Mode
+
+If you specify the `-f, --force` option, stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`** will be deleted.
+
+```bash
+delstack -f -s dev-goto-01-TestStack
+```
+
+Also, even if you specify `-i, --interactive` option together, the ResourceTypes selection prompt will not be displayed.
 
 ## GitHub Actions
 
