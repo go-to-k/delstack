@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.16.1](https://github.com/go-to-k/delstack/compare/v1.16.0...v1.16.1) - 2025-05-20
+- test: add option for testgen_retain command by @go-to-k in https://github.com/go-to-k/delstack/pull/489
+- docs: force mode in README by @go-to-k in https://github.com/go-to-k/delstack/pull/491
+- chore: remove deletion policy for nested stacks in parallel by @go-to-k in https://github.com/go-to-k/delstack/pull/490
+
 ## [v1.16.0](https://github.com/go-to-k/delstack/compare/v1.15.0...v1.16.0) - 2025-05-19
 - feat: support force (`-f`) option for deletion of Retain resources by @go-to-k in https://github.com/go-to-k/delstack/pull/486
 
