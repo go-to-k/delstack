@@ -67,14 +67,18 @@ testgen:
 # Run test stack generator for all RETAIN resources to test \`-f\` option 
 testgen_retain:
 	@echo "Running test stack generator for all RETAIN resources..."
-	@cd testdata && go mod tidy && go run deploy.go -r
+	@cd testdata && go mod tidy && go run deploy.go -r $(OPT)
 
 # Help for test stack generation
 testgen_help:
 	@echo "Test stack generation targets:"
 	@echo "  testgen         - Run the test stack generator"
+	@echo "  testgen_retain  - Run the test stack generator for all RETAIN resources to test \`-f\` option"
 	@echo ""
 	@echo "Example usage:"
 	@echo "  make testgen"
 	@echo "  make testgen OPT=\"-s my-stage\""
 	@echo "  make testgen OPT=\"-p my-profile\""
+	@echo "  make testgen_retain"
+	@echo "  make testgen_retain OPT=\"-s my-stage\""
+	@echo "  make testgen_retain OPT=\"-p my-profile\""
