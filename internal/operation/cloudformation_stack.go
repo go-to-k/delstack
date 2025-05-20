@@ -319,14 +319,15 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 	// If we update the child stack first, after the child stack is updated, the parent stack will be updated
 	// and get the old child stack's TemplateURL, causing the child stack update to revert.
 	// Therefore, we should update the parent stack instead of updating the child stack first.
-	// Also, when the child stack is updated, the parent stack is also updated, so this process should be done in sequence.
+	// Also, we don't control the number of threads with semaphore because the number of nested stacks is usually small.
+	eg, ctx := errgroup.WithContext(ctx)
 	for _, stackName := range nestedStacks {
-		if removeErr := o.RemoveDeletionPolicy(ctx, aws.String(stackName)); removeErr != nil {
-			return removeErr
-		}
+		eg.Go(func() error {
+			return o.RemoveDeletionPolicy(ctx, aws.String(stackName))
+		})
 	}
 
-	return nil
+	return eg.Wait()
 }
 
 func (o *CloudFormationStackOperator) removeDeletionPolicyFromTemplate(template *string) string {
