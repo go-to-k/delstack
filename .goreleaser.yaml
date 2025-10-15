@@ -43,3 +43,5 @@ brews:
     description: delstack
     test: |
       system "#{bin}/delstack -v"
+release:
+  use_existing_draft: true
