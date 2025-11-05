@@ -24,6 +24,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3tables"
 	s3tablesTypes "github.com/aws/aws-sdk-go-v2/service/s3tables/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3vectors"
+	s3vectorsTypes "github.com/aws/aws-sdk-go-v2/service/s3vectors/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fatih/color"
 	"golang.org/x/sync/errgroup"
@@ -41,19 +43,20 @@ type Options struct {
 }
 
 type DeployStackService struct {
-	Options        Options
-	CfnPjPrefix    string
-	CfnStackName   string
-	AccountID      string
-	ProfileOption  string
-	Ctx            context.Context
-	CfnClient      *cloudformation.Client
-	S3Client       *s3.Client
-	S3TablesClient *s3tables.Client
-	IamClient      *iam.Client
-	EcrClient      *ecr.Client
-	StsClient      *sts.Client
-	BackupClient   *backup.Client
+	Options         Options
+	CfnPjPrefix     string
+	CfnStackName    string
+	AccountID       string
+	ProfileOption   string
+	Ctx             context.Context
+	CfnClient       *cloudformation.Client
+	S3Client        *s3.Client
+	S3TablesClient  *s3tables.Client
+	S3VectorsClient *s3vectors.Client
+	IamClient       *iam.Client
+	EcrClient       *ecr.Client
+	StsClient       *sts.Client
+	BackupClient    *backup.Client
 }
 
 // This script allows you to deploy the stack for delstack testing.
@@ -107,6 +110,13 @@ func main() {
 	color.Green("=== tables_upload_to_table_bucket ===")
 	if err := service.tablesUploadToTableBucket(service.CfnStackName); err != nil {
 		color.Red("Failed to upload tables to table bucket: %v", err)
+		os.Exit(1)
+	}
+
+	// Upload indexes to vector bucket
+	color.Green("=== indexes_upload_to_vector_bucket ===")
+	if err := service.indexesUploadToVectorBucket(service.CfnStackName); err != nil {
+		color.Red("Failed to upload indexes to vector bucket: %v", err)
 		os.Exit(1)
 	}
 
@@ -191,6 +201,7 @@ func (s *DeployStackService) initAWSClients() error {
 	s.CfnClient = cloudformation.NewFromConfig(cfg)
 	s.S3Client = s3.NewFromConfig(cfg)
 	s.S3TablesClient = s3tables.NewFromConfig(cfg)
+	s.S3VectorsClient = s3vectors.NewFromConfig(cfg)
 	s.IamClient = iam.NewFromConfig(cfg)
 	s.EcrClient = ecr.NewFromConfig(cfg)
 	s.StsClient = sts.NewFromConfig(cfg)
@@ -833,6 +844,174 @@ func (s *DeployStackService) tablesUploadToTableBucket(stackName string) error {
 				if err := eg.Wait(); err != nil {
 					return fmt.Errorf("failed to create tables: %v", err)
 				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *DeployStackService) indexesUploadToVectorBucket(stackName string) error {
+	// Get resources in the stack
+	resources, nestedStackNames, err := s.getStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	// Process nested stacks in parallel
+	var wg sync.WaitGroup
+	errorChan := make(chan error, len(nestedStackNames))
+
+	for _, nestedStackName := range nestedStackNames {
+		wg.Add(1)
+		go func(name string) {
+			defer wg.Done()
+			if err := s.indexesUploadToVectorBucket(name); err != nil {
+				errorChan <- err
+			}
+		}(nestedStackName)
+	}
+
+	wg.Wait()
+	close(errorChan)
+
+	for err := range errorChan {
+		if err != nil {
+			return err
+		}
+	}
+
+	sdkIndexAmount := 10
+	vectorsPerIndex := 100
+
+	// Create indexes in the vector bucket and upload vectors
+	for _, resource := range resources {
+		if resource["ResourceType"] == "AWS::S3Vectors::VectorBucket" {
+			physicalResourceId := resource["PhysicalResourceId"]
+
+			// PhysicalResourceId might be ARN or bucket name
+			// If it's an ARN (contains ":"), extract the bucket name from the end
+			// ARN format: arn:aws:s3vectors:region:account-id:vector-bucket/bucket-name
+			vectorBucketName := physicalResourceId
+			if strings.Contains(physicalResourceId, ":") {
+				parts := strings.Split(physicalResourceId, "/")
+				if len(parts) > 0 {
+					vectorBucketName = parts[len(parts)-1]
+				}
+			}
+
+			// List existing indexes (including those created by CloudFormation)
+			listIndexesOutput, err := s.S3VectorsClient.ListIndexes(s.Ctx, &s3vectors.ListIndexesInput{
+				VectorBucketName: aws.String(vectorBucketName),
+			})
+			if err != nil {
+				return fmt.Errorf("failed to list indexes: %v", err)
+			}
+
+			cfnIndexes := make(map[string]bool)
+			for _, index := range listIndexesOutput.Indexes {
+				indexName := aws.ToString(index.IndexName)
+				if strings.HasPrefix(indexName, "cfn-index-") {
+					cfnIndexes[indexName] = true
+				}
+			}
+
+			var eg errgroup.Group
+			sem := semaphore.NewWeighted(16)
+
+			// Create SDK indexes and upload vectors
+			sdkIndexes := make([]string, 0, sdkIndexAmount)
+			for i := range sdkIndexAmount {
+				if err := sem.Acquire(s.Ctx, 1); err != nil {
+					return fmt.Errorf("failed to acquire semaphore: %v", err)
+				}
+
+				indexNum := i
+				eg.Go(func() error {
+					defer sem.Release(1)
+					indexName := fmt.Sprintf("sdk-index-%d", indexNum)
+
+					// Create vector index using SDK
+					_, err := s.S3VectorsClient.CreateIndex(s.Ctx, &s3vectors.CreateIndexInput{
+						VectorBucketName: aws.String(vectorBucketName),
+						IndexName:        aws.String(indexName),
+						DataType:         s3vectorsTypes.DataTypeFloat32,
+						Dimension:        aws.Int32(128),
+						DistanceMetric:   s3vectorsTypes.DistanceMetricCosine,
+					})
+
+					if err != nil {
+						return fmt.Errorf("failed to create index %s: %v", indexName, err)
+					}
+
+					return nil
+				})
+
+				sdkIndexes = append(sdkIndexes, fmt.Sprintf("sdk-index-%d", indexNum))
+			}
+
+			if err := eg.Wait(); err != nil {
+				return fmt.Errorf("failed to create SDK indexes: %v", err)
+			}
+
+			// Upload vectors to both SDK and CFN indexes
+			allIndexes := make([]string, 0, len(sdkIndexes)+len(cfnIndexes))
+			allIndexes = append(allIndexes, sdkIndexes...)
+			for cfnIndexName := range cfnIndexes {
+				allIndexes = append(allIndexes, cfnIndexName)
+			}
+
+			for _, indexName := range allIndexes {
+				if err := sem.Acquire(s.Ctx, 1); err != nil {
+					return fmt.Errorf("failed to acquire semaphore: %v", err)
+				}
+
+				currentIndexName := indexName
+				eg.Go(func() error {
+					defer sem.Release(1)
+
+					// Process vectors in batches of 500 (PutVectors API limit)
+					batchSize := 500
+					for batchStart := 1; batchStart <= vectorsPerIndex; batchStart += batchSize {
+						batchEnd := batchStart + batchSize - 1
+						if batchEnd > vectorsPerIndex {
+							batchEnd = vectorsPerIndex
+						}
+
+						// Create batch of vectors
+						vectors := make([]s3vectorsTypes.PutInputVector, 0, batchEnd-batchStart+1)
+						for vector := batchStart; vector <= batchEnd; vector++ {
+							vectorId := fmt.Sprintf("vector-%d", vector)
+
+							// Generate sample vector data (128 dimensions)
+							vectorData := make([]float32, 128)
+							for j := range vectorData {
+								vectorData[j] = rand.Float32()
+							}
+
+							vectors = append(vectors, s3vectorsTypes.PutInputVector{
+								Key:  aws.String(vectorId),
+								Data: &s3vectorsTypes.VectorDataMemberFloat32{Value: vectorData},
+							})
+						}
+
+						// Upload batch
+						_, err := s.S3VectorsClient.PutVectors(s.Ctx, &s3vectors.PutVectorsInput{
+							VectorBucketName: aws.String(vectorBucketName),
+							IndexName:        aws.String(currentIndexName),
+							Vectors:          vectors,
+						})
+						if err != nil {
+							return fmt.Errorf("failed to put vectors to index %s: %v", currentIndexName, err)
+						}
+					}
+
+					return nil
+				})
+			}
+
+			if err := eg.Wait(); err != nil {
+				return fmt.Errorf("failed to upload vectors to indexes: %v", err)
 			}
 		}
 	}
