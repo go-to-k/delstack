@@ -89,7 +89,6 @@ func (o *S3VectorBucketOperator) DeleteS3VectorBucket(ctx context.Context, vecto
 		}
 
 		for _, index := range output.Indexes {
-			index := index
 			if err := sem.Acquire(ctx, 1); err != nil {
 				return err
 			}
