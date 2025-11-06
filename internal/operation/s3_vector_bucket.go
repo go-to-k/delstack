@@ -3,7 +3,9 @@ package operation
 import (
 	"context"
 	"runtime"
+	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	cfntypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/pkg/client"
 	"golang.org/x/sync/errgroup"
@@ -53,7 +55,17 @@ func (o *S3VectorBucketOperator) DeleteResources(ctx context.Context) error {
 	return eg.Wait()
 }
 
-func (o *S3VectorBucketOperator) DeleteS3VectorBucket(ctx context.Context, vectorBucketName *string) error {
+func (o *S3VectorBucketOperator) DeleteS3VectorBucket(ctx context.Context, vectorBucketArn *string) error {
+	// PhysicalResourceId is ARN format: arn:aws:s3vectors:region:account-id:bucket/bucket-name
+	// Extract the bucket name from the ARN
+	vectorBucketName := vectorBucketArn
+	if vectorBucketArn != nil {
+		parts := strings.Split(*vectorBucketArn, "/")
+		if len(parts) > 0 {
+			vectorBucketName = aws.String(parts[len(parts)-1])
+		}
+	}
+
 	exists, err := o.client.CheckVectorBucketExists(ctx, vectorBucketName)
 	if err != nil {
 		return err

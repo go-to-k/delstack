@@ -889,15 +889,12 @@ func (s *DeployStackService) indexesUploadToVectorBucket(stackName string) error
 		if resource["ResourceType"] == "AWS::S3Vectors::VectorBucket" {
 			physicalResourceId := resource["PhysicalResourceId"]
 
-			// PhysicalResourceId might be ARN or bucket name
-			// If it's an ARN (contains ":"), extract the bucket name from the end
-			// ARN format: arn:aws:s3vectors:region:account-id:vector-bucket/bucket-name
+			// PhysicalResourceId is ARN format: arn:aws:s3vectors:region:account-id:vector-bucket/bucket-name
+			// Extract the bucket name from the ARN
 			vectorBucketName := physicalResourceId
-			if strings.Contains(physicalResourceId, ":") {
-				parts := strings.Split(physicalResourceId, "/")
-				if len(parts) > 0 {
-					vectorBucketName = parts[len(parts)-1]
-				}
+			parts := strings.Split(physicalResourceId, "/")
+			if len(parts) > 0 {
+				vectorBucketName = parts[len(parts)-1]
 			}
 
 			// List existing indexes (including those created by CloudFormation)

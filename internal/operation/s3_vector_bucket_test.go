@@ -22,7 +22,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 
 	type args struct {
 		ctx              context.Context
-		vectorBucketName *string
+		vectorBucketArn *string
 	}
 
 	cases := []struct {
@@ -36,7 +36,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 			name: "delete vector bucket successfully",
 			args: args{
 				ctx:              context.Background(),
-				vectorBucketName: aws.String("test-vector-bucket"),
+				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
 				m.EXPECT().CheckVectorBucketExists(gomock.Any(), aws.String("test-vector-bucket")).Return(true, nil)
@@ -63,7 +63,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 			name: "delete vector bucket failure for check vector bucket exists errors",
 			args: args{
 				ctx:              context.Background(),
-				vectorBucketName: aws.String("test-vector-bucket"),
+				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
 				m.EXPECT().CheckVectorBucketExists(gomock.Any(), aws.String("test-vector-bucket")).Return(false, fmt.Errorf("CheckVectorBucketExistsError"))
@@ -75,7 +75,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 			name: "delete vector bucket successfully for vector bucket not exists",
 			args: args{
 				ctx:              context.Background(),
-				vectorBucketName: aws.String("test-vector-bucket"),
+				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
 				m.EXPECT().CheckVectorBucketExists(gomock.Any(), aws.String("test-vector-bucket")).Return(false, nil)
@@ -87,7 +87,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 			name: "delete vector bucket failure for list indexes errors",
 			args: args{
 				ctx:              context.Background(),
-				vectorBucketName: aws.String("test-vector-bucket"),
+				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
 				m.EXPECT().CheckVectorBucketExists(gomock.Any(), aws.String("test-vector-bucket")).Return(true, nil)
@@ -100,7 +100,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 			name: "delete vector bucket failure for delete index errors",
 			args: args{
 				ctx:              context.Background(),
-				vectorBucketName: aws.String("test-vector-bucket"),
+				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
 				m.EXPECT().CheckVectorBucketExists(gomock.Any(), aws.String("test-vector-bucket")).Return(true, nil)
@@ -122,7 +122,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 			name: "delete vector bucket failure for delete vector bucket errors",
 			args: args{
 				ctx:              context.Background(),
-				vectorBucketName: aws.String("test-vector-bucket"),
+				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
 				m.EXPECT().CheckVectorBucketExists(gomock.Any(), aws.String("test-vector-bucket")).Return(true, nil)
@@ -145,7 +145,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 			name: "delete vector bucket successfully for ListIndexesByPage with zero length",
 			args: args{
 				ctx:              context.Background(),
-				vectorBucketName: aws.String("test-vector-bucket"),
+				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
 				m.EXPECT().CheckVectorBucketExists(gomock.Any(), aws.String("test-vector-bucket")).Return(true, nil)
@@ -163,7 +163,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 			name: "delete vector bucket failure for ListIndexesByPage with zero length",
 			args: args{
 				ctx:              context.Background(),
-				vectorBucketName: aws.String("test-vector-bucket"),
+				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
 				m.EXPECT().CheckVectorBucketExists(gomock.Any(), aws.String("test-vector-bucket")).Return(true, nil)
@@ -181,7 +181,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 			name: "delete vector bucket successfully if several loops are executed for ListIndexesByPage",
 			args: args{
 				ctx:              context.Background(),
-				vectorBucketName: aws.String("test-vector-bucket"),
+				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
 				m.EXPECT().CheckVectorBucketExists(gomock.Any(), aws.String("test-vector-bucket")).Return(true, nil)
@@ -220,7 +220,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 
 			s3VectorBucketOperator := NewS3VectorBucketOperator(s3Mock)
 
-			err := s3VectorBucketOperator.DeleteS3VectorBucket(tt.args.ctx, tt.args.vectorBucketName)
+			err := s3VectorBucketOperator.DeleteS3VectorBucket(tt.args.ctx, tt.args.vectorBucketArn)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
