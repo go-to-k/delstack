@@ -897,7 +897,7 @@ func (s *DeployStackService) indexesUploadToVectorBucket(stackName string) error
 				vectorBucketName = parts[len(parts)-1]
 			}
 
-			// List existing indexes (including those created by CloudFormation)
+			// List CFN indexes
 			listIndexesOutput, err := s.S3VectorsClient.ListIndexes(s.Ctx, &s3vectors.ListIndexesInput{
 				VectorBucketName: aws.String(vectorBucketName),
 			})
@@ -905,12 +905,9 @@ func (s *DeployStackService) indexesUploadToVectorBucket(stackName string) error
 				return fmt.Errorf("failed to list indexes: %v", err)
 			}
 
-			cfnIndexes := make(map[string]bool)
+			cfnIndexes := []string{}
 			for _, index := range listIndexesOutput.Indexes {
-				indexName := aws.ToString(index.IndexName)
-				if strings.HasPrefix(indexName, "cfn-index-") {
-					cfnIndexes[indexName] = true
-				}
+				cfnIndexes = append(cfnIndexes, aws.ToString(index.IndexName))
 			}
 
 			var eg errgroup.Group
@@ -954,9 +951,7 @@ func (s *DeployStackService) indexesUploadToVectorBucket(stackName string) error
 			// Upload vectors to both SDK and CFN indexes
 			allIndexes := make([]string, 0, len(sdkIndexes)+len(cfnIndexes))
 			allIndexes = append(allIndexes, sdkIndexes...)
-			for cfnIndexName := range cfnIndexes {
-				allIndexes = append(allIndexes, cfnIndexName)
-			}
+			allIndexes = append(allIndexes, cfnIndexes...)
 
 			for _, indexName := range allIndexes {
 				if err := sem.Acquire(s.Ctx, 1); err != nil {
