@@ -36,6 +36,21 @@ func (m *MockIS3Tables) EXPECT() *MockIS3TablesMockRecorder {
 	return m.recorder
 }
 
+// CheckNamespaceExists mocks base method.
+func (m *MockIS3Tables) CheckNamespaceExists(ctx context.Context, tableBucketARN, namespace *string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckNamespaceExists", ctx, tableBucketARN, namespace)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckNamespaceExists indicates an expected call of CheckNamespaceExists.
+func (mr *MockIS3TablesMockRecorder) CheckNamespaceExists(ctx, tableBucketARN, namespace any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckNamespaceExists", reflect.TypeOf((*MockIS3Tables)(nil).CheckNamespaceExists), ctx, tableBucketARN, namespace)
+}
+
 // CheckTableBucketExists mocks base method.
 func (m *MockIS3Tables) CheckTableBucketExists(ctx context.Context, tableBucketARN *string) (bool, error) {
 	m.ctrl.T.Helper()

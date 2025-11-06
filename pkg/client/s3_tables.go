@@ -3,6 +3,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -29,6 +30,7 @@ type IS3Tables interface {
 	ListNamespacesByPage(ctx context.Context, tableBucketARN *string, continuationToken *string) (*ListNamespacesByPageOutput, error)
 	ListTablesByPage(ctx context.Context, tableBucketARN *string, namespace *string, continuationToken *string) (*ListTablesByPageOutput, error)
 	CheckTableBucketExists(ctx context.Context, tableBucketARN *string) (bool, error)
+	CheckNamespaceExists(ctx context.Context, tableBucketARN *string, namespace *string) (bool, error)
 }
 
 var _ IS3Tables = (*S3Tables)(nil)
@@ -225,4 +227,67 @@ func (s *S3Tables) listTableBuckets(ctx context.Context) ([]types.TableBucketSum
 	}
 
 	return buckets, nil
+}
+
+func (s *S3Tables) CheckNamespaceExists(ctx context.Context, tableBucketARN *string, namespace *string) (bool, error) {
+	var continuationToken *string
+
+	for {
+		select {
+		case <-ctx.Done():
+			return false, &ClientError{
+				ResourceName: aws.String(*tableBucketARN + "/" + *namespace),
+				Err:          ctx.Err(),
+			}
+		default:
+		}
+
+		output, err := s.ListNamespacesByPage(ctx, tableBucketARN, continuationToken)
+		if err != nil {
+			return false, &ClientError{
+				ResourceName: aws.String(*tableBucketARN + "/" + *namespace),
+				Err:          err,
+			}
+		}
+
+		for _, namespaceSummary := range output.Namespaces {
+			namespaceStr := strings.Join(namespaceSummary.Namespace, "/")
+			if namespaceStr == *namespace {
+				return true, nil
+			}
+		}
+
+		if output.ContinuationToken == nil {
+			break
+		}
+		continuationToken = output.ContinuationToken
+	}
+
+	return false, nil
+}
+
+// ParseS3TablesNamespaceArn parses S3 Tables Namespace ARN and returns tableBucketARN and namespace
+// ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name/namespace/namespace-name
+func ParseS3TablesNamespaceArn(namespaceArn *string) (*string, *string, error) {
+	if namespaceArn == nil {
+		return nil, nil, fmt.Errorf("namespace ARN is nil")
+	}
+
+	parts := strings.Split(*namespaceArn, "/")
+	if len(parts) < 4 {
+		return nil, nil, fmt.Errorf("invalid namespace ARN format: %s", *namespaceArn)
+	}
+
+	// Extract table bucket ARN: arn:aws:s3tables:region:account-id:bucket/table-bucket-name
+	arnParts := strings.Split(*namespaceArn, "/namespace/")
+	if len(arnParts) != 2 {
+		return nil, nil, fmt.Errorf("invalid namespace ARN format: %s", *namespaceArn)
+	}
+
+	// Remove "bucket/" prefix from the first part
+	tableBucketPart := strings.Replace(arnParts[0], "bucket/", "", 1)
+	tableBucketARN := aws.String(tableBucketPart)
+	namespace := aws.String(arnParts[1])
+
+	return tableBucketARN, namespace, nil
 }

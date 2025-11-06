@@ -127,6 +127,19 @@ func (f *OperatorFactory) CreateS3TableBucketOperator() *S3TableBucketOperator {
 	)
 }
 
+func (f *OperatorFactory) CreateS3TablesNamespaceOperator() *S3TablesNamespaceOperator {
+	sdkS3TablesClient := s3tables.NewFromConfig(f.config, func(o *s3tables.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	return NewS3TablesNamespaceOperator(
+		client.NewS3Tables(
+			sdkS3TablesClient,
+		),
+	)
+}
+
 func (f *OperatorFactory) CreateS3VectorBucketOperator() *S3VectorBucketOperator {
 	sdkS3VectorsClient := s3vectors.NewFromConfig(f.config, func(o *s3vectors.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts

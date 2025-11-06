@@ -15,6 +15,7 @@ This script creates a CloudFormation stack containing various resources that typ
 - S3 buckets with contents
 - S3 Express Directory buckets with contents
 - S3 Table buckets with namespaces and tables
+- S3 Tables namespaces with tables (created via both CloudFormation and SDK)
 - S3 Vector buckets with indexes
 - IAM groups with users
 - ECR repositories with images
