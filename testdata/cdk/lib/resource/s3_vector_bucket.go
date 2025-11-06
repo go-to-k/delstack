@@ -18,8 +18,8 @@ func NewS3VectorBucket(scope constructs.Construct, bucketNamePrefix string) {
 		},
 	})
 
-	// Create indexes using CloudFormation
-	// Additional indexes and vectors are created in the deploy.go file using SDK
+	// Create indexes using CDK (CloudFormation)
+	// The deploy.go also creates additional indexes via SDK and puts vectors into both CFN and SDK indexes
 	for i := 0; i < 5; i++ {
 		indexId := fmt.Sprintf("VectorIndex%d", i)
 		indexName := fmt.Sprintf("cfn-index-%d", i)
