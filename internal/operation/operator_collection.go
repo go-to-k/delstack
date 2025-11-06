@@ -42,6 +42,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	s3BucketOperator := c.operatorFactory.CreateS3BucketOperator()
 	s3DirectoryBucketOperator := c.operatorFactory.CreateS3DirectoryBucketOperator()
 	s3TableBucketOperator := c.operatorFactory.CreateS3TableBucketOperator()
+	s3VectorBucketOperator := c.operatorFactory.CreateS3VectorBucketOperator()
 	iamGroupOperator := c.operatorFactory.CreateIamGroupOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
@@ -63,6 +64,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 					s3DirectoryBucketOperator.AddResource(&stackResource)
 				case resourcetype.S3TableBucket:
 					s3TableBucketOperator.AddResource(&stackResource)
+				case resourcetype.S3VectorBucket:
+					s3VectorBucketOperator.AddResource(&stackResource)
 				case resourcetype.IamGroup:
 					iamGroupOperator.AddResource(&stackResource)
 				case resourcetype.EcrRepository:
@@ -83,6 +86,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, s3BucketOperator)
 	c.operators = append(c.operators, s3DirectoryBucketOperator)
 	c.operators = append(c.operators, s3TableBucketOperator)
+	c.operators = append(c.operators, s3VectorBucketOperator)
 	c.operators = append(c.operators, iamGroupOperator)
 	c.operators = append(c.operators, ecrRepositoryOperator)
 	c.operators = append(c.operators, backupVaultOperator)
@@ -123,6 +127,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.S3Bucket, "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
 		{resourcetype.S3DirectoryBucket, "S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty and DeletionPolicy not Retain."},
 		{resourcetype.S3TableBucket, "S3 Table Buckets, including buckets with any namespaces or tables and DeletionPolicy not Retain."},
+		{resourcetype.S3VectorBucket, "S3 Vector Buckets, including buckets with any indexes and DeletionPolicy not Retain."},
 		{resourcetype.IamGroup, "IAM Groups, including groups with IAM users from outside the stack."},
 		{resourcetype.EcrRepository, "ECR Repositories, including repositories that contain images and where the `EmptyOnDelete` is not true."},
 		{resourcetype.BackupVault, "Backup Vaults, including vaults containing recovery points."},

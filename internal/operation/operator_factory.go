@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3tables"
+	"github.com/aws/aws-sdk-go-v2/service/s3vectors"
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
@@ -122,6 +123,19 @@ func (f *OperatorFactory) CreateS3TableBucketOperator() *S3TableBucketOperator {
 	return NewS3TableBucketOperator(
 		client.NewS3Tables(
 			sdkS3TablesClient,
+		),
+	)
+}
+
+func (f *OperatorFactory) CreateS3VectorBucketOperator() *S3VectorBucketOperator {
+	sdkS3VectorsClient := s3vectors.NewFromConfig(f.config, func(o *s3vectors.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	return NewS3VectorBucketOperator(
+		client.NewS3Vectors(
+			sdkS3VectorsClient,
 		),
 	)
 }
