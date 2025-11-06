@@ -354,17 +354,19 @@ func (s *DeployStackService) attachPolicyToRole(stackName string) error {
 	// Attach policy to IAM roles
 	policyArn := fmt.Sprintf("arn:aws:iam::%s:policy/%s", s.AccountID, policyName)
 	for _, resource := range resources {
-		if resource["ResourceType"] == "AWS::IAM::Role" {
-			roleName := resource["PhysicalResourceId"]
+		if resource["ResourceType"] != "AWS::IAM::Role" {
+			continue
+		}
 
-			_, err = s.IamClient.AttachRolePolicy(s.Ctx, &iam.AttachRolePolicyInput{
-				RoleName:  aws.String(roleName),
-				PolicyArn: aws.String(policyArn),
-			})
+		roleName := resource["PhysicalResourceId"]
 
-			if err != nil {
-				return fmt.Errorf("failed to attach policy to role: %v", err)
-			}
+		_, err = s.IamClient.AttachRolePolicy(s.Ctx, &iam.AttachRolePolicyInput{
+			RoleName:  aws.String(roleName),
+			PolicyArn: aws.String(policyArn),
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to attach policy to role: %v", err)
 		}
 	}
 
@@ -415,17 +417,19 @@ func (s *DeployStackService) attachUserToGroup(stackName string) error {
 
 	// Add user to IAM groups
 	for _, resource := range resources {
-		if resource["ResourceType"] == "AWS::IAM::Group" {
-			groupName := resource["PhysicalResourceId"]
+		if resource["ResourceType"] != "AWS::IAM::Group" {
+			continue
+		}
 
-			_, err = s.IamClient.AddUserToGroup(s.Ctx, &iam.AddUserToGroupInput{
-				GroupName: aws.String(groupName),
-				UserName:  aws.String(userName),
-			})
+		groupName := resource["PhysicalResourceId"]
 
-			if err != nil {
-				return fmt.Errorf("failed to add user to group: %v", err)
-			}
+		_, err = s.IamClient.AddUserToGroup(s.Ctx, &iam.AddUserToGroupInput{
+			GroupName: aws.String(groupName),
+			UserName:  aws.String(userName),
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to add user to group: %v", err)
 		}
 	}
 
@@ -466,30 +470,32 @@ func (s *DeployStackService) buildUpload(stackName string) error {
 	ecrRepositoryEndpoint := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", s.AccountID, region)
 
 	for _, resource := range resources {
-		if resource["ResourceType"] == "AWS::ECR::Repository" {
-			ecrName := resource["PhysicalResourceId"]
-			ecrRepositoryUri := fmt.Sprintf("%s/%s", ecrRepositoryEndpoint, ecrName)
-			ecrTag := "test"
-			uriTag := fmt.Sprintf("%s:%s", ecrRepositoryUri, ecrTag)
-
-			// Tag image
-			tagCmd := exec.Command("docker", "tag", "delstack-test:latest", uriTag)
-			tagCmd.Stdout = os.Stdout
-			tagCmd.Stderr = os.Stderr
-			if err := tagCmd.Run(); err != nil {
-				return fmt.Errorf("failed to tag Docker image: %v", err)
-			}
-
-			// Push image
-			pushCmd := exec.Command("docker", "push", uriTag)
-			pushCmd.Stdout = os.Stdout
-			pushCmd.Stderr = os.Stderr
-			if err := pushCmd.Run(); err != nil {
-				return fmt.Errorf("failed to push Docker image: %v", err)
-			}
-
-			color.Green("Successfully pushed image to %s", uriTag)
+		if resource["ResourceType"] != "AWS::ECR::Repository" {
+			continue
 		}
+
+		ecrName := resource["PhysicalResourceId"]
+		ecrRepositoryUri := fmt.Sprintf("%s/%s", ecrRepositoryEndpoint, ecrName)
+		ecrTag := "test"
+		uriTag := fmt.Sprintf("%s:%s", ecrRepositoryUri, ecrTag)
+
+		// Tag image
+		tagCmd := exec.Command("docker", "tag", "delstack-test:latest", uriTag)
+		tagCmd.Stdout = os.Stdout
+		tagCmd.Stderr = os.Stderr
+		if err := tagCmd.Run(); err != nil {
+			return fmt.Errorf("failed to tag Docker image: %v", err)
+		}
+
+		// Push image
+		pushCmd := exec.Command("docker", "push", uriTag)
+		pushCmd.Stdout = os.Stdout
+		pushCmd.Stderr = os.Stderr
+		if err := pushCmd.Run(); err != nil {
+			return fmt.Errorf("failed to push Docker image: %v", err)
+		}
+
+		color.Green("Successfully pushed image to %s", uriTag)
 	}
 
 	return nil
@@ -531,9 +537,10 @@ func (s *DeployStackService) objectUpload(stackName string) error {
 
 	// Upload objects to S3 buckets using AWS SDK
 	for _, resource := range resources {
-		if resource["ResourceType"] == "AWS::S3::Bucket" {
-			bucketName := resource["PhysicalResourceId"]
+		resourceType := resource["ResourceType"]
+		bucketName := resource["PhysicalResourceId"]
 
+		if resourceType == "AWS::S3::Bucket" {
 			// Run both uploads in parallel
 			uploadWg.Add(2)
 
@@ -568,10 +575,9 @@ func (s *DeployStackService) objectUpload(stackName string) error {
 			if err := s.deleteS3BucketContents(bucketName); err != nil {
 				return fmt.Errorf("failed to delete objects from S3 bucket: %v", err)
 			}
+		}
 
-		} else if resource["ResourceType"] == "AWS::S3Express::DirectoryBucket" {
-			bucketName := resource["PhysicalResourceId"]
-
+		if resourceType == "AWS::S3Express::DirectoryBucket" {
 			// Upload files to directory bucket.
 			// Ignore errors even in the event of an error because the following error will occur.
 			// upload failed: testfiles/5594.txt to s3://dev-goto-002-descend--use1-az4--x-s3/5594.txt An error occurred (400) when calling the PutObject operation: Bad Request
@@ -786,64 +792,66 @@ func (s *DeployStackService) tablesUploadToTableBucket(stackName string) error {
 
 	// Create namespaces and tables in the table bucket
 	for _, resource := range resources {
-		if resource["ResourceType"] == "AWS::S3Tables::TableBucket" {
-			tableBucketArn := resource["PhysicalResourceId"]
+		if resource["ResourceType"] != "AWS::S3Tables::TableBucket" {
+			continue
+		}
 
-			for i := range namespaceAmount {
-				namespaceName := fmt.Sprintf("namespace_%d", i)
+		tableBucketArn := resource["PhysicalResourceId"]
 
-				_, err := s.S3TablesClient.CreateNamespace(s.Ctx, &s3tables.CreateNamespaceInput{
-					TableBucketARN: aws.String(tableBucketArn),
-					Namespace:      []string{namespaceName},
-				})
-				if err != nil {
-					return fmt.Errorf("failed to create namespace: %v", err)
-				}
+		for i := range namespaceAmount {
+			namespaceName := fmt.Sprintf("namespace_%d", i)
 
-				var eg errgroup.Group
+			_, err := s.S3TablesClient.CreateNamespace(s.Ctx, &s3tables.CreateNamespaceInput{
+				TableBucketARN: aws.String(tableBucketArn),
+				Namespace:      []string{namespaceName},
+			})
+			if err != nil {
+				return fmt.Errorf("failed to create namespace: %v", err)
+			}
 
-				for j := range tableAmount {
-					eg.Go(func() error {
-						tableName := fmt.Sprintf("table_%d", j)
+			var eg errgroup.Group
 
-						// Create metadata structure for Iceberg table
-						schemaField := s3tablesTypes.SchemaField{
-							Name:     aws.String("column"),
-							Type:     aws.String("int"),
-							Required: false,
-						}
+			for j := range tableAmount {
+				eg.Go(func() error {
+					tableName := fmt.Sprintf("table_%d", j)
 
-						icebergSchema := &s3tablesTypes.IcebergSchema{
-							Fields: []s3tablesTypes.SchemaField{schemaField},
-						}
+					// Create metadata structure for Iceberg table
+					schemaField := s3tablesTypes.SchemaField{
+						Name:     aws.String("column"),
+						Type:     aws.String("int"),
+						Required: false,
+					}
 
-						icebergMetadata := &s3tablesTypes.IcebergMetadata{
-							Schema: icebergSchema,
-						}
+					icebergSchema := &s3tablesTypes.IcebergSchema{
+						Fields: []s3tablesTypes.SchemaField{schemaField},
+					}
 
-						tableMetadata := &s3tablesTypes.TableMetadataMemberIceberg{
-							Value: *icebergMetadata,
-						}
+					icebergMetadata := &s3tablesTypes.IcebergMetadata{
+						Schema: icebergSchema,
+					}
 
-						_, err := s.S3TablesClient.CreateTable(s.Ctx, &s3tables.CreateTableInput{
-							TableBucketARN: aws.String(tableBucketArn),
-							Namespace:      aws.String(namespaceName),
-							Name:           aws.String(tableName),
-							Metadata:       tableMetadata,
-							Format:         s3tablesTypes.OpenTableFormatIceberg,
-						})
+					tableMetadata := &s3tablesTypes.TableMetadataMemberIceberg{
+						Value: *icebergMetadata,
+					}
 
-						if err != nil {
-							return fmt.Errorf("failed to create table: %v", err)
-						}
-
-						return nil
+					_, err := s.S3TablesClient.CreateTable(s.Ctx, &s3tables.CreateTableInput{
+						TableBucketARN: aws.String(tableBucketArn),
+						Namespace:      aws.String(namespaceName),
+						Name:           aws.String(tableName),
+						Metadata:       tableMetadata,
+						Format:         s3tablesTypes.OpenTableFormatIceberg,
 					})
-				}
 
-				if err := eg.Wait(); err != nil {
-					return fmt.Errorf("failed to create tables: %v", err)
-				}
+					if err != nil {
+						return fmt.Errorf("failed to create table: %v", err)
+					}
+
+					return nil
+				})
+			}
+
+			if err := eg.Wait(); err != nil {
+				return fmt.Errorf("failed to create tables: %v", err)
 			}
 		}
 	}
@@ -886,125 +894,127 @@ func (s *DeployStackService) indexesUploadToVectorBucket(stackName string) error
 
 	// Create indexes in the vector bucket and upload vectors
 	for _, resource := range resources {
-		if resource["ResourceType"] == "AWS::S3Vectors::VectorBucket" {
-			physicalResourceId := resource["PhysicalResourceId"]
+		if resource["ResourceType"] != "AWS::S3Vectors::VectorBucket" {
+			continue
+		}
 
-			// PhysicalResourceId is ARN format: arn:aws:s3vectors:region:account-id:vector-bucket/bucket-name
-			// Extract the bucket name from the ARN
-			vectorBucketName := physicalResourceId
-			parts := strings.Split(physicalResourceId, "/")
-			if len(parts) > 0 {
-				vectorBucketName = parts[len(parts)-1]
+		physicalResourceId := resource["PhysicalResourceId"]
+
+		// PhysicalResourceId is ARN format: arn:aws:s3vectors:region:account-id:vector-bucket/bucket-name
+		// Extract the bucket name from the ARN
+		vectorBucketName := physicalResourceId
+		parts := strings.Split(physicalResourceId, "/")
+		if len(parts) > 0 {
+			vectorBucketName = parts[len(parts)-1]
+		}
+
+		// List CFN indexes
+		listIndexesOutput, err := s.S3VectorsClient.ListIndexes(s.Ctx, &s3vectors.ListIndexesInput{
+			VectorBucketName: aws.String(vectorBucketName),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to list indexes: %v", err)
+		}
+
+		cfnIndexes := []string{}
+		for _, index := range listIndexesOutput.Indexes {
+			cfnIndexes = append(cfnIndexes, aws.ToString(index.IndexName))
+		}
+
+		var eg errgroup.Group
+		sem := semaphore.NewWeighted(16)
+
+		// Create SDK indexes and upload vectors
+		sdkIndexes := make([]string, 0, sdkIndexAmount)
+		for i := range sdkIndexAmount {
+			if err := sem.Acquire(s.Ctx, 1); err != nil {
+				return fmt.Errorf("failed to acquire semaphore: %v", err)
 			}
 
-			// List CFN indexes
-			listIndexesOutput, err := s.S3VectorsClient.ListIndexes(s.Ctx, &s3vectors.ListIndexesInput{
-				VectorBucketName: aws.String(vectorBucketName),
+			indexNum := i
+			eg.Go(func() error {
+				defer sem.Release(1)
+				indexName := fmt.Sprintf("sdk-index-%d", indexNum)
+
+				// Create vector index using SDK
+				_, err := s.S3VectorsClient.CreateIndex(s.Ctx, &s3vectors.CreateIndexInput{
+					VectorBucketName: aws.String(vectorBucketName),
+					IndexName:        aws.String(indexName),
+					DataType:         s3vectorsTypes.DataTypeFloat32,
+					Dimension:        aws.Int32(128),
+					DistanceMetric:   s3vectorsTypes.DistanceMetricCosine,
+				})
+
+				if err != nil {
+					return fmt.Errorf("failed to create index %s: %v", indexName, err)
+				}
+
+				return nil
 			})
-			if err != nil {
-				return fmt.Errorf("failed to list indexes: %v", err)
+
+			sdkIndexes = append(sdkIndexes, fmt.Sprintf("sdk-index-%d", indexNum))
+		}
+
+		if err := eg.Wait(); err != nil {
+			return fmt.Errorf("failed to create SDK indexes: %v", err)
+		}
+
+		// Upload vectors to both SDK and CFN indexes
+		allIndexes := make([]string, 0, len(sdkIndexes)+len(cfnIndexes))
+		allIndexes = append(allIndexes, sdkIndexes...)
+		allIndexes = append(allIndexes, cfnIndexes...)
+
+		for _, indexName := range allIndexes {
+			if err := sem.Acquire(s.Ctx, 1); err != nil {
+				return fmt.Errorf("failed to acquire semaphore: %v", err)
 			}
 
-			cfnIndexes := []string{}
-			for _, index := range listIndexesOutput.Indexes {
-				cfnIndexes = append(cfnIndexes, aws.ToString(index.IndexName))
-			}
+			currentIndexName := indexName
+			eg.Go(func() error {
+				defer sem.Release(1)
 
-			var eg errgroup.Group
-			sem := semaphore.NewWeighted(16)
-
-			// Create SDK indexes and upload vectors
-			sdkIndexes := make([]string, 0, sdkIndexAmount)
-			for i := range sdkIndexAmount {
-				if err := sem.Acquire(s.Ctx, 1); err != nil {
-					return fmt.Errorf("failed to acquire semaphore: %v", err)
-				}
-
-				indexNum := i
-				eg.Go(func() error {
-					defer sem.Release(1)
-					indexName := fmt.Sprintf("sdk-index-%d", indexNum)
-
-					// Create vector index using SDK
-					_, err := s.S3VectorsClient.CreateIndex(s.Ctx, &s3vectors.CreateIndexInput{
-						VectorBucketName: aws.String(vectorBucketName),
-						IndexName:        aws.String(indexName),
-						DataType:         s3vectorsTypes.DataTypeFloat32,
-						Dimension:        aws.Int32(128),
-						DistanceMetric:   s3vectorsTypes.DistanceMetricCosine,
-					})
-
-					if err != nil {
-						return fmt.Errorf("failed to create index %s: %v", indexName, err)
+				// Process vectors in batches of 500 (PutVectors API limit)
+				batchSize := 500
+				for batchStart := 1; batchStart <= vectorsPerIndex; batchStart += batchSize {
+					batchEnd := batchStart + batchSize - 1
+					if batchEnd > vectorsPerIndex {
+						batchEnd = vectorsPerIndex
 					}
 
-					return nil
-				})
+					// Create batch of vectors
+					vectors := make([]s3vectorsTypes.PutInputVector, 0, batchEnd-batchStart+1)
+					for vector := batchStart; vector <= batchEnd; vector++ {
+						vectorId := fmt.Sprintf("vector-%d", vector)
 
-				sdkIndexes = append(sdkIndexes, fmt.Sprintf("sdk-index-%d", indexNum))
-			}
-
-			if err := eg.Wait(); err != nil {
-				return fmt.Errorf("failed to create SDK indexes: %v", err)
-			}
-
-			// Upload vectors to both SDK and CFN indexes
-			allIndexes := make([]string, 0, len(sdkIndexes)+len(cfnIndexes))
-			allIndexes = append(allIndexes, sdkIndexes...)
-			allIndexes = append(allIndexes, cfnIndexes...)
-
-			for _, indexName := range allIndexes {
-				if err := sem.Acquire(s.Ctx, 1); err != nil {
-					return fmt.Errorf("failed to acquire semaphore: %v", err)
-				}
-
-				currentIndexName := indexName
-				eg.Go(func() error {
-					defer sem.Release(1)
-
-					// Process vectors in batches of 500 (PutVectors API limit)
-					batchSize := 500
-					for batchStart := 1; batchStart <= vectorsPerIndex; batchStart += batchSize {
-						batchEnd := batchStart + batchSize - 1
-						if batchEnd > vectorsPerIndex {
-							batchEnd = vectorsPerIndex
+						// Generate sample vector data (128 dimensions)
+						vectorData := make([]float32, 128)
+						for j := range vectorData {
+							vectorData[j] = rand.Float32()
 						}
 
-						// Create batch of vectors
-						vectors := make([]s3vectorsTypes.PutInputVector, 0, batchEnd-batchStart+1)
-						for vector := batchStart; vector <= batchEnd; vector++ {
-							vectorId := fmt.Sprintf("vector-%d", vector)
-
-							// Generate sample vector data (128 dimensions)
-							vectorData := make([]float32, 128)
-							for j := range vectorData {
-								vectorData[j] = rand.Float32()
-							}
-
-							vectors = append(vectors, s3vectorsTypes.PutInputVector{
-								Key:  aws.String(vectorId),
-								Data: &s3vectorsTypes.VectorDataMemberFloat32{Value: vectorData},
-							})
-						}
-
-						// Upload batch
-						_, err := s.S3VectorsClient.PutVectors(s.Ctx, &s3vectors.PutVectorsInput{
-							VectorBucketName: aws.String(vectorBucketName),
-							IndexName:        aws.String(currentIndexName),
-							Vectors:          vectors,
+						vectors = append(vectors, s3vectorsTypes.PutInputVector{
+							Key:  aws.String(vectorId),
+							Data: &s3vectorsTypes.VectorDataMemberFloat32{Value: vectorData},
 						})
-						if err != nil {
-							return fmt.Errorf("failed to put vectors to index %s: %v", currentIndexName, err)
-						}
 					}
 
-					return nil
-				})
-			}
+					// Upload batch
+					_, err := s.S3VectorsClient.PutVectors(s.Ctx, &s3vectors.PutVectorsInput{
+						VectorBucketName: aws.String(vectorBucketName),
+						IndexName:        aws.String(currentIndexName),
+						Vectors:          vectors,
+					})
+					if err != nil {
+						return fmt.Errorf("failed to put vectors to index %s: %v", currentIndexName, err)
+					}
+				}
 
-			if err := eg.Wait(); err != nil {
-				return fmt.Errorf("failed to upload vectors to indexes: %v", err)
-			}
+				return nil
+			})
+		}
+
+		if err := eg.Wait(); err != nil {
+			return fmt.Errorf("failed to upload vectors to indexes: %v", err)
 		}
 	}
 
@@ -1046,42 +1056,44 @@ func (s *DeployStackService) startBackup(stackName string) error {
 	iamRoleArn := fmt.Sprintf("arn:aws:iam::%s:role/service-role/%s-Root-AWSBackupServiceRole", s.AccountID, s.CfnPjPrefix)
 
 	for _, resource := range resources {
-		if resource["ResourceType"] == "AWS::Backup::BackupVault" {
-			vaultName := resource["PhysicalResourceId"]
+		if resource["ResourceType"] != "AWS::Backup::BackupVault" {
+			continue
+		}
 
-			// Start backup job
-			startBackupJobOutput, err := s.BackupClient.StartBackupJob(s.Ctx, &backup.StartBackupJobInput{
-				BackupVaultName: aws.String(vaultName),
-				ResourceArn:     aws.String(resourceArn),
-				IamRoleArn:      aws.String(iamRoleArn),
+		vaultName := resource["PhysicalResourceId"]
+
+		// Start backup job
+		startBackupJobOutput, err := s.BackupClient.StartBackupJob(s.Ctx, &backup.StartBackupJobInput{
+			BackupVaultName: aws.String(vaultName),
+			ResourceArn:     aws.String(resourceArn),
+			IamRoleArn:      aws.String(iamRoleArn),
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to start backup job: %v", err)
+		}
+
+		backupJobId := *startBackupJobOutput.BackupJobId
+
+		// Wait for backup to complete
+		for {
+			describeJobOutput, err := s.BackupClient.DescribeBackupJob(s.Ctx, &backup.DescribeBackupJobInput{
+				BackupJobId: aws.String(backupJobId),
 			})
 
 			if err != nil {
-				return fmt.Errorf("failed to start backup job: %v", err)
+				return fmt.Errorf("failed to describe backup job: %v", err)
 			}
 
-			backupJobId := *startBackupJobOutput.BackupJobId
+			state := describeJobOutput.State
 
-			// Wait for backup to complete
-			for {
-				describeJobOutput, err := s.BackupClient.DescribeBackupJob(s.Ctx, &backup.DescribeBackupJobInput{
-					BackupJobId: aws.String(backupJobId),
-				})
-
-				if err != nil {
-					return fmt.Errorf("failed to describe backup job: %v", err)
-				}
-
-				state := describeJobOutput.State
-
-				if state == "COMPLETED" {
-					break
-				} else if state == "FAILED" || state == "ABORTED" {
-					return fmt.Errorf("backup failed: %s", state)
-				}
-
-				time.Sleep(10 * time.Second)
+			if state == "COMPLETED" {
+				break
+			} else if state == "FAILED" || state == "ABORTED" {
+				return fmt.Errorf("backup failed: %s", state)
 			}
+
+			time.Sleep(10 * time.Second)
 		}
 	}
 
