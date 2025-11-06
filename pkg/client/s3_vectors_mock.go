@@ -10,7 +10,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	types "github.com/aws/aws-sdk-go-v2/service/s3vectors/types"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -93,19 +92,4 @@ func (m *MockIS3Vectors) ListIndexesByPage(ctx context.Context, vectorBucketName
 func (mr *MockIS3VectorsMockRecorder) ListIndexesByPage(ctx, vectorBucketName, nextToken, keyPrefix any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIndexesByPage", reflect.TypeOf((*MockIS3Vectors)(nil).ListIndexesByPage), ctx, vectorBucketName, nextToken, keyPrefix)
-}
-
-// ListVectorBuckets mocks base method.
-func (m *MockIS3Vectors) ListVectorBuckets(ctx context.Context) ([]types.VectorBucketSummary, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListVectorBuckets", ctx)
-	ret0, _ := ret[0].([]types.VectorBucketSummary)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListVectorBuckets indicates an expected call of ListVectorBuckets.
-func (mr *MockIS3VectorsMockRecorder) ListVectorBuckets(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListVectorBuckets", reflect.TypeOf((*MockIS3Vectors)(nil).ListVectorBuckets), ctx)
 }
