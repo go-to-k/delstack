@@ -3,7 +3,6 @@ package client
 
 import (
 	"context"
-	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -21,7 +20,6 @@ type ListIndexesByPageOutput struct {
 type IS3Vectors interface {
 	DeleteVectorBucket(ctx context.Context, vectorBucketName *string) error
 	DeleteIndex(ctx context.Context, indexName *string, vectorBucketName *string) error
-	ListVectorBuckets(ctx context.Context) ([]types.VectorBucketSummary, error)
 	ListIndexesByPage(ctx context.Context, vectorBucketName *string, nextToken *string, keyPrefix *string) (*ListIndexesByPageOutput, error)
 	CheckVectorBucketExists(ctx context.Context, vectorBucketName *string) (bool, error)
 }
@@ -91,7 +89,53 @@ func (s *S3Vectors) DeleteIndex(ctx context.Context, indexName *string, vectorBu
 	return nil
 }
 
-func (s *S3Vectors) ListVectorBuckets(ctx context.Context) ([]types.VectorBucketSummary, error) {
+func (s *S3Vectors) ListIndexesByPage(ctx context.Context, vectorBucketName *string, nextToken *string, keyPrefix *string) (*ListIndexesByPageOutput, error) {
+	input := &s3vectors.ListIndexesInput{
+		VectorBucketName: vectorBucketName,
+		NextToken:        nextToken,
+	}
+
+	if keyPrefix != nil && *keyPrefix != "" {
+		input.Prefix = keyPrefix
+	}
+
+	optFn := func(o *s3vectors.Options) {
+		o.Retryer = s.retryer
+	}
+
+	output, err := s.client.ListIndexes(ctx, input, optFn)
+	if err != nil {
+		return nil, &ClientError{
+			ResourceName: vectorBucketName,
+			Err:          err,
+		}
+	}
+
+	return &ListIndexesByPageOutput{
+		Indexes:   output.Indexes,
+		NextToken: output.NextToken,
+	}, nil
+}
+
+func (s *S3Vectors) CheckVectorBucketExists(ctx context.Context, vectorBucketName *string) (bool, error) {
+	vectorBuckets, err := s.listVectorBuckets(ctx)
+	if err != nil {
+		return false, &ClientError{
+			ResourceName: vectorBucketName,
+			Err:          err,
+		}
+	}
+
+	for _, vectorBucket := range vectorBuckets {
+		if *vectorBucket.VectorBucketName == *vectorBucketName {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (s *S3Vectors) listVectorBuckets(ctx context.Context) ([]types.VectorBucketSummary, error) {
 	buckets := []types.VectorBucketSummary{}
 	var nextToken *string
 
@@ -127,56 +171,5 @@ func (s *S3Vectors) ListVectorBuckets(ctx context.Context) ([]types.VectorBucket
 		nextToken = output.NextToken
 	}
 
-	// sort by bucket name
-	sort.Slice(buckets, func(i, j int) bool {
-		return *buckets[i].VectorBucketName < *buckets[j].VectorBucketName
-	})
-
 	return buckets, nil
-}
-
-func (s *S3Vectors) ListIndexesByPage(ctx context.Context, vectorBucketName *string, nextToken *string, keyPrefix *string) (*ListIndexesByPageOutput, error) {
-	input := &s3vectors.ListIndexesInput{
-		VectorBucketName: vectorBucketName,
-		NextToken:        nextToken,
-	}
-
-	if keyPrefix != nil && *keyPrefix != "" {
-		input.Prefix = keyPrefix
-	}
-
-	optFn := func(o *s3vectors.Options) {
-		o.Retryer = s.retryer
-	}
-
-	output, err := s.client.ListIndexes(ctx, input, optFn)
-	if err != nil {
-		return nil, &ClientError{
-			ResourceName: vectorBucketName,
-			Err:          err,
-		}
-	}
-
-	return &ListIndexesByPageOutput{
-		Indexes:   output.Indexes,
-		NextToken: output.NextToken,
-	}, nil
-}
-
-func (s *S3Vectors) CheckVectorBucketExists(ctx context.Context, vectorBucketName *string) (bool, error) {
-	vectorBuckets, err := s.ListVectorBuckets(ctx)
-	if err != nil {
-		return false, &ClientError{
-			ResourceName: vectorBucketName,
-			Err:          err,
-		}
-	}
-
-	for _, vectorBucket := range vectorBuckets {
-		if *vectorBucket.VectorBucketName == *vectorBucketName {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
