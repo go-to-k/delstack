@@ -67,7 +67,6 @@ func (o *CloudFormationStackOperator) DeleteResources(ctx context.Context) error
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, stack := range o.resources {
-		stack := stack
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return err
 		}

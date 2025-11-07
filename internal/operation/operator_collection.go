@@ -39,6 +39,11 @@ func NewOperatorCollection(config aws.Config, operatorFactory *OperatorFactory, 
 func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 	c.stackName = aws.ToString(stackName)
 
+	// Reset for each cloudformation delete stack loop
+	c.logicalResourceIds = []string{}
+	c.unsupportedStackResources = []types.StackResourceSummary{}
+	c.operators = []IOperator{}
+
 	s3BucketOperator := c.operatorFactory.CreateS3BucketOperator()
 	s3DirectoryBucketOperator := c.operatorFactory.CreateS3DirectoryBucketOperator()
 	s3TableBucketOperator := c.operatorFactory.CreateS3TableBucketOperator()
@@ -51,36 +56,38 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	customOperator := c.operatorFactory.CreateCustomOperator()
 
 	for _, v := range stackResourceSummaries {
-		if v.ResourceStatus == "DELETE_FAILED" {
-			stackResource := v // Copy for pointer used below
-			c.logicalResourceIds = append(c.logicalResourceIds, aws.ToString(stackResource.LogicalResourceId))
+		if v.ResourceStatus != "DELETE_FAILED" {
+			continue
+		}
 
-			if !c.containsResourceType(*stackResource.ResourceType) {
-				c.unsupportedStackResources = append(c.unsupportedStackResources, stackResource)
-			} else {
-				switch *stackResource.ResourceType {
-				case resourcetype.S3Bucket:
-					s3BucketOperator.AddResource(&stackResource)
-				case resourcetype.S3DirectoryBucket:
-					s3DirectoryBucketOperator.AddResource(&stackResource)
-				case resourcetype.S3TableBucket:
-					s3TableBucketOperator.AddResource(&stackResource)
-				case resourcetype.S3TableNamespace:
-					S3TableNamespaceOperator.AddResource(&stackResource)
-				case resourcetype.S3VectorBucket:
-					s3VectorBucketOperator.AddResource(&stackResource)
-				case resourcetype.IamGroup:
-					iamGroupOperator.AddResource(&stackResource)
-				case resourcetype.EcrRepository:
-					ecrRepositoryOperator.AddResource(&stackResource)
-				case resourcetype.BackupVault:
-					backupVaultOperator.AddResource(&stackResource)
-				case resourcetype.CloudformationStack:
-					cloudformationStackOperator.AddResource(&stackResource)
-				default:
-					if strings.Contains(*stackResource.ResourceType, resourcetype.CustomResource) {
-						customOperator.AddResource(&stackResource)
-					}
+		stackResource := v // Copy for pointer used below
+		c.logicalResourceIds = append(c.logicalResourceIds, aws.ToString(stackResource.LogicalResourceId))
+
+		if !c.containsResourceType(*stackResource.ResourceType) {
+			c.unsupportedStackResources = append(c.unsupportedStackResources, stackResource)
+		} else {
+			switch *stackResource.ResourceType {
+			case resourcetype.S3Bucket:
+				s3BucketOperator.AddResource(&stackResource)
+			case resourcetype.S3DirectoryBucket:
+				s3DirectoryBucketOperator.AddResource(&stackResource)
+			case resourcetype.S3TableBucket:
+				s3TableBucketOperator.AddResource(&stackResource)
+			case resourcetype.S3TableNamespace:
+				S3TableNamespaceOperator.AddResource(&stackResource)
+			case resourcetype.S3VectorBucket:
+				s3VectorBucketOperator.AddResource(&stackResource)
+			case resourcetype.IamGroup:
+				iamGroupOperator.AddResource(&stackResource)
+			case resourcetype.EcrRepository:
+				ecrRepositoryOperator.AddResource(&stackResource)
+			case resourcetype.BackupVault:
+				backupVaultOperator.AddResource(&stackResource)
+			case resourcetype.CloudformationStack:
+				cloudformationStackOperator.AddResource(&stackResource)
+			default:
+				if strings.Contains(*stackResource.ResourceType, resourcetype.CustomResource) {
+					customOperator.AddResource(&stackResource)
 				}
 			}
 		}
