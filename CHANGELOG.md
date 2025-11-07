@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.17.0](https://github.com/go-to-k/delstack/compare/v1.16.2...v1.17.0) - 2025-11-07
+- feat: support S3 Vectors by @go-to-k in https://github.com/go-to-k/delstack/pull/498
+- test: refactor deploy.go for cdk in testdata by @go-to-k in https://github.com/go-to-k/delstack/pull/500
+- chore: set lint in ci by @go-to-k in https://github.com/go-to-k/delstack/pull/501
+- refactor(client): refactor for S3 Vectors by @go-to-k in https://github.com/go-to-k/delstack/pull/503
+- feat: support S3 Table Namespaces by @go-to-k in https://github.com/go-to-k/delstack/pull/502
+
 ## [v1.16.2](https://github.com/go-to-k/delstack/compare/v1.16.1...v1.16.2) - 2025-10-15
 - test(version): comment out version tests by @go-to-k in https://github.com/go-to-k/delstack/pull/495
 - ci: enable immutable releases by @go-to-k in https://github.com/go-to-k/delstack/pull/497
