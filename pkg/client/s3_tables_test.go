@@ -192,7 +192,7 @@ func TestS3Tables_DeleteNamespace(t *testing.T) {
 				},
 			},
 			want: &ClientError{
-				ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test/namespace1"),
+				ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test|namespace1"),
 				Err:          fmt.Errorf("operation error S3Tables: DeleteNamespace, DeleteNamespaceError"),
 			},
 			wantErr: true,
@@ -286,7 +286,7 @@ func TestS3Tables_DeleteTable(t *testing.T) {
 				},
 			},
 			want: &ClientError{
-				ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test/namespace1/table1"),
+				ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test|namespace1/table1"),
 				Err:          fmt.Errorf("operation error S3Tables: DeleteTable, DeleteTableError"),
 			},
 			wantErr: true,
@@ -530,7 +530,7 @@ func TestS3Tables_ListTablesByPage(t *testing.T) {
 			want: want{
 				output: nil,
 				err: &ClientError{
-					ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test/namespace1"),
+					ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test|namespace1"),
 					Err:          fmt.Errorf("operation error S3Tables: ListTables, ListTablesError"),
 				},
 			},
@@ -571,7 +571,7 @@ func TestS3Tables_ListTablesByPage(t *testing.T) {
 func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 	type args struct {
 		ctx                context.Context
-		tableBucketARN     *string
+		tableBucketName    *string
 		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
@@ -589,8 +589,8 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 		{
 			name: "check table bucket exists",
 			args: args{
-				ctx:            context.Background(),
-				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				ctx:             context.Background(),
+				tableBucketName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -600,10 +600,10 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 									Result: &s3tables.ListTableBucketsOutput{
 										TableBuckets: []types.TableBucketSummary{
 											{
-												Arn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+												Name: aws.String("test"),
 											},
 											{
-												Arn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test2"),
+												Name: aws.String("test2"),
 											},
 										},
 									},
@@ -623,8 +623,8 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 		{
 			name: "check table bucket do not exist",
 			args: args{
-				ctx:            context.Background(),
-				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				ctx:             context.Background(),
+				tableBucketName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -634,10 +634,10 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 									Result: &s3tables.ListTableBucketsOutput{
 										TableBuckets: []types.TableBucketSummary{
 											{
-												Arn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test0"),
+												Name: aws.String("test0"),
 											},
 											{
-												Arn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test1"),
+												Name: aws.String("test1"),
 											},
 										},
 									},
@@ -657,8 +657,8 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 		{
 			name: "check table bucket exists failure",
 			args: args{
-				ctx:            context.Background(),
-				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				ctx:             context.Background(),
+				tableBucketName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -676,7 +676,7 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 			want: want{
 				exists: false,
 				err: &ClientError{
-					ResourceName: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+					ResourceName: aws.String("test"),
 					Err:          fmt.Errorf("operation error S3Tables: ListTableBuckets, ListTableBucketsError"),
 				},
 			},
@@ -685,8 +685,8 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 		{
 			name: "check table bucket exists failure for api error SlowDown",
 			args: args{
-				ctx:            context.Background(),
-				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				ctx:             context.Background(),
+				tableBucketName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -707,7 +707,7 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 			want: want{
 				exists: false,
 				err: &ClientError{
-					ResourceName: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+					ResourceName: aws.String("test"),
 					Err:          fmt.Errorf("operation error S3Tables: ListTableBuckets, exceeded maximum number of attempts, 10, api error SlowDown"),
 				},
 			},
@@ -729,7 +729,179 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 			client := s3tables.NewFromConfig(cfg)
 			s3TablesClient := NewS3Tables(client)
 
-			output, err := s3TablesClient.CheckTableBucketExists(tt.args.ctx, tt.args.tableBucketARN)
+			output, err := s3TablesClient.CheckTableBucketExists(tt.args.ctx, tt.args.tableBucketName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.exists) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.exists)
+			}
+		})
+	}
+}
+
+func TestS3Tables_CheckNamespaceExists(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		tableBucketARN     *string
+		namespace          *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	type want struct {
+		exists bool
+		err    error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "namespace exists",
+			args: args{
+				ctx:            context.Background(),
+				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				namespace:      aws.String("test-namespace"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListNamespacesWithNamespaceMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3tables.ListNamespacesOutput{
+										Namespaces: []types.NamespaceSummary{
+											{
+												Namespace: []string{"test-namespace"},
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: true,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "namespace does not exist",
+			args: args{
+				ctx:            context.Background(),
+				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				namespace:      aws.String("test-namespace"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListNamespacesWithoutNamespaceMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3tables.ListNamespacesOutput{
+										Namespaces: []types.NamespaceSummary{},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: false,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "check namespace exists failure",
+			args: args{
+				ctx:            context.Background(),
+				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				namespace:      aws.String("test-namespace"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListNamespacesErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: nil,
+								}, middleware.Metadata{}, fmt.Errorf("ListNamespacesError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: false,
+				err: &ClientError{
+					ResourceName: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test|test-namespace"),
+					Err:          fmt.Errorf("operation error S3Tables: ListNamespaces, ListNamespacesError"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "check namespace exists failure for api error SlowDown",
+			args: args{
+				ctx:            context.Background(),
+				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				namespace:      aws.String("test-namespace"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListNamespacesApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+										Result: nil,
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error SlowDown"),
+									}
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: false,
+				err: &ClientError{
+					ResourceName: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test|test-namespace"),
+					Err:          fmt.Errorf("operation error S3Tables: ListNamespaces, exceeded maximum number of attempts, 10, api error SlowDown"),
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("us-east-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := s3tables.NewFromConfig(cfg)
+			s3TablesClient := NewS3Tables(client)
+
+			output, err := s3TablesClient.CheckNamespaceExists(tt.args.ctx, tt.args.tableBucketARN, tt.args.namespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return

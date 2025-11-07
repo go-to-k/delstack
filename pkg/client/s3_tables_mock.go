@@ -36,19 +36,34 @@ func (m *MockIS3Tables) EXPECT() *MockIS3TablesMockRecorder {
 	return m.recorder
 }
 
-// CheckTableBucketExists mocks base method.
-func (m *MockIS3Tables) CheckTableBucketExists(ctx context.Context, tableBucketARN *string) (bool, error) {
+// CheckNamespaceExists mocks base method.
+func (m *MockIS3Tables) CheckNamespaceExists(ctx context.Context, tableBucketARN, namespace *string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckTableBucketExists", ctx, tableBucketARN)
+	ret := m.ctrl.Call(m, "CheckNamespaceExists", ctx, tableBucketARN, namespace)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckNamespaceExists indicates an expected call of CheckNamespaceExists.
+func (mr *MockIS3TablesMockRecorder) CheckNamespaceExists(ctx, tableBucketARN, namespace any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckNamespaceExists", reflect.TypeOf((*MockIS3Tables)(nil).CheckNamespaceExists), ctx, tableBucketARN, namespace)
+}
+
+// CheckTableBucketExists mocks base method.
+func (m *MockIS3Tables) CheckTableBucketExists(ctx context.Context, tableBucketName *string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckTableBucketExists", ctx, tableBucketName)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CheckTableBucketExists indicates an expected call of CheckTableBucketExists.
-func (mr *MockIS3TablesMockRecorder) CheckTableBucketExists(ctx, tableBucketARN any) *gomock.Call {
+func (mr *MockIS3TablesMockRecorder) CheckTableBucketExists(ctx, tableBucketName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckTableBucketExists", reflect.TypeOf((*MockIS3Tables)(nil).CheckTableBucketExists), ctx, tableBucketARN)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckTableBucketExists", reflect.TypeOf((*MockIS3Tables)(nil).CheckTableBucketExists), ctx, tableBucketName)
 }
 
 // DeleteNamespace mocks base method.

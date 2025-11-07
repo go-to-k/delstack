@@ -28,7 +28,8 @@ type IS3Tables interface {
 	DeleteTable(ctx context.Context, tableName *string, namespace *string, tableBucketARN *string) error
 	ListNamespacesByPage(ctx context.Context, tableBucketARN *string, continuationToken *string) (*ListNamespacesByPageOutput, error)
 	ListTablesByPage(ctx context.Context, tableBucketARN *string, namespace *string, continuationToken *string) (*ListTablesByPageOutput, error)
-	CheckTableBucketExists(ctx context.Context, tableBucketARN *string) (bool, error)
+	CheckTableBucketExists(ctx context.Context, tableBucketName *string) (bool, error)
+	CheckNamespaceExists(ctx context.Context, tableBucketARN *string, namespace *string) (bool, error)
 }
 
 var _ IS3Tables = (*S3Tables)(nil)
@@ -89,7 +90,7 @@ func (s *S3Tables) DeleteNamespace(ctx context.Context, namespace *string, table
 	_, err := s.client.DeleteNamespace(ctx, input, optFn)
 	if err != nil {
 		return &ClientError{
-			ResourceName: aws.String(*tableBucketARN + "/" + *namespace),
+			ResourceName: aws.String(*tableBucketARN + "|" + *namespace),
 			Err:          err,
 		}
 	}
@@ -110,7 +111,7 @@ func (s *S3Tables) DeleteTable(ctx context.Context, tableName *string, namespace
 	_, err := s.client.DeleteTable(ctx, input, optFn)
 	if err != nil {
 		return &ClientError{
-			ResourceName: aws.String(*tableBucketARN + "/" + *namespace + "/" + *tableName),
+			ResourceName: aws.String(*tableBucketARN + "|" + *namespace + "/" + *tableName),
 			Err:          err,
 		}
 	}
@@ -118,8 +119,6 @@ func (s *S3Tables) DeleteTable(ctx context.Context, tableName *string, namespace
 }
 
 func (s *S3Tables) ListNamespacesByPage(ctx context.Context, tableBucketARN *string, continuationToken *string) (*ListNamespacesByPageOutput, error) {
-	namespaces := []types.NamespaceSummary{}
-
 	input := &s3tables.ListNamespacesInput{
 		TableBucketARN:    tableBucketARN,
 		ContinuationToken: continuationToken,
@@ -137,17 +136,13 @@ func (s *S3Tables) ListNamespacesByPage(ctx context.Context, tableBucketARN *str
 		}
 	}
 
-	namespaces = append(namespaces, output.Namespaces...)
-
 	return &ListNamespacesByPageOutput{
-		Namespaces:        namespaces,
+		Namespaces:        output.Namespaces,
 		ContinuationToken: output.ContinuationToken,
 	}, nil
 }
 
 func (s *S3Tables) ListTablesByPage(ctx context.Context, tableBucketARN *string, namespace *string, continuationToken *string) (*ListTablesByPageOutput, error) {
-	tables := []types.TableSummary{}
-
 	input := &s3tables.ListTablesInput{
 		Namespace:         namespace,
 		TableBucketARN:    tableBucketARN,
@@ -161,50 +156,33 @@ func (s *S3Tables) ListTablesByPage(ctx context.Context, tableBucketARN *string,
 	output, err := s.client.ListTables(ctx, input, optFn)
 	if err != nil {
 		return nil, &ClientError{
-			ResourceName: aws.String(*tableBucketARN + "/" + *namespace),
+			ResourceName: aws.String(*tableBucketARN + "|" + *namespace),
 			Err:          err,
 		}
 	}
 
-	tables = append(tables, output.Tables...)
-
 	return &ListTablesByPageOutput{
-		Tables:            tables,
+		Tables:            output.Tables,
 		ContinuationToken: output.ContinuationToken,
 	}, nil
 }
 
-func (s *S3Tables) CheckTableBucketExists(ctx context.Context, tableBucketARN *string) (bool, error) {
-	tableBuckets, err := s.listTableBuckets(ctx)
-	if err != nil {
-		return false, &ClientError{
-			ResourceName: tableBucketARN,
-			Err:          err,
-		}
-	}
-
-	for _, tableBucket := range tableBuckets {
-		if *tableBucket.Arn == *tableBucketARN {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
-func (s *S3Tables) listTableBuckets(ctx context.Context) ([]types.TableBucketSummary, error) {
-	buckets := []types.TableBucketSummary{}
+func (s *S3Tables) CheckTableBucketExists(ctx context.Context, tableBucketName *string) (bool, error) {
 	var continuationToken *string
 
 	for {
 		select {
 		case <-ctx.Done():
-			return buckets, ctx.Err()
+			return false, &ClientError{
+				ResourceName: tableBucketName,
+				Err:          ctx.Err(),
+			}
 		default:
 		}
 
 		input := &s3tables.ListTableBucketsInput{
 			ContinuationToken: continuationToken,
+			Prefix:            tableBucketName,
 		}
 
 		optFn := func(o *s3tables.Options) {
@@ -213,10 +191,17 @@ func (s *S3Tables) listTableBuckets(ctx context.Context) ([]types.TableBucketSum
 
 		output, err := s.client.ListTableBuckets(ctx, input, optFn)
 		if err != nil {
-			return buckets, err
+			return false, &ClientError{
+				ResourceName: tableBucketName,
+				Err:          err,
+			}
 		}
 
-		buckets = append(buckets, output.TableBuckets...)
+		for _, tableBucket := range output.TableBuckets {
+			if *tableBucket.Name == *tableBucketName {
+				return true, nil
+			}
+		}
 
 		if output.ContinuationToken == nil {
 			break
@@ -224,5 +209,51 @@ func (s *S3Tables) listTableBuckets(ctx context.Context) ([]types.TableBucketSum
 		continuationToken = output.ContinuationToken
 	}
 
-	return buckets, nil
+	return false, nil
+}
+
+func (s *S3Tables) CheckNamespaceExists(ctx context.Context, tableBucketARN *string, namespace *string) (bool, error) {
+	var continuationToken *string
+
+	for {
+		select {
+		case <-ctx.Done():
+			return false, &ClientError{
+				ResourceName: aws.String(*tableBucketARN + "|" + *namespace),
+				Err:          ctx.Err(),
+			}
+		default:
+		}
+
+		input := &s3tables.ListNamespacesInput{
+			TableBucketARN:    tableBucketARN,
+			ContinuationToken: continuationToken,
+			Prefix:            namespace,
+		}
+
+		optFn := func(o *s3tables.Options) {
+			o.Retryer = s.retryer
+		}
+
+		output, err := s.client.ListNamespaces(ctx, input, optFn)
+		if err != nil {
+			return false, &ClientError{
+				ResourceName: aws.String(*tableBucketARN + "|" + *namespace),
+				Err:          err,
+			}
+		}
+
+		for _, namespaceSummary := range output.Namespaces {
+			if len(namespaceSummary.Namespace) > 0 && namespaceSummary.Namespace[0] == *namespace {
+				return true, nil
+			}
+		}
+
+		if output.ContinuationToken == nil {
+			break
+		}
+		continuationToken = output.ContinuationToken
+	}
+
+	return false, nil
 }

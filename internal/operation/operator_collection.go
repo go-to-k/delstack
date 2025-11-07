@@ -39,9 +39,15 @@ func NewOperatorCollection(config aws.Config, operatorFactory *OperatorFactory, 
 func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResourceSummaries []types.StackResourceSummary) {
 	c.stackName = aws.ToString(stackName)
 
+	// Reset for each cloudformation delete stack loop
+	c.logicalResourceIds = []string{}
+	c.unsupportedStackResources = []types.StackResourceSummary{}
+	c.operators = []IOperator{}
+
 	s3BucketOperator := c.operatorFactory.CreateS3BucketOperator()
 	s3DirectoryBucketOperator := c.operatorFactory.CreateS3DirectoryBucketOperator()
 	s3TableBucketOperator := c.operatorFactory.CreateS3TableBucketOperator()
+	S3TableNamespaceOperator := c.operatorFactory.CreateS3TableNamespaceOperator()
 	s3VectorBucketOperator := c.operatorFactory.CreateS3VectorBucketOperator()
 	iamGroupOperator := c.operatorFactory.CreateIamGroupOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
@@ -49,35 +55,38 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	cloudformationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator(c.targetResourceTypes)
 	customOperator := c.operatorFactory.CreateCustomOperator()
 
-	for _, v := range stackResourceSummaries {
-		if v.ResourceStatus == "DELETE_FAILED" {
-			stackResource := v // Copy for pointer used below
-			c.logicalResourceIds = append(c.logicalResourceIds, aws.ToString(stackResource.LogicalResourceId))
+	for _, resource := range stackResourceSummaries {
+		if resource.ResourceStatus != "DELETE_FAILED" {
+			continue
+		}
 
-			if !c.containsResourceType(*stackResource.ResourceType) {
-				c.unsupportedStackResources = append(c.unsupportedStackResources, stackResource)
-			} else {
-				switch *stackResource.ResourceType {
-				case resourcetype.S3Bucket:
-					s3BucketOperator.AddResource(&stackResource)
-				case resourcetype.S3DirectoryBucket:
-					s3DirectoryBucketOperator.AddResource(&stackResource)
-				case resourcetype.S3TableBucket:
-					s3TableBucketOperator.AddResource(&stackResource)
-				case resourcetype.S3VectorBucket:
-					s3VectorBucketOperator.AddResource(&stackResource)
-				case resourcetype.IamGroup:
-					iamGroupOperator.AddResource(&stackResource)
-				case resourcetype.EcrRepository:
-					ecrRepositoryOperator.AddResource(&stackResource)
-				case resourcetype.BackupVault:
-					backupVaultOperator.AddResource(&stackResource)
-				case resourcetype.CloudformationStack:
-					cloudformationStackOperator.AddResource(&stackResource)
-				default:
-					if strings.Contains(*stackResource.ResourceType, resourcetype.CustomResource) {
-						customOperator.AddResource(&stackResource)
-					}
+		c.logicalResourceIds = append(c.logicalResourceIds, aws.ToString(resource.LogicalResourceId))
+
+		if !c.containsResourceType(*resource.ResourceType) {
+			c.unsupportedStackResources = append(c.unsupportedStackResources, resource)
+		} else {
+			switch *resource.ResourceType {
+			case resourcetype.S3Bucket:
+				s3BucketOperator.AddResource(&resource)
+			case resourcetype.S3DirectoryBucket:
+				s3DirectoryBucketOperator.AddResource(&resource)
+			case resourcetype.S3TableBucket:
+				s3TableBucketOperator.AddResource(&resource)
+			case resourcetype.S3TableNamespace:
+				S3TableNamespaceOperator.AddResource(&resource)
+			case resourcetype.S3VectorBucket:
+				s3VectorBucketOperator.AddResource(&resource)
+			case resourcetype.IamGroup:
+				iamGroupOperator.AddResource(&resource)
+			case resourcetype.EcrRepository:
+				ecrRepositoryOperator.AddResource(&resource)
+			case resourcetype.BackupVault:
+				backupVaultOperator.AddResource(&resource)
+			case resourcetype.CloudformationStack:
+				cloudformationStackOperator.AddResource(&resource)
+			default:
+				if strings.Contains(*resource.ResourceType, resourcetype.CustomResource) {
+					customOperator.AddResource(&resource)
 				}
 			}
 		}
@@ -86,6 +95,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, s3BucketOperator)
 	c.operators = append(c.operators, s3DirectoryBucketOperator)
 	c.operators = append(c.operators, s3TableBucketOperator)
+	c.operators = append(c.operators, S3TableNamespaceOperator)
 	c.operators = append(c.operators, s3VectorBucketOperator)
 	c.operators = append(c.operators, iamGroupOperator)
 	c.operators = append(c.operators, ecrRepositoryOperator)
@@ -127,6 +137,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.S3Bucket, "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
 		{resourcetype.S3DirectoryBucket, "S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty and DeletionPolicy not Retain."},
 		{resourcetype.S3TableBucket, "S3 Table Buckets, including buckets with any namespaces or tables and DeletionPolicy not Retain."},
+		{resourcetype.S3TableNamespace, "S3 Table Namespaces, including namespaces with any tables and DeletionPolicy not Retain."},
 		{resourcetype.S3VectorBucket, "S3 Vector Buckets, including buckets with any indexes and DeletionPolicy not Retain."},
 		{resourcetype.IamGroup, "IAM Groups, including groups with IAM users from outside the stack."},
 		{resourcetype.EcrRepository, "ECR Repositories, including repositories that contain images and where the `EmptyOnDelete` is not true."},

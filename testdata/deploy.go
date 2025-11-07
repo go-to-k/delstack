@@ -787,8 +787,8 @@ func (s *DeployStackService) tablesUploadToTableBucket(stackName string) error {
 		}
 	}
 
-	namespaceAmount := 10
-	tableAmount := 10
+	sdkNamespaceAmount := 2
+	tableAmount := 2
 
 	// Create namespaces and tables in the table bucket
 	for _, resource := range resources {
@@ -798,22 +798,69 @@ func (s *DeployStackService) tablesUploadToTableBucket(stackName string) error {
 
 		tableBucketArn := resource["PhysicalResourceId"]
 
-		for i := range namespaceAmount {
-			namespaceName := fmt.Sprintf("namespace_%d", i)
+		// List CFN namespaces
+		listNamespacesOutput, err := s.S3TablesClient.ListNamespaces(s.Ctx, &s3tables.ListNamespacesInput{
+			TableBucketARN: aws.String(tableBucketArn),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to list namespaces: %v", err)
+		}
 
-			_, err := s.S3TablesClient.CreateNamespace(s.Ctx, &s3tables.CreateNamespaceInput{
-				TableBucketARN: aws.String(tableBucketArn),
-				Namespace:      []string{namespaceName},
-			})
-			if err != nil {
-				return fmt.Errorf("failed to create namespace: %v", err)
+		cfnNamespaces := []string{}
+		for _, ns := range listNamespacesOutput.Namespaces {
+			cfnNamespaces = append(cfnNamespaces, strings.Join(ns.Namespace, "/"))
+		}
+
+		var eg errgroup.Group
+		sem := semaphore.NewWeighted(16)
+
+		// Create SDK namespaces and tables
+		sdkNamespaces := make([]string, 0, sdkNamespaceAmount)
+		for i := range sdkNamespaceAmount {
+			if err := sem.Acquire(s.Ctx, 1); err != nil {
+				return fmt.Errorf("failed to acquire semaphore: %v", err)
 			}
 
-			var eg errgroup.Group
+			namespaceNum := i
+			eg.Go(func() error {
+				defer sem.Release(1)
+				namespaceName := fmt.Sprintf("sdk_namespace_%d", namespaceNum)
 
-			for j := range tableAmount {
-				eg.Go(func() error {
-					tableName := fmt.Sprintf("table_%d", j)
+				// Create namespace using SDK
+				_, err := s.S3TablesClient.CreateNamespace(s.Ctx, &s3tables.CreateNamespaceInput{
+					TableBucketARN: aws.String(tableBucketArn),
+					Namespace:      []string{namespaceName},
+				})
+				if err != nil {
+					return fmt.Errorf("failed to create namespace %s: %v", namespaceName, err)
+				}
+
+				return nil
+			})
+
+			sdkNamespaces = append(sdkNamespaces, fmt.Sprintf("sdk_namespace_%d", namespaceNum))
+		}
+
+		if err := eg.Wait(); err != nil {
+			return fmt.Errorf("failed to create SDK namespaces: %v", err)
+		}
+
+		// Create tables in both SDK and CFN namespaces
+		allNamespaces := make([]string, 0, len(sdkNamespaces)+len(cfnNamespaces))
+		allNamespaces = append(allNamespaces, sdkNamespaces...)
+		allNamespaces = append(allNamespaces, cfnNamespaces...)
+
+		for _, namespaceName := range allNamespaces {
+			if err := sem.Acquire(s.Ctx, 1); err != nil {
+				return fmt.Errorf("failed to acquire semaphore: %v", err)
+			}
+
+			currentNamespaceName := namespaceName
+			eg.Go(func() error {
+				defer sem.Release(1)
+
+				for j := range tableAmount {
+					tableName := fmt.Sprintf("sdk_table_%d", j)
 
 					// Create metadata structure for Iceberg table
 					schemaField := s3tablesTypes.SchemaField{
@@ -836,23 +883,23 @@ func (s *DeployStackService) tablesUploadToTableBucket(stackName string) error {
 
 					_, err := s.S3TablesClient.CreateTable(s.Ctx, &s3tables.CreateTableInput{
 						TableBucketARN: aws.String(tableBucketArn),
-						Namespace:      aws.String(namespaceName),
+						Namespace:      aws.String(currentNamespaceName),
 						Name:           aws.String(tableName),
 						Metadata:       tableMetadata,
 						Format:         s3tablesTypes.OpenTableFormatIceberg,
 					})
 
 					if err != nil {
-						return fmt.Errorf("failed to create table: %v", err)
+						return fmt.Errorf("failed to create table %s in namespace %s: %v", tableName, currentNamespaceName, err)
 					}
+				}
 
-					return nil
-				})
-			}
+				return nil
+			})
+		}
 
-			if err := eg.Wait(); err != nil {
-				return fmt.Errorf("failed to create tables: %v", err)
-			}
+		if err := eg.Wait(); err != nil {
+			return fmt.Errorf("failed to create tables: %v", err)
 		}
 	}
 
