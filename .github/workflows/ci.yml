@@ -55,4 +55,4 @@ jobs:
           level: error
           filter_mode: nofilter
           golangci_lint_flags: '--config=.golangci.yml'
-          fail_on_error: true
+          fail_level: error
