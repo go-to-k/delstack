@@ -192,7 +192,7 @@ func TestS3Tables_DeleteNamespace(t *testing.T) {
 				},
 			},
 			want: &ClientError{
-				ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test/namespace1"),
+				ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test|namespace1"),
 				Err:          fmt.Errorf("operation error S3Tables: DeleteNamespace, DeleteNamespaceError"),
 			},
 			wantErr: true,
@@ -286,7 +286,7 @@ func TestS3Tables_DeleteTable(t *testing.T) {
 				},
 			},
 			want: &ClientError{
-				ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test/namespace1/table1"),
+				ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test|namespace1/table1"),
 				Err:          fmt.Errorf("operation error S3Tables: DeleteTable, DeleteTableError"),
 			},
 			wantErr: true,
@@ -530,7 +530,7 @@ func TestS3Tables_ListTablesByPage(t *testing.T) {
 			want: want{
 				output: nil,
 				err: &ClientError{
-					ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test/namespace1"),
+					ResourceName: aws.String("arn:aws:s3:us-east-1:123456789012:table-bucket/test|namespace1"),
 					Err:          fmt.Errorf("operation error S3Tables: ListTables, ListTablesError"),
 				},
 			},
@@ -876,7 +876,7 @@ func TestParseS3TablesNamespaceArn(t *testing.T) {
 		{
 			name: "parse namespace ARN successfully",
 			args: args{
-				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test-bucket/namespace/test-namespace"),
+				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test-bucket|test-namespace"),
 			},
 			want: want{
 				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:test-bucket"),

@@ -36,7 +36,7 @@ func TestS3TablesNamespaceOperator_DeleteS3TablesNamespace(t *testing.T) {
 			name: "delete namespace successfully",
 			args: args{
 				ctx:          context.Background(),
-				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket/namespace/test-namespace"),
+				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket|test-namespace"),
 			},
 			prepareMockFn: func(m *client.MockIS3Tables) {
 				m.EXPECT().CheckNamespaceExists(gomock.Any(), aws.String("arn:aws:s3tables:us-east-1:111111111111:test-table-bucket"), aws.String("test-namespace")).Return(true, nil)
@@ -73,7 +73,7 @@ func TestS3TablesNamespaceOperator_DeleteS3TablesNamespace(t *testing.T) {
 			name: "delete namespace failure for check namespace exists errors",
 			args: args{
 				ctx:          context.Background(),
-				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket/namespace/test-namespace"),
+				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket|test-namespace"),
 			},
 			prepareMockFn: func(m *client.MockIS3Tables) {
 				m.EXPECT().CheckNamespaceExists(gomock.Any(), aws.String("arn:aws:s3tables:us-east-1:111111111111:test-table-bucket"), aws.String("test-namespace")).Return(false, fmt.Errorf("CheckNamespaceExistsError"))
@@ -85,7 +85,7 @@ func TestS3TablesNamespaceOperator_DeleteS3TablesNamespace(t *testing.T) {
 			name: "delete namespace successfully for namespace not exists",
 			args: args{
 				ctx:          context.Background(),
-				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket/namespace/test-namespace"),
+				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket|test-namespace"),
 			},
 			prepareMockFn: func(m *client.MockIS3Tables) {
 				m.EXPECT().CheckNamespaceExists(gomock.Any(), aws.String("arn:aws:s3tables:us-east-1:111111111111:test-table-bucket"), aws.String("test-namespace")).Return(false, nil)
@@ -97,7 +97,7 @@ func TestS3TablesNamespaceOperator_DeleteS3TablesNamespace(t *testing.T) {
 			name: "delete namespace failure for list tables errors",
 			args: args{
 				ctx:          context.Background(),
-				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket/namespace/test-namespace"),
+				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket|test-namespace"),
 			},
 			prepareMockFn: func(m *client.MockIS3Tables) {
 				m.EXPECT().CheckNamespaceExists(gomock.Any(), aws.String("arn:aws:s3tables:us-east-1:111111111111:test-table-bucket"), aws.String("test-namespace")).Return(true, nil)
@@ -110,7 +110,7 @@ func TestS3TablesNamespaceOperator_DeleteS3TablesNamespace(t *testing.T) {
 			name: "delete namespace failure for delete table errors",
 			args: args{
 				ctx:          context.Background(),
-				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket/namespace/test-namespace"),
+				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket|test-namespace"),
 			},
 			prepareMockFn: func(m *client.MockIS3Tables) {
 				m.EXPECT().CheckNamespaceExists(gomock.Any(), aws.String("arn:aws:s3tables:us-east-1:111111111111:test-table-bucket"), aws.String("test-namespace")).Return(true, nil)
@@ -132,7 +132,7 @@ func TestS3TablesNamespaceOperator_DeleteS3TablesNamespace(t *testing.T) {
 			name: "delete namespace failure for delete namespace errors",
 			args: args{
 				ctx:          context.Background(),
-				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket/namespace/test-namespace"),
+				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket|test-namespace"),
 			},
 			prepareMockFn: func(m *client.MockIS3Tables) {
 				m.EXPECT().CheckNamespaceExists(gomock.Any(), aws.String("arn:aws:s3tables:us-east-1:111111111111:test-table-bucket"), aws.String("test-namespace")).Return(true, nil)
@@ -191,10 +191,10 @@ func TestS3TablesNamespaceOperator_DeleteResources(t *testing.T) {
 				ctx: context.Background(),
 				resources: []*cfnTypes.StackResourceSummary{
 					{
-						PhysicalResourceId: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket/namespace/test-namespace1"),
+						PhysicalResourceId: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket|test-namespace1"),
 					},
 					{
-						PhysicalResourceId: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket/namespace/test-namespace2"),
+						PhysicalResourceId: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket|test-namespace2"),
 					},
 				},
 			},
@@ -216,7 +216,7 @@ func TestS3TablesNamespaceOperator_DeleteResources(t *testing.T) {
 				ctx: context.Background(),
 				resources: []*cfnTypes.StackResourceSummary{
 					{
-						PhysicalResourceId: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket/namespace/test-namespace1"),
+						PhysicalResourceId: aws.String("arn:aws:s3tables:us-east-1:111111111111:bucket/test-table-bucket|test-namespace1"),
 					},
 				},
 			},

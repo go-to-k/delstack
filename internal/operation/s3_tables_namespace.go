@@ -51,7 +51,7 @@ func (o *S3TablesNamespaceOperator) DeleteResources(ctx context.Context) error {
 }
 
 func (o *S3TablesNamespaceOperator) DeleteS3TablesNamespace(ctx context.Context, namespaceArn *string) error {
-	// PhysicalResourceId is ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name/namespace/namespace-name
+	// PhysicalResourceId is ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name|namespace-name
 	// Extract tableBucketARN and namespace from the ARN
 	tableBucketARN, namespace, err := client.ParseS3TablesNamespaceArn(namespaceArn)
 	if err != nil {

@@ -91,7 +91,7 @@ func (s *S3Tables) DeleteNamespace(ctx context.Context, namespace *string, table
 	_, err := s.client.DeleteNamespace(ctx, input, optFn)
 	if err != nil {
 		return &ClientError{
-			ResourceName: aws.String(*tableBucketARN + "/" + *namespace),
+			ResourceName: aws.String(*tableBucketARN + "|" + *namespace),
 			Err:          err,
 		}
 	}
@@ -112,7 +112,7 @@ func (s *S3Tables) DeleteTable(ctx context.Context, tableName *string, namespace
 	_, err := s.client.DeleteTable(ctx, input, optFn)
 	if err != nil {
 		return &ClientError{
-			ResourceName: aws.String(*tableBucketARN + "/" + *namespace + "/" + *tableName),
+			ResourceName: aws.String(*tableBucketARN + "|" + *namespace + "/" + *tableName),
 			Err:          err,
 		}
 	}
@@ -163,7 +163,7 @@ func (s *S3Tables) ListTablesByPage(ctx context.Context, tableBucketARN *string,
 	output, err := s.client.ListTables(ctx, input, optFn)
 	if err != nil {
 		return nil, &ClientError{
-			ResourceName: aws.String(*tableBucketARN + "/" + *namespace),
+			ResourceName: aws.String(*tableBucketARN + "|" + *namespace),
 			Err:          err,
 		}
 	}
@@ -236,7 +236,7 @@ func (s *S3Tables) CheckNamespaceExists(ctx context.Context, tableBucketARN *str
 		select {
 		case <-ctx.Done():
 			return false, &ClientError{
-				ResourceName: aws.String(*tableBucketARN + "/" + *namespace),
+				ResourceName: aws.String(*tableBucketARN + "|" + *namespace),
 				Err:          ctx.Err(),
 			}
 		default:
@@ -245,7 +245,7 @@ func (s *S3Tables) CheckNamespaceExists(ctx context.Context, tableBucketARN *str
 		output, err := s.ListNamespacesByPage(ctx, tableBucketARN, continuationToken)
 		if err != nil {
 			return false, &ClientError{
-				ResourceName: aws.String(*tableBucketARN + "/" + *namespace),
+				ResourceName: aws.String(*tableBucketARN + "|" + *namespace),
 				Err:          err,
 			}
 		}
@@ -267,27 +267,22 @@ func (s *S3Tables) CheckNamespaceExists(ctx context.Context, tableBucketARN *str
 }
 
 // ParseS3TablesNamespaceArn parses S3 Tables Namespace ARN and returns tableBucketARN and namespace
-// ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name/namespace/namespace-name
+// ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name|namespace-name
 func ParseS3TablesNamespaceArn(namespaceArn *string) (*string, *string, error) {
 	if namespaceArn == nil {
 		return nil, nil, fmt.Errorf("namespace ARN is nil")
 	}
 
-	parts := strings.Split(*namespaceArn, "/")
-	if len(parts) < 4 {
+	// Split by "|" to separate table bucket ARN and namespace name
+	parts := strings.Split(*namespaceArn, "|")
+	if len(parts) != 2 {
 		return nil, nil, fmt.Errorf("invalid namespace ARN format: %s", *namespaceArn)
 	}
 
 	// Extract table bucket ARN: arn:aws:s3tables:region:account-id:bucket/table-bucket-name
-	arnParts := strings.Split(*namespaceArn, "/namespace/")
-	if len(arnParts) != 2 {
-		return nil, nil, fmt.Errorf("invalid namespace ARN format: %s", *namespaceArn)
-	}
-
-	// Remove "bucket/" prefix from the first part
-	tableBucketPart := strings.Replace(arnParts[0], "bucket/", "", 1)
+	tableBucketPart := strings.Replace(parts[0], "bucket/", "", 1)
 	tableBucketARN := aws.String(tableBucketPart)
-	namespace := aws.String(arnParts[1])
+	namespace := aws.String(parts[1])
 
 	return tableBucketARN, namespace, nil
 }
