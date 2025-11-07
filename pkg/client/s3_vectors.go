@@ -118,21 +118,38 @@ func (s *S3Vectors) ListIndexesByPage(ctx context.Context, vectorBucketName *str
 }
 
 func (s *S3Vectors) CheckVectorBucketExists(ctx context.Context, vectorBucketName *string) (bool, error) {
+	vectorBuckets, err := s.listVectorBuckets(ctx)
+	if err != nil {
+		return false, &ClientError{
+			ResourceName: vectorBucketName,
+			Err:          err,
+		}
+	}
+
+	for _, vectorBucket := range vectorBuckets {
+		if *vectorBucket.VectorBucketName == *vectorBucketName {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (s *S3Vectors) listVectorBuckets(ctx context.Context) ([]types.VectorBucketSummary, error) {
+	buckets := []types.VectorBucketSummary{}
 	var nextToken *string
 
 	for {
 		select {
 		case <-ctx.Done():
-			return false, &ClientError{
-				ResourceName: vectorBucketName,
-				Err:          ctx.Err(),
+			return buckets, &ClientError{
+				Err: ctx.Err(),
 			}
 		default:
 		}
 
 		input := &s3vectors.ListVectorBucketsInput{
 			NextToken: nextToken,
-			Prefix:    vectorBucketName,
 		}
 
 		optFn := func(o *s3vectors.Options) {
@@ -141,17 +158,12 @@ func (s *S3Vectors) CheckVectorBucketExists(ctx context.Context, vectorBucketNam
 
 		output, err := s.client.ListVectorBuckets(ctx, input, optFn)
 		if err != nil {
-			return false, &ClientError{
-				ResourceName: vectorBucketName,
-				Err:          err,
+			return buckets, &ClientError{
+				Err: err,
 			}
 		}
 
-		for _, vectorBucket := range output.VectorBuckets {
-			if *vectorBucket.VectorBucketName == *vectorBucketName {
-				return true, nil
-			}
-		}
+		buckets = append(buckets, output.VectorBuckets...)
 
 		if output.NextToken == nil {
 			break
@@ -159,5 +171,5 @@ func (s *S3Vectors) CheckVectorBucketExists(ctx context.Context, vectorBucketNam
 		nextToken = output.NextToken
 	}
 
-	return false, nil
+	return buckets, nil
 }
