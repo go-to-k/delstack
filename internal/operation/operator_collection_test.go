@@ -1346,6 +1346,83 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 	}
 }
 
+func TestOperatorCollection_SetOperatorCollection_MultipleCallsResetState(t *testing.T) {
+	io.NewLogger(false)
+
+	config := aws.Config{}
+	operatorFactory := NewOperatorFactory(config)
+	targetResourceTypes := []string{
+		"AWS::IAM::Group",
+		"AWS::S3::Bucket",
+	}
+	operatorCollection := NewOperatorCollection(config, operatorFactory, targetResourceTypes)
+
+	stackName := aws.String("test-stack")
+
+	// First call with 2 DELETE_FAILED resources
+	firstResources := []types.StackResourceSummary{
+		{
+			LogicalResourceId:  aws.String("IamGroup1"),
+			PhysicalResourceId: aws.String("test-group-1"),
+			ResourceType:       aws.String("AWS::IAM::Group"),
+			ResourceStatus:     "DELETE_FAILED",
+		},
+		{
+			LogicalResourceId:  aws.String("Bucket1"),
+			PhysicalResourceId: aws.String("test-bucket-1"),
+			ResourceType:       aws.String("AWS::S3::Bucket"),
+			ResourceStatus:     "DELETE_FAILED",
+		},
+	}
+
+	operatorCollection.SetOperatorCollection(stackName, firstResources)
+
+	// Verify first call results
+	if len(operatorCollection.GetLogicalResourceIds()) != 2 {
+		t.Errorf("First call: expected 2 logical resource IDs, got %d", len(operatorCollection.GetLogicalResourceIds()))
+	}
+
+	operators := operatorCollection.GetOperators()
+	totalResourcesFirstCall := 0
+	for _, op := range operators {
+		totalResourcesFirstCall += op.GetResourcesLength()
+	}
+	if totalResourcesFirstCall != 2 {
+		t.Errorf("First call: expected 2 total resources in operators, got %d", totalResourcesFirstCall)
+	}
+
+	// Second call with 1 DELETE_FAILED resource (simulating loop iteration)
+	// This simulates the case where one resource was deleted and only one remains
+	secondResources := []types.StackResourceSummary{
+		{
+			LogicalResourceId:  aws.String("Bucket2"),
+			PhysicalResourceId: aws.String("test-bucket-2"),
+			ResourceType:       aws.String("AWS::S3::Bucket"),
+			ResourceStatus:     "DELETE_FAILED",
+		},
+	}
+
+	operatorCollection.SetOperatorCollection(stackName, secondResources)
+
+	// Verify second call results - should be reset, not accumulated
+	logicalIds := operatorCollection.GetLogicalResourceIds()
+	if len(logicalIds) != 1 {
+		t.Errorf("Second call: expected 1 logical resource ID, got %d (IDs: %v)", len(logicalIds), logicalIds)
+	}
+	if len(logicalIds) == 1 && logicalIds[0] != "Bucket2" {
+		t.Errorf("Second call: expected logical resource ID 'Bucket2', got '%s'", logicalIds[0])
+	}
+
+	operators = operatorCollection.GetOperators()
+	totalResourcesSecondCall := 0
+	for _, op := range operators {
+		totalResourcesSecondCall += op.GetResourcesLength()
+	}
+	if totalResourcesSecondCall != 1 {
+		t.Errorf("Second call: expected 1 total resource in operators (reset, not accumulated), got %d", totalResourcesSecondCall)
+	}
+}
+
 func TestOperatorCollection_containsResourceType(t *testing.T) {
 	io.NewLogger(false)
 
@@ -1525,82 +1602,5 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 				t.Errorf("got = %#v, want %#v", got, tt.want)
 			}
 		})
-	}
-}
-
-func TestOperatorCollection_SetOperatorCollection_MultipleCallsResetState(t *testing.T) {
-	io.NewLogger(false)
-
-	config := aws.Config{}
-	operatorFactory := NewOperatorFactory(config)
-	targetResourceTypes := []string{
-		"AWS::IAM::Group",
-		"AWS::S3::Bucket",
-	}
-	operatorCollection := NewOperatorCollection(config, operatorFactory, targetResourceTypes)
-
-	stackName := aws.String("test-stack")
-
-	// First call with 2 DELETE_FAILED resources
-	firstResources := []types.StackResourceSummary{
-		{
-			LogicalResourceId:  aws.String("IamGroup1"),
-			PhysicalResourceId: aws.String("test-group-1"),
-			ResourceType:       aws.String("AWS::IAM::Group"),
-			ResourceStatus:     "DELETE_FAILED",
-		},
-		{
-			LogicalResourceId:  aws.String("Bucket1"),
-			PhysicalResourceId: aws.String("test-bucket-1"),
-			ResourceType:       aws.String("AWS::S3::Bucket"),
-			ResourceStatus:     "DELETE_FAILED",
-		},
-	}
-
-	operatorCollection.SetOperatorCollection(stackName, firstResources)
-
-	// Verify first call results
-	if len(operatorCollection.GetLogicalResourceIds()) != 2 {
-		t.Errorf("First call: expected 2 logical resource IDs, got %d", len(operatorCollection.GetLogicalResourceIds()))
-	}
-
-	operators := operatorCollection.GetOperators()
-	totalResourcesFirstCall := 0
-	for _, op := range operators {
-		totalResourcesFirstCall += op.GetResourcesLength()
-	}
-	if totalResourcesFirstCall != 2 {
-		t.Errorf("First call: expected 2 total resources in operators, got %d", totalResourcesFirstCall)
-	}
-
-	// Second call with 1 DELETE_FAILED resource (simulating loop iteration)
-	// This simulates the case where one resource was deleted and only one remains
-	secondResources := []types.StackResourceSummary{
-		{
-			LogicalResourceId:  aws.String("Bucket2"),
-			PhysicalResourceId: aws.String("test-bucket-2"),
-			ResourceType:       aws.String("AWS::S3::Bucket"),
-			ResourceStatus:     "DELETE_FAILED",
-		},
-	}
-
-	operatorCollection.SetOperatorCollection(stackName, secondResources)
-
-	// Verify second call results - should be reset, not accumulated
-	logicalIds := operatorCollection.GetLogicalResourceIds()
-	if len(logicalIds) != 1 {
-		t.Errorf("Second call: expected 1 logical resource ID, got %d (IDs: %v)", len(logicalIds), logicalIds)
-	}
-	if len(logicalIds) == 1 && logicalIds[0] != "Bucket2" {
-		t.Errorf("Second call: expected logical resource ID 'Bucket2', got '%s'", logicalIds[0])
-	}
-
-	operators = operatorCollection.GetOperators()
-	totalResourcesSecondCall := 0
-	for _, op := range operators {
-		totalResourcesSecondCall += op.GetResourcesLength()
-	}
-	if totalResourcesSecondCall != 1 {
-		t.Errorf("Second call: expected 1 total resource in operators (reset, not accumulated), got %d", totalResourcesSecondCall)
 	}
 }
