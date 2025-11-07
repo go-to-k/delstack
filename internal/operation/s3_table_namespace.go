@@ -124,13 +124,17 @@ func (o *S3TableNamespaceOperator) DeleteS3TableNamespace(ctx context.Context, n
 // ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name|namespace-name
 func (o *S3TableNamespaceOperator) parseS3TableNamespaceArn(namespaceArn *string) (*string, *string, error) {
 	if namespaceArn == nil {
-		return nil, nil, fmt.Errorf("namespace ARN is nil")
+		return nil, nil, &client.ClientError{
+			Err: fmt.Errorf("DeleteS3TableNamespaceError: namespace ARN is nil"),
+		}
 	}
 
 	// Split by "|" to separate table bucket ARN and namespace name
 	parts := strings.Split(*namespaceArn, "|")
 	if len(parts) != 2 {
-		return nil, nil, fmt.Errorf("invalid namespace ARN format: %s", *namespaceArn)
+		return nil, nil, &client.ClientError{
+			Err: fmt.Errorf("DeleteS3TableNamespaceError: invalid namespace ARN format: %s", *namespaceArn),
+		}
 	}
 
 	// The table bucket ARN is already in the correct format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name

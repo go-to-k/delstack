@@ -67,8 +67,10 @@ func TestS3TableNamespaceOperator_DeleteS3TableNamespace(t *testing.T) {
 				namespaceArn: aws.String("invalid-arn"),
 			},
 			prepareMockFn: func(m *client.MockIS3Tables) {},
-			want:          fmt.Errorf("invalid namespace ARN format: invalid-arn"),
-			wantErr:       true,
+			want: &client.ClientError{
+				Err: fmt.Errorf("DeleteS3TableNamespaceError: invalid namespace ARN format: invalid-arn"),
+			},
+			wantErr: true,
 		},
 		{
 			name: "delete namespace failure for check namespace exists errors",
@@ -291,7 +293,9 @@ func TestS3TableNamespaceOperator_parseS3TableNamespaceArn(t *testing.T) {
 			want: want{
 				tableBucketARN: nil,
 				namespace:      nil,
-				err:            fmt.Errorf("namespace ARN is nil"),
+				err: &client.ClientError{
+					Err: fmt.Errorf("DeleteS3TableNamespaceError: namespace ARN is nil"),
+				},
 			},
 			wantErr: true,
 		},
@@ -303,7 +307,9 @@ func TestS3TableNamespaceOperator_parseS3TableNamespaceArn(t *testing.T) {
 			want: want{
 				tableBucketARN: nil,
 				namespace:      nil,
-				err:            fmt.Errorf("invalid namespace ARN format: invalid-arn"),
+				err: &client.ClientError{
+					Err: fmt.Errorf("DeleteS3TableNamespaceError: invalid namespace ARN format: invalid-arn"),
+				},
 			},
 			wantErr: true,
 		},
