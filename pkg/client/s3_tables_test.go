@@ -571,7 +571,7 @@ func TestS3Tables_ListTablesByPage(t *testing.T) {
 func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 	type args struct {
 		ctx                context.Context
-		tableBucketARN     *string
+		tableBucketName    *string
 		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
@@ -589,8 +589,8 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 		{
 			name: "check table bucket exists",
 			args: args{
-				ctx:            context.Background(),
-				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				ctx:             context.Background(),
+				tableBucketName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -600,10 +600,10 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 									Result: &s3tables.ListTableBucketsOutput{
 										TableBuckets: []types.TableBucketSummary{
 											{
-												Arn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+												Name: aws.String("test"),
 											},
 											{
-												Arn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test2"),
+												Name: aws.String("test2"),
 											},
 										},
 									},
@@ -623,8 +623,8 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 		{
 			name: "check table bucket do not exist",
 			args: args{
-				ctx:            context.Background(),
-				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				ctx:             context.Background(),
+				tableBucketName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -634,10 +634,10 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 									Result: &s3tables.ListTableBucketsOutput{
 										TableBuckets: []types.TableBucketSummary{
 											{
-												Arn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test0"),
+												Name: aws.String("test0"),
 											},
 											{
-												Arn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test1"),
+												Name: aws.String("test1"),
 											},
 										},
 									},
@@ -657,8 +657,8 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 		{
 			name: "check table bucket exists failure",
 			args: args{
-				ctx:            context.Background(),
-				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				ctx:             context.Background(),
+				tableBucketName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -676,7 +676,7 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 			want: want{
 				exists: false,
 				err: &ClientError{
-					ResourceName: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+					ResourceName: aws.String("test"),
 					Err:          fmt.Errorf("operation error S3Tables: ListTableBuckets, ListTableBucketsError"),
 				},
 			},
@@ -685,8 +685,8 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 		{
 			name: "check table bucket exists failure for api error SlowDown",
 			args: args{
-				ctx:            context.Background(),
-				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				ctx:             context.Background(),
+				tableBucketName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
@@ -707,7 +707,7 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 			want: want{
 				exists: false,
 				err: &ClientError{
-					ResourceName: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+					ResourceName: aws.String("test"),
 					Err:          fmt.Errorf("operation error S3Tables: ListTableBuckets, exceeded maximum number of attempts, 10, api error SlowDown"),
 				},
 			},
@@ -729,7 +729,7 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 			client := s3tables.NewFromConfig(cfg)
 			s3TablesClient := NewS3Tables(client)
 
-			output, err := s3TablesClient.CheckTableBucketExists(tt.args.ctx, tt.args.tableBucketARN)
+			output, err := s3TablesClient.CheckTableBucketExists(tt.args.ctx, tt.args.tableBucketName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return

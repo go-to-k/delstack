@@ -28,7 +28,7 @@ type IS3Tables interface {
 	DeleteTable(ctx context.Context, tableName *string, namespace *string, tableBucketARN *string) error
 	ListNamespacesByPage(ctx context.Context, tableBucketARN *string, continuationToken *string) (*ListNamespacesByPageOutput, error)
 	ListTablesByPage(ctx context.Context, tableBucketARN *string, namespace *string, continuationToken *string) (*ListTablesByPageOutput, error)
-	CheckTableBucketExists(ctx context.Context, tableBucketARN *string) (bool, error)
+	CheckTableBucketExists(ctx context.Context, tableBucketName *string) (bool, error)
 	CheckNamespaceExists(ctx context.Context, tableBucketARN *string, namespace *string) (bool, error)
 }
 
@@ -167,24 +167,14 @@ func (s *S3Tables) ListTablesByPage(ctx context.Context, tableBucketARN *string,
 	}, nil
 }
 
-func (s *S3Tables) CheckTableBucketExists(ctx context.Context, tableBucketARN *string) (bool, error) {
-	// Extract table bucket name from ARN for Prefix
-	// ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name
-	var tableBucketName *string
-	if tableBucketARN != nil {
-		parts := strings.Split(*tableBucketARN, "/")
-		if len(parts) == 2 {
-			tableBucketName = aws.String(parts[1])
-		}
-	}
-
+func (s *S3Tables) CheckTableBucketExists(ctx context.Context, tableBucketName *string) (bool, error) {
 	var continuationToken *string
 
 	for {
 		select {
 		case <-ctx.Done():
 			return false, &ClientError{
-				ResourceName: tableBucketARN,
+				ResourceName: tableBucketName,
 				Err:          ctx.Err(),
 			}
 		default:
@@ -202,13 +192,13 @@ func (s *S3Tables) CheckTableBucketExists(ctx context.Context, tableBucketARN *s
 		output, err := s.client.ListTableBuckets(ctx, input, optFn)
 		if err != nil {
 			return false, &ClientError{
-				ResourceName: tableBucketARN,
+				ResourceName: tableBucketName,
 				Err:          err,
 			}
 		}
 
 		for _, tableBucket := range output.TableBuckets {
-			if *tableBucket.Arn == *tableBucketARN {
+			if *tableBucket.Name == *tableBucketName {
 				return true, nil
 			}
 		}

@@ -3,6 +3,7 @@ package operation
 import (
 	"context"
 	"runtime"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfntypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
@@ -56,7 +57,17 @@ func (o *S3TableBucketOperator) DeleteResources(ctx context.Context) error {
 }
 
 func (o *S3TableBucketOperator) DeleteS3TableBucket(ctx context.Context, tableBucketArn *string) error {
-	exists, err := o.client.CheckTableBucketExists(ctx, tableBucketArn)
+	// PhysicalResourceId is ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name
+	// Extract the bucket name from the ARN
+	tableBucketName := tableBucketArn
+	if tableBucketArn != nil {
+		parts := strings.Split(*tableBucketArn, "/")
+		if len(parts) > 0 {
+			tableBucketName = aws.String(parts[len(parts)-1])
+		}
+	}
+
+	exists, err := o.client.CheckTableBucketExists(ctx, tableBucketName)
 	if err != nil {
 		return err
 	}
