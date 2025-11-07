@@ -55,39 +55,38 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	cloudformationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator(c.targetResourceTypes)
 	customOperator := c.operatorFactory.CreateCustomOperator()
 
-	for _, v := range stackResourceSummaries {
-		if v.ResourceStatus != "DELETE_FAILED" {
+	for _, resource := range stackResourceSummaries {
+		if resource.ResourceStatus != "DELETE_FAILED" {
 			continue
 		}
 
-		stackResource := v // Copy for pointer used below
-		c.logicalResourceIds = append(c.logicalResourceIds, aws.ToString(stackResource.LogicalResourceId))
+		c.logicalResourceIds = append(c.logicalResourceIds, aws.ToString(resource.LogicalResourceId))
 
-		if !c.containsResourceType(*stackResource.ResourceType) {
-			c.unsupportedStackResources = append(c.unsupportedStackResources, stackResource)
+		if !c.containsResourceType(*resource.ResourceType) {
+			c.unsupportedStackResources = append(c.unsupportedStackResources, resource)
 		} else {
-			switch *stackResource.ResourceType {
+			switch *resource.ResourceType {
 			case resourcetype.S3Bucket:
-				s3BucketOperator.AddResource(&stackResource)
+				s3BucketOperator.AddResource(&resource)
 			case resourcetype.S3DirectoryBucket:
-				s3DirectoryBucketOperator.AddResource(&stackResource)
+				s3DirectoryBucketOperator.AddResource(&resource)
 			case resourcetype.S3TableBucket:
-				s3TableBucketOperator.AddResource(&stackResource)
+				s3TableBucketOperator.AddResource(&resource)
 			case resourcetype.S3TableNamespace:
-				S3TableNamespaceOperator.AddResource(&stackResource)
+				S3TableNamespaceOperator.AddResource(&resource)
 			case resourcetype.S3VectorBucket:
-				s3VectorBucketOperator.AddResource(&stackResource)
+				s3VectorBucketOperator.AddResource(&resource)
 			case resourcetype.IamGroup:
-				iamGroupOperator.AddResource(&stackResource)
+				iamGroupOperator.AddResource(&resource)
 			case resourcetype.EcrRepository:
-				ecrRepositoryOperator.AddResource(&stackResource)
+				ecrRepositoryOperator.AddResource(&resource)
 			case resourcetype.BackupVault:
-				backupVaultOperator.AddResource(&stackResource)
+				backupVaultOperator.AddResource(&resource)
 			case resourcetype.CloudformationStack:
-				cloudformationStackOperator.AddResource(&stackResource)
+				cloudformationStackOperator.AddResource(&resource)
 			default:
-				if strings.Contains(*stackResource.ResourceType, resourcetype.CustomResource) {
-					customOperator.AddResource(&stackResource)
+				if strings.Contains(*resource.ResourceType, resourcetype.CustomResource) {
+					customOperator.AddResource(&resource)
 				}
 			}
 		}
