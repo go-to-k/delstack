@@ -251,8 +251,7 @@ func (s *S3Tables) CheckNamespaceExists(ctx context.Context, tableBucketARN *str
 		}
 
 		for _, namespaceSummary := range output.Namespaces {
-			namespaceStr := strings.Join(namespaceSummary.Namespace, "/")
-			if namespaceStr == *namespace {
+			if len(namespaceSummary.Namespace) > 0 && namespaceSummary.Namespace[0] == *namespace {
 				return true, nil
 			}
 		}
