@@ -1392,7 +1392,6 @@ func TestOperatorCollection_SetOperatorCollection_MultipleCallsResetState(t *tes
 	}
 
 	// Second call with 1 DELETE_FAILED resource (simulating loop iteration)
-	// This simulates the case where one resource was deleted and only one remains
 	secondResources := []types.StackResourceSummary{
 		{
 			LogicalResourceId:  aws.String("Bucket2"),
