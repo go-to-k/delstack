@@ -21,7 +21,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 	io.NewLogger(false)
 
 	type args struct {
-		ctx              context.Context
+		ctx             context.Context
 		vectorBucketArn *string
 	}
 
@@ -35,7 +35,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 		{
 			name: "delete vector bucket successfully",
 			args: args{
-				ctx:              context.Background(),
+				ctx:             context.Background(),
 				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
@@ -62,7 +62,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 		{
 			name: "delete vector bucket failure for check vector bucket exists errors",
 			args: args{
-				ctx:              context.Background(),
+				ctx:             context.Background(),
 				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
@@ -74,7 +74,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 		{
 			name: "delete vector bucket successfully for vector bucket not exists",
 			args: args{
-				ctx:              context.Background(),
+				ctx:             context.Background(),
 				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
@@ -86,7 +86,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 		{
 			name: "delete vector bucket failure for list indexes errors",
 			args: args{
-				ctx:              context.Background(),
+				ctx:             context.Background(),
 				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
@@ -99,7 +99,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 		{
 			name: "delete vector bucket failure for delete index errors",
 			args: args{
-				ctx:              context.Background(),
+				ctx:             context.Background(),
 				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
@@ -121,7 +121,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 		{
 			name: "delete vector bucket failure for delete vector bucket errors",
 			args: args{
-				ctx:              context.Background(),
+				ctx:             context.Background(),
 				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
@@ -144,7 +144,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 		{
 			name: "delete vector bucket successfully for ListIndexesByPage with zero length",
 			args: args{
-				ctx:              context.Background(),
+				ctx:             context.Background(),
 				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
@@ -162,7 +162,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 		{
 			name: "delete vector bucket failure for ListIndexesByPage with zero length",
 			args: args{
-				ctx:              context.Background(),
+				ctx:             context.Background(),
 				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
@@ -180,7 +180,7 @@ func TestS3VectorBucketOperator_DeleteS3VectorBucket(t *testing.T) {
 		{
 			name: "delete vector bucket successfully if several loops are executed for ListIndexesByPage",
 			args: args{
-				ctx:              context.Background(),
+				ctx:             context.Background(),
 				vectorBucketArn: aws.String("arn:aws:s3vectors:us-east-1:111111111111:bucket/test-vector-bucket"),
 			},
 			prepareMockFn: func(m *client.MockIS3Vectors) {
