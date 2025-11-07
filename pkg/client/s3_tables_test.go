@@ -879,7 +879,7 @@ func TestParseS3TablesNamespaceArn(t *testing.T) {
 				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test-bucket|test-namespace"),
 			},
 			want: want{
-				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:test-bucket"),
+				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test-bucket"),
 				namespace:      aws.String("test-namespace"),
 				err:            nil,
 			},

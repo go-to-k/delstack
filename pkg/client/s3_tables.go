@@ -278,9 +278,8 @@ func ParseS3TablesNamespaceArn(namespaceArn *string) (*string, *string, error) {
 		return nil, nil, fmt.Errorf("invalid namespace ARN format: %s", *namespaceArn)
 	}
 
-	// Extract table bucket ARN: arn:aws:s3tables:region:account-id:bucket/table-bucket-name
-	tableBucketPart := strings.Replace(parts[0], "bucket/", "", 1)
-	tableBucketARN := aws.String(tableBucketPart)
+	// The table bucket ARN is already in the correct format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name
+	tableBucketARN := aws.String(parts[0])
 	namespace := aws.String(parts[1])
 
 	return tableBucketARN, namespace, nil
