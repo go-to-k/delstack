@@ -3,6 +3,7 @@ package operation
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -248,6 +249,84 @@ func TestS3TableNamespaceOperator_DeleteResources(t *testing.T) {
 			}
 			if tt.wantErr && err.Error() != tt.want.Error() {
 				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.Error())
+			}
+		})
+	}
+}
+
+func Test_parseS3TableNamespaceArn(t *testing.T) {
+	type args struct {
+		namespaceArn *string
+	}
+
+	type want struct {
+		tableBucketARN *string
+		namespace      *string
+		err            error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "parse namespace ARN successfully",
+			args: args{
+				namespaceArn: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test-bucket|test-namespace"),
+			},
+			want: want{
+				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test-bucket"),
+				namespace:      aws.String("test-namespace"),
+				err:            nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "parse namespace ARN with nil",
+			args: args{
+				namespaceArn: nil,
+			},
+			want: want{
+				tableBucketARN: nil,
+				namespace:      nil,
+				err:            fmt.Errorf("namespace ARN is nil"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "parse namespace ARN with invalid format",
+			args: args{
+				namespaceArn: aws.String("invalid-arn"),
+			},
+			want: want{
+				tableBucketARN: nil,
+				namespace:      nil,
+				err:            fmt.Errorf("invalid namespace ARN format: invalid-arn"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			tableBucketARN, namespace, err := parseS3TableNamespaceArn(tt.args.namespaceArn)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !tt.wantErr {
+				if !reflect.DeepEqual(tableBucketARN, tt.want.tableBucketARN) {
+					t.Errorf("tableBucketARN = %#v, want %#v", tableBucketARN, tt.want.tableBucketARN)
+				}
+				if !reflect.DeepEqual(namespace, tt.want.namespace) {
+					t.Errorf("namespace = %#v, want %#v", namespace, tt.want.namespace)
+				}
 			}
 		})
 	}

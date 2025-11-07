@@ -2,8 +2,11 @@ package operation
 
 import (
 	"context"
+	"fmt"
 	"runtime"
+	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	cfntypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/go-to-k/delstack/pkg/client"
 	"golang.org/x/sync/errgroup"
@@ -56,7 +59,7 @@ func (o *S3TableNamespaceOperator) DeleteResources(ctx context.Context) error {
 func (o *S3TableNamespaceOperator) DeleteS3TableNamespace(ctx context.Context, namespaceArn *string) error {
 	// PhysicalResourceId is ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name|namespace-name
 	// Extract tableBucketARN and namespace from the ARN
-	tableBucketARN, namespace, err := client.ParseS3TableNamespaceArn(namespaceArn)
+	tableBucketARN, namespace, err := parseS3TableNamespaceArn(namespaceArn)
 	if err != nil {
 		return err
 	}
@@ -115,4 +118,24 @@ func (o *S3TableNamespaceOperator) DeleteS3TableNamespace(ctx context.Context, n
 	}
 
 	return o.client.DeleteNamespace(ctx, namespace, tableBucketARN)
+}
+
+// parseS3TableNamespaceArn parses S3 Tables Namespace ARN and returns tableBucketARN and namespace
+// ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name|namespace-name
+func parseS3TableNamespaceArn(namespaceArn *string) (*string, *string, error) {
+	if namespaceArn == nil {
+		return nil, nil, fmt.Errorf("namespace ARN is nil")
+	}
+
+	// Split by "|" to separate table bucket ARN and namespace name
+	parts := strings.Split(*namespaceArn, "|")
+	if len(parts) != 2 {
+		return nil, nil, fmt.Errorf("invalid namespace ARN format: %s", *namespaceArn)
+	}
+
+	// The table bucket ARN is already in the correct format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name
+	tableBucketARN := aws.String(parts[0])
+	namespace := aws.String(parts[1])
+
+	return tableBucketARN, namespace, nil
 }

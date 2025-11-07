@@ -3,7 +3,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -263,24 +262,4 @@ func (s *S3Tables) CheckNamespaceExists(ctx context.Context, tableBucketARN *str
 	}
 
 	return false, nil
-}
-
-// ParseS3TableNamespaceArn parses S3 Tables Namespace ARN and returns tableBucketARN and namespace
-// ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name|namespace-name
-func ParseS3TableNamespaceArn(namespaceArn *string) (*string, *string, error) {
-	if namespaceArn == nil {
-		return nil, nil, fmt.Errorf("namespace ARN is nil")
-	}
-
-	// Split by "|" to separate table bucket ARN and namespace name
-	parts := strings.Split(*namespaceArn, "|")
-	if len(parts) != 2 {
-		return nil, nil, fmt.Errorf("invalid namespace ARN format: %s", *namespaceArn)
-	}
-
-	// The table bucket ARN is already in the correct format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name
-	tableBucketARN := aws.String(parts[0])
-	namespace := aws.String(parts[1])
-
-	return tableBucketARN, namespace, nil
 }
