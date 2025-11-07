@@ -265,9 +265,9 @@ func (s *S3Tables) CheckNamespaceExists(ctx context.Context, tableBucketARN *str
 	return false, nil
 }
 
-// ParseS3TablesNamespaceArn parses S3 Tables Namespace ARN and returns tableBucketARN and namespace
+// ParseS3TableNamespaceArn parses S3 Tables Namespace ARN and returns tableBucketARN and namespace
 // ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name|namespace-name
-func ParseS3TablesNamespaceArn(namespaceArn *string) (*string, *string, error) {
+func ParseS3TableNamespaceArn(namespaceArn *string) (*string, *string, error) {
 	if namespaceArn == nil {
 		return nil, nil, fmt.Errorf("namespace ARN is nil")
 	}

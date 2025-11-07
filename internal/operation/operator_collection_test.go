@@ -49,7 +49,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		s3BucketOperatorResourcesLength            int
 		s3DirectoryBucketOperatorResourcesLength   int
 		s3TableBucketOperatorResourcesLength       int
-		s3TablesNamespaceOperatorResourcesLength   int
+		S3TableNamespaceOperatorResourcesLength    int
 		s3VectorBucketOperatorResourcesLength      int
 		iamGroupOperatorResourcesLength            int
 		ecrRepositoryOperatorResourcesLength       int
@@ -138,7 +138,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   1,
 				s3TableBucketOperatorResourcesLength:       1,
-				s3TablesNamespaceOperatorResourcesLength:   1,
+				S3TableNamespaceOperatorResourcesLength:    1,
 				s3VectorBucketOperatorResourcesLength:      1,
 				iamGroupOperatorResourcesLength:            1,
 				ecrRepositoryOperatorResourcesLength:       1,
@@ -174,7 +174,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -222,7 +222,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -258,7 +258,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -306,7 +306,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -342,7 +342,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -390,7 +390,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -474,7 +474,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            1,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -510,7 +510,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -558,7 +558,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -594,7 +594,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -642,7 +642,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -678,7 +678,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -726,7 +726,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -762,7 +762,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -810,7 +810,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            2,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -846,7 +846,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -894,7 +894,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -930,7 +930,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -978,7 +978,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            2,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -1014,7 +1014,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -1062,7 +1062,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -1098,7 +1098,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -1146,7 +1146,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -1182,7 +1182,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -1230,7 +1230,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            0,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -1266,7 +1266,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   0,
 				s3TableBucketOperatorResourcesLength:       0,
-				s3TablesNamespaceOperatorResourcesLength:   0,
+				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
@@ -1288,7 +1288,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			s3BucketOperatorResourcesLength := 0
 			s3DirectoryBucketOperatorResourcesLength := 0
 			s3TableBucketOperatorResourcesLength := 0
-			s3TablesNamespaceOperatorResourcesLength := 0
+			S3TableNamespaceOperatorResourcesLength := 0
 			s3VectorBucketOperatorResourcesLength := 0
 			iamGroupOperatorResourcesLength := 0
 			ecrRepositoryOperatorResourcesLength := 0
@@ -1306,8 +1306,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					}
 				case *S3TableBucketOperator:
 					s3TableBucketOperatorResourcesLength += operator.GetResourcesLength()
-				case *S3TablesNamespaceOperator:
-					s3TablesNamespaceOperatorResourcesLength += operator.GetResourcesLength()
+				case *S3TableNamespaceOperator:
+					S3TableNamespaceOperatorResourcesLength += operator.GetResourcesLength()
 				case *S3VectorBucketOperator:
 					s3VectorBucketOperatorResourcesLength += operator.GetResourcesLength()
 				case *IamGroupOperator:
@@ -1330,7 +1330,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				s3BucketOperatorResourcesLength:            s3BucketOperatorResourcesLength,
 				s3DirectoryBucketOperatorResourcesLength:   s3DirectoryBucketOperatorResourcesLength,
 				s3TableBucketOperatorResourcesLength:       s3TableBucketOperatorResourcesLength,
-				s3TablesNamespaceOperatorResourcesLength:   s3TablesNamespaceOperatorResourcesLength,
+				S3TableNamespaceOperatorResourcesLength:    S3TableNamespaceOperatorResourcesLength,
 				s3VectorBucketOperatorResourcesLength:      s3VectorBucketOperatorResourcesLength,
 				iamGroupOperatorResourcesLength:            iamGroupOperatorResourcesLength,
 				ecrRepositoryOperatorResourcesLength:       ecrRepositoryOperatorResourcesLength,

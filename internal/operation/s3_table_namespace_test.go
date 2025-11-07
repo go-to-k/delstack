@@ -17,7 +17,7 @@ import (
 	Test Cases
 */
 
-func TestS3TablesNamespaceOperator_DeleteS3TablesNamespace(t *testing.T) {
+func TestS3TableNamespaceOperator_DeleteS3TableNamespace(t *testing.T) {
 	io.NewLogger(false)
 
 	type args struct {
@@ -156,9 +156,9 @@ func TestS3TablesNamespaceOperator_DeleteS3TablesNamespace(t *testing.T) {
 			mockS3TablesClient := client.NewMockIS3Tables(ctrl)
 			tt.prepareMockFn(mockS3TablesClient)
 
-			operator := NewS3TablesNamespaceOperator(mockS3TablesClient)
+			operator := NewS3TableNamespaceOperator(mockS3TablesClient)
 
-			err := operator.DeleteS3TablesNamespace(tt.args.ctx, tt.args.namespaceArn)
+			err := operator.DeleteS3TableNamespace(tt.args.ctx, tt.args.namespaceArn)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -170,7 +170,7 @@ func TestS3TablesNamespaceOperator_DeleteS3TablesNamespace(t *testing.T) {
 	}
 }
 
-func TestS3TablesNamespaceOperator_DeleteResources(t *testing.T) {
+func TestS3TableNamespaceOperator_DeleteResources(t *testing.T) {
 	io.NewLogger(false)
 
 	type args struct {
@@ -236,7 +236,7 @@ func TestS3TablesNamespaceOperator_DeleteResources(t *testing.T) {
 			mockS3TablesClient := client.NewMockIS3Tables(ctrl)
 			tt.prepareMockFn(mockS3TablesClient)
 
-			operator := NewS3TablesNamespaceOperator(mockS3TablesClient)
+			operator := NewS3TableNamespaceOperator(mockS3TablesClient)
 			for _, resource := range tt.args.resources {
 				operator.AddResource(resource)
 			}

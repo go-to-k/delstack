@@ -42,7 +42,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	s3BucketOperator := c.operatorFactory.CreateS3BucketOperator()
 	s3DirectoryBucketOperator := c.operatorFactory.CreateS3DirectoryBucketOperator()
 	s3TableBucketOperator := c.operatorFactory.CreateS3TableBucketOperator()
-	s3TablesNamespaceOperator := c.operatorFactory.CreateS3TablesNamespaceOperator()
+	S3TableNamespaceOperator := c.operatorFactory.CreateS3TableNamespaceOperator()
 	s3VectorBucketOperator := c.operatorFactory.CreateS3VectorBucketOperator()
 	iamGroupOperator := c.operatorFactory.CreateIamGroupOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
@@ -65,8 +65,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 					s3DirectoryBucketOperator.AddResource(&stackResource)
 				case resourcetype.S3TableBucket:
 					s3TableBucketOperator.AddResource(&stackResource)
-				case resourcetype.S3TablesNamespace:
-					s3TablesNamespaceOperator.AddResource(&stackResource)
+				case resourcetype.S3TableNamespace:
+					S3TableNamespaceOperator.AddResource(&stackResource)
 				case resourcetype.S3VectorBucket:
 					s3VectorBucketOperator.AddResource(&stackResource)
 				case resourcetype.IamGroup:
@@ -89,7 +89,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, s3BucketOperator)
 	c.operators = append(c.operators, s3DirectoryBucketOperator)
 	c.operators = append(c.operators, s3TableBucketOperator)
-	c.operators = append(c.operators, s3TablesNamespaceOperator)
+	c.operators = append(c.operators, S3TableNamespaceOperator)
 	c.operators = append(c.operators, s3VectorBucketOperator)
 	c.operators = append(c.operators, iamGroupOperator)
 	c.operators = append(c.operators, ecrRepositoryOperator)
@@ -131,7 +131,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.S3Bucket, "S3 Buckets, including buckets with Non-empty or Versioning enabled and DeletionPolicy not Retain."},
 		{resourcetype.S3DirectoryBucket, "S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty and DeletionPolicy not Retain."},
 		{resourcetype.S3TableBucket, "S3 Table Buckets, including buckets with any namespaces or tables and DeletionPolicy not Retain."},
-		{resourcetype.S3TablesNamespace, "S3 Tables Namespaces, including namespaces with any tables and DeletionPolicy not Retain."},
+		{resourcetype.S3TableNamespace, "S3 Table Namespaces, including namespaces with any tables and DeletionPolicy not Retain."},
 		{resourcetype.S3VectorBucket, "S3 Vector Buckets, including buckets with any indexes and DeletionPolicy not Retain."},
 		{resourcetype.IamGroup, "IAM Groups, including groups with IAM users from outside the stack."},
 		{resourcetype.EcrRepository, "ECR Repositories, including repositories that contain images and where the `EmptyOnDelete` is not true."},

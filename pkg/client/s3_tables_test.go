@@ -856,7 +856,7 @@ func TestS3Tables_CheckNamespaceExists(t *testing.T) {
 	}
 }
 
-func TestParseS3TablesNamespaceArn(t *testing.T) {
+func TestParseS3TableNamespaceArn(t *testing.T) {
 	type args struct {
 		namespaceArn *string
 	}
@@ -913,7 +913,7 @@ func TestParseS3TablesNamespaceArn(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			tableBucketARN, namespace, err := ParseS3TablesNamespaceArn(tt.args.namespaceArn)
+			tableBucketARN, namespace, err := ParseS3TableNamespaceArn(tt.args.namespaceArn)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return

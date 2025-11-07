@@ -11,31 +11,31 @@ import (
 )
 
 // Too Many Requests error often occurs, so limit the value
-const SemaphoreWeightForS3TablesNamespaces = 4
+const SemaphoreWeightForS3TableNamespaces = 4
 
-var _ IOperator = (*S3TablesNamespaceOperator)(nil)
+var _ IOperator = (*S3TableNamespaceOperator)(nil)
 
-type S3TablesNamespaceOperator struct {
+type S3TableNamespaceOperator struct {
 	client    client.IS3Tables
 	resources []*cfntypes.StackResourceSummary
 }
 
-func NewS3TablesNamespaceOperator(client client.IS3Tables) *S3TablesNamespaceOperator {
-	return &S3TablesNamespaceOperator{
+func NewS3TableNamespaceOperator(client client.IS3Tables) *S3TableNamespaceOperator {
+	return &S3TableNamespaceOperator{
 		client:    client,
 		resources: []*cfntypes.StackResourceSummary{},
 	}
 }
 
-func (o *S3TablesNamespaceOperator) AddResource(resource *cfntypes.StackResourceSummary) {
+func (o *S3TableNamespaceOperator) AddResource(resource *cfntypes.StackResourceSummary) {
 	o.resources = append(o.resources, resource)
 }
 
-func (o *S3TablesNamespaceOperator) GetResourcesLength() int {
+func (o *S3TableNamespaceOperator) GetResourcesLength() int {
 	return len(o.resources)
 }
 
-func (o *S3TablesNamespaceOperator) DeleteResources(ctx context.Context) error {
+func (o *S3TableNamespaceOperator) DeleteResources(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
@@ -46,17 +46,17 @@ func (o *S3TablesNamespaceOperator) DeleteResources(ctx context.Context) error {
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			return o.DeleteS3TablesNamespace(ctx, namespace.PhysicalResourceId)
+			return o.DeleteS3TableNamespace(ctx, namespace.PhysicalResourceId)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (o *S3TablesNamespaceOperator) DeleteS3TablesNamespace(ctx context.Context, namespaceArn *string) error {
+func (o *S3TableNamespaceOperator) DeleteS3TableNamespace(ctx context.Context, namespaceArn *string) error {
 	// PhysicalResourceId is ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name|namespace-name
 	// Extract tableBucketARN and namespace from the ARN
-	tableBucketARN, namespace, err := client.ParseS3TablesNamespaceArn(namespaceArn)
+	tableBucketARN, namespace, err := client.ParseS3TableNamespaceArn(namespaceArn)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (o *S3TablesNamespaceOperator) DeleteS3TablesNamespace(ctx context.Context,
 	}
 
 	eg := errgroup.Group{}
-	sem := semaphore.NewWeighted(SemaphoreWeightForS3TablesNamespaces)
+	sem := semaphore.NewWeighted(SemaphoreWeightForS3TableNamespaces)
 
 	var continuationToken *string
 	for {
