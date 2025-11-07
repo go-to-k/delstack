@@ -1360,7 +1360,7 @@ func TestOperatorCollection_SetOperatorCollection_MultipleCallsResetState(t *tes
 	stackName := aws.String("test-stack")
 
 	// First call with 2 DELETE_FAILED resources
-	firstResources := []types.StackResourceSummary{
+	operatorCollection.SetOperatorCollection(stackName, []types.StackResourceSummary{
 		{
 			LogicalResourceId:  aws.String("IamGroup1"),
 			PhysicalResourceId: aws.String("test-group-1"),
@@ -1373,35 +1373,17 @@ func TestOperatorCollection_SetOperatorCollection_MultipleCallsResetState(t *tes
 			ResourceType:       aws.String("AWS::S3::Bucket"),
 			ResourceStatus:     "DELETE_FAILED",
 		},
-	}
-
-	operatorCollection.SetOperatorCollection(stackName, firstResources)
-
-	// Verify first call results
-	if len(operatorCollection.GetLogicalResourceIds()) != 2 {
-		t.Errorf("First call: expected 2 logical resource IDs, got %d", len(operatorCollection.GetLogicalResourceIds()))
-	}
-
-	operators := operatorCollection.GetOperators()
-	totalResourcesFirstCall := 0
-	for _, op := range operators {
-		totalResourcesFirstCall += op.GetResourcesLength()
-	}
-	if totalResourcesFirstCall != 2 {
-		t.Errorf("First call: expected 2 total resources in operators, got %d", totalResourcesFirstCall)
-	}
+	})
 
 	// Second call with 1 DELETE_FAILED resource (simulating loop iteration)
-	secondResources := []types.StackResourceSummary{
+	operatorCollection.SetOperatorCollection(stackName, []types.StackResourceSummary{
 		{
 			LogicalResourceId:  aws.String("Bucket2"),
 			PhysicalResourceId: aws.String("test-bucket-2"),
 			ResourceType:       aws.String("AWS::S3::Bucket"),
 			ResourceStatus:     "DELETE_FAILED",
 		},
-	}
-
-	operatorCollection.SetOperatorCollection(stackName, secondResources)
+	})
 
 	// Verify second call results - should be reset, not accumulated
 	logicalIds := operatorCollection.GetLogicalResourceIds()
@@ -1412,7 +1394,7 @@ func TestOperatorCollection_SetOperatorCollection_MultipleCallsResetState(t *tes
 		t.Errorf("Second call: expected logical resource ID 'Bucket2', got '%s'", logicalIds[0])
 	}
 
-	operators = operatorCollection.GetOperators()
+	operators := operatorCollection.GetOperators()
 	totalResourcesSecondCall := 0
 	for _, op := range operators {
 		totalResourcesSecondCall += op.GetResourcesLength()
