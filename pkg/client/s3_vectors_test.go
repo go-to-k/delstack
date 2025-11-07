@@ -463,9 +463,7 @@ func TestS3Vectors_CheckVectorBucketExists(t *testing.T) {
 				exists: false,
 				err: &ClientError{
 					ResourceName: aws.String("test-vector-bucket"),
-					Err: &ClientError{
-						Err: fmt.Errorf("operation error S3Vectors: ListVectorBuckets, ListVectorBucketsError"),
-					},
+					Err:          fmt.Errorf("operation error S3Vectors: ListVectorBuckets, ListVectorBucketsError"),
 				},
 			},
 			wantErr: true,
@@ -496,9 +494,7 @@ func TestS3Vectors_CheckVectorBucketExists(t *testing.T) {
 				exists: false,
 				err: &ClientError{
 					ResourceName: aws.String("test-vector-bucket"),
-					Err: &ClientError{
-						Err: fmt.Errorf("operation error S3Vectors: ListVectorBuckets, exceeded maximum number of attempts, 10, api error SlowDown"),
-					},
+					Err:          fmt.Errorf("operation error S3Vectors: ListVectorBuckets, exceeded maximum number of attempts, 10, api error SlowDown"),
 				},
 			},
 			wantErr: true,
