@@ -254,7 +254,7 @@ func TestS3TableNamespaceOperator_DeleteResources(t *testing.T) {
 	}
 }
 
-func Test_parseS3TableNamespaceArn(t *testing.T) {
+func TestS3TableNamespaceOperator_parseS3TableNamespaceArn(t *testing.T) {
 	type args struct {
 		namespaceArn *string
 	}
@@ -311,7 +311,8 @@ func Test_parseS3TableNamespaceArn(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			tableBucketARN, namespace, err := parseS3TableNamespaceArn(tt.args.namespaceArn)
+			operator := NewS3TableNamespaceOperator(nil)
+			tableBucketARN, namespace, err := operator.parseS3TableNamespaceArn(tt.args.namespaceArn)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
