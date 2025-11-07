@@ -151,7 +151,6 @@ However, if a resource can be deleted without becoming DELETE_FAILED by the norm
   [ ]  AWS::S3Tables::TableBucket
   [ ]  AWS::S3Tables::Namespace
   [ ]  AWS::S3Vectors::VectorBucket
-  [ ]  AWS::IAM::Role
   [ ]  AWS::IAM::Group
 > [x]  AWS::ECR::Repository
   [ ]  AWS::Backup::BackupVault
