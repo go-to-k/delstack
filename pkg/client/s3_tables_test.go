@@ -865,11 +865,11 @@ func TestS3Tables_CheckNamespaceExists(t *testing.T) {
 							"ListNamespacesApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: nil,
-								}, middleware.Metadata{}, &retry.MaxAttemptsError{
-									Attempt: MaxRetryCount,
-									Err:     fmt.Errorf("api error SlowDown"),
-								}
+										Result: nil,
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error SlowDown"),
+									}
 							},
 						),
 						middleware.Before,
