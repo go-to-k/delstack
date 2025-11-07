@@ -96,23 +96,36 @@ func (o *CloudFormationStackOperator) DeleteCloudFormationStack(ctx context.Cont
 		return nil
 	}
 
-	stackResourceSummaries, err := o.client.ListStackResources(ctx, stackName)
-	if err != nil {
-		return err
-	}
+	for {
+		stackResourceSummaries, err := o.client.ListStackResources(ctx, stackName)
+		if err != nil {
+			return err
+		}
 
-	operatorManager.SetOperatorCollection(stackName, stackResourceSummaries)
+		operatorManager.SetOperatorCollection(stackName, stackResourceSummaries)
 
-	if err := operatorManager.CheckResourceCounts(); err != nil {
-		return err
-	}
+		if err = operatorManager.CheckResourceCounts(); err != nil {
+			return err
+		}
 
-	if err := operatorManager.DeleteResourceCollection(ctx); err != nil {
-		return err
-	}
+		if err = operatorManager.DeleteResourceCollection(ctx); err != nil {
+			return err
+		}
 
-	if err := o.client.DeleteStack(ctx, stackName, operatorManager.GetLogicalResourceIds()); err != nil {
-		return err
+		if err = o.client.DeleteStack(ctx, stackName, operatorManager.GetLogicalResourceIds()); err != nil {
+			return err
+		}
+
+		stacksAfterDelete, err := o.client.DescribeStacks(ctx, stackName)
+		if err != nil {
+			return err
+		}
+		if len(stacksAfterDelete) == 0 {
+			break
+		}
+		if stacksAfterDelete[0].StackStatus != types.StackStatusDeleteFailed {
+			return fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but %v: %v", stacksAfterDelete[0].StackStatus, *stackName)
+		}
 	}
 
 	return nil
@@ -150,7 +163,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 		io.Logger.Info().Msgf("%v: No resources were DELETE_FAILED.", *stackName)
 		return true, nil
 	}
-	if stacksAfterDelete[0].StackStatus != "DELETE_FAILED" {
+	if stacksAfterDelete[0].StackStatus != types.StackStatusDeleteFailed {
 		return false, fmt.Errorf("StackStatusError: StackStatus is expected to be DELETE_FAILED, but %v: %v", stacksAfterDelete[0].StackStatus, *stackName)
 	}
 
