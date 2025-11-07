@@ -138,6 +138,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 		return false, fmt.Errorf("OperationInProgressError: Stacks with XxxInProgress cannot be deleted, but %v: %v", stacksBeforeDelete[0].StackStatus, *stackName)
 	}
 
+	//nolint:govet
 	if deleteErr := o.client.DeleteStack(ctx, stackName, []string{}); deleteErr != nil {
 		return false, deleteErr
 	}
