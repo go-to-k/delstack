@@ -860,7 +860,7 @@ func (s *DeployStackService) tablesUploadToTableBucket(stackName string) error {
 				defer sem.Release(1)
 
 				for j := range tableAmount {
-					tableName := fmt.Sprintf("table_%d", j)
+					tableName := fmt.Sprintf("sdk_table_%d", j)
 
 					// Create metadata structure for Iceberg table
 					schemaField := s3tablesTypes.SchemaField{
