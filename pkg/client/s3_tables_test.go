@@ -855,4 +855,3 @@ func TestS3Tables_CheckNamespaceExists(t *testing.T) {
 		})
 	}
 }
-
