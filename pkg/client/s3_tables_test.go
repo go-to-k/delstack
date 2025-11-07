@@ -824,6 +824,67 @@ func TestS3Tables_CheckNamespaceExists(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "check namespace exists failure",
+			args: args{
+				ctx:            context.Background(),
+				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				namespace:      aws.String("test-namespace"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListNamespacesErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: nil,
+								}, middleware.Metadata{}, fmt.Errorf("ListNamespacesError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: false,
+				err: &ClientError{
+					ResourceName: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test|test-namespace"),
+					Err:          fmt.Errorf("operation error S3Tables: ListNamespaces, ListNamespacesError"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "check namespace exists failure for api error SlowDown",
+			args: args{
+				ctx:            context.Background(),
+				tableBucketARN: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test"),
+				namespace:      aws.String("test-namespace"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListNamespacesApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: nil,
+								}, middleware.Metadata{}, &retry.MaxAttemptsError{
+									Attempt: MaxRetryCount,
+									Err:     fmt.Errorf("api error SlowDown"),
+								}
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: false,
+				err: &ClientError{
+					ResourceName: aws.String("arn:aws:s3tables:us-east-1:123456789012:bucket/test|test-namespace"),
+					Err:          fmt.Errorf("operation error S3Tables: ListNamespaces, exceeded maximum number of attempts, 10, api error SlowDown"),
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range cases {
