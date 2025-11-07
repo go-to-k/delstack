@@ -12,7 +12,7 @@ import (
 )
 
 // Too Many Requests error often occurs, so limit the value
-const SemaphoreWeight = 4
+const SemaphoreWeightForS3Tables = 4
 
 var _ IOperator = (*S3TableBucketOperator)(nil)
 
@@ -65,7 +65,7 @@ func (o *S3TableBucketOperator) DeleteS3TableBucket(ctx context.Context, tableBu
 	}
 
 	eg := errgroup.Group{}
-	sem := semaphore.NewWeighted(SemaphoreWeight)
+	sem := semaphore.NewWeighted(SemaphoreWeightForS3Tables)
 	var continuationToken *string
 	for {
 		select {
@@ -124,7 +124,7 @@ func (o *S3TableBucketOperator) deleteNamespace(
 	namespace *string,
 ) error {
 	eg := errgroup.Group{}
-	sem := semaphore.NewWeighted(SemaphoreWeight)
+	sem := semaphore.NewWeighted(SemaphoreWeightForS3Tables)
 
 	var continuationToken *string
 	for {

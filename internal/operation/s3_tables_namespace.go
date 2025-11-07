@@ -10,6 +10,9 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+// Too Many Requests error often occurs, so limit the value
+const SemaphoreWeightForS3TablesNamespaces = 4
+
 var _ IOperator = (*S3TablesNamespaceOperator)(nil)
 
 type S3TablesNamespaceOperator struct {
@@ -67,7 +70,7 @@ func (o *S3TablesNamespaceOperator) DeleteS3TablesNamespace(ctx context.Context,
 	}
 
 	eg := errgroup.Group{}
-	sem := semaphore.NewWeighted(SemaphoreWeight)
+	sem := semaphore.NewWeighted(SemaphoreWeightForS3TablesNamespaces)
 
 	var continuationToken *string
 	for {
