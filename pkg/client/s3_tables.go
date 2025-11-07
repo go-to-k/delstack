@@ -168,36 +168,31 @@ func (s *S3Tables) ListTablesByPage(ctx context.Context, tableBucketARN *string,
 }
 
 func (s *S3Tables) CheckTableBucketExists(ctx context.Context, tableBucketARN *string) (bool, error) {
-	tableBuckets, err := s.listTableBuckets(ctx)
-	if err != nil {
-		return false, &ClientError{
-			ResourceName: tableBucketARN,
-			Err:          err,
+	// Extract table bucket name from ARN for Prefix
+	// ARN format: arn:aws:s3tables:region:account-id:bucket/table-bucket-name
+	var tableBucketName *string
+	if tableBucketARN != nil {
+		parts := strings.Split(*tableBucketARN, "/")
+		if len(parts) == 2 {
+			tableBucketName = aws.String(parts[1])
 		}
 	}
 
-	for _, tableBucket := range tableBuckets {
-		if *tableBucket.Arn == *tableBucketARN {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
-func (s *S3Tables) listTableBuckets(ctx context.Context) ([]types.TableBucketSummary, error) {
-	buckets := []types.TableBucketSummary{}
 	var continuationToken *string
 
 	for {
 		select {
 		case <-ctx.Done():
-			return buckets, ctx.Err()
+			return false, &ClientError{
+				ResourceName: tableBucketARN,
+				Err:          ctx.Err(),
+			}
 		default:
 		}
 
 		input := &s3tables.ListTableBucketsInput{
 			ContinuationToken: continuationToken,
+			Prefix:            tableBucketName,
 		}
 
 		optFn := func(o *s3tables.Options) {
@@ -206,10 +201,17 @@ func (s *S3Tables) listTableBuckets(ctx context.Context) ([]types.TableBucketSum
 
 		output, err := s.client.ListTableBuckets(ctx, input, optFn)
 		if err != nil {
-			return buckets, err
+			return false, &ClientError{
+				ResourceName: tableBucketARN,
+				Err:          err,
+			}
 		}
 
-		buckets = append(buckets, output.TableBuckets...)
+		for _, tableBucket := range output.TableBuckets {
+			if *tableBucket.Arn == *tableBucketARN {
+				return true, nil
+			}
+		}
 
 		if output.ContinuationToken == nil {
 			break
@@ -217,7 +219,7 @@ func (s *S3Tables) listTableBuckets(ctx context.Context) ([]types.TableBucketSum
 		continuationToken = output.ContinuationToken
 	}
 
-	return buckets, nil
+	return false, nil
 }
 
 func (s *S3Tables) CheckNamespaceExists(ctx context.Context, tableBucketARN *string, namespace *string) (bool, error) {
