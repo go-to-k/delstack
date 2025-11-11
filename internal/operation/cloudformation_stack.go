@@ -21,6 +21,14 @@ var _ IOperator = (*CloudFormationStackOperator)(nil)
 
 const StackNameRule = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
+// Regular expression pattern components for DeletionPolicy removal
+const (
+	optionalQuote      = `["']?`
+	retainValues       = `(?:Retain|RetainExceptOnCreate)`
+	deletionPolicyKey  = optionalQuote + `DeletionPolicy` + optionalQuote
+	deletionPolicyPair = deletionPolicyKey + `\s*:\s*` + optionalQuote + retainValues + optionalQuote
+)
+
 // Except xxInProgress
 // StackStatusDeleteComplete is not included because DescribeStacks does not return a DELETE_COMPLETE stack.
 var StackStatusExceptionsForDescribeStacks = []types.StackStatus{
@@ -371,8 +379,8 @@ func (o *CloudFormationStackOperator) removeDeletionPolicyFromTemplate(template 
 func (o *CloudFormationStackOperator) removeFromMinifiedJSON(template string) string {
 	// For minified JSON, use a simpler approach: match the entire key-value with surrounding commas
 	// Match: "DeletionPolicy":"Retain", or ,"DeletionPolicy":"Retain" or "DeletionPolicy":"Retain"
-	result := regexp.MustCompile(`["']?DeletionPolicy["']?\s*:\s*["']?(?:Retain|RetainExceptOnCreate)["']?\s*,\s*`).ReplaceAllString(template, "")
-	result = regexp.MustCompile(`,\s*["']?DeletionPolicy["']?\s*:\s*["']?(?:Retain|RetainExceptOnCreate)["']?\s*`).ReplaceAllString(result, "")
+	result := regexp.MustCompile(deletionPolicyPair+`\s*,\s*`).ReplaceAllString(template, "")
+	result = regexp.MustCompile(`,\s*`+deletionPolicyPair+`\s*`).ReplaceAllString(result, "")
 	return result
 }
 
@@ -384,11 +392,15 @@ func (o *CloudFormationStackOperator) removeFromMultiLine(template string) strin
 	result := make([]string, 0, len(lines))
 
 	// Pattern to match DeletionPolicy lines with Retain or RetainExceptOnCreate (inline format)
-	inlinePattern := regexp.MustCompile(`^\s*["']?DeletionPolicy["']?\s*:\s*["']?(?:Retain|RetainExceptOnCreate)["']?\s*,?\s*$`)
+	inlinePattern := regexp.MustCompile(`^\s*` + deletionPolicyPair + `\s*,?\s*$`)
 	// Pattern for YAML block format: DeletionPolicy key without value on same line
-	keyOnlyPattern := regexp.MustCompile(`^\s*["']?DeletionPolicy["']?\s*:\s*$`)
+	keyOnlyPattern := regexp.MustCompile(`^\s*` + deletionPolicyKey + `\s*:\s*$`)
 	// Pattern for the value line (indented Retain or RetainExceptOnCreate)
-	valueOnlyPattern := regexp.MustCompile(`^\s+["']?(?:Retain|RetainExceptOnCreate)["']?\s*$`)
+	valueOnlyPattern := regexp.MustCompile(`^\s+` + optionalQuote + retainValues + optionalQuote + `\s*$`)
+	// Patterns for trailing comma cleanup
+	closingBracketPattern := regexp.MustCompile(`^\s*[}\]]`)
+	trailingCommaPattern := regexp.MustCompile(`,\s*$`)
+	trailingCommaRemover := regexp.MustCompile(`,(\s*)$`)
 
 	skipNext := false
 	for i, line := range lines {
@@ -411,8 +423,8 @@ func (o *CloudFormationStackOperator) removeFromMultiLine(template string) strin
 		if inlinePattern.MatchString(line) {
 			// Remove trailing comma from previous line if next line is closing bracket
 			if len(result) > 0 && i+1 < len(lines) {
-				if regexp.MustCompile(`^\s*[}\]]`).MatchString(lines[i+1]) && regexp.MustCompile(`,\s*$`).MatchString(result[len(result)-1]) {
-					result[len(result)-1] = regexp.MustCompile(`,(\s*)$`).ReplaceAllString(result[len(result)-1], "$1")
+				if closingBracketPattern.MatchString(lines[i+1]) && trailingCommaPattern.MatchString(result[len(result)-1]) {
+					result[len(result)-1] = trailingCommaRemover.ReplaceAllString(result[len(result)-1], "$1")
 				}
 			}
 			continue
