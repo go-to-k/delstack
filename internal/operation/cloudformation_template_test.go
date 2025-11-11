@@ -1,210 +1,200 @@
 package operation
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
-func Test_removeDeletionPolicyFromTemplate(t *testing.T) {
-	type args struct {
-		template *string
-	}
-
-	type want struct {
-		modifiedTemplate string
-	}
-
-	cases := []struct {
-		name string
-		args args
-		want want
+func Test_removeDeletionPolicyFromTemplate_YAMLInline(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
 	}{
 		{
-			name: "remove deletion policy from yaml format",
-			args: args{
-				template: aws.String(`Resources:
+			name: "basic",
+			template: `Resources:
   MyTopic:
     DeletionPolicy: Retain
-    Properties:`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
+    Properties:`,
+			want: `Resources:
   MyTopic:
-    Properties:`},
+    Properties:`,
 		},
 		{
-			name: "remove deletion policy from yaml format with double quotes",
-			args: args{
-				template: aws.String(`Resources:
+			name: "with double quotes on value",
+			template: `Resources:
   MyTopic:
     DeletionPolicy: "Retain"
-    Properties:`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
+    Properties:`,
+			want: `Resources:
   MyTopic:
-    Properties:`},
+    Properties:`,
 		},
 		{
-			name: "remove deletion policy from yaml format with single quotes",
-			args: args{
-				template: aws.String(`Resources:
+			name: "with single quotes on value",
+			template: `Resources:
   MyTopic:
     DeletionPolicy: 'Retain'
-    Properties:`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
+    Properties:`,
+			want: `Resources:
   MyTopic:
-    Properties:`},
+    Properties:`,
 		},
 		{
-			name: "remove deletion policy from yaml format with double quoted key",
-			args: args{
-				template: aws.String(`Resources:
+			name: "with double quoted key",
+			template: `Resources:
   MyTopic:
     "DeletionPolicy": "Retain"
-    Properties:`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
+    Properties:`,
+			want: `Resources:
   MyTopic:
-    Properties:`},
+    Properties:`,
 		},
 		{
-			name: "remove deletion policy from yaml format with single quoted key",
-			args: args{
-				template: aws.String(`Resources:
+			name: "with single quoted key",
+			template: `Resources:
   MyTopic:
     'DeletionPolicy': 'Retain'
-    Properties:`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
+    Properties:`,
+			want: `Resources:
   MyTopic:
-    Properties:`},
+    Properties:`,
 		},
 		{
-			name: "remove deletion policy from yaml block format",
-			args: args{
-				template: aws.String(`Resources:
+			name: "deletion policy at last",
+			template: `Resources:
+  MyTopic:
+    Properties:
+      Key1: Value1
+    DeletionPolicy: Retain`,
+			want: `Resources:
+  MyTopic:
+    Properties:
+      Key1: Value1`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+			if got != tt.want {
+				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_YAMLBlock(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
+		{
+			name: "basic",
+			template: `Resources:
   MyTopic:
     DeletionPolicy:
       Retain
-    Properties:`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
+    Properties:`,
+			want: `Resources:
   MyTopic:
-    Properties:`},
+    Properties:`,
 		},
 		{
-			name: "remove deletion policy from yaml block format with double quotes",
-			args: args{
-				template: aws.String(`Resources:
+			name: "with double quotes",
+			template: `Resources:
   MyTopic:
     "DeletionPolicy":
       "Retain"
-    Properties:`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
+    Properties:`,
+			want: `Resources:
   MyTopic:
-    Properties:`},
+    Properties:`,
 		},
 		{
-			name: "remove deletion policy from yaml block format with single quotes",
-			args: args{
-				template: aws.String(`Resources:
+			name: "with single quotes",
+			template: `Resources:
   MyTopic:
     'DeletionPolicy':
       'Retain'
-    Properties:`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
+    Properties:`,
+			want: `Resources:
   MyTopic:
-    Properties:`},
+    Properties:`,
 		},
 		{
-			name: "remove deletion policy from yaml format with deletion policy at last",
-			args: args{
-				template: aws.String(`Resources:
-  MyTopic:
-    Properties:
-      Key1: Value1
-    DeletionPolicy: Retain`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
-  MyTopic:
-    Properties:
-      Key1: Value1`},
-		},
-		{
-			name: "remove deletion policy from yaml block format with deletion policy at last",
-			args: args{
-				template: aws.String(`Resources:
+			name: "deletion policy at last",
+			template: `Resources:
   MyTopic:
     Properties:
       Key1: Value1
     DeletionPolicy:
-      Retain`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
+      Retain`,
+			want: `Resources:
   MyTopic:
     Properties:
-      Key1: Value1`},
+      Key1: Value1`,
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+			if got != tt.want {
+				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_JSONFormatted(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
 		{
-			name: "remove deletion policy from json format with deletion policy at first",
-			args: args{
-				template: aws.String(`{
+			name: "deletion policy at first",
+			template: `{
   "Resources": {
     "MyTopic": {
       "DeletionPolicy": "Retain",
       "Type":"AWS::SecretsManager::Secret"
     }
   }
-}`),
-			},
-			want: want{
-				modifiedTemplate: `{
+}`,
+			want: `{
   "Resources": {
     "MyTopic": {
       "Type":"AWS::SecretsManager::Secret"
     }
   }
-}`},
+}`,
 		},
 		{
-			name: "remove deletion policy from json format with deletion policy at last",
-			args: args{
-				template: aws.String(`{
+			name: "deletion policy at last",
+			template: `{
   "Resources": {
     "MyTopic": {
       "Type":"AWS::SecretsManager::Secret",
       "DeletionPolicy": "Retain"
     }
   }
-}`),
-			},
-			want: want{
-				modifiedTemplate: `{
+}`,
+			want: `{
   "Resources": {
     "MyTopic": {
       "Type":"AWS::SecretsManager::Secret"
     }
   }
-}`},
+}`,
 		},
 		{
-			name: "remove deletion policy from json format with deletion policy in the middle",
-			args: args{
-				template: aws.String(`{
+			name: "deletion policy in the middle",
+			template: `{
   "Resources": {
     "MyTopic": {
       "UpdatePolicy": "Retain",
@@ -212,263 +202,19 @@ func Test_removeDeletionPolicyFromTemplate(t *testing.T) {
       "Type":"AWS::SecretsManager::Secret"
     }
   }
-}`),
-			},
-			want: want{
-				modifiedTemplate: `{
+}`,
+			want: `{
   "Resources": {
     "MyTopic": {
       "UpdatePolicy": "Retain",
       "Type":"AWS::SecretsManager::Secret"
     }
   }
-}`},
+}`,
 		},
 		{
-			name: "remove deletion policy from minified json format with deletion policy at first",
-			args: args{
-				template: aws.String(`{"Resources":{"MyTopic":{"DeletionPolicy":"Retain","Type":"AWS::SecretsManager::Secret"}}}`),
-			},
-			want: want{
-				modifiedTemplate: `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret"}}}`},
-		},
-		{
-			name: "remove deletion policy from minified json format with deletion policy at last",
-			args: args{
-				template: aws.String(`{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret","DeletionPolicy":"Retain"}}}`),
-			},
-			want: want{
-				modifiedTemplate: `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret"}}}`},
-		},
-		{
-			name: "remove deletion policy from minified json format with deletion policy in the middle",
-			args: args{
-				template: aws.String(`{"Resources":{"MyTopic":{"UpdatePolicy":"Retain","DeletionPolicy":"Retain","Type":"AWS::SecretsManager::Secret"}}}`),
-			},
-			want: want{
-				modifiedTemplate: `{"Resources":{"MyTopic":{"UpdatePolicy":"Retain","Type":"AWS::SecretsManager::Secret"}}}`},
-		},
-		{
-			name: "remove deletion policy RetainExceptOnCreate from yaml format",
-			args: args{
-				template: aws.String(`Resources:
-  MyTopic:
-    DeletionPolicy: RetainExceptOnCreate
-    Properties:`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
-  MyTopic:
-    Properties:`},
-		},
-		{
-			name: "remove deletion policy RetainExceptOnCreate from json format at first",
-			args: args{
-				template: aws.String(`{
-  "Resources": {
-    "MyTopic": {
-      "DeletionPolicy": "RetainExceptOnCreate",
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`),
-			},
-			want: want{
-				modifiedTemplate: `{
-  "Resources": {
-    "MyTopic": {
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`},
-		},
-		{
-			name: "remove deletion policy RetainExceptOnCreate from json format at last",
-			args: args{
-				template: aws.String(`{
-  "Resources": {
-    "MyRole": {
-      "Type": "AWS::IAM::Role",
-      "DeletionPolicy": "RetainExceptOnCreate"
-    }
-  }
-}`),
-			},
-			want: want{
-				modifiedTemplate: `{
-  "Resources": {
-    "MyRole": {
-      "Type": "AWS::IAM::Role"
-    }
-  }
-}`},
-		},
-		{
-			name: "remove deletion policy RetainExceptOnCreate from minified json format",
-			args: args{
-				template: aws.String(`{"Resources":{"MyTopic":{"DeletionPolicy":"RetainExceptOnCreate","Type":"AWS::SecretsManager::Secret"}}}`),
-			},
-			want: want{
-				modifiedTemplate: `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret"}}}`},
-		},
-		{
-			name: "do not remove deletion policy Delete from json format",
-			args: args{
-				template: aws.String(`{
-  "Resources": {
-    "MyTopic": {
-      "DeletionPolicy": "Delete",
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`),
-			},
-			want: want{
-				modifiedTemplate: `{
-  "Resources": {
-    "MyTopic": {
-      "DeletionPolicy": "Delete",
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`},
-		},
-		{
-			name: "do not remove deletion policy Snapshot from json format",
-			args: args{
-				template: aws.String(`{
-  "Resources": {
-    "MyTopic": {
-      "DeletionPolicy": "Snapshot",
-      "Type":"AWS::RDS::DBInstance"
-    }
-  }
-}`),
-			},
-			want: want{
-				modifiedTemplate: `{
-  "Resources": {
-    "MyTopic": {
-      "DeletionPolicy": "Snapshot",
-      "Type":"AWS::RDS::DBInstance"
-    }
-  }
-}`},
-		},
-		{
-			name: "preserve yaml indentation with 2 spaces",
-			args: args{
-				template: aws.String(`AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-  MyBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-    Properties:
-      BucketName: test-bucket
-  MyTable:
-    Type: AWS::DynamoDB::Table
-    DeletionPolicy: RetainExceptOnCreate
-    Properties:
-      TableName: test-table`),
-			},
-			want: want{
-				modifiedTemplate: `AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-  MyBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: test-bucket
-  MyTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: test-table`},
-		},
-		{
-			name: "preserve yaml indentation with 4 spaces",
-			args: args{
-				template: aws.String(`AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-    MyBucket:
-        Type: AWS::S3::Bucket
-        DeletionPolicy: Retain
-        Properties:
-            BucketName: test-bucket`),
-			},
-			want: want{
-				modifiedTemplate: `AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-    MyBucket:
-        Type: AWS::S3::Bucket
-        Properties:
-            BucketName: test-bucket`},
-		},
-		{
-			name: "preserve json indentation and order",
-			args: args{
-				template: aws.String(`{
-  "AWSTemplateFormatVersion": "2010-09-09",
-  "Resources": {
-    "MyBucket": {
-      "Type": "AWS::S3::Bucket",
-      "DeletionPolicy": "Retain",
-      "Properties": {
-        "BucketName": "test-bucket"
-      }
-    },
-    "MyRole": {
-      "Type": "AWS::IAM::Role",
-      "DeletionPolicy": "RetainExceptOnCreate"
-    }
-  }
-}`),
-			},
-			want: want{
-				modifiedTemplate: `{
-  "AWSTemplateFormatVersion": "2010-09-09",
-  "Resources": {
-    "MyBucket": {
-      "Type": "AWS::S3::Bucket",
-      "Properties": {
-        "BucketName": "test-bucket"
-      }
-    },
-    "MyRole": {
-      "Type": "AWS::IAM::Role"
-    }
-  }
-}`},
-		},
-		{
-			name: "preserve json order - DeletionPolicy in middle",
-			args: args{
-				template: aws.String(`{
-  "Resources": {
-    "MyTopic": {
-      "Type": "AWS::SNS::Topic",
-      "DeletionPolicy": "Retain",
-      "Properties": {
-        "TopicName": "test-topic"
-      }
-    }
-  }
-}`),
-			},
-			want: want{
-				modifiedTemplate: `{
-  "Resources": {
-    "MyTopic": {
-      "Type": "AWS::SNS::Topic",
-      "Properties": {
-        "TopicName": "test-topic"
-      }
-    }
-  }
-}`},
-		},
-		{
-			name: "handle trailing comma correctly when DeletionPolicy is last property",
-			args: args{
-				template: aws.String(`{
+			name: "trailing comma handling",
+			template: `{
   "Resources": {
     "MyBucket": {
       "Type": "AWS::S3::Bucket",
@@ -478,10 +224,8 @@ Resources:
       "DeletionPolicy": "Retain"
     }
   }
-}`),
-			},
-			want: want{
-				modifiedTemplate: `{
+}`,
+			want: `{
   "Resources": {
     "MyBucket": {
       "Type": "AWS::S3::Bucket",
@@ -490,12 +234,290 @@ Resources:
       }
     }
   }
-}`},
+}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+			if got != tt.want {
+				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_JSONMinified(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
+		{
+			name:     "deletion policy at first",
+			template: `{"Resources":{"MyTopic":{"DeletionPolicy":"Retain","Type":"AWS::SecretsManager::Secret"}}}`,
+			want:     `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret"}}}`,
 		},
 		{
-			name: "preserve yaml order - multiple resources",
-			args: args{
-				template: aws.String(`Resources:
+			name:     "deletion policy at last",
+			template: `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret","DeletionPolicy":"Retain"}}}`,
+			want:     `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret"}}}`,
+		},
+		{
+			name:     "deletion policy in the middle",
+			template: `{"Resources":{"MyTopic":{"UpdatePolicy":"Retain","DeletionPolicy":"Retain","Type":"AWS::SecretsManager::Secret"}}}`,
+			want:     `{"Resources":{"MyTopic":{"UpdatePolicy":"Retain","Type":"AWS::SecretsManager::Secret"}}}`,
+		},
+		{
+			name:     "with escaped newline in string value",
+			template: `{"Resources":{"MyResource":{"Type":"AWS::EC2::Instance","Properties":{"UserData":"#!/bin/bash\necho \"Hello\""},"DeletionPolicy":"Retain"}}}`,
+			want:     `{"Resources":{"MyResource":{"Type":"AWS::EC2::Instance","Properties":{"UserData":"#!/bin/bash\necho \"Hello\""}}}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+			if got != tt.want {
+				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_RetainExceptOnCreate(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
+		{
+			name: "yaml format",
+			template: `Resources:
+  MyTopic:
+    DeletionPolicy: RetainExceptOnCreate
+    Properties:`,
+			want: `Resources:
+  MyTopic:
+    Properties:`,
+		},
+		{
+			name: "json format at first",
+			template: `{
+  "Resources": {
+    "MyTopic": {
+      "DeletionPolicy": "RetainExceptOnCreate",
+      "Type":"AWS::SecretsManager::Secret"
+    }
+  }
+}`,
+			want: `{
+  "Resources": {
+    "MyTopic": {
+      "Type":"AWS::SecretsManager::Secret"
+    }
+  }
+}`,
+		},
+		{
+			name: "json format at last",
+			template: `{
+  "Resources": {
+    "MyRole": {
+      "Type": "AWS::IAM::Role",
+      "DeletionPolicy": "RetainExceptOnCreate"
+    }
+  }
+}`,
+			want: `{
+  "Resources": {
+    "MyRole": {
+      "Type": "AWS::IAM::Role"
+    }
+  }
+}`,
+		},
+		{
+			name:     "minified json format",
+			template: `{"Resources":{"MyTopic":{"DeletionPolicy":"RetainExceptOnCreate","Type":"AWS::SecretsManager::Secret"}}}`,
+			want:     `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret"}}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+			if got != tt.want {
+				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_NegativeCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
+		{
+			name: "do not remove Delete",
+			template: `{
+  "Resources": {
+    "MyTopic": {
+      "DeletionPolicy": "Delete",
+      "Type":"AWS::SecretsManager::Secret"
+    }
+  }
+}`,
+			want: `{
+  "Resources": {
+    "MyTopic": {
+      "DeletionPolicy": "Delete",
+      "Type":"AWS::SecretsManager::Secret"
+    }
+  }
+}`,
+		},
+		{
+			name: "do not remove Snapshot",
+			template: `{
+  "Resources": {
+    "MyTopic": {
+      "DeletionPolicy": "Snapshot",
+      "Type":"AWS::RDS::DBInstance"
+    }
+  }
+}`,
+			want: `{
+  "Resources": {
+    "MyTopic": {
+      "DeletionPolicy": "Snapshot",
+      "Type":"AWS::RDS::DBInstance"
+    }
+  }
+}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+			if got != tt.want {
+				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_FormattingPreservation(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
+		{
+			name: "yaml indentation with 2 spaces",
+			template: `AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: test-bucket
+  MyTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: RetainExceptOnCreate
+    Properties:
+      TableName: test-table`,
+			want: `AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: test-bucket
+  MyTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: test-table`,
+		},
+		{
+			name: "yaml indentation with 4 spaces",
+			template: `AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+    MyBucket:
+        Type: AWS::S3::Bucket
+        DeletionPolicy: Retain
+        Properties:
+            BucketName: test-bucket`,
+			want: `AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+    MyBucket:
+        Type: AWS::S3::Bucket
+        Properties:
+            BucketName: test-bucket`,
+		},
+		{
+			name: "json indentation and order",
+			template: `{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "MyBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "BucketName": "test-bucket"
+      }
+    },
+    "MyRole": {
+      "Type": "AWS::IAM::Role",
+      "DeletionPolicy": "RetainExceptOnCreate"
+    }
+  }
+}`,
+			want: `{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "MyBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "test-bucket"
+      }
+    },
+    "MyRole": {
+      "Type": "AWS::IAM::Role"
+    }
+  }
+}`,
+		},
+		{
+			name: "json order - DeletionPolicy in middle",
+			template: `{
+  "Resources": {
+    "MyTopic": {
+      "Type": "AWS::SNS::Topic",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "TopicName": "test-topic"
+      }
+    }
+  }
+}`,
+			want: `{
+  "Resources": {
+    "MyTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "test-topic"
+      }
+    }
+  }
+}`,
+		},
+		{
+			name: "yaml order - multiple resources",
+			template: `Resources:
   FirstResource:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
@@ -503,29 +525,36 @@ Resources:
     Type: AWS::IAM::Role
     DeletionPolicy: RetainExceptOnCreate
   ThirdResource:
-    Type: AWS::Lambda::Function`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
+    Type: AWS::Lambda::Function`,
+			want: `Resources:
   FirstResource:
     Type: AWS::S3::Bucket
   SecondResource:
     Type: AWS::IAM::Role
   ThirdResource:
-    Type: AWS::Lambda::Function`},
+    Type: AWS::Lambda::Function`,
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+			if got != tt.want {
+				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_MultilineStrings(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
 		{
-			name: "minified json with escaped newline in string value",
-			args: args{
-				template: aws.String(`{"Resources":{"MyResource":{"Type":"AWS::EC2::Instance","Properties":{"UserData":"#!/bin/bash\necho \"Hello\""},"DeletionPolicy":"Retain"}}}`),
-			},
-			want: want{
-				modifiedTemplate: `{"Resources":{"MyResource":{"Type":"AWS::EC2::Instance","Properties":{"UserData":"#!/bin/bash\necho \"Hello\""}}}}`},
-		},
-		{
-			name: "formatted yaml with multiline string containing actual newlines",
-			args: args{
-				template: aws.String(`Resources:
+			name: "yaml with multiline string",
+			template: `Resources:
   MyResource:
     Type: AWS::EC2::Instance
     DeletionPolicy: Retain
@@ -533,22 +562,19 @@ Resources:
       UserData: |
         #!/bin/bash
         echo "Hello"
-        echo "World"`),
-			},
-			want: want{
-				modifiedTemplate: `Resources:
+        echo "World"`,
+			want: `Resources:
   MyResource:
     Type: AWS::EC2::Instance
     Properties:
       UserData: |
         #!/bin/bash
         echo "Hello"
-        echo "World"`},
+        echo "World"`,
 		},
 		{
-			name: "formatted json with multiline string containing actual newlines",
-			args: args{
-				template: aws.String(`{
+			name: "json with multiline string",
+			template: `{
   "Resources": {
     "MyResource": {
       "Type": "AWS::EC2::Instance",
@@ -560,10 +586,8 @@ echo \"World\""
       }
     }
   }
-}`),
-			},
-			want: want{
-				modifiedTemplate: `{
+}`,
+			want: `{
   "Resources": {
     "MyResource": {
       "Type": "AWS::EC2::Instance",
@@ -574,15 +598,15 @@ echo \"World\""
       }
     }
   }
-}`},
+}`,
 		},
 	}
 
-	for _, tt := range cases {
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := removeDeletionPolicyFromTemplate(tt.args.template)
-			if !reflect.DeepEqual(got, tt.want.modifiedTemplate) {
-				t.Errorf("output = %#v, want %#v", got, tt.want.modifiedTemplate)
+			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+			if got != tt.want {
+				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
 			}
 		})
 	}
