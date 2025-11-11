@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
-func TestCloudFormationStackOperator_removeDeletionPolicyFromTemplate(t *testing.T) {
+func Test_removeDeletionPolicyFromTemplate(t *testing.T) {
 	type args struct {
 		template *string
 	}
@@ -580,8 +580,7 @@ echo \"World\""
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, nil, []string{})
-			got := cloudformationStackOperator.removeDeletionPolicyFromTemplate(tt.args.template)
+			got := removeDeletionPolicyFromTemplate(tt.args.template)
 			if !reflect.DeepEqual(got, tt.want.modifiedTemplate) {
 				t.Errorf("output = %#v, want %#v", got, tt.want.modifiedTemplate)
 			}
