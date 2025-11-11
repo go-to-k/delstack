@@ -24,85 +24,6 @@ func runTest(t *testing.T, tt testCase) {
 	tt.checkFn(t, got)
 }
 
-// Helper function to verify DeletionPolicy is removed and other properties are preserved
-func verifyDeletionPolicyRemoved(t *testing.T, resource map[string]interface{}, expectedType string, expectedProps map[string]interface{}) {
-	t.Helper()
-	if _, policyExists := resource["DeletionPolicy"]; policyExists {
-		t.Error("DeletionPolicy should be removed")
-	}
-	if resourceType, typeExists := resource["Type"]; !typeExists || resourceType != expectedType {
-		t.Errorf("Type should be %s, got %v", expectedType, resourceType)
-	}
-	props, propsExist := resource["Properties"]
-	if !propsExist {
-		t.Error("Properties should be preserved")
-		return
-	}
-	propsMap := props.(map[string]interface{})
-	for key, expectedValue := range expectedProps {
-		if actualValue, propExists := propsMap[key]; !propExists {
-			t.Errorf("Properties[%s] should exist", key)
-		} else if actualValue != expectedValue {
-			t.Errorf("Properties[%s] = %v, want %v", key, actualValue, expectedValue)
-		}
-	}
-}
-
-// Helper function to verify DeletionPolicy is kept with expected value
-func verifyDeletionPolicyKept(t *testing.T, resource map[string]interface{}, expectedType, expectedPolicy string, expectedProps map[string]interface{}) {
-	t.Helper()
-	policy, policyExists := resource["DeletionPolicy"]
-	if !policyExists {
-		t.Errorf("DeletionPolicy should exist")
-		return
-	}
-	if policy != expectedPolicy {
-		t.Errorf("DeletionPolicy = %v, want %s", policy, expectedPolicy)
-	}
-	if resourceType, typeExists := resource["Type"]; !typeExists || resourceType != expectedType {
-		t.Errorf("Type should be %s, got %v", expectedType, resourceType)
-	}
-	props, propsExist := resource["Properties"]
-	if !propsExist {
-		t.Error("Properties should be preserved")
-		return
-	}
-	propsMap := props.(map[string]interface{})
-	for key, expectedValue := range expectedProps {
-		if actualValue, propExists := propsMap[key]; !propExists {
-			t.Errorf("Properties[%s] should exist", key)
-		} else if actualValue != expectedValue {
-			t.Errorf("Properties[%s] = %v, want %v", key, actualValue, expectedValue)
-		}
-	}
-}
-
-// Helper function to verify DeletionPolicy does not exist
-//
-//nolint:unparam
-func verifyNoDeletionPolicy(t *testing.T, resource map[string]interface{}, expectedType string, expectedProps map[string]interface{}) {
-	t.Helper()
-	if _, policyExists := resource["DeletionPolicy"]; policyExists {
-		t.Error("DeletionPolicy should not exist")
-	}
-	if resourceType, typeExists := resource["Type"]; !typeExists || resourceType != expectedType {
-		t.Errorf("Type should be %s, got %v", expectedType, resourceType)
-	}
-	props, propsExist := resource["Properties"]
-	if !propsExist {
-		t.Error("Properties should be preserved")
-		return
-	}
-	propsMap := props.(map[string]interface{})
-	for key, expectedValue := range expectedProps {
-		if actualValue, propExists := propsMap[key]; !propExists {
-			t.Errorf("Properties[%s] should exist", key)
-		} else if actualValue != expectedValue {
-			t.Errorf("Properties[%s] = %v, want %v", key, actualValue, expectedValue)
-		}
-	}
-}
-
 func Test_removeDeletionPolicyFromTemplate_RemovesRetain(t *testing.T) {
 	tests := []testCase{
 		{
@@ -399,22 +320,7 @@ func Test_removeDeletionPolicyFromTemplate_KeepsDeletionPolicyInProperties(t *te
 				}
 				resources := data["Resources"].(map[string]interface{})
 				resource := resources["MyCustomResource"].(map[string]interface{})
-				// Resource level DeletionPolicy should be removed
-				verifyDeletionPolicyRemoved(t, resource, "Custom::MyResource", nil)
-				// Properties level DeletionPolicy should be kept intact
-				props := resource["Properties"].(map[string]interface{})
-				config := props["Config"].(map[string]interface{})
-				if config["DeletionPolicy"] != "KeepOnDelete" {
-					t.Errorf("Properties.Config.DeletionPolicy = %v, want KeepOnDelete", config["DeletionPolicy"])
-				}
-				rules := config["Rules"].([]interface{})
-				if len(rules) != 1 {
-					t.Fatalf("Config.Rules should have 1 rule, got %d", len(rules))
-				}
-				rule := rules[0].(map[string]interface{})
-				if rule["DeletionPolicy"] != "RemoveOnDelete" {
-					t.Errorf("Rule.DeletionPolicy = %v, want RemoveOnDelete", rule["DeletionPolicy"])
-				}
+				verifyCustomResourceProperties(t, resource)
 			},
 		},
 		{
@@ -447,22 +353,7 @@ func Test_removeDeletionPolicyFromTemplate_KeepsDeletionPolicyInProperties(t *te
 				}
 				resources := data["Resources"].(map[string]interface{})
 				resource := resources["MyCustomResource"].(map[string]interface{})
-				// Resource level DeletionPolicy should be removed
-				verifyDeletionPolicyRemoved(t, resource, "Custom::MyResource", nil)
-				// Properties level DeletionPolicy should be kept intact
-				props := resource["Properties"].(map[string]interface{})
-				config := props["Config"].(map[string]interface{})
-				if config["DeletionPolicy"] != "KeepOnDelete" {
-					t.Errorf("Properties.Config.DeletionPolicy = %v, want KeepOnDelete", config["DeletionPolicy"])
-				}
-				rules := config["Rules"].([]interface{})
-				if len(rules) != 1 {
-					t.Fatalf("Config.Rules should have 1 rule, got %d", len(rules))
-				}
-				rule := rules[0].(map[string]interface{})
-				if rule["DeletionPolicy"] != "RemoveOnDelete" {
-					t.Errorf("Rule.DeletionPolicy = %v, want RemoveOnDelete", rule["DeletionPolicy"])
-				}
+				verifyCustomResourceProperties(t, resource)
 			},
 		},
 		{
@@ -476,22 +367,7 @@ func Test_removeDeletionPolicyFromTemplate_KeepsDeletionPolicyInProperties(t *te
 				}
 				resources := data["Resources"].(map[string]interface{})
 				resource := resources["MyCustomResource"].(map[string]interface{})
-				// Resource level DeletionPolicy should be removed
-				verifyDeletionPolicyRemoved(t, resource, "Custom::MyResource", nil)
-				// Properties level DeletionPolicy should be kept intact
-				props := resource["Properties"].(map[string]interface{})
-				config := props["Config"].(map[string]interface{})
-				if config["DeletionPolicy"] != "KeepOnDelete" {
-					t.Errorf("Properties.Config.DeletionPolicy = %v, want KeepOnDelete", config["DeletionPolicy"])
-				}
-				rules := config["Rules"].([]interface{})
-				if len(rules) != 1 {
-					t.Fatalf("Config.Rules should have 1 rule, got %d", len(rules))
-				}
-				rule := rules[0].(map[string]interface{})
-				if rule["DeletionPolicy"] != "RemoveOnDelete" {
-					t.Errorf("Rule.DeletionPolicy = %v, want RemoveOnDelete", rule["DeletionPolicy"])
-				}
+				verifyCustomResourceProperties(t, resource)
 			},
 		},
 	}
@@ -727,5 +603,112 @@ Outputs:
 		t.Run(tt.name, func(t *testing.T) {
 			runTest(t, tt)
 		})
+	}
+}
+
+// Helper function to verify DeletionPolicy is removed and other properties are preserved
+func verifyDeletionPolicyRemoved(t *testing.T, resource map[string]interface{}, expectedType string, expectedProps map[string]interface{}) {
+	t.Helper()
+	if _, policyExists := resource["DeletionPolicy"]; policyExists {
+		t.Error("DeletionPolicy should be removed")
+	}
+	if resourceType, typeExists := resource["Type"]; !typeExists || resourceType != expectedType {
+		t.Errorf("Type should be %s, got %v", expectedType, resourceType)
+	}
+	props, propsExist := resource["Properties"]
+	if !propsExist {
+		t.Error("Properties should be preserved")
+		return
+	}
+	propsMap := props.(map[string]interface{})
+	for key, expectedValue := range expectedProps {
+		if actualValue, propExists := propsMap[key]; !propExists {
+			t.Errorf("Properties[%s] should exist", key)
+		} else if actualValue != expectedValue {
+			t.Errorf("Properties[%s] = %v, want %v", key, actualValue, expectedValue)
+		}
+	}
+}
+
+// Helper function to verify DeletionPolicy is kept with expected value
+func verifyDeletionPolicyKept(t *testing.T, resource map[string]interface{}, expectedType, expectedPolicy string, expectedProps map[string]interface{}) {
+	t.Helper()
+	policy, policyExists := resource["DeletionPolicy"]
+	if !policyExists {
+		t.Errorf("DeletionPolicy should exist")
+		return
+	}
+	if policy != expectedPolicy {
+		t.Errorf("DeletionPolicy = %v, want %s", policy, expectedPolicy)
+	}
+	if resourceType, typeExists := resource["Type"]; !typeExists || resourceType != expectedType {
+		t.Errorf("Type should be %s, got %v", expectedType, resourceType)
+	}
+	props, propsExist := resource["Properties"]
+	if !propsExist {
+		t.Error("Properties should be preserved")
+		return
+	}
+	propsMap := props.(map[string]interface{})
+	for key, expectedValue := range expectedProps {
+		if actualValue, propExists := propsMap[key]; !propExists {
+			t.Errorf("Properties[%s] should exist", key)
+		} else if actualValue != expectedValue {
+			t.Errorf("Properties[%s] = %v, want %v", key, actualValue, expectedValue)
+		}
+	}
+}
+
+// Helper function to verify DeletionPolicy does not exist
+//
+//nolint:unparam
+func verifyNoDeletionPolicy(t *testing.T, resource map[string]interface{}, expectedType string, expectedProps map[string]interface{}) {
+	t.Helper()
+	if _, policyExists := resource["DeletionPolicy"]; policyExists {
+		t.Error("DeletionPolicy should not exist")
+	}
+	if resourceType, typeExists := resource["Type"]; !typeExists || resourceType != expectedType {
+		t.Errorf("Type should be %s, got %v", expectedType, resourceType)
+	}
+	props, propsExist := resource["Properties"]
+	if !propsExist {
+		t.Error("Properties should be preserved")
+		return
+	}
+	propsMap := props.(map[string]interface{})
+	for key, expectedValue := range expectedProps {
+		if actualValue, propExists := propsMap[key]; !propExists {
+			t.Errorf("Properties[%s] should exist", key)
+		} else if actualValue != expectedValue {
+			t.Errorf("Properties[%s] = %v, want %v", key, actualValue, expectedValue)
+		}
+	}
+}
+
+// Helper function to verify custom resource properties with nested DeletionPolicy
+func verifyCustomResourceProperties(t *testing.T, resource map[string]interface{}) {
+	t.Helper()
+	// Resource level DeletionPolicy should be removed
+	verifyDeletionPolicyRemoved(t, resource, "Custom::MyResource", nil)
+	// Properties level DeletionPolicy should be kept intact
+	props := resource["Properties"].(map[string]interface{})
+	// Check ServiceToken
+	if props["ServiceToken"] != "arn:aws:lambda:us-east-1:123456789012:function:MyFunction" {
+		t.Errorf("Properties.ServiceToken = %v, want arn:aws:lambda:us-east-1:123456789012:function:MyFunction", props["ServiceToken"])
+	}
+	config := props["Config"].(map[string]interface{})
+	if config["DeletionPolicy"] != "KeepOnDelete" {
+		t.Errorf("Properties.Config.DeletionPolicy = %v, want KeepOnDelete", config["DeletionPolicy"])
+	}
+	rules := config["Rules"].([]interface{})
+	if len(rules) != 1 {
+		t.Fatalf("Config.Rules should have 1 rule, got %d", len(rules))
+	}
+	rule := rules[0].(map[string]interface{})
+	if rule["Id"] != "Rule1" {
+		t.Errorf("Rule.Id = %v, want Rule1", rule["Id"])
+	}
+	if rule["DeletionPolicy"] != "RemoveOnDelete" {
+		t.Errorf("Rule.DeletionPolicy = %v, want RemoveOnDelete", rule["DeletionPolicy"])
 	}
 }
