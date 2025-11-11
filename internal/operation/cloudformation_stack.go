@@ -390,15 +390,19 @@ func (o *CloudFormationStackOperator) removeFromMultiLine(template string) strin
 	// Pattern for the value line (indented Retain or RetainExceptOnCreate)
 	valueOnlyPattern := regexp.MustCompile(`^\s+["']?(?:Retain|RetainExceptOnCreate)["']?\s*$`)
 
-	i := 0
-	for i < len(lines) {
-		line := lines[i]
+	skipNext := false
+	for i, line := range lines {
+		// Skip this line if it was marked by previous iteration
+		if skipNext {
+			skipNext = false
+			continue
+		}
 
 		// Check for YAML block format (key on one line, value on next)
 		if keyOnlyPattern.MatchString(line) {
 			if i+1 < len(lines) && valueOnlyPattern.MatchString(lines[i+1]) {
 				// Skip both the key and value lines
-				i += 2
+				skipNext = true
 				continue
 			}
 		}
@@ -406,17 +410,15 @@ func (o *CloudFormationStackOperator) removeFromMultiLine(template string) strin
 		// Check for inline format (key and value on same line)
 		if inlinePattern.MatchString(line) {
 			// Remove trailing comma from previous line if next line is closing bracket
-			if i > 0 && len(result) > 0 && i+1 < len(lines) {
+			if len(result) > 0 && i+1 < len(lines) {
 				if regexp.MustCompile(`^\s*[}\]]`).MatchString(lines[i+1]) && regexp.MustCompile(`,\s*$`).MatchString(result[len(result)-1]) {
 					result[len(result)-1] = regexp.MustCompile(`,(\s*)$`).ReplaceAllString(result[len(result)-1], "$1")
 				}
 			}
-			i++
 			continue
 		}
 
 		result = append(result, line)
-		i++
 	}
 
 	return strings.Join(result, "\n")
