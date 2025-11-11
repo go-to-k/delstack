@@ -31,11 +31,15 @@ func removeDeletionPolicyFromTemplate(template *string) (string, bool, error) {
 	var data map[string]interface{}
 	if err := json.Unmarshal([]byte(*template), &data); err == nil {
 		// It's JSON - process and return as JSON
+		changed := removeDeletionPolicyFromResources(data)
+		if !changed {
+			return *template, false, nil
+		}
+
 		// Check if template is minified by looking for actual newline characters (line breaks).
 		// Note: Escaped newlines (\n) within JSON string property values are two characters
 		// (backslash and 'n') and do not affect this check.
 		isMinified := !strings.Contains(*template, "\n")
-		changed := removeDeletionPolicyFromResources(data)
 
 		var result []byte
 		var marshalErr error
@@ -57,6 +61,9 @@ func removeDeletionPolicyFromTemplate(template *string) (string, bool, error) {
 	if err := yaml.Unmarshal([]byte(*template), &data); err == nil {
 		// It's YAML - process and return as YAML
 		changed := removeDeletionPolicyFromResources(data)
+		if !changed {
+			return *template, false, nil
+		}
 
 		result, marshalErr := yaml.Marshal(data)
 		// Note: This error should not occur in practice because data that was successfully
