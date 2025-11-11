@@ -357,21 +357,18 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 //
 // Note: This does NOT remove DeletionPolicy with "Delete" or "Snapshot" values.
 func (o *CloudFormationStackOperator) removeDeletionPolicyFromTemplate(template *string) string {
-	// Pattern to match DeletionPolicy lines with Retain or RetainExceptOnCreate
-	deletionPolicyPattern := regexp.MustCompile(`^\s*["']?DeletionPolicy["']?\s*:\s*["']?(?:Retain|RetainExceptOnCreate)["']?\s*,?\s*$`)
-
 	// Handle minified JSON (single line)
 	if !strings.Contains(*template, "\n") {
-		return o.removeFromMinifiedJSON(*template, deletionPolicyPattern)
+		return o.removeFromMinifiedJSON(*template)
 	}
 
 	// Handle multi-line templates (YAML or formatted JSON)
-	return o.removeFromMultiLine(*template, deletionPolicyPattern)
+	return o.removeFromMultiLine(*template)
 }
 
 // removeFromMinifiedJSON removes DeletionPolicy from single-line (minified) JSON templates.
 // It handles comma placement to maintain valid JSON syntax after removal.
-func (o *CloudFormationStackOperator) removeFromMinifiedJSON(template string, pattern *regexp.Regexp) string {
+func (o *CloudFormationStackOperator) removeFromMinifiedJSON(template string) string {
 	// For minified JSON, use a simpler approach: match the entire key-value with surrounding commas
 	// Match: "DeletionPolicy":"Retain", or ,"DeletionPolicy":"Retain" or "DeletionPolicy":"Retain"
 	result := regexp.MustCompile(`["']?DeletionPolicy["']?\s*:\s*["']?(?:Retain|RetainExceptOnCreate)["']?\s*,\s*`).ReplaceAllString(template, "")
@@ -382,10 +379,12 @@ func (o *CloudFormationStackOperator) removeFromMinifiedJSON(template string, pa
 // removeFromMultiLine removes DeletionPolicy from multi-line templates (formatted JSON or YAML).
 // It preserves the original indentation, line breaks, and property order by processing line by line.
 // Supports both YAML inline format ("DeletionPolicy: Retain") and block format ("DeletionPolicy:\n  Retain").
-func (o *CloudFormationStackOperator) removeFromMultiLine(template string, pattern *regexp.Regexp) string {
+func (o *CloudFormationStackOperator) removeFromMultiLine(template string) string {
 	lines := strings.Split(template, "\n")
 	result := make([]string, 0, len(lines))
 
+	// Pattern to match DeletionPolicy lines with Retain or RetainExceptOnCreate (inline format)
+	inlinePattern := regexp.MustCompile(`^\s*["']?DeletionPolicy["']?\s*:\s*["']?(?:Retain|RetainExceptOnCreate)["']?\s*,?\s*$`)
 	// Pattern for YAML block format: DeletionPolicy key without value on same line
 	keyOnlyPattern := regexp.MustCompile(`^\s*["']?DeletionPolicy["']?\s*:\s*$`)
 	// Pattern for the value line (indented Retain or RetainExceptOnCreate)
@@ -405,7 +404,7 @@ func (o *CloudFormationStackOperator) removeFromMultiLine(template string, patte
 		}
 
 		// Check for inline format (key and value on same line)
-		if pattern.MatchString(line) {
+		if inlinePattern.MatchString(line) {
 			// Remove trailing comma from previous line if next line is closing bracket
 			if i > 0 && len(result) > 0 && i+1 < len(lines) {
 				if regexp.MustCompile(`^\s*[}\]]`).MatchString(lines[i+1]) && regexp.MustCompile(`,\s*$`).MatchString(result[len(result)-1]) {

@@ -4045,6 +4045,68 @@ Resources:
   ThirdResource:
     Type: AWS::Lambda::Function`},
 		},
+		{
+			name: "minified json with escaped newline in string value",
+			args: args{
+				template: aws.String(`{"Resources":{"MyResource":{"Type":"AWS::EC2::Instance","Properties":{"UserData":"#!/bin/bash\necho \"Hello\""},"DeletionPolicy":"Retain"}}}`),
+			},
+			want: want{
+				modifiedTemplate: `{"Resources":{"MyResource":{"Type":"AWS::EC2::Instance","Properties":{"UserData":"#!/bin/bash\necho \"Hello\""}}}}`},
+		},
+		{
+			name: "formatted yaml with multiline string containing actual newlines",
+			args: args{
+				template: aws.String(`Resources:
+  MyResource:
+    Type: AWS::EC2::Instance
+    DeletionPolicy: Retain
+    Properties:
+      UserData: |
+        #!/bin/bash
+        echo "Hello"
+        echo "World"`),
+			},
+			want: want{
+				modifiedTemplate: `Resources:
+  MyResource:
+    Type: AWS::EC2::Instance
+    Properties:
+      UserData: |
+        #!/bin/bash
+        echo "Hello"
+        echo "World"`},
+		},
+		{
+			name: "formatted json with multiline string containing actual newlines",
+			args: args{
+				template: aws.String(`{
+  "Resources": {
+    "MyResource": {
+      "Type": "AWS::EC2::Instance",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "UserData": "#!/bin/bash
+echo \"Hello\"
+echo \"World\""
+      }
+    }
+  }
+}`),
+			},
+			want: want{
+				modifiedTemplate: `{
+  "Resources": {
+    "MyResource": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "UserData": "#!/bin/bash
+echo \"Hello\"
+echo \"World\""
+      }
+    }
+  }
+}`},
+		},
 	}
 
 	for _, tt := range cases {
