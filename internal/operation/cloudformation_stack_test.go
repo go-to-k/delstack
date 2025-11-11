@@ -3537,4 +3537,3 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 		})
 	}
 }
-
