@@ -611,3 +611,319 @@ echo \"World\""
 		})
 	}
 }
+
+func Test_removeDeletionPolicyFromTemplate_CompleteTemplates(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
+		{
+			name: "complete YAML template with Retain",
+			template: `AWSTemplateFormatVersion: '2010-09-09'
+Description: Sample template
+Parameters:
+  Env:
+    Type: String
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref Env
+  MyTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: RetainExceptOnCreate
+    Properties:
+      TableName: my-table
+  MyDB:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      Engine: mysql
+  MyQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: my-queue
+Outputs:
+  BucketName:
+    Value: !Ref MyBucket`,
+			want: `AWSTemplateFormatVersion: '2010-09-09'
+Description: Sample template
+Parameters:
+  Env:
+    Type: String
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref Env
+  MyTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: my-table
+  MyDB:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      Engine: mysql
+  MyQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: my-queue
+Outputs:
+  BucketName:
+    Value: !Ref MyBucket`,
+		},
+		{
+			name: "complete JSON template with Retain",
+			template: `{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Sample template",
+  "Parameters": {
+    "Env": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "MyBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "BucketName": {"Ref": "Env"}
+      }
+    },
+    "MyTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "RetainExceptOnCreate",
+      "Properties": {
+        "TableName": "my-table"
+      }
+    },
+    "MyDB": {
+      "Type": "AWS::RDS::DBInstance",
+      "DeletionPolicy": "Snapshot",
+      "Properties": {
+        "Engine": "mysql"
+      }
+    },
+    "MyQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "my-queue"
+      }
+    }
+  },
+  "Outputs": {
+    "BucketName": {
+      "Value": {"Ref": "MyBucket"}
+    }
+  }
+}`,
+			want: `{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Sample template",
+  "Parameters": {
+    "Env": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "MyBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {"Ref": "Env"}
+      }
+    },
+    "MyTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": "my-table"
+      }
+    },
+    "MyDB": {
+      "Type": "AWS::RDS::DBInstance",
+      "DeletionPolicy": "Snapshot",
+      "Properties": {
+        "Engine": "mysql"
+      }
+    },
+    "MyQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "my-queue"
+      }
+    }
+  },
+  "Outputs": {
+    "BucketName": {
+      "Value": {"Ref": "MyBucket"}
+    }
+  }
+}`,
+		},
+		{
+			name:     "complete minified JSON template with Retain",
+			template: `{"AWSTemplateFormatVersion":"2010-09-09","Description":"Sample template","Parameters":{"Env":{"Type":"String"}},"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"BucketName":{"Ref":"Env"}}},"MyTable":{"Type":"AWS::DynamoDB::Table","DeletionPolicy":"RetainExceptOnCreate","Properties":{"TableName":"my-table"}},"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}},"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"my-queue"}}},"Outputs":{"BucketName":{"Value":{"Ref":"MyBucket"}}}}`,
+			want:     `{"AWSTemplateFormatVersion":"2010-09-09","Description":"Sample template","Parameters":{"Env":{"Type":"String"}},"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","Properties":{"BucketName":{"Ref":"Env"}}},"MyTable":{"Type":"AWS::DynamoDB::Table","Properties":{"TableName":"my-table"}},"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}},"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"my-queue"}}},"Outputs":{"BucketName":{"Value":{"Ref":"MyBucket"}}}}`,
+		},
+		{
+			name: "complete YAML template without Retain",
+			template: `AWSTemplateFormatVersion: '2010-09-09'
+Description: Sample template
+Parameters:
+  Env:
+    Type: String
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Ref Env
+  MyTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: my-table
+  MyDB:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      Engine: mysql
+  MyQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: my-queue
+Outputs:
+  BucketName:
+    Value: !Ref MyBucket`,
+			want: `AWSTemplateFormatVersion: '2010-09-09'
+Description: Sample template
+Parameters:
+  Env:
+    Type: String
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Ref Env
+  MyTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: my-table
+  MyDB:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      Engine: mysql
+  MyQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: my-queue
+Outputs:
+  BucketName:
+    Value: !Ref MyBucket`,
+		},
+		{
+			name: "complete JSON template without Retain",
+			template: `{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Sample template",
+  "Parameters": {
+    "Env": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "MyBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "BucketName": {"Ref": "Env"}
+      }
+    },
+    "MyTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": "my-table"
+      }
+    },
+    "MyDB": {
+      "Type": "AWS::RDS::DBInstance",
+      "DeletionPolicy": "Snapshot",
+      "Properties": {
+        "Engine": "mysql"
+      }
+    },
+    "MyQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "my-queue"
+      }
+    }
+  },
+  "Outputs": {
+    "BucketName": {
+      "Value": {"Ref": "MyBucket"}
+    }
+  }
+}`,
+			want: `{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Sample template",
+  "Parameters": {
+    "Env": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "MyBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "BucketName": {"Ref": "Env"}
+      }
+    },
+    "MyTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": "my-table"
+      }
+    },
+    "MyDB": {
+      "Type": "AWS::RDS::DBInstance",
+      "DeletionPolicy": "Snapshot",
+      "Properties": {
+        "Engine": "mysql"
+      }
+    },
+    "MyQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "my-queue"
+      }
+    }
+  },
+  "Outputs": {
+    "BucketName": {
+      "Value": {"Ref": "MyBucket"}
+    }
+  }
+}`,
+		},
+		{
+			name:     "complete minified JSON template without Retain",
+			template: `{"AWSTemplateFormatVersion":"2010-09-09","Description":"Sample template","Parameters":{"Env":{"Type":"String"}},"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Delete","Properties":{"BucketName":{"Ref":"Env"}}},"MyTable":{"Type":"AWS::DynamoDB::Table","Properties":{"TableName":"my-table"}},"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}},"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"my-queue"}}},"Outputs":{"BucketName":{"Value":{"Ref":"MyBucket"}}}}`,
+			want:     `{"AWSTemplateFormatVersion":"2010-09-09","Description":"Sample template","Parameters":{"Env":{"Type":"String"}},"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Delete","Properties":{"BucketName":{"Ref":"Env"}}},"MyTable":{"Type":"AWS::DynamoDB::Table","Properties":{"TableName":"my-table"}},"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}},"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"my-queue"}}},"Outputs":{"BucketName":{"Value":{"Ref":"MyBucket"}}}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+			if got != tt.want {
+				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
