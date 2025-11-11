@@ -381,19 +381,16 @@ func Test_removeDeletionPolicyFromTemplate_KeepsDeletionPolicyInProperties(t *te
 		{
 			name: "YAML",
 			template: `Resources:
-  MyBucket:
-    Type: AWS::S3::Bucket
+  MyCustomResource:
+    Type: Custom::MyResource
     DeletionPolicy: Retain
     Properties:
-      LifecycleConfiguration:
+      ServiceToken: arn:aws:lambda:us-east-1:123456789012:function:MyFunction
+      Config:
+        DeletionPolicy: KeepOnDelete
         Rules:
-          - Id: DeleteOldVersions
-            Status: Enabled
-            NoncurrentVersionExpiration:
-              NoncurrentDays: 30
-              NewerNoncurrentVersions: 3
-            AbortIncompleteMultipartUpload:
-              DaysAfterInitiation: 7`,
+          - Id: Rule1
+            DeletionPolicy: RemoveOnDelete`,
 			expectChanged: true,
 			checkFn: func(t *testing.T, result string) {
 				var data map[string]interface{}
@@ -401,15 +398,22 @@ func Test_removeDeletionPolicyFromTemplate_KeepsDeletionPolicyInProperties(t *te
 					t.Fatalf("Failed to parse YAML: %v", err)
 				}
 				resources := data["Resources"].(map[string]interface{})
-				bucket := resources["MyBucket"].(map[string]interface{})
+				resource := resources["MyCustomResource"].(map[string]interface{})
 				// Resource level DeletionPolicy should be removed
-				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", nil)
-				// Properties level configuration should be kept
-				props := bucket["Properties"].(map[string]interface{})
-				lifecycle := props["LifecycleConfiguration"].(map[string]interface{})
-				rules := lifecycle["Rules"].([]interface{})
-				if len(rules) == 0 {
-					t.Error("LifecycleConfiguration Rules should be kept")
+				verifyDeletionPolicyRemoved(t, resource, "Custom::MyResource", nil)
+				// Properties level DeletionPolicy should be kept intact
+				props := resource["Properties"].(map[string]interface{})
+				config := props["Config"].(map[string]interface{})
+				if config["DeletionPolicy"] != "KeepOnDelete" {
+					t.Errorf("Properties.Config.DeletionPolicy = %v, want KeepOnDelete", config["DeletionPolicy"])
+				}
+				rules := config["Rules"].([]interface{})
+				if len(rules) != 1 {
+					t.Fatalf("Config.Rules should have 1 rule, got %d", len(rules))
+				}
+				rule := rules[0].(map[string]interface{})
+				if rule["DeletionPolicy"] != "RemoveOnDelete" {
+					t.Errorf("Rule.DeletionPolicy = %v, want RemoveOnDelete", rule["DeletionPolicy"])
 				}
 			},
 		},
@@ -417,22 +421,17 @@ func Test_removeDeletionPolicyFromTemplate_KeepsDeletionPolicyInProperties(t *te
 			name: "JSON",
 			template: `{
   "Resources": {
-    "MyBucket": {
-      "Type": "AWS::S3::Bucket",
+    "MyCustomResource": {
+      "Type": "Custom::MyResource",
       "DeletionPolicy": "RetainExceptOnCreate",
       "Properties": {
-        "LifecycleConfiguration": {
+        "ServiceToken": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+        "Config": {
+          "DeletionPolicy": "KeepOnDelete",
           "Rules": [
             {
-              "Id": "DeleteOldVersions",
-              "Status": "Enabled",
-              "NoncurrentVersionExpiration": {
-                "NoncurrentDays": 30,
-                "NewerNoncurrentVersions": 3
-              },
-              "AbortIncompleteMultipartUpload": {
-                "DaysAfterInitiation": 7
-              }
+              "Id": "Rule1",
+              "DeletionPolicy": "RemoveOnDelete"
             }
           ]
         }
@@ -447,21 +446,28 @@ func Test_removeDeletionPolicyFromTemplate_KeepsDeletionPolicyInProperties(t *te
 					t.Fatalf("Failed to parse JSON: %v", err)
 				}
 				resources := data["Resources"].(map[string]interface{})
-				bucket := resources["MyBucket"].(map[string]interface{})
+				resource := resources["MyCustomResource"].(map[string]interface{})
 				// Resource level DeletionPolicy should be removed
-				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", nil)
-				// Properties level configuration should be kept
-				props := bucket["Properties"].(map[string]interface{})
-				lifecycle := props["LifecycleConfiguration"].(map[string]interface{})
-				rules := lifecycle["Rules"].([]interface{})
-				if len(rules) == 0 {
-					t.Error("LifecycleConfiguration Rules should be kept")
+				verifyDeletionPolicyRemoved(t, resource, "Custom::MyResource", nil)
+				// Properties level DeletionPolicy should be kept intact
+				props := resource["Properties"].(map[string]interface{})
+				config := props["Config"].(map[string]interface{})
+				if config["DeletionPolicy"] != "KeepOnDelete" {
+					t.Errorf("Properties.Config.DeletionPolicy = %v, want KeepOnDelete", config["DeletionPolicy"])
+				}
+				rules := config["Rules"].([]interface{})
+				if len(rules) != 1 {
+					t.Fatalf("Config.Rules should have 1 rule, got %d", len(rules))
+				}
+				rule := rules[0].(map[string]interface{})
+				if rule["DeletionPolicy"] != "RemoveOnDelete" {
+					t.Errorf("Rule.DeletionPolicy = %v, want RemoveOnDelete", rule["DeletionPolicy"])
 				}
 			},
 		},
 		{
 			name:          "JSON minified",
-			template:      `{"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"LifecycleConfiguration":{"Rules":[{"Id":"DeleteOldVersions","Status":"Enabled","NoncurrentVersionExpiration":{"NoncurrentDays":30,"NewerNoncurrentVersions":3},"AbortIncompleteMultipartUpload":{"DaysAfterInitiation":7}}]}}}}}`,
+			template:      `{"Resources":{"MyCustomResource":{"Type":"Custom::MyResource","DeletionPolicy":"Retain","Properties":{"ServiceToken":"arn:aws:lambda:us-east-1:123456789012:function:MyFunction","Config":{"DeletionPolicy":"KeepOnDelete","Rules":[{"Id":"Rule1","DeletionPolicy":"RemoveOnDelete"}]}}}}}`,
 			expectChanged: true,
 			checkFn: func(t *testing.T, result string) {
 				var data map[string]interface{}
@@ -469,15 +475,22 @@ func Test_removeDeletionPolicyFromTemplate_KeepsDeletionPolicyInProperties(t *te
 					t.Fatalf("Failed to parse JSON: %v", err)
 				}
 				resources := data["Resources"].(map[string]interface{})
-				bucket := resources["MyBucket"].(map[string]interface{})
+				resource := resources["MyCustomResource"].(map[string]interface{})
 				// Resource level DeletionPolicy should be removed
-				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", nil)
-				// Properties level configuration should be kept
-				props := bucket["Properties"].(map[string]interface{})
-				lifecycle := props["LifecycleConfiguration"].(map[string]interface{})
-				rules := lifecycle["Rules"].([]interface{})
-				if len(rules) == 0 {
-					t.Error("LifecycleConfiguration Rules should be kept")
+				verifyDeletionPolicyRemoved(t, resource, "Custom::MyResource", nil)
+				// Properties level DeletionPolicy should be kept intact
+				props := resource["Properties"].(map[string]interface{})
+				config := props["Config"].(map[string]interface{})
+				if config["DeletionPolicy"] != "KeepOnDelete" {
+					t.Errorf("Properties.Config.DeletionPolicy = %v, want KeepOnDelete", config["DeletionPolicy"])
+				}
+				rules := config["Rules"].([]interface{})
+				if len(rules) != 1 {
+					t.Fatalf("Config.Rules should have 1 rule, got %d", len(rules))
+				}
+				rule := rules[0].(map[string]interface{})
+				if rule["DeletionPolicy"] != "RemoveOnDelete" {
+					t.Errorf("Rule.DeletionPolicy = %v, want RemoveOnDelete", rule["DeletionPolicy"])
 				}
 			},
 		},
@@ -581,7 +594,12 @@ Resources:
   MyQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: test-queue`,
+      QueueName: test-queue
+Outputs:
+  BucketName:
+    Value: !Ref MyBucket
+  TableName:
+    Value: !Ref MyTable`,
 			expectChanged: true,
 			checkFn: func(t *testing.T, result string) {
 				var data map[string]interface{}
@@ -640,6 +658,14 @@ Resources:
         "QueueName": "test-queue"
       }
     }
+  },
+  "Outputs": {
+    "BucketName": {
+      "Value": {"Ref": "MyBucket"}
+    },
+    "TableName": {
+      "Value": {"Ref": "MyTable"}
+    }
   }
 }`,
 			expectChanged: true,
@@ -669,7 +695,7 @@ Resources:
 		},
 		{
 			name:          "JSON minified",
-			template:      `{"AWSTemplateFormatVersion":"2010-09-09","Description":"Test template","Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"BucketName":"test-bucket"}},"MyTable":{"Type":"AWS::DynamoDB::Table","DeletionPolicy":"RetainExceptOnCreate","Properties":{"TableName":"test-table"}},"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}},"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"test-queue"}}}}`,
+			template:      `{"AWSTemplateFormatVersion":"2010-09-09","Description":"Test template","Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"BucketName":"test-bucket"}},"MyTable":{"Type":"AWS::DynamoDB::Table","DeletionPolicy":"RetainExceptOnCreate","Properties":{"TableName":"test-table"}},"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}},"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"test-queue"}}},"Outputs":{"BucketName":{"Value":{"Ref":"MyBucket"}},"TableName":{"Value":{"Ref":"MyTable"}}}}`,
 			expectChanged: true,
 			checkFn: func(t *testing.T, result string) {
 				var data map[string]interface{}
