@@ -2,6 +2,7 @@ package operation
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -437,6 +438,169 @@ func Test_removeDeletionPolicyFromTemplate_NoDeletionPolicy(t *testing.T) {
 				resources := data["Resources"].(map[string]interface{})
 				queue := resources["MyQueue"].(map[string]interface{})
 				verifyNoDeletionPolicy(t, queue, "AWS::SQS::Queue", map[string]interface{}{"QueueName": "test"})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runTest(t, tt)
+		})
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_MinifiedJSONWithEscapedNewline(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "JSON with escaped newline in property - Retain removed",
+			// This template contains actual newline characters (line breaks) for formatting,
+			// so it should NOT be treated as minified.
+			// The \n within the Description property value is an escaped newline (two characters: \ and n),
+			// not an actual line break, so it doesn't affect the minification check.
+			template: `{
+  "Resources": {
+    "MyBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "Description": "Line1\nLine2"
+      }
+    }
+  }
+}`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				// Verify DeletionPolicy removed and Description preserved
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				bucket := resources["MyBucket"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", map[string]interface{}{"Description": "Line1\nLine2"})
+			},
+		},
+		{
+			name: "JSON with escaped newline in property - Snapshot kept",
+			// This template contains actual newline characters (line breaks) for formatting,
+			// so it should NOT be treated as minified.
+			// The \n within the Description property value is an escaped newline (two characters: \ and n),
+			// not an actual line break, so it doesn't affect the minification check.
+			template: `{
+  "Resources": {
+    "MyDB": {
+      "Type": "AWS::RDS::DBInstance",
+      "DeletionPolicy": "Snapshot",
+      "Properties": {
+        "Description": "Line1\nLine2"
+      }
+    }
+  }
+}`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				// Verify DeletionPolicy kept and Description preserved
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				db := resources["MyDB"].(map[string]interface{})
+				verifyDeletionPolicyKept(t, db, "AWS::RDS::DBInstance", "Snapshot", map[string]interface{}{"Description": "Line1\nLine2"})
+			},
+		},
+		{
+			name: "JSON minified with escaped newline in property - Retain removed",
+			// This template contains NO actual newline characters (line breaks), so it IS minified.
+			// The \n within the Description property value is an escaped newline (two characters: \ and n),
+			// not an actual line break, so it doesn't affect the minification check.
+			template:      `{"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"Description":"Line1\nLine2"}}}}`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				// Verify it's still minified (no actual newlines)
+				if strings.Contains(result, "\n") {
+					t.Error("Result should remain minified")
+				}
+				// Verify DeletionPolicy removed and Description preserved
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				bucket := resources["MyBucket"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", map[string]interface{}{"Description": "Line1\nLine2"})
+			},
+		},
+		{
+			name: "JSON minified with escaped newline in property - Snapshot kept",
+			// This template contains NO actual newline characters (line breaks), so it IS minified.
+			// The \n within the Description property value is an escaped newline (two characters: \ and n),
+			// not an actual line break, so it doesn't affect the minification check.
+			template:      `{"Resources":{"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Description":"Line1\nLine2"}}}}`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				// Verify it's still minified (no actual newlines)
+				if strings.Contains(result, "\n") {
+					t.Error("Result should remain minified")
+				}
+				// Verify DeletionPolicy kept and Description preserved
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				db := resources["MyDB"].(map[string]interface{})
+				verifyDeletionPolicyKept(t, db, "AWS::RDS::DBInstance", "Snapshot", map[string]interface{}{"Description": "Line1\nLine2"})
+			},
+		},
+		{
+			name: "JSON with escaped newline in property - no DeletionPolicy",
+			// This template contains actual newline characters (line breaks) for formatting,
+			// so it should NOT be treated as minified.
+			// The \n within the Description property value is an escaped newline (two characters: \ and n),
+			// not an actual line break, so it doesn't affect the minification check.
+			template: `{
+  "Resources": {
+    "MyQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "Description": "Line1\nLine2"
+      }
+    }
+  }
+}`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				// Verify no DeletionPolicy and Description preserved
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				queue := resources["MyQueue"].(map[string]interface{})
+				verifyNoDeletionPolicy(t, queue, "AWS::SQS::Queue", map[string]interface{}{"Description": "Line1\nLine2"})
+			},
+		},
+		{
+			name: "JSON minified with escaped newline in property - no DeletionPolicy",
+			// This template contains NO actual newline characters (line breaks), so it IS minified.
+			// The \n within the Description property value is an escaped newline (two characters: \ and n),
+			// not an actual line break, so it doesn't affect the minification check.
+			template:      `{"Resources":{"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"Description":"Line1\nLine2"}}}}`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				// Verify it's still minified (no actual newlines)
+				if strings.Contains(result, "\n") {
+					t.Error("Result should remain minified")
+				}
+				// Verify no DeletionPolicy and Description preserved
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				queue := resources["MyQueue"].(map[string]interface{})
+				verifyNoDeletionPolicy(t, queue, "AWS::SQS::Queue", map[string]interface{}{"Description": "Line1\nLine2"})
 			},
 		},
 	}

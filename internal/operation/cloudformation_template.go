@@ -31,6 +31,9 @@ func removeDeletionPolicyFromTemplate(template *string) (string, bool, error) {
 	var data map[string]interface{}
 	if err := json.Unmarshal([]byte(*template), &data); err == nil {
 		// It's JSON - process and return as JSON
+		// Check if template is minified by looking for actual newline characters (line breaks).
+		// Note: Escaped newlines (\n) within JSON string property values are two characters
+		// (backslash and 'n') and do not affect this check.
 		isMinified := !strings.Contains(*template, "\n")
 		changed := removeDeletionPolicyFromResources(data)
 
