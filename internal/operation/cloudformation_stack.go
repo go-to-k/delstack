@@ -317,7 +317,10 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		return err
 	}
 
-	modifiedTemplate, changed := removeDeletionPolicyFromTemplate(template)
+	modifiedTemplate, changed, err := removeDeletionPolicyFromTemplate(template)
+	if err != nil {
+		return err
+	}
 	if len(nestedStacks) == 0 && !changed {
 		return nil
 	}

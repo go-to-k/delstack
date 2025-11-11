@@ -2,6 +2,7 @@ package operation
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -20,10 +21,10 @@ import (
 // Note: This does NOT remove DeletionPolicy with "Delete" or "Snapshot" values.
 // Note: Original formatting (indentation, spacing, property order) may not be preserved.
 //
-// Returns: (modifiedTemplate, changed) where changed is true if any DeletionPolicy was removed.
-func removeDeletionPolicyFromTemplate(template *string) (string, bool) {
+// Returns: (modifiedTemplate, changed, error) where changed is true if any DeletionPolicy was removed.
+func removeDeletionPolicyFromTemplate(template *string) (string, bool, error) {
 	if template == nil || *template == "" {
-		return "", false
+		return "", false, nil
 	}
 
 	// Try to parse as JSON first
@@ -41,10 +42,12 @@ func removeDeletionPolicyFromTemplate(template *string) (string, bool) {
 			result, marshalErr = json.MarshalIndent(data, "", "  ")
 		}
 
+		// Note: This error should not occur in practice because data that was successfully
+		// unmarshaled can always be marshaled back. This check is defensive programming.
 		if marshalErr != nil {
-			return *template, false
+			return "", false, fmt.Errorf("MarshalError: failed to update template for DeletionPolicy removal: %w", marshalErr)
 		}
-		return string(result), changed
+		return string(result), changed, nil
 	}
 
 	// Try to parse as YAML
@@ -53,14 +56,16 @@ func removeDeletionPolicyFromTemplate(template *string) (string, bool) {
 		changed := removeDeletionPolicyFromResources(data)
 
 		result, marshalErr := yaml.Marshal(data)
+		// Note: This error should not occur in practice because data that was successfully
+		// unmarshaled can always be marshaled back. This check is defensive programming.
 		if marshalErr != nil {
-			return *template, false
+			return "", false, fmt.Errorf("MarshalError: failed to update template for DeletionPolicy removal: %w", marshalErr)
 		}
-		return strings.TrimSuffix(string(result), "\n"), changed
+		return strings.TrimSuffix(string(result), "\n"), changed, nil
 	}
 
 	// If both fail, return original
-	return *template, false
+	return *template, false, nil
 }
 
 // removeDeletionPolicyFromResources removes DeletionPolicy (with Retain/RetainExceptOnCreate values)

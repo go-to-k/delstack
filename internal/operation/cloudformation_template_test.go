@@ -17,7 +17,10 @@ type testCase struct {
 
 func runTest(t *testing.T, tt testCase) {
 	t.Helper()
-	got, changed := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+	got, changed, err := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+	if err != nil {
+		t.Fatalf("removeDeletionPolicyFromTemplate() error = %v", err)
+	}
 	if changed != tt.expectChanged {
 		t.Errorf("changed = %v, want %v", changed, tt.expectChanged)
 	}
