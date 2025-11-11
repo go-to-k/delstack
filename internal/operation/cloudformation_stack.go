@@ -341,10 +341,84 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 	return eg.Wait()
 }
 
+// removeDeletionPolicyFromTemplate removes DeletionPolicy properties with Retain or RetainExceptOnCreate values
+// from CloudFormation templates while preserving the original formatting.
+//
+// This function uses a line-based string processing approach instead of YAML/JSON parsers to ensure that:
+// - Original indentation (spaces/tabs) is completely preserved
+// - Property order remains unchanged
+// - Line breaks and whitespace are maintained exactly as in the input
+//
+// Supported formats:
+// - YAML inline: "DeletionPolicy: Retain"
+// - YAML block: "DeletionPolicy:\n  Retain"
+// - JSON formatted: "\"DeletionPolicy\": \"Retain\""
+// - JSON minified: single-line JSON without newlines
+//
+// Note: This does NOT remove DeletionPolicy with "Delete" or "Snapshot" values.
 func (o *CloudFormationStackOperator) removeDeletionPolicyFromTemplate(template *string) string {
-	policies := "(Retain|RetainExceptOnCreate)"
-	// Match both JSON and YAML formats
-	base := fmt.Sprintf(`["']?DeletionPolicy["']?\s*:\s*["']?%[1]s["']?`, policies)
-	deletionPolicyRegexp := regexp.MustCompile(fmt.Sprintf(`(?m)(?:,\s*%[1]s|\s*%[1]s,|\s*%[1]s)`, base))
-	return deletionPolicyRegexp.ReplaceAllString(*template, "")
+	// Pattern to match DeletionPolicy lines with Retain or RetainExceptOnCreate
+	deletionPolicyPattern := regexp.MustCompile(`^\s*["']?DeletionPolicy["']?\s*:\s*["']?(?:Retain|RetainExceptOnCreate)["']?\s*,?\s*$`)
+
+	// Handle minified JSON (single line)
+	if !strings.Contains(*template, "\n") {
+		return o.removeFromMinifiedJSON(*template, deletionPolicyPattern)
+	}
+
+	// Handle multi-line templates (YAML or formatted JSON)
+	return o.removeFromMultiLine(*template, deletionPolicyPattern)
+}
+
+// removeFromMinifiedJSON removes DeletionPolicy from single-line (minified) JSON templates.
+// It handles comma placement to maintain valid JSON syntax after removal.
+func (o *CloudFormationStackOperator) removeFromMinifiedJSON(template string, pattern *regexp.Regexp) string {
+	// For minified JSON, use a simpler approach: match the entire key-value with surrounding commas
+	// Match: "DeletionPolicy":"Retain", or ,"DeletionPolicy":"Retain" or "DeletionPolicy":"Retain"
+	result := regexp.MustCompile(`["']?DeletionPolicy["']?\s*:\s*["']?(?:Retain|RetainExceptOnCreate)["']?\s*,\s*`).ReplaceAllString(template, "")
+	result = regexp.MustCompile(`,\s*["']?DeletionPolicy["']?\s*:\s*["']?(?:Retain|RetainExceptOnCreate)["']?\s*`).ReplaceAllString(result, "")
+	return result
+}
+
+// removeFromMultiLine removes DeletionPolicy from multi-line templates (formatted JSON or YAML).
+// It preserves the original indentation, line breaks, and property order by processing line by line.
+// Supports both YAML inline format ("DeletionPolicy: Retain") and block format ("DeletionPolicy:\n  Retain").
+func (o *CloudFormationStackOperator) removeFromMultiLine(template string, pattern *regexp.Regexp) string {
+	lines := strings.Split(template, "\n")
+	result := make([]string, 0, len(lines))
+
+	// Pattern for YAML block format: DeletionPolicy key without value on same line
+	keyOnlyPattern := regexp.MustCompile(`^\s*["']?DeletionPolicy["']?\s*:\s*$`)
+	// Pattern for the value line (indented Retain or RetainExceptOnCreate)
+	valueOnlyPattern := regexp.MustCompile(`^\s+["']?(?:Retain|RetainExceptOnCreate)["']?\s*$`)
+
+	i := 0
+	for i < len(lines) {
+		line := lines[i]
+
+		// Check for YAML block format (key on one line, value on next)
+		if keyOnlyPattern.MatchString(line) {
+			if i+1 < len(lines) && valueOnlyPattern.MatchString(lines[i+1]) {
+				// Skip both the key and value lines
+				i += 2
+				continue
+			}
+		}
+
+		// Check for inline format (key and value on same line)
+		if pattern.MatchString(line) {
+			// Remove trailing comma from previous line if next line is closing bracket
+			if i > 0 && len(result) > 0 && i+1 < len(lines) {
+				if regexp.MustCompile(`^\s*[}\]]`).MatchString(lines[i+1]) && regexp.MustCompile(`,\s*$`).MatchString(result[len(result)-1]) {
+					result[len(result)-1] = regexp.MustCompile(`,(\s*)$`).ReplaceAllString(result[len(result)-1], "$1")
+				}
+			}
+			i++
+			continue
+		}
+
+		result = append(result, line)
+		i++
+	}
+
+	return strings.Join(result, "\n")
 }
