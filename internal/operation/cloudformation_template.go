@@ -1,101 +1,106 @@
 package operation
 
 import (
-	"regexp"
+	"encoding/json"
 	"strings"
-)
 
-// Regular expression pattern components for DeletionPolicy removal
-const (
-	optionalQuote      = `["']?`
-	retainValues       = `(?:Retain|RetainExceptOnCreate)`
-	deletionPolicyKey  = optionalQuote + `DeletionPolicy` + optionalQuote
-	deletionPolicyPair = deletionPolicyKey + `\s*:\s*` + optionalQuote + retainValues + optionalQuote
+	"gopkg.in/yaml.v3"
 )
 
 // removeDeletionPolicyFromTemplate removes DeletionPolicy properties with Retain or RetainExceptOnCreate values
-// from CloudFormation templates while preserving the original formatting.
+// from CloudFormation templates at the resource level only (not within Properties).
 //
-// This function uses a line-based string processing approach instead of YAML/JSON parsers to ensure that:
-// - Original indentation (spaces/tabs) is completely preserved
-// - Property order remains unchanged
-// - Line breaks and whitespace are maintained exactly as in the input
+// This function uses YAML/JSON parsers to structurally understand the template and only removes
+// DeletionPolicy from the resource level, preserving any DeletionPolicy within resource Properties.
 //
 // Supported formats:
-// - YAML inline: "DeletionPolicy: Retain"
-// - YAML block: "DeletionPolicy:\n  Retain"
-// - JSON formatted: "\"DeletionPolicy\": \"Retain\""
-// - JSON minified: single-line JSON without newlines
+// - YAML (both inline and block formats)
+// - JSON (both formatted and minified)
 //
 // Note: This does NOT remove DeletionPolicy with "Delete" or "Snapshot" values.
-func removeDeletionPolicyFromTemplate(template *string) string {
-	// Handle minified JSON (single line)
-	if !strings.Contains(*template, "\n") {
-		return removeFromMinifiedJSON(*template)
+// Note: Original formatting (indentation, spacing, property order) may not be preserved.
+//
+// Returns: (modifiedTemplate, changed) where changed is true if any DeletionPolicy was removed.
+func removeDeletionPolicyFromTemplate(template *string) (string, bool) {
+	if template == nil || *template == "" {
+		return "", false
 	}
 
-	// Handle multi-line templates (YAML or formatted JSON)
-	return removeFromMultiLine(*template)
+	// Try to parse as JSON first
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(*template), &data); err == nil {
+		// It's JSON - process and return as JSON
+		isMinified := !strings.Contains(*template, "\n")
+		changed := removeDeletionPolicyFromResources(data)
+
+		var result []byte
+		var marshalErr error
+		if isMinified {
+			result, marshalErr = json.Marshal(data)
+		} else {
+			result, marshalErr = json.MarshalIndent(data, "", "  ")
+		}
+
+		if marshalErr != nil {
+			return *template, false
+		}
+		return string(result), changed
+	}
+
+	// Try to parse as YAML
+	if err := yaml.Unmarshal([]byte(*template), &data); err == nil {
+		// It's YAML - process and return as YAML
+		changed := removeDeletionPolicyFromResources(data)
+
+		result, marshalErr := yaml.Marshal(data)
+		if marshalErr != nil {
+			return *template, false
+		}
+		return strings.TrimSuffix(string(result), "\n"), changed
+	}
+
+	// If both fail, return original
+	return *template, false
 }
 
-// removeFromMinifiedJSON removes DeletionPolicy from single-line (minified) JSON templates.
-// It handles comma placement to maintain valid JSON syntax after removal.
-func removeFromMinifiedJSON(template string) string {
-	// For minified JSON, use a simpler approach: match the entire key-value with surrounding commas
-	// Match: "DeletionPolicy":"Retain", or ,"DeletionPolicy":"Retain" or "DeletionPolicy":"Retain"
-	result := regexp.MustCompile(deletionPolicyPair+`\s*,\s*`).ReplaceAllString(template, "")
-	result = regexp.MustCompile(`,\s*`+deletionPolicyPair+`\s*`).ReplaceAllString(result, "")
-	return result
-}
+// removeDeletionPolicyFromResources removes DeletionPolicy (with Retain/RetainExceptOnCreate values)
+// from the Resources section at the resource level only.
+// Returns true if any changes were made.
+func removeDeletionPolicyFromResources(data map[string]interface{}) bool {
+	resources, ok := data["Resources"]
+	if !ok {
+		return false
+	}
 
-// removeFromMultiLine removes DeletionPolicy from multi-line templates (formatted JSON or YAML).
-// It preserves the original indentation, line breaks, and property order by processing line by line.
-// Supports both YAML inline format ("DeletionPolicy: Retain") and block format ("DeletionPolicy:\n  Retain").
-func removeFromMultiLine(template string) string {
-	lines := strings.Split(template, "\n")
-	result := make([]string, 0, len(lines))
+	resourcesMap, ok := resources.(map[string]interface{})
+	if !ok {
+		return false
+	}
 
-	// Pattern to match DeletionPolicy lines with Retain or RetainExceptOnCreate (inline format)
-	inlinePattern := regexp.MustCompile(`^\s*` + deletionPolicyPair + `\s*,?\s*$`)
-	// Pattern for YAML block format: DeletionPolicy key without value on same line
-	keyOnlyPattern := regexp.MustCompile(`^\s*` + deletionPolicyKey + `\s*:\s*$`)
-	// Pattern for the value line (indented Retain or RetainExceptOnCreate)
-	valueOnlyPattern := regexp.MustCompile(`^\s+` + optionalQuote + retainValues + optionalQuote + `\s*$`)
-	// Patterns for trailing comma cleanup
-	closingBracketPattern := regexp.MustCompile(`^\s*[}\]]`)
-	trailingCommaPattern := regexp.MustCompile(`,\s*$`)
-	trailingCommaRemover := regexp.MustCompile(`,(\s*)$`)
-
-	skipNext := false
-	for i, line := range lines {
-		// Skip this line if it was marked by previous iteration
-		if skipNext {
-			skipNext = false
+	changed := false
+	// Iterate through each resource
+	for _, resource := range resourcesMap {
+		resourceMap, ok := resource.(map[string]interface{})
+		if !ok {
 			continue
 		}
 
-		// Check for YAML block format (key on one line, value on next)
-		if keyOnlyPattern.MatchString(line) {
-			if i+1 < len(lines) && valueOnlyPattern.MatchString(lines[i+1]) {
-				// Skip both the key and value lines
-				skipNext = true
-				continue
-			}
-		}
-
-		// Check for inline format (key and value on same line)
-		if inlinePattern.MatchString(line) {
-			// Remove trailing comma from previous line if next line is closing bracket
-			if len(result) > 0 && i+1 < len(lines) {
-				if closingBracketPattern.MatchString(lines[i+1]) && trailingCommaPattern.MatchString(result[len(result)-1]) {
-					result[len(result)-1] = trailingCommaRemover.ReplaceAllString(result[len(result)-1], "$1")
-				}
-			}
+		// Check if DeletionPolicy exists at resource level
+		deletionPolicy, exists := resourceMap["DeletionPolicy"]
+		if !exists {
 			continue
 		}
 
-		result = append(result, line)
-	}
+		// Check if the value is "Retain" or "RetainExceptOnCreate"
+		deletionPolicyStr, ok := deletionPolicy.(string)
+		if !ok {
+			continue
+		}
 
-	return strings.Join(result, "\n")
+		if deletionPolicyStr == "Retain" || deletionPolicyStr == "RetainExceptOnCreate" {
+			delete(resourceMap, "DeletionPolicy")
+			changed = true
+		}
+	}
+	return changed
 }

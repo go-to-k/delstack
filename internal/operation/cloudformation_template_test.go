@@ -1,425 +1,567 @@
 package operation
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"gopkg.in/yaml.v3"
 )
 
-func Test_removeDeletionPolicyFromTemplate_YAMLInline(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		want     string
-	}{
+type testCase struct {
+	name          string
+	template      string
+	expectChanged bool
+	checkFn       func(t *testing.T, result string)
+}
+
+func runTest(t *testing.T, tt testCase) {
+	t.Helper()
+	got, changed := removeDeletionPolicyFromTemplate(aws.String(tt.template))
+	if changed != tt.expectChanged {
+		t.Errorf("changed = %v, want %v", changed, tt.expectChanged)
+	}
+	tt.checkFn(t, got)
+}
+
+// Helper function to verify DeletionPolicy is removed and other properties are preserved
+func verifyDeletionPolicyRemoved(t *testing.T, resource map[string]interface{}, expectedType string, expectedProps map[string]interface{}) {
+	t.Helper()
+	if _, policyExists := resource["DeletionPolicy"]; policyExists {
+		t.Error("DeletionPolicy should be removed")
+	}
+	if resourceType, typeExists := resource["Type"]; !typeExists || resourceType != expectedType {
+		t.Errorf("Type should be %s, got %v", expectedType, resourceType)
+	}
+	props, propsExist := resource["Properties"]
+	if !propsExist {
+		t.Error("Properties should be preserved")
+		return
+	}
+	propsMap := props.(map[string]interface{})
+	for key, expectedValue := range expectedProps {
+		if actualValue, propExists := propsMap[key]; !propExists {
+			t.Errorf("Properties[%s] should exist", key)
+		} else if actualValue != expectedValue {
+			t.Errorf("Properties[%s] = %v, want %v", key, actualValue, expectedValue)
+		}
+	}
+}
+
+// Helper function to verify DeletionPolicy is kept with expected value
+func verifyDeletionPolicyKept(t *testing.T, resource map[string]interface{}, expectedType, expectedPolicy string, expectedProps map[string]interface{}) {
+	t.Helper()
+	policy, policyExists := resource["DeletionPolicy"]
+	if !policyExists {
+		t.Errorf("DeletionPolicy should exist")
+		return
+	}
+	if policy != expectedPolicy {
+		t.Errorf("DeletionPolicy = %v, want %s", policy, expectedPolicy)
+	}
+	if resourceType, typeExists := resource["Type"]; !typeExists || resourceType != expectedType {
+		t.Errorf("Type should be %s, got %v", expectedType, resourceType)
+	}
+	props, propsExist := resource["Properties"]
+	if !propsExist {
+		t.Error("Properties should be preserved")
+		return
+	}
+	propsMap := props.(map[string]interface{})
+	for key, expectedValue := range expectedProps {
+		if actualValue, propExists := propsMap[key]; !propExists {
+			t.Errorf("Properties[%s] should exist", key)
+		} else if actualValue != expectedValue {
+			t.Errorf("Properties[%s] = %v, want %v", key, actualValue, expectedValue)
+		}
+	}
+}
+
+// Helper function to verify DeletionPolicy does not exist
+//
+//nolint:unparam
+func verifyNoDeletionPolicy(t *testing.T, resource map[string]interface{}, expectedType string, expectedProps map[string]interface{}) {
+	t.Helper()
+	if _, policyExists := resource["DeletionPolicy"]; policyExists {
+		t.Error("DeletionPolicy should not exist")
+	}
+	if resourceType, typeExists := resource["Type"]; !typeExists || resourceType != expectedType {
+		t.Errorf("Type should be %s, got %v", expectedType, resourceType)
+	}
+	props, propsExist := resource["Properties"]
+	if !propsExist {
+		t.Error("Properties should be preserved")
+		return
+	}
+	propsMap := props.(map[string]interface{})
+	for key, expectedValue := range expectedProps {
+		if actualValue, propExists := propsMap[key]; !propExists {
+			t.Errorf("Properties[%s] should exist", key)
+		} else if actualValue != expectedValue {
+			t.Errorf("Properties[%s] = %v, want %v", key, actualValue, expectedValue)
+		}
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_RemovesRetain(t *testing.T) {
+	tests := []testCase{
 		{
-			name: "basic",
-			template: `Resources:
-  MyTopic:
+			name: "YAML",
+			template: `AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
     DeletionPolicy: Retain
-    Properties:`,
-			want: `Resources:
-  MyTopic:
-    Properties:`,
-		},
-		{
-			name: "with double quotes on value",
-			template: `Resources:
-  MyTopic:
-    DeletionPolicy: "Retain"
-    Properties:`,
-			want: `Resources:
-  MyTopic:
-    Properties:`,
-		},
-		{
-			name: "with single quotes on value",
-			template: `Resources:
-  MyTopic:
-    DeletionPolicy: 'Retain'
-    Properties:`,
-			want: `Resources:
-  MyTopic:
-    Properties:`,
-		},
-		{
-			name: "with double quoted key",
-			template: `Resources:
-  MyTopic:
-    "DeletionPolicy": "Retain"
-    Properties:`,
-			want: `Resources:
-  MyTopic:
-    Properties:`,
-		},
-		{
-			name: "with single quoted key",
-			template: `Resources:
-  MyTopic:
-    'DeletionPolicy': 'Retain'
-    Properties:`,
-			want: `Resources:
-  MyTopic:
-    Properties:`,
-		},
-		{
-			name: "deletion policy at last",
-			template: `Resources:
-  MyTopic:
     Properties:
-      Key1: Value1
-    DeletionPolicy: Retain`,
-			want: `Resources:
-  MyTopic:
-    Properties:
-      Key1: Value1`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
-			if got != tt.want {
-				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_removeDeletionPolicyFromTemplate_YAMLBlock(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		want     string
-	}{
-		{
-			name: "basic",
-			template: `Resources:
-  MyTopic:
-    DeletionPolicy:
-      Retain
-    Properties:`,
-			want: `Resources:
-  MyTopic:
-    Properties:`,
+      BucketName: test`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := yaml.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse YAML: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				bucket := resources["MyBucket"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", map[string]interface{}{"BucketName": "test"})
+			},
 		},
 		{
-			name: "with double quotes",
-			template: `Resources:
-  MyTopic:
-    "DeletionPolicy":
-      "Retain"
-    Properties:`,
-			want: `Resources:
-  MyTopic:
-    Properties:`,
-		},
-		{
-			name: "with single quotes",
-			template: `Resources:
-  MyTopic:
-    'DeletionPolicy':
-      'Retain'
-    Properties:`,
-			want: `Resources:
-  MyTopic:
-    Properties:`,
-		},
-		{
-			name: "deletion policy at last",
-			template: `Resources:
-  MyTopic:
-    Properties:
-      Key1: Value1
-    DeletionPolicy:
-      Retain`,
-			want: `Resources:
-  MyTopic:
-    Properties:
-      Key1: Value1`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
-			if got != tt.want {
-				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_removeDeletionPolicyFromTemplate_JSONFormatted(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		want     string
-	}{
-		{
-			name: "deletion policy at first",
-			template: `{
-  "Resources": {
-    "MyTopic": {
-      "DeletionPolicy": "Retain",
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`,
-			want: `{
-  "Resources": {
-    "MyTopic": {
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`,
-		},
-		{
-			name: "deletion policy at last",
-			template: `{
-  "Resources": {
-    "MyTopic": {
-      "Type":"AWS::SecretsManager::Secret",
-      "DeletionPolicy": "Retain"
-    }
-  }
-}`,
-			want: `{
-  "Resources": {
-    "MyTopic": {
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`,
-		},
-		{
-			name: "deletion policy in the middle",
-			template: `{
-  "Resources": {
-    "MyTopic": {
-      "UpdatePolicy": "Retain",
-      "DeletionPolicy": "Retain",
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`,
-			want: `{
-  "Resources": {
-    "MyTopic": {
-      "UpdatePolicy": "Retain",
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`,
-		},
-		{
-			name: "trailing comma handling",
+			name: "JSON",
 			template: `{
   "Resources": {
     "MyBucket": {
       "Type": "AWS::S3::Bucket",
-      "Properties": {
-        "BucketName": "test"
-      },
-      "DeletionPolicy": "Retain"
-    }
-  }
-}`,
-			want: `{
-  "Resources": {
-    "MyBucket": {
-      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
       "Properties": {
         "BucketName": "test"
       }
     }
   }
 }`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				bucket := resources["MyBucket"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", map[string]interface{}{"BucketName": "test"})
+			},
+		},
+		{
+			name:          "JSON minified",
+			template:      `{"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"BucketName":"test"}}}}`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				bucket := resources["MyBucket"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", map[string]interface{}{"BucketName": "test"})
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
-			if got != tt.want {
-				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
-			}
+			runTest(t, tt)
 		})
 	}
 }
 
-func Test_removeDeletionPolicyFromTemplate_JSONMinified(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		want     string
-	}{
+func Test_removeDeletionPolicyFromTemplate_RemovesRetainExceptOnCreate(t *testing.T) {
+	tests := []testCase{
 		{
-			name:     "deletion policy at first",
-			template: `{"Resources":{"MyTopic":{"DeletionPolicy":"Retain","Type":"AWS::SecretsManager::Secret"}}}`,
-			want:     `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret"}}}`,
-		},
-		{
-			name:     "deletion policy at last",
-			template: `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret","DeletionPolicy":"Retain"}}}`,
-			want:     `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret"}}}`,
-		},
-		{
-			name:     "deletion policy in the middle",
-			template: `{"Resources":{"MyTopic":{"UpdatePolicy":"Retain","DeletionPolicy":"Retain","Type":"AWS::SecretsManager::Secret"}}}`,
-			want:     `{"Resources":{"MyTopic":{"UpdatePolicy":"Retain","Type":"AWS::SecretsManager::Secret"}}}`,
-		},
-		{
-			name:     "with escaped newline in string value",
-			template: `{"Resources":{"MyResource":{"Type":"AWS::EC2::Instance","Properties":{"UserData":"#!/bin/bash\necho \"Hello\""},"DeletionPolicy":"Retain"}}}`,
-			want:     `{"Resources":{"MyResource":{"Type":"AWS::EC2::Instance","Properties":{"UserData":"#!/bin/bash\necho \"Hello\""}}}}`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
-			if got != tt.want {
-				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_removeDeletionPolicyFromTemplate_RetainExceptOnCreate(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		want     string
-	}{
-		{
-			name: "yaml format",
+			name: "YAML",
 			template: `Resources:
-  MyTopic:
+  MyTable:
+    Type: AWS::DynamoDB::Table
     DeletionPolicy: RetainExceptOnCreate
-    Properties:`,
-			want: `Resources:
-  MyTopic:
-    Properties:`,
+    Properties:
+      TableName: test`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := yaml.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse YAML: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				table := resources["MyTable"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, table, "AWS::DynamoDB::Table", map[string]interface{}{"TableName": "test"})
+			},
 		},
 		{
-			name: "json format at first",
+			name: "JSON",
 			template: `{
   "Resources": {
-    "MyTopic": {
+    "MyTable": {
+      "Type": "AWS::DynamoDB::Table",
       "DeletionPolicy": "RetainExceptOnCreate",
-      "Type":"AWS::SecretsManager::Secret"
+      "Properties": {
+        "TableName": "test"
+      }
     }
   }
 }`,
-			want: `{
-  "Resources": {
-    "MyTopic": {
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				table := resources["MyTable"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, table, "AWS::DynamoDB::Table", map[string]interface{}{"TableName": "test"})
+			},
 		},
 		{
-			name: "json format at last",
-			template: `{
-  "Resources": {
-    "MyRole": {
-      "Type": "AWS::IAM::Role",
-      "DeletionPolicy": "RetainExceptOnCreate"
-    }
-  }
-}`,
-			want: `{
-  "Resources": {
-    "MyRole": {
-      "Type": "AWS::IAM::Role"
-    }
-  }
-}`,
-		},
-		{
-			name:     "minified json format",
-			template: `{"Resources":{"MyTopic":{"DeletionPolicy":"RetainExceptOnCreate","Type":"AWS::SecretsManager::Secret"}}}`,
-			want:     `{"Resources":{"MyTopic":{"Type":"AWS::SecretsManager::Secret"}}}`,
+			name:          "JSON minified",
+			template:      `{"Resources":{"MyTable":{"Type":"AWS::DynamoDB::Table","DeletionPolicy":"RetainExceptOnCreate","Properties":{"TableName":"test"}}}}`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				table := resources["MyTable"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, table, "AWS::DynamoDB::Table", map[string]interface{}{"TableName": "test"})
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
-			if got != tt.want {
-				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
-			}
+			runTest(t, tt)
 		})
 	}
 }
 
-func Test_removeDeletionPolicyFromTemplate_NegativeCases(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		want     string
-	}{
+func Test_removeDeletionPolicyFromTemplate_KeepsSnapshot(t *testing.T) {
+	tests := []testCase{
 		{
-			name: "do not remove Delete",
-			template: `{
-  "Resources": {
-    "MyTopic": {
-      "DeletionPolicy": "Delete",
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`,
-			want: `{
-  "Resources": {
-    "MyTopic": {
-      "DeletionPolicy": "Delete",
-      "Type":"AWS::SecretsManager::Secret"
-    }
-  }
-}`,
+			name: "YAML",
+			template: `Resources:
+  MyDB:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      Engine: mysql`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := yaml.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse YAML: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				db := resources["MyDB"].(map[string]interface{})
+				verifyDeletionPolicyKept(t, db, "AWS::RDS::DBInstance", "Snapshot", map[string]interface{}{"Engine": "mysql"})
+			},
 		},
 		{
-			name: "do not remove Snapshot",
+			name: "JSON",
 			template: `{
   "Resources": {
-    "MyTopic": {
+    "MyDB": {
+      "Type": "AWS::RDS::DBInstance",
       "DeletionPolicy": "Snapshot",
-      "Type":"AWS::RDS::DBInstance"
+      "Properties": {
+        "Engine": "mysql"
+      }
     }
   }
 }`,
-			want: `{
-  "Resources": {
-    "MyTopic": {
-      "DeletionPolicy": "Snapshot",
-      "Type":"AWS::RDS::DBInstance"
-    }
-  }
-}`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				db := resources["MyDB"].(map[string]interface{})
+				verifyDeletionPolicyKept(t, db, "AWS::RDS::DBInstance", "Snapshot", map[string]interface{}{"Engine": "mysql"})
+			},
+		},
+		{
+			name:          "JSON minified",
+			template:      `{"Resources":{"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}}}}`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				db := resources["MyDB"].(map[string]interface{})
+				verifyDeletionPolicyKept(t, db, "AWS::RDS::DBInstance", "Snapshot", map[string]interface{}{"Engine": "mysql"})
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
-			if got != tt.want {
-				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
-			}
+			runTest(t, tt)
 		})
 	}
 }
 
-func Test_removeDeletionPolicyFromTemplate_FormattingPreservation(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		want     string
-	}{
+func Test_removeDeletionPolicyFromTemplate_KeepsDelete(t *testing.T) {
+	tests := []testCase{
 		{
-			name: "yaml indentation with 2 spaces",
+			name: "YAML",
+			template: `Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: test`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := yaml.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse YAML: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				bucket := resources["MyBucket"].(map[string]interface{})
+				verifyDeletionPolicyKept(t, bucket, "AWS::S3::Bucket", "Delete", map[string]interface{}{"BucketName": "test"})
+			},
+		},
+		{
+			name: "JSON",
+			template: `{
+  "Resources": {
+    "MyBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "BucketName": "test"
+      }
+    }
+  }
+}`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				bucket := resources["MyBucket"].(map[string]interface{})
+				verifyDeletionPolicyKept(t, bucket, "AWS::S3::Bucket", "Delete", map[string]interface{}{"BucketName": "test"})
+			},
+		},
+		{
+			name:          "JSON minified",
+			template:      `{"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Delete","Properties":{"BucketName":"test"}}}}`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				bucket := resources["MyBucket"].(map[string]interface{})
+				verifyDeletionPolicyKept(t, bucket, "AWS::S3::Bucket", "Delete", map[string]interface{}{"BucketName": "test"})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runTest(t, tt)
+		})
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_KeepsDeletionPolicyInProperties(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "YAML",
+			template: `Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+              NewerNoncurrentVersions: 3
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := yaml.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse YAML: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				bucket := resources["MyBucket"].(map[string]interface{})
+				// Resource level DeletionPolicy should be removed
+				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", nil)
+				// Properties level configuration should be kept
+				props := bucket["Properties"].(map[string]interface{})
+				lifecycle := props["LifecycleConfiguration"].(map[string]interface{})
+				rules := lifecycle["Rules"].([]interface{})
+				if len(rules) == 0 {
+					t.Error("LifecycleConfiguration Rules should be kept")
+				}
+			},
+		},
+		{
+			name: "JSON",
+			template: `{
+  "Resources": {
+    "MyBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "RetainExceptOnCreate",
+      "Properties": {
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "DeleteOldVersions",
+              "Status": "Enabled",
+              "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 30,
+                "NewerNoncurrentVersions": 3
+              },
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 7
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				bucket := resources["MyBucket"].(map[string]interface{})
+				// Resource level DeletionPolicy should be removed
+				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", nil)
+				// Properties level configuration should be kept
+				props := bucket["Properties"].(map[string]interface{})
+				lifecycle := props["LifecycleConfiguration"].(map[string]interface{})
+				rules := lifecycle["Rules"].([]interface{})
+				if len(rules) == 0 {
+					t.Error("LifecycleConfiguration Rules should be kept")
+				}
+			},
+		},
+		{
+			name:          "JSON minified",
+			template:      `{"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"LifecycleConfiguration":{"Rules":[{"Id":"DeleteOldVersions","Status":"Enabled","NoncurrentVersionExpiration":{"NoncurrentDays":30,"NewerNoncurrentVersions":3},"AbortIncompleteMultipartUpload":{"DaysAfterInitiation":7}}]}}}}}`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				bucket := resources["MyBucket"].(map[string]interface{})
+				// Resource level DeletionPolicy should be removed
+				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", nil)
+				// Properties level configuration should be kept
+				props := bucket["Properties"].(map[string]interface{})
+				lifecycle := props["LifecycleConfiguration"].(map[string]interface{})
+				rules := lifecycle["Rules"].([]interface{})
+				if len(rules) == 0 {
+					t.Error("LifecycleConfiguration Rules should be kept")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runTest(t, tt)
+		})
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_NoDeletionPolicy(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "YAML",
+			template: `Resources:
+  MyQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: test`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := yaml.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse YAML: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				queue := resources["MyQueue"].(map[string]interface{})
+				verifyNoDeletionPolicy(t, queue, "AWS::SQS::Queue", map[string]interface{}{"QueueName": "test"})
+			},
+		},
+		{
+			name: "JSON",
+			template: `{
+  "Resources": {
+    "MyQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "test"
+      }
+    }
+  }
+}`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				queue := resources["MyQueue"].(map[string]interface{})
+				verifyNoDeletionPolicy(t, queue, "AWS::SQS::Queue", map[string]interface{}{"QueueName": "test"})
+			},
+		},
+		{
+			name:          "JSON minified",
+			template:      `{"Resources":{"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"test"}}}}`,
+			expectChanged: false,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+				queue := resources["MyQueue"].(map[string]interface{})
+				verifyNoDeletionPolicy(t, queue, "AWS::SQS::Queue", map[string]interface{}{"QueueName": "test"})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runTest(t, tt)
+		})
+	}
+}
+
+func Test_removeDeletionPolicyFromTemplate_CompleteTemplate(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "YAML",
 			template: `AWSTemplateFormatVersion: '2010-09-09'
+Description: Test template
 Resources:
   MyBucket:
     Type: AWS::S3::Bucket
@@ -430,212 +572,7 @@ Resources:
     Type: AWS::DynamoDB::Table
     DeletionPolicy: RetainExceptOnCreate
     Properties:
-      TableName: test-table`,
-			want: `AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-  MyBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: test-bucket
-  MyTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: test-table`,
-		},
-		{
-			name: "yaml indentation with 4 spaces",
-			template: `AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-    MyBucket:
-        Type: AWS::S3::Bucket
-        DeletionPolicy: Retain
-        Properties:
-            BucketName: test-bucket`,
-			want: `AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-    MyBucket:
-        Type: AWS::S3::Bucket
-        Properties:
-            BucketName: test-bucket`,
-		},
-		{
-			name: "json indentation and order",
-			template: `{
-  "AWSTemplateFormatVersion": "2010-09-09",
-  "Resources": {
-    "MyBucket": {
-      "Type": "AWS::S3::Bucket",
-      "DeletionPolicy": "Retain",
-      "Properties": {
-        "BucketName": "test-bucket"
-      }
-    },
-    "MyRole": {
-      "Type": "AWS::IAM::Role",
-      "DeletionPolicy": "RetainExceptOnCreate"
-    }
-  }
-}`,
-			want: `{
-  "AWSTemplateFormatVersion": "2010-09-09",
-  "Resources": {
-    "MyBucket": {
-      "Type": "AWS::S3::Bucket",
-      "Properties": {
-        "BucketName": "test-bucket"
-      }
-    },
-    "MyRole": {
-      "Type": "AWS::IAM::Role"
-    }
-  }
-}`,
-		},
-		{
-			name: "json order - DeletionPolicy in middle",
-			template: `{
-  "Resources": {
-    "MyTopic": {
-      "Type": "AWS::SNS::Topic",
-      "DeletionPolicy": "Retain",
-      "Properties": {
-        "TopicName": "test-topic"
-      }
-    }
-  }
-}`,
-			want: `{
-  "Resources": {
-    "MyTopic": {
-      "Type": "AWS::SNS::Topic",
-      "Properties": {
-        "TopicName": "test-topic"
-      }
-    }
-  }
-}`,
-		},
-		{
-			name: "yaml order - multiple resources",
-			template: `Resources:
-  FirstResource:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-  SecondResource:
-    Type: AWS::IAM::Role
-    DeletionPolicy: RetainExceptOnCreate
-  ThirdResource:
-    Type: AWS::Lambda::Function`,
-			want: `Resources:
-  FirstResource:
-    Type: AWS::S3::Bucket
-  SecondResource:
-    Type: AWS::IAM::Role
-  ThirdResource:
-    Type: AWS::Lambda::Function`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
-			if got != tt.want {
-				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_removeDeletionPolicyFromTemplate_MultilineStrings(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		want     string
-	}{
-		{
-			name: "yaml with multiline string",
-			template: `Resources:
-  MyResource:
-    Type: AWS::EC2::Instance
-    DeletionPolicy: Retain
-    Properties:
-      UserData: |
-        #!/bin/bash
-        echo "Hello"
-        echo "World"`,
-			want: `Resources:
-  MyResource:
-    Type: AWS::EC2::Instance
-    Properties:
-      UserData: |
-        #!/bin/bash
-        echo "Hello"
-        echo "World"`,
-		},
-		{
-			name: "json with multiline string",
-			template: `{
-  "Resources": {
-    "MyResource": {
-      "Type": "AWS::EC2::Instance",
-      "DeletionPolicy": "Retain",
-      "Properties": {
-        "UserData": "#!/bin/bash
-echo \"Hello\"
-echo \"World\""
-      }
-    }
-  }
-}`,
-			want: `{
-  "Resources": {
-    "MyResource": {
-      "Type": "AWS::EC2::Instance",
-      "Properties": {
-        "UserData": "#!/bin/bash
-echo \"Hello\"
-echo \"World\""
-      }
-    }
-  }
-}`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
-			if got != tt.want {
-				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_removeDeletionPolicyFromTemplate_CompleteTemplates(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		want     string
-	}{
-		{
-			name: "complete YAML template with Retain",
-			template: `AWSTemplateFormatVersion: '2010-09-09'
-Description: Sample template
-Parameters:
-  Env:
-    Type: String
-Resources:
-  MyBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-    Properties:
-      BucketName: !Ref Env
-  MyTable:
-    Type: AWS::DynamoDB::Table
-    DeletionPolicy: RetainExceptOnCreate
-    Properties:
-      TableName: my-table
+      TableName: test-table
   MyDB:
     Type: AWS::RDS::DBInstance
     DeletionPolicy: Snapshot
@@ -644,60 +581,50 @@ Resources:
   MyQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: my-queue
-Outputs:
-  BucketName:
-    Value: !Ref MyBucket`,
-			want: `AWSTemplateFormatVersion: '2010-09-09'
-Description: Sample template
-Parameters:
-  Env:
-    Type: String
-Resources:
-  MyBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Ref Env
-  MyTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: my-table
-  MyDB:
-    Type: AWS::RDS::DBInstance
-    DeletionPolicy: Snapshot
-    Properties:
-      Engine: mysql
-  MyQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: my-queue
-Outputs:
-  BucketName:
-    Value: !Ref MyBucket`,
+      QueueName: test-queue`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := yaml.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse YAML: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+
+				// MyBucket - Retain should be removed
+				bucket := resources["MyBucket"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", map[string]interface{}{"BucketName": "test-bucket"})
+
+				// MyTable - RetainExceptOnCreate should be removed
+				table := resources["MyTable"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, table, "AWS::DynamoDB::Table", map[string]interface{}{"TableName": "test-table"})
+
+				// MyDB - Snapshot should be kept
+				db := resources["MyDB"].(map[string]interface{})
+				verifyDeletionPolicyKept(t, db, "AWS::RDS::DBInstance", "Snapshot", map[string]interface{}{"Engine": "mysql"})
+
+				// MyQueue - no DeletionPolicy
+				queue := resources["MyQueue"].(map[string]interface{})
+				verifyNoDeletionPolicy(t, queue, "AWS::SQS::Queue", map[string]interface{}{"QueueName": "test-queue"})
+			},
 		},
 		{
-			name: "complete JSON template with Retain",
+			name: "JSON",
 			template: `{
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Sample template",
-  "Parameters": {
-    "Env": {
-      "Type": "String"
-    }
-  },
+  "Description": "Test template",
   "Resources": {
     "MyBucket": {
       "Type": "AWS::S3::Bucket",
       "DeletionPolicy": "Retain",
       "Properties": {
-        "BucketName": {"Ref": "Env"}
+        "BucketName": "test-bucket"
       }
     },
     "MyTable": {
       "Type": "AWS::DynamoDB::Table",
       "DeletionPolicy": "RetainExceptOnCreate",
       "Properties": {
-        "TableName": "my-table"
+        "TableName": "test-table"
       }
     },
     "MyDB": {
@@ -710,220 +637,69 @@ Outputs:
     "MyQueue": {
       "Type": "AWS::SQS::Queue",
       "Properties": {
-        "QueueName": "my-queue"
+        "QueueName": "test-queue"
       }
-    }
-  },
-  "Outputs": {
-    "BucketName": {
-      "Value": {"Ref": "MyBucket"}
     }
   }
 }`,
-			want: `{
-  "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Sample template",
-  "Parameters": {
-    "Env": {
-      "Type": "String"
-    }
-  },
-  "Resources": {
-    "MyBucket": {
-      "Type": "AWS::S3::Bucket",
-      "Properties": {
-        "BucketName": {"Ref": "Env"}
-      }
-    },
-    "MyTable": {
-      "Type": "AWS::DynamoDB::Table",
-      "Properties": {
-        "TableName": "my-table"
-      }
-    },
-    "MyDB": {
-      "Type": "AWS::RDS::DBInstance",
-      "DeletionPolicy": "Snapshot",
-      "Properties": {
-        "Engine": "mysql"
-      }
-    },
-    "MyQueue": {
-      "Type": "AWS::SQS::Queue",
-      "Properties": {
-        "QueueName": "my-queue"
-      }
-    }
-  },
-  "Outputs": {
-    "BucketName": {
-      "Value": {"Ref": "MyBucket"}
-    }
-  }
-}`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+
+				// MyBucket - Retain should be removed
+				bucket := resources["MyBucket"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", map[string]interface{}{"BucketName": "test-bucket"})
+
+				// MyTable - RetainExceptOnCreate should be removed
+				table := resources["MyTable"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, table, "AWS::DynamoDB::Table", map[string]interface{}{"TableName": "test-table"})
+
+				// MyDB - Snapshot should be kept
+				db := resources["MyDB"].(map[string]interface{})
+				verifyDeletionPolicyKept(t, db, "AWS::RDS::DBInstance", "Snapshot", map[string]interface{}{"Engine": "mysql"})
+
+				// MyQueue - no DeletionPolicy
+				queue := resources["MyQueue"].(map[string]interface{})
+				verifyNoDeletionPolicy(t, queue, "AWS::SQS::Queue", map[string]interface{}{"QueueName": "test-queue"})
+			},
 		},
 		{
-			name:     "complete minified JSON template with Retain",
-			template: `{"AWSTemplateFormatVersion":"2010-09-09","Description":"Sample template","Parameters":{"Env":{"Type":"String"}},"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"BucketName":{"Ref":"Env"}}},"MyTable":{"Type":"AWS::DynamoDB::Table","DeletionPolicy":"RetainExceptOnCreate","Properties":{"TableName":"my-table"}},"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}},"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"my-queue"}}},"Outputs":{"BucketName":{"Value":{"Ref":"MyBucket"}}}}`,
-			want:     `{"AWSTemplateFormatVersion":"2010-09-09","Description":"Sample template","Parameters":{"Env":{"Type":"String"}},"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","Properties":{"BucketName":{"Ref":"Env"}}},"MyTable":{"Type":"AWS::DynamoDB::Table","Properties":{"TableName":"my-table"}},"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}},"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"my-queue"}}},"Outputs":{"BucketName":{"Value":{"Ref":"MyBucket"}}}}`,
-		},
-		{
-			name: "complete YAML template without Retain",
-			template: `AWSTemplateFormatVersion: '2010-09-09'
-Description: Sample template
-Parameters:
-  Env:
-    Type: String
-Resources:
-  MyBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Delete
-    Properties:
-      BucketName: !Ref Env
-  MyTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: my-table
-  MyDB:
-    Type: AWS::RDS::DBInstance
-    DeletionPolicy: Snapshot
-    Properties:
-      Engine: mysql
-  MyQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: my-queue
-Outputs:
-  BucketName:
-    Value: !Ref MyBucket`,
-			want: `AWSTemplateFormatVersion: '2010-09-09'
-Description: Sample template
-Parameters:
-  Env:
-    Type: String
-Resources:
-  MyBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Delete
-    Properties:
-      BucketName: !Ref Env
-  MyTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: my-table
-  MyDB:
-    Type: AWS::RDS::DBInstance
-    DeletionPolicy: Snapshot
-    Properties:
-      Engine: mysql
-  MyQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: my-queue
-Outputs:
-  BucketName:
-    Value: !Ref MyBucket`,
-		},
-		{
-			name: "complete JSON template without Retain",
-			template: `{
-  "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Sample template",
-  "Parameters": {
-    "Env": {
-      "Type": "String"
-    }
-  },
-  "Resources": {
-    "MyBucket": {
-      "Type": "AWS::S3::Bucket",
-      "DeletionPolicy": "Delete",
-      "Properties": {
-        "BucketName": {"Ref": "Env"}
-      }
-    },
-    "MyTable": {
-      "Type": "AWS::DynamoDB::Table",
-      "Properties": {
-        "TableName": "my-table"
-      }
-    },
-    "MyDB": {
-      "Type": "AWS::RDS::DBInstance",
-      "DeletionPolicy": "Snapshot",
-      "Properties": {
-        "Engine": "mysql"
-      }
-    },
-    "MyQueue": {
-      "Type": "AWS::SQS::Queue",
-      "Properties": {
-        "QueueName": "my-queue"
-      }
-    }
-  },
-  "Outputs": {
-    "BucketName": {
-      "Value": {"Ref": "MyBucket"}
-    }
-  }
-}`,
-			want: `{
-  "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Sample template",
-  "Parameters": {
-    "Env": {
-      "Type": "String"
-    }
-  },
-  "Resources": {
-    "MyBucket": {
-      "Type": "AWS::S3::Bucket",
-      "DeletionPolicy": "Delete",
-      "Properties": {
-        "BucketName": {"Ref": "Env"}
-      }
-    },
-    "MyTable": {
-      "Type": "AWS::DynamoDB::Table",
-      "Properties": {
-        "TableName": "my-table"
-      }
-    },
-    "MyDB": {
-      "Type": "AWS::RDS::DBInstance",
-      "DeletionPolicy": "Snapshot",
-      "Properties": {
-        "Engine": "mysql"
-      }
-    },
-    "MyQueue": {
-      "Type": "AWS::SQS::Queue",
-      "Properties": {
-        "QueueName": "my-queue"
-      }
-    }
-  },
-  "Outputs": {
-    "BucketName": {
-      "Value": {"Ref": "MyBucket"}
-    }
-  }
-}`,
-		},
-		{
-			name:     "complete minified JSON template without Retain",
-			template: `{"AWSTemplateFormatVersion":"2010-09-09","Description":"Sample template","Parameters":{"Env":{"Type":"String"}},"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Delete","Properties":{"BucketName":{"Ref":"Env"}}},"MyTable":{"Type":"AWS::DynamoDB::Table","Properties":{"TableName":"my-table"}},"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}},"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"my-queue"}}},"Outputs":{"BucketName":{"Value":{"Ref":"MyBucket"}}}}`,
-			want:     `{"AWSTemplateFormatVersion":"2010-09-09","Description":"Sample template","Parameters":{"Env":{"Type":"String"}},"Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Delete","Properties":{"BucketName":{"Ref":"Env"}}},"MyTable":{"Type":"AWS::DynamoDB::Table","Properties":{"TableName":"my-table"}},"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}},"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"my-queue"}}},"Outputs":{"BucketName":{"Value":{"Ref":"MyBucket"}}}}`,
+			name:          "JSON minified",
+			template:      `{"AWSTemplateFormatVersion":"2010-09-09","Description":"Test template","Resources":{"MyBucket":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"BucketName":"test-bucket"}},"MyTable":{"Type":"AWS::DynamoDB::Table","DeletionPolicy":"RetainExceptOnCreate","Properties":{"TableName":"test-table"}},"MyDB":{"Type":"AWS::RDS::DBInstance","DeletionPolicy":"Snapshot","Properties":{"Engine":"mysql"}},"MyQueue":{"Type":"AWS::SQS::Queue","Properties":{"QueueName":"test-queue"}}}}`,
+			expectChanged: true,
+			checkFn: func(t *testing.T, result string) {
+				var data map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &data); err != nil {
+					t.Fatalf("Failed to parse JSON: %v", err)
+				}
+				resources := data["Resources"].(map[string]interface{})
+
+				// MyBucket - Retain should be removed
+				bucket := resources["MyBucket"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, bucket, "AWS::S3::Bucket", map[string]interface{}{"BucketName": "test-bucket"})
+
+				// MyTable - RetainExceptOnCreate should be removed
+				table := resources["MyTable"].(map[string]interface{})
+				verifyDeletionPolicyRemoved(t, table, "AWS::DynamoDB::Table", map[string]interface{}{"TableName": "test-table"})
+
+				// MyDB - Snapshot should be kept
+				db := resources["MyDB"].(map[string]interface{})
+				verifyDeletionPolicyKept(t, db, "AWS::RDS::DBInstance", "Snapshot", map[string]interface{}{"Engine": "mysql"})
+
+				// MyQueue - no DeletionPolicy
+				queue := resources["MyQueue"].(map[string]interface{})
+				verifyNoDeletionPolicy(t, queue, "AWS::SQS::Queue", map[string]interface{}{"QueueName": "test-queue"})
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := removeDeletionPolicyFromTemplate(aws.String(tt.template))
-			if got != tt.want {
-				t.Errorf("removeDeletionPolicyFromTemplate() = %v, want %v", got, tt.want)
-			}
+			runTest(t, tt)
 		})
 	}
 }

@@ -317,11 +317,11 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		return err
 	}
 
-	modifiedTemplate := removeDeletionPolicyFromTemplate(template)
-	if len(nestedStacks) == 0 && modifiedTemplate == *template {
+	modifiedTemplate, changed := removeDeletionPolicyFromTemplate(template)
+	if len(nestedStacks) == 0 && !changed {
 		return nil
 	}
-	if modifiedTemplate != *template {
+	if changed {
 		if err = o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stacks[0].Parameters); err != nil {
 			return err
 		}
