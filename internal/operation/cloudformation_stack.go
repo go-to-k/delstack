@@ -321,13 +321,13 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 	if err != nil {
 		return err
 	}
-	if len(nestedStacks) == 0 && !changed {
-		return nil
-	}
 	if changed {
 		if err = o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stacks[0].Parameters); err != nil {
 			return err
 		}
+	}
+	if len(nestedStacks) == 0 {
+		return nil
 	}
 
 	// If we update the child stack first, after the child stack is updated, the parent stack will be updated
