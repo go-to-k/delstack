@@ -52,7 +52,7 @@ func removeDeletionPolicyFromTemplate(template *string) (string, bool, error) {
 		// Note: This error should not occur in practice because data that was successfully
 		// unmarshaled can always be marshaled back. This check is defensive programming.
 		if marshalErr != nil {
-			return "", false, fmt.Errorf("MarshalError: failed to update template for DeletionPolicy removal: %w", marshalErr)
+			return "", false, fmt.Errorf("RemoveDeletionPolicyError: failed to update template for DeletionPolicy removal: %w", marshalErr)
 		}
 		return string(result), changed, nil
 	}
@@ -69,13 +69,13 @@ func removeDeletionPolicyFromTemplate(template *string) (string, bool, error) {
 		// Note: This error should not occur in practice because data that was successfully
 		// unmarshaled can always be marshaled back. This check is defensive programming.
 		if marshalErr != nil {
-			return "", false, fmt.Errorf("MarshalError: failed to update template for DeletionPolicy removal: %w", marshalErr)
+			return "", false, fmt.Errorf("RemoveDeletionPolicyError: failed to update template for DeletionPolicy removal: %w", marshalErr)
 		}
 		return strings.TrimSuffix(string(result), "\n"), changed, nil
 	}
 
-	// If both fail, return original
-	return *template, false, nil
+	// Note: Never reached: template must be either valid JSON or valid YAML
+	return "", false, fmt.Errorf("RemoveDeletionPolicyError: failed to update template for DeletionPolicy removal because template is neither valid JSON nor valid YAML")
 }
 
 // removeDeletionPolicyFromResources removes DeletionPolicy (with Retain/RetainExceptOnCreate values)
