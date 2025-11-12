@@ -91,20 +91,23 @@ func (d *StackDeleter) deleteStackGroup(
 	eg, ctx := errgroup.WithContext(ctx)
 
 	var sem *semaphore.Weighted
+	var weight int64
+
 	if d.concurrencyNumber == UnspecifiedConcurrencyNumber {
-		sem = semaphore.NewWeighted(int64(len(stackNames)))
+		weight = int64(len(stackNames))
 	} else {
-		sem = semaphore.NewWeighted(int64(d.concurrencyNumber))
+		weight = int64(d.concurrencyNumber)
 	}
+	sem = semaphore.NewWeighted(weight)
 
 	isRootStack := true
 	for _, stackName := range stackNames {
 		stack := targetStacksMap[stackName]
 
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		eg.Go(func() error {
-			if err := sem.Acquire(ctx, 1); err != nil {
-				return err
-			}
 			defer sem.Release(1)
 
 			return d.deleteSingleStack(ctx, stack, config, operatorFactory, isRootStack)
