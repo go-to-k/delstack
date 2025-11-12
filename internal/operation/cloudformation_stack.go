@@ -7,9 +7,11 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/internal/resourcetype"
 	"github.com/go-to-k/delstack/pkg/client"
@@ -41,14 +43,16 @@ var StackNameRuleRegExp = regexp.MustCompile(StackNameRule)
 type CloudFormationStackOperator struct {
 	config              aws.Config
 	client              client.ICloudFormation
+	s3Client            client.IS3
 	resources           []*types.StackResourceSummary
 	targetResourceTypes []string
 }
 
-func NewCloudFormationStackOperator(config aws.Config, client client.ICloudFormation, targetResourceTypes []string) *CloudFormationStackOperator {
+func NewCloudFormationStackOperator(config aws.Config, client client.ICloudFormation, s3Client client.IS3, targetResourceTypes []string) *CloudFormationStackOperator {
 	return &CloudFormationStackOperator{
 		config:              config,
 		client:              client,
+		s3Client:            s3Client,
 		resources:           []*types.StackResourceSummary{},
 		targetResourceTypes: targetResourceTypes,
 	}
@@ -322,8 +326,31 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		return err
 	}
 	if changed {
-		if err = o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stacks[0].Parameters); err != nil {
-			return err
+		// Check if the template size exceeds the CloudFormation limit (51,200 bytes)
+		const maxTemplateBodySize = 51200
+		if len(modifiedTemplate) > maxTemplateBodySize {
+			// Upload the template to S3 and use TemplateURL
+			templateURL, bucketName, key, uploadErr := o.uploadTemplateToS3(ctx, stackName, &modifiedTemplate, stacks)
+			if uploadErr != nil {
+				return uploadErr
+			}
+
+			// Ensure cleanup of temporary template file from S3, regardless of UpdateStack success or failure
+			defer func() {
+				if deleteErr := o.deleteTemplateFromS3(ctx, bucketName, key); deleteErr != nil {
+					// Log the error but don't fail the operation
+					io.Logger.Warn().Msgf("Failed to delete temporary template from S3: %v", deleteErr)
+				}
+			}()
+
+			if err = o.client.UpdateStackWithTemplateURL(ctx, stackName, templateURL, stacks[0].Parameters); err != nil {
+				return err
+			}
+		} else {
+			// Use TemplateBody for smaller templates
+			if err = o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stacks[0].Parameters); err != nil {
+				return err
+			}
 		}
 	}
 	if len(nestedStacks) == 0 {
@@ -342,4 +369,79 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 	}
 
 	return eg.Wait()
+}
+
+func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, stackName *string, template *string, stacks []types.Stack) (*string, *string, *string, error) {
+	// Extract account ID from stack ARN
+	accountID := ""
+	if len(stacks) > 0 && stacks[0].StackId != nil {
+		arnParts := strings.Split(*stacks[0].StackId, ":")
+		if len(arnParts) >= 5 {
+			accountID = arnParts[4]
+		}
+	}
+
+	if accountID == "" {
+		return nil, nil, nil, fmt.Errorf("S3UploadError: failed to extract account ID from stack ARN")
+	}
+
+	// Create a unique bucket name using account ID, region, delstack identifier, and timestamp
+	// Format: delstack-templates-{account-id}-{region}-{timestamp}
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+	bucketName := fmt.Sprintf("delstack-templates-%s-%s-%s", accountID, o.config.Region, timestamp)
+
+	// Ensure bucket cleanup if upload fails (only after bucket is created)
+	bucketCreated := false
+	defer func() {
+		if bucketCreated {
+			// If we return early due to error, clean up the bucket
+			if cleanupErr := o.s3Client.DeleteBucket(ctx, &bucketName); cleanupErr != nil {
+				io.Logger.Warn().Msgf("Failed to cleanup S3 bucket after error: %v", cleanupErr)
+			}
+		}
+	}()
+
+	// Create the S3 bucket
+	if err := o.s3Client.CreateBucket(ctx, &bucketName); err != nil {
+		return nil, nil, nil, fmt.Errorf("S3UploadError: failed to create S3 bucket: %w", err)
+	}
+	bucketCreated = true
+
+	// Create a key for the template using stack name
+	key := fmt.Sprintf("%s.template", *stackName)
+
+	// Upload the template to S3
+	if err := o.s3Client.PutObject(ctx, &bucketName, &key, template); err != nil {
+		return nil, nil, nil, fmt.Errorf("S3UploadError: failed to upload template to S3: %w", err)
+	}
+
+	// Success - don't cleanup bucket (it will be cleaned up by main defer)
+	bucketCreated = false
+
+	// Return the S3 URL, bucket name, and key
+	templateURL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucketName, o.config.Region, key)
+	return &templateURL, &bucketName, &key, nil
+}
+
+func (o *CloudFormationStackOperator) deleteTemplateFromS3(ctx context.Context, bucketName *string, key *string) error {
+	// Delete the template file
+	objectIdentifier := []s3types.ObjectIdentifier{
+		{
+			Key: key,
+		},
+	}
+	errors, err := o.s3Client.DeleteObjects(ctx, bucketName, objectIdentifier)
+	if err != nil {
+		return err
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf("S3 delete object errors: %v", errors)
+	}
+
+	// Delete the bucket itself
+	if err := o.s3Client.DeleteBucket(ctx, bucketName); err != nil {
+		return fmt.Errorf("S3 delete bucket error: %w", err)
+	}
+
+	return nil
 }
