@@ -1,5 +1,8 @@
 # Changelog
 
+## [v1.17.1](https://github.com/go-to-k/delstack/compare/v1.17.0...v1.17.1) - 2025-11-12
+- fix(operation): template corruption when removing RetainExceptOnCreate DeletionPolicy by @go-to-k in https://github.com/go-to-k/delstack/pull/504
+
 ## [v1.17.0](https://github.com/go-to-k/delstack/compare/v1.16.2...v1.17.0) - 2025-11-07
 - feat: support S3 Vectors by @go-to-k in https://github.com/go-to-k/delstack/pull/498
 - test: refactor deploy.go for cdk in testdata by @go-to-k in https://github.com/go-to-k/delstack/pull/500
