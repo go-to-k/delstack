@@ -317,14 +317,17 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		return err
 	}
 
-	modifiedTemplate := o.removeDeletionPolicyFromTemplate(template)
-	if len(nestedStacks) == 0 && modifiedTemplate == *template {
-		return nil
+	modifiedTemplate, changed, err := removeDeletionPolicyFromTemplate(template)
+	if err != nil {
+		return err
 	}
-	if modifiedTemplate != *template {
+	if changed {
 		if err = o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stacks[0].Parameters); err != nil {
 			return err
 		}
+	}
+	if len(nestedStacks) == 0 {
+		return nil
 	}
 
 	// If we update the child stack first, after the child stack is updated, the parent stack will be updated
@@ -339,12 +342,4 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 	}
 
 	return eg.Wait()
-}
-
-func (o *CloudFormationStackOperator) removeDeletionPolicyFromTemplate(template *string) string {
-	policies := "(Retain|RetainExceptOnCreate)"
-	// Match both JSON and YAML formats
-	base := fmt.Sprintf(`["']?DeletionPolicy["']?\s*:\s*["']?%[1]s["']?`, policies)
-	deletionPolicyRegexp := regexp.MustCompile(fmt.Sprintf(`(?m)(?:,\s*%[1]s|\s*%[1]s,|\s*%[1]s)`, base))
-	return deletionPolicyRegexp.ReplaceAllString(*template, "")
 }
