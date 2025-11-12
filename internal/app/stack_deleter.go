@@ -96,7 +96,7 @@ func (d *StackDeleter) deleteStackGroup(
 	if d.concurrencyNumber == UnspecifiedConcurrencyNumber {
 		weight = int64(len(stackNames))
 	} else {
-		weight = int64(d.concurrencyNumber)
+		weight = min(int64(d.concurrencyNumber), int64(len(stackNames)))
 	}
 	sem = semaphore.NewWeighted(weight)
 
