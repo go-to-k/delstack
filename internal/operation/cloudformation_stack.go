@@ -311,6 +311,11 @@ func (o *CloudFormationStackOperator) BuildDependencyGraph(
 
 			importingStacks, err := o.client.ListImports(ctx, aws.String(exportName))
 			if err != nil {
+				// If the export is not imported by any stack, ListImports returns ValidationError
+				// This is not an error condition for dependency graph building
+				if strings.Contains(err.Error(), "is not imported by any stack") {
+					continue
+				}
 				return nil, err
 			}
 

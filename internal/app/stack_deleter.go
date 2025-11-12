@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/internal/operation"
-	"golang.org/x/sync/errgroup"
+	"github.com/go-to-k/delstack/internal/resourcetype"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -24,21 +25,6 @@ func NewStackDeleter(forceMode bool, concurrencyNumber int) *StackDeleter {
 	}
 }
 
-func (d *StackDeleter) DeleteStacksSequentially(
-	ctx context.Context,
-	targetStacks []targetStack,
-	config aws.Config,
-	operatorFactory *operation.OperatorFactory,
-) error {
-	isRootStack := true
-	for _, stack := range targetStacks {
-		if err := d.deleteSingleStack(ctx, stack, config, operatorFactory, isRootStack); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (d *StackDeleter) DeleteStacksConcurrently(
 	ctx context.Context,
 	targetStacks []targetStack,
@@ -52,7 +38,7 @@ func (d *StackDeleter) DeleteStacksConcurrently(
 		targetStacksMap[stack.stackName] = stack
 	}
 
-	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator([]string{})
+	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(resourcetype.GetResourceTypes())
 
 	io.Logger.Info().Msg("Analyzing stack dependencies...")
 	graph, err := cloudformationStackOperator.BuildDependencyGraph(ctx, stackNames)
@@ -66,57 +52,147 @@ func (d *StackDeleter) DeleteStacksConcurrently(
 		return err
 	}
 
-	deletionGroups := graph.GetDeletionGroups()
-	io.Logger.Info().Msgf("Deletion will be performed in %d group(s)", len(deletionGroups))
+	io.Logger.Info().Msgf("Starting deletion of %d stack(s) with dynamic scheduling...", len(stackNames))
 
-	for groupIndex, group := range deletionGroups {
-		io.Logger.Info().Msgf("Group %d: Deleting %d stack(s) concurrently: %v",
-			groupIndex+1, len(group), strings.Join(group, ", "))
-
-		if err := d.deleteStackGroup(ctx, group, targetStacksMap, config, operatorFactory); err != nil {
-			return fmt.Errorf("ConcurrentDeleteError: failed to delete group %d: %w", groupIndex+1, err)
-		}
-	}
-
-	return nil
+	return d.deleteStacksDynamically(ctx, graph, targetStacksMap, config, operatorFactory)
 }
 
-func (d *StackDeleter) deleteStackGroup(
+func (d *StackDeleter) deleteStacksDynamically(
 	ctx context.Context,
-	stackNames []string,
+	graph *operation.StackDependencyGraph,
 	targetStacksMap map[string]targetStack,
 	config aws.Config,
 	operatorFactory *operation.OperatorFactory,
 ) error {
-	eg, ctx := errgroup.WithContext(ctx)
+	// Calculate reverse in-degree: how many stacks depend on this stack
+	reverseInDegree := make(map[string]int)
+	dependencies := graph.GetDependencies()
+	allStacks := graph.GetAllStacks()
 
-	var sem *semaphore.Weighted
-	var weight int64
-
-	if d.concurrencyNumber == UnspecifiedConcurrencyNumber {
-		weight = int64(len(stackNames))
-	} else {
-		weight = min(int64(d.concurrencyNumber), int64(len(stackNames)))
+	for stack := range allStacks {
+		reverseInDegree[stack] = 0
 	}
-	sem = semaphore.NewWeighted(weight)
-
-	isRootStack := true
-	for _, stackName := range stackNames {
-		stack := targetStacksMap[stackName]
-
-		if err := sem.Acquire(ctx, 1); err != nil {
-			return err
+	for _, deps := range dependencies {
+		for depStack := range deps {
+			reverseInDegree[depStack]++
 		}
-		eg.Go(func() error {
+	}
+
+	// Initialize queue with stacks that have reverse in-degree 0
+	var stateMutex sync.Mutex // Protects queue, reverseInDegree, and deletedStacks
+	queue := []string{}
+	for stack := range allStacks {
+		if reverseInDegree[stack] == 0 {
+			queue = append(queue, stack)
+		}
+	}
+
+	// Channel to signal stack deletion completion
+	completionChan := make(chan string, len(allStacks))
+	errorChan := make(chan error, 1)
+
+	// Track deletion progress
+	var deletedCount int
+	totalStacks := len(allStacks)
+	deletedStacks := []string{}
+
+	// Semaphore for concurrency control
+	var weight int64
+	if d.concurrencyNumber == UnspecifiedConcurrencyNumber {
+		weight = int64(totalStacks)
+	} else {
+		weight = min(int64(d.concurrencyNumber), int64(totalStacks))
+	}
+	sem := semaphore.NewWeighted(weight)
+
+	// Context for goroutines
+	deleteCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Worker to process deletions
+	var wg sync.WaitGroup
+
+	// Function to start deletion of a stack
+	startDeletion := func(stackName string) {
+		if err := sem.Acquire(deleteCtx, 1); err != nil {
+			select {
+			case errorChan <- err:
+			default:
+			}
+			return
+		}
+
+		wg.Add(1)
+		go func(name string) {
+			defer wg.Done()
 			defer sem.Release(1)
 
-			return d.deleteSingleStack(ctx, stack, config, operatorFactory, isRootStack)
-		})
+			stack := targetStacksMap[name]
+			if err := d.deleteSingleStack(deleteCtx, stack, config, operatorFactory, true); err != nil {
+				select {
+				case errorChan <- err:
+				default:
+				}
+				cancel() // Cancel all other operations on error
+				return
+			}
+
+			// Signal completion
+			completionChan <- name
+		}(stackName)
 	}
 
-	if err := eg.Wait(); err != nil {
-		return err
+	// Start initial deletions
+	for _, stackName := range queue {
+		startDeletion(stackName)
 	}
+	stateMutex.Lock()
+	queue = []string{} // Clear the queue
+	stateMutex.Unlock()
+
+	// Process completions and start new deletions
+	for deletedCount < totalStacks {
+		select {
+		case <-deleteCtx.Done():
+			// Wait for all goroutines to finish
+			wg.Wait()
+			return deleteCtx.Err()
+
+		case err := <-errorChan:
+			// Wait for all goroutines to finish
+			wg.Wait()
+			return err
+
+		case deletedStackName := <-completionChan:
+			// Update reverse in-degree and find newly available stacks
+			stateMutex.Lock()
+			deletedCount++
+			deletedStacks = append(deletedStacks, deletedStackName)
+			io.Logger.Info().Msgf("Progress: %d/%d stacks deleted [%s]", deletedCount, totalStacks, strings.Join(deletedStacks, ", "))
+
+			for depStack := range dependencies[deletedStackName] {
+				reverseInDegree[depStack]--
+				if reverseInDegree[depStack] == 0 {
+					queue = append(queue, depStack)
+				}
+			}
+
+			// Start deletions for newly available stacks
+			newlyAvailableStacks := make([]string, len(queue))
+			copy(newlyAvailableStacks, queue)
+			queue = []string{} // Clear the queue
+			stateMutex.Unlock()
+
+			for _, stackName := range newlyAvailableStacks {
+				startDeletion(stackName)
+			}
+		}
+	}
+
+	// Wait for all goroutines to finish
+	wg.Wait()
+	close(completionChan)
+	close(errorChan)
 
 	return nil
 }

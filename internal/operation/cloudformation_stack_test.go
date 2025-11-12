@@ -3833,7 +3833,7 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 			wantErr:          true,
 		},
 		{
-			name: "error on ListImports",
+			name: "export is not imported by any stack (should not error)",
 			args: args{
 				ctx:        context.Background(),
 				stackNames: []string{"stack-a"},
@@ -3856,7 +3856,37 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 				)
 				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a")).Return(
 					nil,
-					fmt.Errorf("ListImports error"),
+					fmt.Errorf("ValidationError: Export 'export-a' is not imported by any stack."),
+				)
+			},
+			wantDependencies: map[string]map[string]struct{}{},
+			wantErr:          false,
+		},
+		{
+			name: "error on ListImports (non-validation error)",
+			args: args{
+				ctx:        context.Background(),
+				stackNames: []string{"stack-a"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-a")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-a"),
+							Outputs: []types.Output{
+								{
+									OutputKey:   aws.String("ExportA"),
+									OutputValue: aws.String("value-a"),
+									ExportName:  aws.String("export-a"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a")).Return(
+					nil,
+					fmt.Errorf("Some other ListImports error"),
 				)
 			},
 			wantDependencies: nil,

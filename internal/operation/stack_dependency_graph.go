@@ -2,7 +2,6 @@ package operation
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 )
 
@@ -27,16 +26,25 @@ and determine the concurrent deletion order considering dependencies.
 
 ## Deletion Logic
 
-### Grouping by Topological Sort
-Stacks are divided into "concurrently deletable groups".
-Stacks within each group can be deleted concurrently, while groups are deleted serially.
+### Dynamic Deletion with Topological Sort
+Stacks are deleted dynamically based on dependency resolution.
+When a stack deletion completes, any stacks that depend only on that stack
+become immediately available for deletion, without waiting for other concurrent deletions.
 
-### Algorithm (Topological Sort Based on In-Degree)
-1. Calculate the in-degree (number of dependencies) for each stack
-2. Add stacks with in-degree 0 (no dependencies) to the current group
-3. Mark stacks in the group as "deleted"
-4. Decrease the in-degree of other stacks that depended on the deleted stacks
-5. Repeat steps 2-4 until all stacks are processed
+### Algorithm (Dynamic Topological Sort Based on Reverse In-Degree)
+1. Calculate the reverse in-degree (number of dependents) for each stack
+2. Add stacks with reverse in-degree 0 (no dependents) to the deletion queue
+3. Start deletion of all stacks in the queue (up to concurrency limit)
+4. When a stack deletion completes:
+   - Decrease the reverse in-degree of stacks it depends on
+   - Add newly available stacks (reverse in-degree becomes 0) to the queue
+   - Start their deletion immediately
+5. Repeat step 4 until all stacks are deleted
+
+### Key Benefits of Dynamic Deletion
+- **Maximum Parallelism**: Stacks become deletable as soon as their dependencies are resolved
+- **No Artificial Grouping**: Unlike group-based deletion, stacks don't wait for their "group" to complete
+- **Progress Tracking**: Shows "X/Y stacks deleted" for clear progress indication
 
 ## Examples
 
@@ -60,15 +68,20 @@ Reverse In-Degree Calculation (how many stacks depend on this stack):
   B: 1 (C depends on B)
   C: 0 (no one depends on C)
 
-Deletion Groups:
-  Group 0: [C]  (reverse in-degree 0, can delete first)
-  Group 1: [B]  (reverse in-degree becomes 0 after C is deleted)
-  Group 2: [A]  (reverse in-degree becomes 0 after B is deleted)
+Dynamic Deletion Flow:
+  Initial queue: [C]  (reverse in-degree 0)
 
-Execution:
-  1. Delete C (wait for completion)
-  2. Delete B (wait for completion)
-  3. Delete A (wait for completion)
+  Step 1: Start deleting C
+  Step 2: C completes → decrease B's reverse in-degree (1→0) → add B to queue
+  Step 3: Start deleting B
+  Step 4: B completes → decrease A's reverse in-degree (1→0) → add A to queue
+  Step 5: Start deleting A
+  Step 6: A completes → all done
+
+Progress Output:
+  "Progress: 1/3 stacks deleted" (after C)
+  "Progress: 2/3 stacks deleted" (after B)
+  "Progress: 3/3 stacks deleted" (after A)
 ```
 
 ### Example 2: Diamond Dependency (Mixed Concurrent and Serial)
@@ -97,15 +110,22 @@ Reverse In-Degree Calculation (how many stacks depend on this stack):
   C: 1 (D depends on C)
   D: 0 (no one depends on D)
 
-Deletion Groups:
-  Group 0: [D]           (reverse in-degree 0, can delete first)
-  Group 1: [B, C]        (reverse in-degree becomes 0 after D is deleted)
-  Group 2: [A]           (reverse in-degree becomes 0 after B and C are deleted)
+Dynamic Deletion Flow:
+  Initial queue: [D]  (reverse in-degree 0)
 
-Execution:
-  1. Delete D (wait for completion)
-  2. Delete B and C concurrently (wait for both)
-  3. Delete A (wait for completion)
+  Step 1: Start deleting D
+  Step 2: D completes → decrease B's and C's reverse in-degree (both 1→0) → add B, C to queue
+  Step 3: Start deleting B and C concurrently
+  Step 4: B completes → decrease A's reverse in-degree (2→1)
+  Step 5: C completes → decrease A's reverse in-degree (1→0) → add A to queue
+  Step 6: Start deleting A
+  Step 7: A completes → all done
+
+Progress Output:
+  "Progress: 1/4 stacks deleted" (after D)
+  "Progress: 2/4 stacks deleted" (after B or C)
+  "Progress: 3/4 stacks deleted" (after C or B)
+  "Progress: 4/4 stacks deleted" (after A)
 ```
 
 ### Example 3: Complex Dependencies (Multiple Levels of Parallelism)
@@ -142,15 +162,29 @@ Reverse In-Degree Calculation (how many stacks depend on this stack):
   E: 1 (F depends on E)
   F: 0 (no one depends on F)
 
-Deletion Groups:
-  Group 0: [F]                 (reverse in-degree 0, can delete first)
-  Group 1: [C, D, E]           (reverse in-degree becomes 0 after F is deleted)
-  Group 2: [A, B]              (reverse in-degree becomes 0 after C, D, E are deleted)
+Dynamic Deletion Flow:
+  Initial queue: [F]  (reverse in-degree 0)
 
-Execution:
-  1. Delete F (wait for completion)
-  2. Delete C, D, E concurrently (wait for all three)
-  3. Delete A and B concurrently (wait for both)
+  Step 1: Start deleting F
+  Step 2: F completes → decrease C's, D's, E's reverse in-degree (all 1→0) → add C, D, E to queue
+  Step 3: Start deleting C, D, E concurrently
+  Step 4: E completes → decrease B's reverse in-degree (1→0) → add B to queue
+  Step 5: Start deleting B (doesn't wait for C, D!)
+  Step 6: C completes → decrease A's reverse in-degree (2→1)
+  Step 7: D completes → decrease A's reverse in-degree (1→0) → add A to queue
+  Step 8: Start deleting A
+  Step 9: B and A complete → all done
+
+Progress Output:
+  "Progress: 1/6 stacks deleted" (after F)
+  "Progress: 2/6 stacks deleted" (after E)
+  "Progress: 3/6 stacks deleted" (after C)
+  "Progress: 4/6 stacks deleted" (after D)
+  "Progress: 5/6 stacks deleted" (after B or A)
+  "Progress: 6/6 stacks deleted" (after A or B)
+
+Note: B can start as soon as E completes, without waiting for C and D!
+      This is the key advantage of dynamic deletion.
 ```
 
 ### Example 4: Independent Stacks
@@ -173,15 +207,24 @@ Reverse In-Degree Calculation (how many stacks depend on this stack):
   C: 0
   D: 0
 
-Deletion Groups:
-  Group 0: [A, B, C, D]
+Dynamic Deletion Flow:
+  Initial queue: [A, B, C, D]  (all have reverse in-degree 0)
 
-Execution:
-  1. Delete A, B, C, D concurrently (wait for all four)
+  Without concurrency limit:
+    Step 1: Start deleting A, B, C, D concurrently
+    Step 2-5: All complete in any order
 
-With concurrency limit (-n 2):
-  1. Delete A and B concurrently (wait for completion)
-  2. Delete C and D concurrently (wait for completion)
+  With concurrency limit (-n 2):
+    Step 1: Start deleting A and B (semaphore limit reached)
+    Step 2: A completes → start deleting C
+    Step 3: B completes → start deleting D
+    Step 4: C and D complete
+
+Progress Output:
+  "Progress: 1/4 stacks deleted"
+  "Progress: 2/4 stacks deleted"
+  "Progress: 3/4 stacks deleted"
+  "Progress: 4/4 stacks deleted"
 ```
 
 ### Example 5: Multiple Outputs Referenced (Deduplication)
@@ -200,13 +243,17 @@ Reverse In-Degree Calculation (how many stacks depend on this stack):
   A: 1 (B depends on A)
   B: 0 (no one depends on B)
 
-Deletion Groups:
-  Group 0: [B]  (reverse in-degree 0, can delete first)
-  Group 1: [A]  (reverse in-degree becomes 0 after B is deleted)
+Dynamic Deletion Flow:
+  Initial queue: [B]  (reverse in-degree 0)
 
-Execution:
-  1. Delete B (wait for completion)
-  2. Delete A (wait for completion)
+  Step 1: Start deleting B
+  Step 2: B completes → decrease A's reverse in-degree (1→0) → add A to queue
+  Step 3: Start deleting A
+  Step 4: A completes → all done
+
+Progress Output:
+  "Progress: 1/2 stacks deleted" (after B)
+  "Progress: 2/2 stacks deleted" (after A)
 
 Note:
   Even if AddDependency("B", "A") is called multiple times,
@@ -256,46 +303,57 @@ Reverse In-Degree Calculation (how many stacks depend on this stack):
   A: 1 (B depends on A)
   B: 0 (no one depends on B)
 
-Deletion Groups:
-  Group 0: [B]  (reverse in-degree 0, can delete first)
-  Group 1: [A]  (reverse in-degree becomes 0 after B is deleted)
+Dynamic Deletion Flow:
+  Initial queue: [B]  (reverse in-degree 0)
 
-Execution:
-  1. Delete B (wait for completion)
-  2. Delete A (wait for completion)
+  Step 1: Start deleting B
+  Step 2: B completes → decrease A's reverse in-degree (1→0) → add A to queue
+  Step 3: Start deleting A
+  Step 4: A completes → all done
+
+Progress Output:
+  "Progress: 1/2 stacks deleted" (after B)
+  "Progress: 2/2 stacks deleted" (after A)
 ```
 
 ## Concurrency Limit
 
 ### -n Option Behavior
-Concurrency limit is applied only within each group.
+Concurrency limit is applied globally across all stacks using a semaphore.
+The limit controls the maximum number of stacks being deleted at any given time.
 
 ```
-Deletion Groups:
-  Group 0: [A, B, C, D, E]  (5 stacks)
-  Group 1: [F, G]           (2 stacks)
-
-With -n 2:
-  Group 0:
-    1. Delete A, B concurrently
-    2. Delete C, D concurrently
-    3. Delete E
-  Group 1:
-    4. Delete F, G concurrently
+Example: 5 independent stacks [A, B, C, D, E]
 
 Without -n:
-  Group 0:
-    1. Delete A, B, C, D, E concurrently (5 at once)
-  Group 1:
-    2. Delete F, G concurrently (2 at once)
+  All 5 stacks start deletion simultaneously
+
+With -n 2:
+  Step 1: A and B start (semaphore: 2/2 acquired)
+  Step 2: A completes → C starts (semaphore: A releases, C acquires)
+  Step 3: B completes → D starts (semaphore: B releases, D acquires)
+  Step 4: C completes → E starts (semaphore: C releases, E acquires)
+  Step 5: D and E complete
+
+Progress Output:
+  "Progress: 1/5 stacks deleted"
+  "Progress: 2/5 stacks deleted"
+  "Progress: 3/5 stacks deleted"
+  "Progress: 4/5 stacks deleted"
+  "Progress: 5/5 stacks deleted"
+
+Note: With dynamic deletion and -n limit, stacks are deleted as soon as:
+      1. Their dependencies are resolved (reverse in-degree becomes 0)
+      2. A semaphore slot is available
 ```
 
 ## Performance Characteristics
 
 - Time Complexity: O(V + E) (V: number of stacks, E: number of dependencies)
 - Space Complexity: O(V + E)
-- Topological Sort uses Kahn's Algorithm (in-degree based)
+- Dynamic deletion uses reverse in-degree based topological sort
 - Circular dependency detection uses DFS (Depth-First Search)
+- Concurrency: Stacks are deleted as soon as dependencies are resolved (no artificial grouping delays)
 */
 
 // StackDependencyGraph represents the dependency graph between stacks
@@ -325,6 +383,16 @@ func (g *StackDependencyGraph) AddDependency(fromStack, toStack string) {
 		g.dependencies[fromStack] = make(map[string]struct{})
 	}
 	g.dependencies[fromStack][toStack] = struct{}{}
+}
+
+// GetDependencies returns the dependencies map
+func (g *StackDependencyGraph) GetDependencies() map[string]map[string]struct{} {
+	return g.dependencies
+}
+
+// GetAllStacks returns all stacks in the graph
+func (g *StackDependencyGraph) GetAllStacks() map[string]struct{} {
+	return g.allStacks
 }
 
 // DetectCircularDependency detects circular dependencies using DFS
@@ -372,53 +440,4 @@ func (g *StackDependencyGraph) DetectCircularDependency() ([]string, error) {
 	}
 
 	return nil, nil
-}
-
-// GetDeletionGroups groups stacks that can be deleted concurrently using topological sort
-// Returns: outer array is deletion order, inner array is stacks that can be deleted concurrently
-func (g *StackDependencyGraph) GetDeletionGroups() [][]string {
-	// Calculate reverse in-degree: how many stacks depend on this stack
-	// A stack with reverse in-degree 0 means no one depends on it, so it can be deleted first
-	reverseInDegree := make(map[string]int)
-	for stack := range g.allStacks {
-		reverseInDegree[stack] = 0
-	}
-	for _, deps := range g.dependencies {
-		for depStack := range deps {
-			reverseInDegree[depStack]++
-		}
-	}
-
-	var groups [][]string
-	processed := make(map[string]bool)
-
-	for len(processed) < len(g.allStacks) {
-		currentGroup := []string{}
-		for stack := range g.allStacks {
-			if processed[stack] {
-				continue
-			}
-			if reverseInDegree[stack] == 0 {
-				currentGroup = append(currentGroup, stack)
-			}
-		}
-
-		if len(currentGroup) == 0 {
-			break
-		}
-
-		sort.Strings(currentGroup)
-		groups = append(groups, currentGroup)
-
-		for _, stack := range currentGroup {
-			processed[stack] = true
-
-			// Decrease reverse in-degree of stacks that this stack depends on
-			for depStack := range g.dependencies[stack] {
-				reverseInDegree[depStack]--
-			}
-		}
-	}
-
-	return groups
 }

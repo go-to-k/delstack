@@ -24,7 +24,6 @@ type App struct {
 	Region            string
 	InteractiveMode   bool
 	ForceMode         bool
-	ConcurrentMode    bool
 	ConcurrencyNumber int
 }
 
@@ -73,18 +72,11 @@ func NewApp(version string) *App {
 				Usage:       "Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate",
 				Destination: &app.ForceMode,
 			},
-			&cli.BoolFlag{
-				Name:        "concurrentMode",
-				Aliases:     []string{"c"},
-				Value:       false,
-				Usage:       "Delete multiple stacks in parallel. If you want to limit the number of parallel deletions, specify the -n option.",
-				Destination: &app.ConcurrentMode,
-			},
 			&cli.IntFlag{
 				Name:        "concurrencyNumber",
 				Aliases:     []string{"n"},
 				Value:       UnspecifiedConcurrencyNumber,
-				Usage:       "Specify the number of parallel stack deletions. To specify this option, the -c option must be specified. The default is to delete all stacks in parallel if only the -c option is specified.",
+				Usage:       "Specify the number of parallel stack deletions. Default is unlimited (delete all stacks in parallel).",
 				Destination: &app.ConcurrencyNumber,
 			},
 		},
@@ -111,12 +103,8 @@ func (a *App) getAction() func(c *cli.Context) error {
 			errMsg := fmt.Sprintln("There is no need to specify Force Mode and Interactive Mode at the same time when stack names are specified.")
 			return fmt.Errorf("InvalidOptionError: %v", errMsg)
 		}
-		if !a.ConcurrentMode && a.ConcurrencyNumber != UnspecifiedConcurrencyNumber {
-			errMsg := fmt.Sprintln("When specifying -n, you must specify the -c option.")
-			return fmt.Errorf("InvalidOptionError: %v", errMsg)
-		}
-		if a.ConcurrentMode && a.ConcurrencyNumber < UnspecifiedConcurrencyNumber {
-			errMsg := fmt.Sprintln("You must specify a positive number for the -n option when specifying the -c option.")
+		if a.ConcurrencyNumber < UnspecifiedConcurrencyNumber {
+			errMsg := fmt.Sprintln("You must specify a positive number for the -n option.")
 			return fmt.Errorf("InvalidOptionError: %v", errMsg)
 		}
 
@@ -145,20 +133,11 @@ func (a *App) getAction() func(c *cli.Context) error {
 
 		deleter := NewStackDeleter(a.ForceMode, a.ConcurrencyNumber)
 
-		if a.ConcurrentMode {
-			if len(targetStacks) > 1 {
-				io.Logger.Info().Msg("The stacks will be removed concurrently, taking into account dependencies.")
-			}
-			if err := deleter.DeleteStacksConcurrently(c.Context, targetStacks, config, operatorFactory); err != nil {
-				return err
-			}
-		} else {
-			if len(targetStacks) > 1 {
-				io.Logger.Info().Msg("The stacks are removed in order of the latest creation time, taking into account dependencies.")
-			}
-			if err := deleter.DeleteStacksSequentially(c.Context, targetStacks, config, operatorFactory); err != nil {
-				return err
-			}
+		if len(targetStacks) > 1 && (a.ConcurrencyNumber == UnspecifiedConcurrencyNumber || a.ConcurrencyNumber > 1) {
+			io.Logger.Info().Msg("The stacks will be removed concurrently, taking into account dependencies.")
+		}
+		if err := deleter.DeleteStacksConcurrently(c.Context, targetStacks, config, operatorFactory); err != nil {
+			return err
 		}
 		return nil
 	}

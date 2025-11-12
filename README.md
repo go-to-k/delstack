@@ -78,7 +78,7 @@ All resources that do not fail normal deletion can be deleted as is.
 ## How to use
 
   ```bash
-  delstack [-s <stackName>] [-p <profile>] [-r <region>] [-i|--interactive] [-f|--force]
+  delstack [-s <stackName>] [-p <profile>] [-r <region>] [-i|--interactive] [-f|--force] [-n <concurrencyNumber>]
   ```
 
 - -s, --stackName: optional
@@ -87,7 +87,8 @@ All resources that do not fail normal deletion can be deleted as is.
     - Otherwise you can specify it in the interactive mode
   - **Multiple specifications are possible.**
     - `delstack -s test1 -s test2`
-    - **Dependencies between stacks are taken into account, the stacks are deleted in order, starting with the newly created stack.**
+    - **Multiple stacks are deleted in parallel by default, taking dependencies between stacks into account.**
+    - You can limit the number of parallel deletions with the `-n` option (e.g., `delstack -s test1 -s test2 -s test3 -n 2`).
 - -p, --profile: optional
   - AWS profile name
 - -r, --region: optional(default: `us-east-1`)
@@ -96,6 +97,8 @@ All resources that do not fail normal deletion can be deleted as is.
   - Interactive Mode
 - -f, --force: optional
   - Force Mode to delete stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`**
+- -n, --concurrencyNumber: optional(default: unlimited)
+  - Specify the number of parallel stack deletions. Default is unlimited (delete all stacks in parallel).
 
 ## Interactive Mode
 
@@ -170,7 +173,7 @@ Also, even if you specify `-i, --interactive` option together, the ResourceTypes
 
 ## GitHub Actions
 
-You can use delstack with parameters **"stack-name" and "region"** in GitHub Actions Workflow.
+You can use delstack with parameters **"stack-name", "region", and "concurrency-number"** in GitHub Actions Workflow.
 To delete multiple stacks, specify stack names separated by commas.
 
 ```yaml
@@ -192,8 +195,9 @@ jobs:
         uses: go-to-k/delstack@main # Or specify the version instead of main
         with:
           stack-name: YourStack
-          # stack-name: YourStack1, YourStack2, YourStack3 # To delete multiple stacks
+          # stack-name: YourStack1, YourStack2, YourStack3 # To delete multiple stacks (deleted in parallel by default)
           force: true # Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate (default: false)
+          concurrency-number: 4 # Number of parallel stack deletions (default: unlimited)
           region: us-east-1
 ```
 
