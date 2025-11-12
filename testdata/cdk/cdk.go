@@ -41,9 +41,12 @@ func NewTestStack(scope constructs.Construct, id string, props *TestStackProps) 
 	nest.NewChildStack(stack, "Child", &nest.ChildStackProps{
 		PjPrefix: props.PjPrefix,
 	})
-	nest.NewChildStack2(stack, "ChildTwo", &nest.ChildStack2Props{
+	child2 := nest.NewChildStack2(stack, "ChildTwo", &nest.ChildStack2Props{
 		PjPrefix: props.PjPrefix,
 	})
+	if props.IsRetain {
+		awscdk.RemovalPolicies_Of(child2).RetainOnUpdateOrDelete(nil)
+	}
 
 	return stack
 }
