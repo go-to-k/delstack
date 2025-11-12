@@ -3537,3 +3537,354 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 		})
 	}
 }
+
+func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
+	io.NewLogger(false)
+
+	type args struct {
+		ctx        context.Context
+		stackNames []string
+	}
+
+	cases := []struct {
+		name                        string
+		args                        args
+		prepareMockCloudFormationFn func(m *client.MockICloudFormation)
+		wantDependencies            map[string]map[string]struct{}
+		wantErr                     bool
+	}{
+		{
+			name: "no dependencies between stacks",
+			args: args{
+				ctx:        context.Background(),
+				stackNames: []string{"stack-a", "stack-b"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-a")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-a"),
+							Outputs:   []types.Output{},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-b")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-b"),
+							Outputs:   []types.Output{},
+						},
+					},
+					nil,
+				)
+			},
+			wantDependencies: map[string]map[string]struct{}{},
+			wantErr:          false,
+		},
+		{
+			name: "simple dependency (B depends on A)",
+			args: args{
+				ctx:        context.Background(),
+				stackNames: []string{"stack-a", "stack-b"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-a")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-a"),
+							Outputs: []types.Output{
+								{
+									OutputKey:   aws.String("ExportA"),
+									OutputValue: aws.String("value-a"),
+									ExportName:  aws.String("export-a"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a")).Return(
+					[]string{"stack-b"},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-b")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-b"),
+							Outputs:   []types.Output{},
+						},
+					},
+					nil,
+				)
+			},
+			wantDependencies: map[string]map[string]struct{}{
+				"stack-b": {
+					"stack-a": {},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple outputs referenced (deduplication test)",
+			args: args{
+				ctx:        context.Background(),
+				stackNames: []string{"stack-a", "stack-b"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-a")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-a"),
+							Outputs: []types.Output{
+								{
+									OutputKey:   aws.String("ExportA1"),
+									OutputValue: aws.String("value-a1"),
+									ExportName:  aws.String("export-a-1"),
+								},
+								{
+									OutputKey:   aws.String("ExportA2"),
+									OutputValue: aws.String("value-a2"),
+									ExportName:  aws.String("export-a-2"),
+								},
+								{
+									OutputKey:   aws.String("ExportA3"),
+									OutputValue: aws.String("value-a3"),
+									ExportName:  aws.String("export-a-3"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a-1")).Return(
+					[]string{"stack-b"},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a-2")).Return(
+					[]string{"stack-b"},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a-3")).Return(
+					[]string{"stack-b"},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-b")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-b"),
+							Outputs:   []types.Output{},
+						},
+					},
+					nil,
+				)
+			},
+			wantDependencies: map[string]map[string]struct{}{
+				"stack-b": {
+					"stack-a": {},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "external stack reference is ignored",
+			args: args{
+				ctx:        context.Background(),
+				stackNames: []string{"stack-a", "stack-b"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-a")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-a"),
+							Outputs: []types.Output{
+								{
+									OutputKey:   aws.String("ExportA"),
+									OutputValue: aws.String("value-a"),
+									ExportName:  aws.String("export-a"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a")).Return(
+					[]string{"stack-b", "external-stack"},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-b")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-b"),
+							Outputs:   []types.Output{},
+						},
+					},
+					nil,
+				)
+			},
+			wantDependencies: map[string]map[string]struct{}{
+				"stack-b": {
+					"stack-a": {},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "diamond dependency",
+			args: args{
+				ctx:        context.Background(),
+				stackNames: []string{"stack-a", "stack-b", "stack-c", "stack-d"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-a")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-a"),
+							Outputs: []types.Output{
+								{
+									OutputKey:   aws.String("ExportA"),
+									OutputValue: aws.String("value-a"),
+									ExportName:  aws.String("export-a"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a")).Return(
+					[]string{"stack-b", "stack-c"},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-b")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-b"),
+							Outputs: []types.Output{
+								{
+									OutputKey:   aws.String("ExportB"),
+									OutputValue: aws.String("value-b"),
+									ExportName:  aws.String("export-b"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-b")).Return(
+					[]string{"stack-d"},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-c")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-c"),
+							Outputs: []types.Output{
+								{
+									OutputKey:   aws.String("ExportC"),
+									OutputValue: aws.String("value-c"),
+									ExportName:  aws.String("export-c"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-c")).Return(
+					[]string{"stack-d"},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-d")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-d"),
+							Outputs:   []types.Output{},
+						},
+					},
+					nil,
+				)
+			},
+			wantDependencies: map[string]map[string]struct{}{
+				"stack-b": {
+					"stack-a": {},
+				},
+				"stack-c": {
+					"stack-a": {},
+				},
+				"stack-d": {
+					"stack-b": {},
+					"stack-c": {},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "error on DescribeStacks",
+			args: args{
+				ctx:        context.Background(),
+				stackNames: []string{"stack-a"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-a")).Return(
+					nil,
+					fmt.Errorf("DescribeStacks error"),
+				)
+			},
+			wantDependencies: nil,
+			wantErr:          true,
+		},
+		{
+			name: "error on ListImports",
+			args: args{
+				ctx:        context.Background(),
+				stackNames: []string{"stack-a"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-a")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-a"),
+							Outputs: []types.Output{
+								{
+									OutputKey:   aws.String("ExportA"),
+									OutputValue: aws.String("value-a"),
+									ExportName:  aws.String("export-a"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a")).Return(
+					nil,
+					fmt.Errorf("ListImports error"),
+				)
+			},
+			wantDependencies: nil,
+			wantErr:          true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			cloudformationMock := client.NewMockICloudFormation(ctrl)
+
+			tt.prepareMockCloudFormationFn(cloudformationMock)
+
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, nil)
+
+			graph, err := cloudformationStackOperator.BuildDependencyGraph(tt.args.ctx, tt.args.stackNames)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr {
+				if !reflect.DeepEqual(graph.dependencies, tt.wantDependencies) {
+					t.Errorf("dependencies = %v, want %v", graph.dependencies, tt.wantDependencies)
+				}
+			}
+		})
+	}
+}

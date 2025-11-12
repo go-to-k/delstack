@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/internal/io"
@@ -11,15 +12,23 @@ import (
 	"github.com/go-to-k/delstack/internal/resourcetype"
 	"github.com/go-to-k/delstack/pkg/client"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
+)
+
+const (
+	UnspecifiedConcurrencyNumber = 0
 )
 
 type App struct {
-	Cli             *cli.App
-	StackNames      *cli.StringSlice
-	Profile         string
-	Region          string
-	InteractiveMode bool
-	ForceMode       bool
+	Cli               *cli.App
+	StackNames        *cli.StringSlice
+	Profile           string
+	Region            string
+	InteractiveMode   bool
+	ForceMode         bool
+	ConcurrentMode    bool
+	ConcurrencyNumber int
 }
 
 type targetStack struct {
@@ -67,6 +76,20 @@ func NewApp(version string) *App {
 				Usage:       "Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate",
 				Destination: &app.ForceMode,
 			},
+			&cli.BoolFlag{
+				Name:        "concurrentMode",
+				Aliases:     []string{"c"},
+				Value:       false,
+				Usage:       "Delete multiple stacks in parallel. If you want to limit the number of parallel deletions, specify the -n option.",
+				Destination: &app.ConcurrentMode,
+			},
+			&cli.IntFlag{
+				Name:        "concurrencyNumber",
+				Aliases:     []string{"n"},
+				Value:       UnspecifiedConcurrencyNumber,
+				Usage:       "Specify the number of parallel stack deletions. To specify this option, the -c option must be specified. The default is to delete all stacks in parallel if only the -c option is specified.",
+				Destination: &app.ConcurrencyNumber,
+			},
 		},
 	}
 
@@ -89,6 +112,14 @@ func (a *App) getAction() func(c *cli.Context) error {
 		}
 		if a.ForceMode && a.InteractiveMode && len(a.StackNames.Value()) != 0 {
 			errMsg := fmt.Sprintln("There is no need to specify Force Mode and Interactive Mode at the same time when stack names are specified.")
+			return fmt.Errorf("InvalidOptionError: %v", errMsg)
+		}
+		if !a.ConcurrentMode && a.ConcurrencyNumber != UnspecifiedConcurrencyNumber {
+			errMsg := fmt.Sprintln("When specifying -n, you must specify the -c option.")
+			return fmt.Errorf("InvalidOptionError: %v", errMsg)
+		}
+		if a.ConcurrentMode && a.ConcurrencyNumber < UnspecifiedConcurrencyNumber {
+			errMsg := fmt.Sprintln("You must specify a positive number for the -n option when specifying the -c option.")
 			return fmt.Errorf("InvalidOptionError: %v", errMsg)
 		}
 
@@ -114,30 +145,21 @@ func (a *App) getAction() func(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		// Explanation of deletion order in the case of multiple stacks
-		if len(targetStacks) > 1 {
-			io.Logger.Info().Msg("The stacks are removed in order of the latest creation time, taking into account dependencies.")
-		}
 
-		isRootStack := true
-		for _, stack := range targetStacks {
-			operatorCollection := operation.NewOperatorCollection(config, operatorFactory, stack.targetResourceTypes)
-			operatorManager := operation.NewOperatorManager(operatorCollection)
-			cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(stack.targetResourceTypes)
-
-			io.Logger.Info().Msgf("%v: Start deletion. Please wait a few minutes...", stack.stackName)
-
-			if a.ForceMode {
-				if err := cloudformationStackOperator.RemoveDeletionPolicy(c.Context, aws.String(stack.stackName)); err != nil {
-					return err
-				}
+		if a.ConcurrentMode {
+			if len(targetStacks) > 1 {
+				io.Logger.Info().Msg("The stacks will be removed concurrently, taking into account dependencies.")
 			}
-
-			if err := cloudformationStackOperator.DeleteCloudFormationStack(c.Context, aws.String(stack.stackName), isRootStack, operatorManager); err != nil {
+			if err := a.deleteStacksConcurrently(c.Context, targetStacks, config, operatorFactory); err != nil {
 				return err
 			}
-
-			io.Logger.Info().Msgf("%v: Successfully deleted!!", stack.stackName)
+		} else {
+			if len(targetStacks) > 1 {
+				io.Logger.Info().Msg("The stacks are removed in order of the latest creation time, taking into account dependencies.")
+			}
+			if err := a.deleteStacksSequentially(c.Context, targetStacks, config, operatorFactory); err != nil {
+				return err
+			}
 		}
 		return nil
 	}
@@ -281,4 +303,127 @@ func (a *App) selectStackNames(stackNames []string) ([]string, bool, error) {
 		return nil, false, err
 	}
 	return selectedStackNames, continuation, nil
+}
+
+func (a *App) deleteStacksSequentially(
+	ctx context.Context,
+	targetStacks []targetStack,
+	config aws.Config,
+	operatorFactory *operation.OperatorFactory,
+) error {
+	isRootStack := true
+	for _, stack := range targetStacks {
+		if err := a.deleteSingleStack(ctx, stack, config, operatorFactory, isRootStack); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a *App) deleteSingleStack(
+	ctx context.Context,
+	stack targetStack,
+	config aws.Config,
+	operatorFactory *operation.OperatorFactory,
+	isRootStack bool,
+) error {
+	operatorCollection := operation.NewOperatorCollection(config, operatorFactory, stack.targetResourceTypes)
+	operatorManager := operation.NewOperatorManager(operatorCollection)
+	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(stack.targetResourceTypes)
+
+	io.Logger.Info().Msgf("%v: Start deletion. Please wait a few minutes...", stack.stackName)
+
+	if a.ForceMode {
+		if err := cloudformationStackOperator.RemoveDeletionPolicy(ctx, aws.String(stack.stackName)); err != nil {
+			io.Logger.Error().Msgf("%v: Failed to remove deletion policy: %v", stack.stackName, err)
+			return err
+		}
+	}
+
+	if err := cloudformationStackOperator.DeleteCloudFormationStack(ctx, aws.String(stack.stackName), isRootStack, operatorManager); err != nil {
+		io.Logger.Error().Msgf("%v: Failed to delete: %v", stack.stackName, err)
+		return err
+	}
+
+	io.Logger.Info().Msgf("%v: Successfully deleted!!", stack.stackName)
+	return nil
+}
+
+func (a *App) deleteStacksConcurrently(
+	ctx context.Context,
+	targetStacks []targetStack,
+	config aws.Config,
+	operatorFactory *operation.OperatorFactory,
+) error {
+	stackNames := make([]string, 0, len(targetStacks))
+	targetStacksMap := make(map[string]targetStack)
+	for _, stack := range targetStacks {
+		stackNames = append(stackNames, stack.stackName)
+		targetStacksMap[stack.stackName] = stack
+	}
+
+	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator([]string{})
+
+	io.Logger.Info().Msg("Analyzing stack dependencies...")
+	graph, err := cloudformationStackOperator.BuildDependencyGraph(ctx, stackNames)
+	if err != nil {
+		return fmt.Errorf("DependencyAnalysisError: failed to build dependency graph: %w", err)
+	}
+
+	cyclePath, err := graph.DetectCircularDependency()
+	if err != nil {
+		io.Logger.Error().Msgf("Circular dependency detected: %s", strings.Join(cyclePath, " -> "))
+		return err
+	}
+
+	deletionGroups := graph.GetDeletionGroups()
+	io.Logger.Info().Msgf("Deletion will be performed in %d group(s)", len(deletionGroups))
+
+	for groupIndex, group := range deletionGroups {
+		io.Logger.Info().Msgf("Group %d: Deleting %d stack(s) concurrently: %v",
+			groupIndex+1, len(group), strings.Join(group, ", "))
+
+		if err := a.deleteStackGroup(ctx, group, targetStacksMap, config, operatorFactory); err != nil {
+			return fmt.Errorf("ConcurrentDeleteError: failed to delete group %d: %w", groupIndex+1, err)
+		}
+	}
+
+	return nil
+}
+
+func (a *App) deleteStackGroup(
+	ctx context.Context,
+	stackNames []string,
+	targetStacksMap map[string]targetStack,
+	config aws.Config,
+	operatorFactory *operation.OperatorFactory,
+) error {
+	eg, ctx := errgroup.WithContext(ctx)
+
+	var sem *semaphore.Weighted
+	if a.ConcurrencyNumber == UnspecifiedConcurrencyNumber {
+		sem = semaphore.NewWeighted(int64(len(stackNames)))
+	} else {
+		sem = semaphore.NewWeighted(int64(a.ConcurrencyNumber))
+	}
+
+	isRootStack := true
+	for _, stackName := range stackNames {
+		stack := targetStacksMap[stackName]
+
+		eg.Go(func() error {
+			if err := sem.Acquire(ctx, 1); err != nil {
+				return err
+			}
+			defer sem.Release(1)
+
+			return a.deleteSingleStack(ctx, stack, config, operatorFactory, isRootStack)
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }

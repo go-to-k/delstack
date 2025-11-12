@@ -278,6 +278,53 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 	return filteredStacks, nil
 }
 
+// BuildDependencyGraph analyzes Output/Import dependencies among the specified stacks
+func (o *CloudFormationStackOperator) BuildDependencyGraph(
+	ctx context.Context,
+	stackNames []string,
+) (*StackDependencyGraph, error) {
+	graph := NewStackDependencyGraph(stackNames)
+
+	stackNameSet := make(map[string]struct{})
+	for _, name := range stackNames {
+		stackNameSet[name] = struct{}{}
+	}
+
+	for _, stackName := range stackNames {
+		stacks, err := o.client.DescribeStacks(ctx, aws.String(stackName))
+		if err != nil {
+			return nil, err
+		}
+
+		if len(stacks) == 0 {
+			continue
+		}
+
+		stack := stacks[0]
+
+		for _, output := range stack.Outputs {
+			if output.ExportName == nil {
+				continue
+			}
+
+			exportName := *output.ExportName
+
+			importingStacks, err := o.client.ListImports(ctx, aws.String(exportName))
+			if err != nil {
+				return nil, err
+			}
+
+			for _, importingStack := range importingStacks {
+				if _, isTarget := stackNameSet[importingStack]; isTarget {
+					graph.AddDependency(importingStack, stackName)
+				}
+			}
+		}
+	}
+
+	return graph, nil
+}
+
 func (o *CloudFormationStackOperator) isExceptedByStackStatus(stackStatus types.StackStatus) bool {
 	for _, status := range StackStatusExceptionsForDescribeStacks {
 		if stackStatus == status {

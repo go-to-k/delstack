@@ -26,6 +26,8 @@ func getNextTokenForCloudFormationInitialize(
 		ctx = middleware.WithStackValue(ctx, tokenKeyForCloudFormation{}, v.NextToken)
 	case *cloudformation.ListStackResourcesInput:
 		ctx = middleware.WithStackValue(ctx, tokenKeyForCloudFormation{}, v.NextToken)
+	case *cloudformation.ListImportsInput:
+		ctx = middleware.WithStackValue(ctx, tokenKeyForCloudFormation{}, v.NextToken)
 	}
 	return next.HandleInitialize(ctx, in)
 }
@@ -1265,6 +1267,165 @@ func TestCloudFormation_UpdateStack(t *testing.T) {
 			}
 			if tt.wantErr && err.Error() != tt.want.Error() {
 				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestCloudFormation_ListImports(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		exportName         *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "list imports successfully with single page",
+			args: args{
+				ctx:        context.Background(),
+				exportName: aws.String("export-a"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListImportsMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.ListImportsOutput{
+										Imports: []string{"stack-b", "stack-c"},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    []string{"stack-b", "stack-c"},
+			wantErr: false,
+		},
+		{
+			name: "list imports successfully with multiple pages",
+			args: args{
+				ctx:        context.Background(),
+				exportName: aws.String("export-a"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					err := stack.Initialize.Add(
+						middleware.InitializeMiddlewareFunc(
+							"ListImportsGetNextTokenMock",
+							getNextTokenForCloudFormationInitialize,
+						), middleware.Before)
+					if err != nil {
+						return err
+					}
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListImportsWithPaginationMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								nextToken := middleware.GetStackValue(ctx, tokenKeyForCloudFormation{}).(*string)
+								if nextToken == nil {
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.ListImportsOutput{
+											Imports:   []string{"stack-b", "stack-c"},
+											NextToken: aws.String("token1"),
+										},
+									}, middleware.Metadata{}, nil
+								}
+								if *nextToken == "token1" {
+									return middleware.FinalizeOutput{
+										Result: &cloudformation.ListImportsOutput{
+											Imports: []string{"stack-d", "stack-e"},
+										},
+									}, middleware.Metadata{}, nil
+								}
+								return middleware.FinalizeOutput{}, middleware.Metadata{}, fmt.Errorf("unexpected token: %s", *nextToken)
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    []string{"stack-b", "stack-c", "stack-d", "stack-e"},
+			wantErr: false,
+		},
+		{
+			name: "list imports with no imports",
+			args: args{
+				ctx:        context.Background(),
+				exportName: aws.String("export-a"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListImportsEmptyMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.ListImportsOutput{
+										Imports: []string{},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    []string{},
+			wantErr: false,
+		},
+		{
+			name: "list imports with error",
+			args: args{
+				ctx:        context.Background(),
+				exportName: aws.String("export-a"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListImportsErrorMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{}, middleware.Metadata{}, fmt.Errorf("ListImports error")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    []string{},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("us-east-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := cloudformation.NewFromConfig(cfg)
+			cfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(client)
+			cfnClient := NewCloudFormation(
+				client,
+				cfnDeleteWaiter,
+				cfnUpdateWaiter,
+			)
+
+			got, err := cfnClient.ListImports(tt.args.ctx, tt.args.exportName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got = %v, want %v", got, tt.want)
 			}
 		})
 	}
