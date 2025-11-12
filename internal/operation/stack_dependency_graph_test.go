@@ -243,9 +243,9 @@ func TestStackDependencyGraph_GetDeletionGroups(t *testing.T) {
 				return g
 			}(),
 			want: [][]string{
-				{"stack-a"},
-				{"stack-b"},
 				{"stack-c"},
+				{"stack-b"},
+				{"stack-a"},
 			},
 		},
 		{
@@ -259,9 +259,9 @@ func TestStackDependencyGraph_GetDeletionGroups(t *testing.T) {
 				return g
 			}(),
 			want: [][]string{
-				{"stack-a"},
-				{"stack-b", "stack-c"},
 				{"stack-d"},
+				{"stack-b", "stack-c"},
+				{"stack-a"},
 			},
 		},
 		{
@@ -287,9 +287,9 @@ func TestStackDependencyGraph_GetDeletionGroups(t *testing.T) {
 				return g
 			}(),
 			want: [][]string{
-				{"stack-a", "stack-b"},
-				{"stack-c", "stack-d", "stack-e"},
 				{"stack-f"},
+				{"stack-c", "stack-d", "stack-e"},
+				{"stack-a", "stack-b"},
 			},
 		},
 		{
@@ -312,8 +312,8 @@ func TestStackDependencyGraph_GetDeletionGroups(t *testing.T) {
 				return g
 			}(),
 			want: [][]string{
-				{"stack-a"},
 				{"stack-b"},
+				{"stack-a"},
 			},
 		},
 	}

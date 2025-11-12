@@ -18,12 +18,12 @@ and determine the concurrent deletion order considering dependencies.
 - Stack A has an Output (ExportName)
 - Stack B has an Import (ImportValue) that references Stack A's Export
 - In this case, we define "Stack B depends on Stack A"
-- Deletion order: Stack A must be deleted before Stack B
+- Deletion order: Stack B must be deleted before Stack A (because B imports A's export)
 
 ### Graph Structure
 - dependencies[B][A] = struct{}{} means "B depends on A"
-- This represents the dependency direction: A → B
-- Deletion proceeds from the dependency source (A) to the dependent (B)
+- This represents the dependency direction: B → A
+- Deletion proceeds from the dependent (B) to the dependency source (A)
 
 ## Deletion Logic
 
@@ -48,22 +48,27 @@ Stack Configuration:
   C (Import: ExportB)
 
 Dependencies:
-  B → A (B depends on A)
-  C → B (C depends on B)
+  B → A (B depends on A, B imports A's export)
+  C → B (C depends on B, C imports B's export)
 
 Graph Representation:
   dependencies["B"]["A"] = struct{}{}
   dependencies["C"]["B"] = struct{}{}
 
+Reverse In-Degree Calculation (how many stacks depend on this stack):
+  A: 1 (B depends on A)
+  B: 1 (C depends on B)
+  C: 0 (no one depends on C)
+
 Deletion Groups:
-  Group 0: [A]
-  Group 1: [B]
-  Group 2: [C]
+  Group 0: [C]  (reverse in-degree 0, can delete first)
+  Group 1: [B]  (reverse in-degree becomes 0 after C is deleted)
+  Group 2: [A]  (reverse in-degree becomes 0 after B is deleted)
 
 Execution:
-  1. Delete A (wait for completion)
+  1. Delete C (wait for completion)
   2. Delete B (wait for completion)
-  3. Delete C (wait for completion)
+  3. Delete A (wait for completion)
 ```
 
 ### Example 2: Diamond Dependency (Mixed Concurrent and Serial)
@@ -86,21 +91,21 @@ Graph Representation:
   dependencies["D"]["B"] = struct{}{}
   dependencies["D"]["C"] = struct{}{}
 
-In-Degree Calculation:
-  A: 0 (no dependencies)
-  B: 1 (depends on A)
-  C: 1 (depends on A)
-  D: 2 (depends on B and C)
+Reverse In-Degree Calculation (how many stacks depend on this stack):
+  A: 2 (B and C depend on A)
+  B: 1 (D depends on B)
+  C: 1 (D depends on C)
+  D: 0 (no one depends on D)
 
 Deletion Groups:
-  Group 0: [A]           (in-degree 0)
-  Group 1: [B, C]        (in-degree becomes 0 after A is deleted)
-  Group 2: [D]           (in-degree becomes 0 after B and C are deleted)
+  Group 0: [D]           (reverse in-degree 0, can delete first)
+  Group 1: [B, C]        (reverse in-degree becomes 0 after D is deleted)
+  Group 2: [A]           (reverse in-degree becomes 0 after B and C are deleted)
 
 Execution:
-  1. Delete A (wait for completion)
+  1. Delete D (wait for completion)
   2. Delete B and C concurrently (wait for both)
-  3. Delete D (wait for completion)
+  3. Delete A (wait for completion)
 ```
 
 ### Example 3: Complex Dependencies (Multiple Levels of Parallelism)
@@ -129,23 +134,23 @@ Graph Representation:
   dependencies["F"]["D"] = struct{}{}
   dependencies["F"]["E"] = struct{}{}
 
-In-Degree Calculation:
-  A: 0
-  B: 0
-  C: 1 (A)
-  D: 1 (A)
-  E: 1 (B)
-  F: 3 (C, D, E)
+Reverse In-Degree Calculation (how many stacks depend on this stack):
+  A: 2 (C and D depend on A)
+  B: 1 (E depends on B)
+  C: 1 (F depends on C)
+  D: 1 (F depends on D)
+  E: 1 (F depends on E)
+  F: 0 (no one depends on F)
 
 Deletion Groups:
-  Group 0: [A, B]              (in-degree 0, concurrent deletion)
-  Group 1: [C, D, E]           (concurrent deletion after A, B)
-  Group 2: [F]                 (deletion after C, D, E)
+  Group 0: [F]                 (reverse in-degree 0, can delete first)
+  Group 1: [C, D, E]           (reverse in-degree becomes 0 after F is deleted)
+  Group 2: [A, B]              (reverse in-degree becomes 0 after C, D, E are deleted)
 
 Execution:
-  1. Delete A and B concurrently (wait for both)
+  1. Delete F (wait for completion)
   2. Delete C, D, E concurrently (wait for all three)
-  3. Delete F (wait for completion)
+  3. Delete A and B concurrently (wait for both)
 ```
 
 ### Example 4: Independent Stacks
@@ -162,7 +167,7 @@ Dependencies:
 Graph Representation:
   dependencies = {} (empty)
 
-In-Degree Calculation:
+Reverse In-Degree Calculation (how many stacks depend on this stack):
   A: 0
   B: 0
   C: 0
@@ -191,13 +196,17 @@ Dependencies:
 Graph Representation:
   dependencies["B"]["A"] = struct{}{}  (only one entry, deduplicated)
 
+Reverse In-Degree Calculation (how many stacks depend on this stack):
+  A: 1 (B depends on A)
+  B: 0 (no one depends on B)
+
 Deletion Groups:
-  Group 0: [A]
-  Group 1: [B]
+  Group 0: [B]  (reverse in-degree 0, can delete first)
+  Group 1: [A]  (reverse in-degree becomes 0 after B is deleted)
 
 Execution:
-  1. Delete A (wait for completion)
-  2. Delete B (wait for completion)
+  1. Delete B (wait for completion)
+  2. Delete A (wait for completion)
 
 Note:
   Even if AddDependency("B", "A") is called multiple times,
@@ -243,13 +252,17 @@ Dependency Graph (Only Among Target Stacks):
 Graph Representation:
   dependencies["B"]["A"] = struct{}{}
 
+Reverse In-Degree Calculation (how many stacks depend on this stack):
+  A: 1 (B depends on A)
+  B: 0 (no one depends on B)
+
 Deletion Groups:
-  Group 0: [A]
-  Group 1: [B]
+  Group 0: [B]  (reverse in-degree 0, can delete first)
+  Group 1: [A]  (reverse in-degree becomes 0 after B is deleted)
 
 Execution:
-  1. Delete A (wait for completion)
-  2. Delete B (wait for completion)
+  1. Delete B (wait for completion)
+  2. Delete A (wait for completion)
 ```
 
 ## Concurrency Limit
@@ -364,9 +377,16 @@ func (g *StackDependencyGraph) DetectCircularDependency() ([]string, error) {
 // GetDeletionGroups groups stacks that can be deleted concurrently using topological sort
 // Returns: outer array is deletion order, inner array is stacks that can be deleted concurrently
 func (g *StackDependencyGraph) GetDeletionGroups() [][]string {
-	inDegree := make(map[string]int)
+	// Calculate reverse in-degree: how many stacks depend on this stack
+	// A stack with reverse in-degree 0 means no one depends on it, so it can be deleted first
+	reverseInDegree := make(map[string]int)
 	for stack := range g.allStacks {
-		inDegree[stack] = len(g.dependencies[stack])
+		reverseInDegree[stack] = 0
+	}
+	for _, deps := range g.dependencies {
+		for depStack := range deps {
+			reverseInDegree[depStack]++
+		}
 	}
 
 	var groups [][]string
@@ -378,7 +398,7 @@ func (g *StackDependencyGraph) GetDeletionGroups() [][]string {
 			if processed[stack] {
 				continue
 			}
-			if inDegree[stack] == 0 {
+			if reverseInDegree[stack] == 0 {
 				currentGroup = append(currentGroup, stack)
 			}
 		}
@@ -393,10 +413,9 @@ func (g *StackDependencyGraph) GetDeletionGroups() [][]string {
 		for _, stack := range currentGroup {
 			processed[stack] = true
 
-			for depStack, deps := range g.dependencies {
-				if _, dependsOnCurrent := deps[stack]; dependsOnCurrent {
-					inDegree[depStack]--
-				}
+			// Decrease reverse in-degree of stacks that this stack depends on
+			for depStack := range g.dependencies[stack] {
+				reverseInDegree[depStack]--
 			}
 		}
 	}
