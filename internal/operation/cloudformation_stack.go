@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
@@ -343,6 +344,8 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 				return uploadErr
 			}
 
+			io.Logger.Info().Msgf("Created temporary S3 bucket for large template: %s", *uploadResult.BucketName)
+
 			updateErr := o.client.UpdateStackWithTemplateURL(ctx, stackName, uploadResult.TemplateURL, stack.Parameters)
 
 			// Ensure S3 cleanup happens even if UpdateStack fails (`updateErr != nil`)
@@ -350,6 +353,8 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 			if deleteErr := o.deleteTemplateFromS3(ctx, uploadResult.BucketName, uploadResult.Key); deleteErr != nil {
 				// Log the error but don't fail the operation
 				io.Logger.Warn().Msgf("Failed to delete temporary S3 bucket and template (bucket: %s, key: %s). You may need to delete it manually: %v", *uploadResult.BucketName, *uploadResult.Key, deleteErr)
+			} else {
+				io.Logger.Info().Msgf("Deleted temporary S3 bucket: %s", *uploadResult.BucketName)
 			}
 
 			if updateErr != nil {
@@ -392,7 +397,8 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 		return nil, fmt.Errorf("TemplateS3UploadError: failed to extract account ID from stack ARN")
 	}
 
-	bucketName := generateTemplateBucketName(*stackName, accountID, o.config.Region)
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+	bucketName := fmt.Sprintf("delstack-templates-%s-%s-%s", accountID, o.config.Region, timestamp)
 
 	// Ensure bucket cleanup if upload fails (only after bucket is created)
 	bucketCreated := false
