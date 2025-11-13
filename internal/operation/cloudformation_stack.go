@@ -3,7 +3,6 @@ package operation
 import (
 	"context"
 	"fmt"
-	"math/rand/v2"
 	"regexp"
 	"runtime"
 	"sort"
@@ -393,21 +392,7 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 		return nil, fmt.Errorf("TemplateS3UploadError: failed to extract account ID from stack ARN")
 	}
 
-	// Generate random suffix to avoid bucket name collision (4 digits: 0000-9999)
-	//nolint:gosec // G404: This is not cryptographically sensitive, just for bucket name uniqueness
-	randomSuffix := fmt.Sprintf("%04d", rand.IntN(10000))
-
-	// S3 bucket name must be lowercase, so convert stack name to lowercase and replace invalid characters
-	sanitizedStackName := strings.ToLower(*stackName)
-	sanitizedStackName = strings.ReplaceAll(sanitizedStackName, "_", "-")
-	// Truncate stack name to avoid exceeding S3 bucket name limit (63 chars)
-	// Format: delstack-tpl-{stack}-{account:12}-{region:max14}-{random:4}
-	// Calculation: 13 (prefix) + 17 (stack) + 1 + 12 + 1 + 14 + 1 + 4 = 63 chars
-	// Region max length is 14 (e.g., ap-southeast-1, ap-northeast-1)
-	if len(sanitizedStackName) > 17 {
-		sanitizedStackName = sanitizedStackName[:17]
-	}
-	bucketName := fmt.Sprintf("delstack-tpl-%s-%s-%s-%s", sanitizedStackName, accountID, o.config.Region, randomSuffix)
+	bucketName := generateTemplateBucketName(*stackName, accountID, o.config.Region)
 
 	// Ensure bucket cleanup if upload fails (only after bucket is created)
 	bucketCreated := false
