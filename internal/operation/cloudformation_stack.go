@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
@@ -392,17 +393,8 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 		return nil, fmt.Errorf("TemplateS3UploadError: failed to extract account ID from stack ARN")
 	}
 
-	// S3 bucket name must be lowercase, so convert stack name to lowercase and replace invalid characters
-	sanitizedStackName := strings.ToLower(*stackName)
-	sanitizedStackName = strings.ReplaceAll(sanitizedStackName, "_", "-")
-	// Truncate stack name to avoid exceeding S3 bucket name limit (63 chars)
-	// Format: delstack-tpl-{stack}-{account:12}-{region:14}
-	// Max: 13 + {stack} + 1 + 12 + 1 + 14 = 41 + {stack}
-	// Limit stack name to 22 chars to keep total under 63: 41 + 22 = 63
-	if len(sanitizedStackName) > 22 {
-		sanitizedStackName = sanitizedStackName[:22]
-	}
-	bucketName := fmt.Sprintf("delstack-tpl-%s-%s-%s", sanitizedStackName, accountID, o.config.Region)
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+	bucketName := fmt.Sprintf("delstack-templates-%s-%s-%s", accountID, o.config.Region, timestamp)
 
 	// Ensure bucket cleanup if upload fails (only after bucket is created)
 	bucketCreated := false
