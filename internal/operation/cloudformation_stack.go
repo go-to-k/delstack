@@ -397,7 +397,7 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 		return nil, fmt.Errorf("TemplateS3UploadError: failed to extract account ID from stack ARN")
 	}
 
-	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+	timestamp := fmt.Sprintf("%d", time.Now().UnixNano())
 	bucketName := fmt.Sprintf("delstack-templates-%s-%s-%s", accountID, o.config.Region, timestamp)
 
 	// Ensure bucket cleanup if upload fails (only after bucket is created)
