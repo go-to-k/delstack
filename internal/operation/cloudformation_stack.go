@@ -329,13 +329,11 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		// Check if the template size exceeds the CloudFormation limit (51,200 bytes)
 		const maxTemplateBodySize = 51200
 		if len(modifiedTemplate) > maxTemplateBodySize {
-			// Upload the template to S3 and use TemplateURL
 			templateURL, bucketName, key, uploadErr := o.uploadTemplateToS3(ctx, stackName, &modifiedTemplate, stacks)
 			if uploadErr != nil {
 				return uploadErr
 			}
 
-			// Ensure cleanup of temporary template file from S3, regardless of UpdateStack success or failure
 			defer func() {
 				if deleteErr := o.deleteTemplateFromS3(ctx, bucketName, key); deleteErr != nil {
 					// Log the error but don't fail the operation
@@ -347,7 +345,6 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 				return err
 			}
 		} else {
-			// Use TemplateBody for smaller templates
 			if err = o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stacks[0].Parameters); err != nil {
 				return err
 			}
