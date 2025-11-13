@@ -340,6 +340,7 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 		if len(modifiedTemplate) > maxTemplateBodySize {
 			uploadResult, uploadErr := o.uploadTemplateToS3(ctx, stackName, &modifiedTemplate, stack)
 			if uploadErr != nil {
+				// no wrap because uploadTemplateToS3 already wraps the error
 				return uploadErr
 			}
 
@@ -353,7 +354,7 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 			}
 
 			if updateErr != nil {
-				return updateErr
+				return fmt.Errorf("TemplateS3UpdateError: failed to update stack with large template via S3: %w", updateErr)
 			}
 		} else {
 			if err = o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stack.Parameters); err != nil {
@@ -389,7 +390,7 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 	}
 
 	if accountID == "" {
-		return nil, fmt.Errorf("S3UploadError: failed to extract account ID from stack ARN")
+		return nil, fmt.Errorf("TemplateS3UploadError: failed to extract account ID from stack ARN")
 	}
 
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
@@ -407,14 +408,14 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 	}()
 
 	if err := o.s3Client.CreateBucket(ctx, &bucketName); err != nil {
-		return nil, fmt.Errorf("S3UploadError: failed to create S3 bucket: %w", err)
+		return nil, fmt.Errorf("TemplateS3UploadError: failed to create S3 bucket: %w", err)
 	}
 	bucketCreated = true
 
 	key := fmt.Sprintf("%s.template", *stackName)
 
 	if err := o.s3Client.PutObject(ctx, &bucketName, &key, template); err != nil {
-		return nil, fmt.Errorf("S3UploadError: failed to upload template to S3: %w", err)
+		return nil, fmt.Errorf("TemplateS3UploadError: failed to upload template to S3: %w", err)
 	}
 
 	// Success - don't cleanup bucket (it will be cleaned up by main defer)
@@ -436,14 +437,14 @@ func (o *CloudFormationStackOperator) deleteTemplateFromS3(ctx context.Context, 
 	}
 	errors, err := o.s3Client.DeleteObjects(ctx, bucketName, objectIdentifier)
 	if err != nil {
-		return err
+		return fmt.Errorf("TemplateS3DeleteError: failed to delete temporary template from S3: %w", err)
 	}
 	if len(errors) > 0 {
-		return fmt.Errorf("S3DeleteError: failed to delete temporary template from S3: %v", errors)
+		return fmt.Errorf("TemplateS3DeleteError: failed to delete temporary template from S3: %v", errors)
 	}
 
 	if err := o.s3Client.DeleteBucket(ctx, bucketName); err != nil {
-		return fmt.Errorf("S3DeleteError: failed to delete temporary S3 bucket: %w", err)
+		return fmt.Errorf("TemplateS3DeleteError: failed to delete temporary S3 bucket: %w", err)
 	}
 
 	return nil

@@ -3619,7 +3619,7 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 				m.EXPECT().DeleteObjects(gomock.Any(), gomock.Any(), gomock.Any()).Return([]s3types.Error{}, nil)
 				m.EXPECT().DeleteBucket(gomock.Any(), gomock.Any()).Return(nil)
 			},
-			want:    fmt.Errorf("UpdateStackError"),
+			want:    fmt.Errorf("TemplateS3UpdateError: failed to update stack with large template via S3: UpdateStackError"),
 			wantErr: true,
 		},
 		{
@@ -3672,7 +3672,7 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 				// Bucket should be cleaned up (via defer in uploadTemplateToS3)
 				m.EXPECT().DeleteBucket(gomock.Any(), gomock.Any()).Return(nil)
 			},
-			want:    fmt.Errorf("S3UploadError: failed to upload template to S3: PutObjectError"),
+			want:    fmt.Errorf("TemplateS3UploadError: failed to upload template to S3: PutObjectError"),
 			wantErr: true,
 		},
 		{
@@ -3721,7 +3721,7 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 				// CreateBucket fails
 				m.EXPECT().CreateBucket(gomock.Any(), gomock.Any()).Return(fmt.Errorf("CreateBucketError"))
 			},
-			want:    fmt.Errorf("S3UploadError: failed to create S3 bucket: CreateBucketError"),
+			want:    fmt.Errorf("TemplateS3UploadError: failed to create S3 bucket: CreateBucketError"),
 			wantErr: true,
 		},
 		{
@@ -3766,7 +3766,7 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 					nil,
 				)
 			},
-			want:    fmt.Errorf("S3UploadError: failed to extract account ID from stack ARN"),
+			want:    fmt.Errorf("TemplateS3UploadError: failed to extract account ID from stack ARN"),
 			wantErr: true,
 		},
 	}
