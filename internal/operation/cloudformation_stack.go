@@ -2,9 +2,8 @@ package operation
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
+	"math/rand/v2"
 	"regexp"
 	"runtime"
 	"sort"
@@ -394,12 +393,8 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 		return nil, fmt.Errorf("TemplateS3UploadError: failed to extract account ID from stack ARN")
 	}
 
-	// Generate random suffix to avoid bucket name collision
-	randomBytes := make([]byte, 2)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return nil, fmt.Errorf("TemplateS3UploadError: failed to generate random suffix: %w", err)
-	}
-	randomSuffix := hex.EncodeToString(randomBytes) // 4 characters
+	// Generate random suffix to avoid bucket name collision (4 digits: 0000-9999)
+	randomSuffix := fmt.Sprintf("%04d", rand.IntN(10000))
 
 	// S3 bucket name must be lowercase, so convert stack name to lowercase and replace invalid characters
 	sanitizedStackName := strings.ToLower(*stackName)
