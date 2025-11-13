@@ -394,6 +394,7 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 	}
 
 	// Generate random suffix to avoid bucket name collision (4 digits: 0000-9999)
+	//nolint:gosec // G404: This is not cryptographically sensitive, just for bucket name uniqueness
 	randomSuffix := fmt.Sprintf("%04d", rand.IntN(10000))
 
 	// S3 bucket name must be lowercase, so convert stack name to lowercase and replace invalid characters
