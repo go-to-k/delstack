@@ -369,7 +369,6 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 }
 
 func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, stackName *string, template *string, stacks []types.Stack) (*string, *string, *string, error) {
-	// Extract account ID from stack ARN
 	accountID := ""
 	if len(stacks) > 0 && stacks[0].StackId != nil {
 		arnParts := strings.Split(*stacks[0].StackId, ":")
@@ -382,8 +381,6 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 		return nil, nil, nil, fmt.Errorf("S3UploadError: failed to extract account ID from stack ARN")
 	}
 
-	// Create a unique bucket name using account ID, region, delstack identifier, and timestamp
-	// Format: delstack-templates-{account-id}-{region}-{timestamp}
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 	bucketName := fmt.Sprintf("delstack-templates-%s-%s-%s", accountID, o.config.Region, timestamp)
 
@@ -398,16 +395,13 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 		}
 	}()
 
-	// Create the S3 bucket
 	if err := o.s3Client.CreateBucket(ctx, &bucketName); err != nil {
 		return nil, nil, nil, fmt.Errorf("S3UploadError: failed to create S3 bucket: %w", err)
 	}
 	bucketCreated = true
 
-	// Create a key for the template using stack name
 	key := fmt.Sprintf("%s.template", *stackName)
 
-	// Upload the template to S3
 	if err := o.s3Client.PutObject(ctx, &bucketName, &key, template); err != nil {
 		return nil, nil, nil, fmt.Errorf("S3UploadError: failed to upload template to S3: %w", err)
 	}
@@ -415,13 +409,11 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 	// Success - don't cleanup bucket (it will be cleaned up by main defer)
 	bucketCreated = false
 
-	// Return the S3 URL, bucket name, and key
 	templateURL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucketName, o.config.Region, key)
 	return &templateURL, &bucketName, &key, nil
 }
 
 func (o *CloudFormationStackOperator) deleteTemplateFromS3(ctx context.Context, bucketName *string, key *string) error {
-	// Delete the template file
 	objectIdentifier := []s3types.ObjectIdentifier{
 		{
 			Key: key,
@@ -435,7 +427,6 @@ func (o *CloudFormationStackOperator) deleteTemplateFromS3(ctx context.Context, 
 		return fmt.Errorf("S3 delete object errors: %v", errors)
 	}
 
-	// Delete the bucket itself
 	if err := o.s3Client.DeleteBucket(ctx, bucketName); err != nil {
 		return fmt.Errorf("S3 delete bucket error: %w", err)
 	}
