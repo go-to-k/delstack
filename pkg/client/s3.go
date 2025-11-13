@@ -377,8 +377,6 @@ func (s *S3) CreateBucket(ctx context.Context, bucketName *string) error {
 		Bucket: bucketName,
 	}
 
-	// Get the region from the client's config
-	// For regions other than us-east-1, we need to specify the LocationConstraint
 	region := s.client.Options().Region
 	if region != "us-east-1" && region != "" {
 		input.CreateBucketConfiguration = &types.CreateBucketConfiguration{

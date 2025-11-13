@@ -1707,3 +1707,270 @@ func TestS3_CheckBucketExists(t *testing.T) {
 		})
 	}
 }
+
+func TestS3_PutObject(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		bucketName         *string
+		key                *string
+		body               *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    error
+		wantErr bool
+	}{
+		{
+			name: "put object successfully",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test-bucket"),
+				key:        aws.String("test-key"),
+				body:       aws.String("test-body"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"PutObjectMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.PutObjectOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "put object failure",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test-bucket"),
+				key:        aws.String("test-key"),
+				body:       aws.String("test-body"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"PutObjectErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: nil,
+								}, middleware.Metadata{}, fmt.Errorf("PutObjectError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("test-bucket"),
+				Err:          fmt.Errorf("operation error S3: PutObject, PutObjectError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "put object failure for api error SlowDown",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test-bucket"),
+				key:        aws.String("test-key"),
+				body:       aws.String("test-body"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"PutObjectApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+										Result: nil,
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error SlowDown"),
+									}
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("test-bucket"),
+				Err:          fmt.Errorf("operation error S3: PutObject, exceeded maximum number of attempts, 10, api error SlowDown"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := s3.NewFromConfig(cfg)
+			s3Client := NewS3(client, false)
+
+			err = s3Client.PutObject(tt.args.ctx, tt.args.bucketName, tt.args.key, tt.args.body)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestS3_CreateBucket(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		bucketName         *string
+		region             string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    error
+		wantErr bool
+	}{
+		{
+			name: "create bucket successfully in us-east-1",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test-bucket"),
+				region:     "us-east-1",
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"CreateBucketMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.CreateBucketOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "create bucket successfully in ap-northeast-1",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test-bucket"),
+				region:     "ap-northeast-1",
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"CreateBucketMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &s3.CreateBucketOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "create bucket failure",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test-bucket"),
+				region:     "ap-northeast-1",
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"CreateBucketErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: nil,
+								}, middleware.Metadata{}, fmt.Errorf("CreateBucketError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("test-bucket"),
+				Err:          fmt.Errorf("operation error S3: CreateBucket, CreateBucketError"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "create bucket failure for api error SlowDown",
+			args: args{
+				ctx:        context.Background(),
+				bucketName: aws.String("test-bucket"),
+				region:     "ap-northeast-1",
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"CreateBucketApiErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+										Result: nil,
+									}, middleware.Metadata{}, &retry.MaxAttemptsError{
+										Attempt: MaxRetryCount,
+										Err:     fmt.Errorf("api error SlowDown"),
+									}
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("test-bucket"),
+				Err:          fmt.Errorf("operation error S3: CreateBucket, exceeded maximum number of attempts, 10, api error SlowDown"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion(tt.args.region),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := s3.NewFromConfig(cfg)
+			s3Client := NewS3(client, false)
+
+			err = s3Client.CreateBucket(tt.args.ctx, tt.args.bucketName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
