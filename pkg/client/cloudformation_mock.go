@@ -127,3 +127,17 @@ func (mr *MockICloudFormationMockRecorder) UpdateStack(ctx, stackName, templateB
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStack", reflect.TypeOf((*MockICloudFormation)(nil).UpdateStack), ctx, stackName, templateBody, parameters)
 }
+
+// UpdateStackWithTemplateURL mocks base method.
+func (m *MockICloudFormation) UpdateStackWithTemplateURL(ctx context.Context, stackName, templateURL *string, parameters []types.Parameter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStackWithTemplateURL", ctx, stackName, templateURL, parameters)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateStackWithTemplateURL indicates an expected call of UpdateStackWithTemplateURL.
+func (mr *MockICloudFormationMockRecorder) UpdateStackWithTemplateURL(ctx, stackName, templateURL, parameters any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStackWithTemplateURL", reflect.TypeOf((*MockICloudFormation)(nil).UpdateStackWithTemplateURL), ctx, stackName, templateURL, parameters)
+}

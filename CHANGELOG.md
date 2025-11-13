@@ -1,5 +1,8 @@
 # Changelog
 
+## [v1.17.2](https://github.com/go-to-k/delstack/compare/v1.17.1...v1.17.2) - 2025-11-13
+- fix: `-f` option fails with large CloudFormation templates over 51KB for stacks including RETAIN resources by @go-to-k in https://github.com/go-to-k/delstack/pull/507
+
 ## [v1.17.1](https://github.com/go-to-k/delstack/compare/v1.17.0...v1.17.1) - 2025-11-12
 - fix(operation): template corruption when removing RetainExceptOnCreate DeletionPolicy by @go-to-k in https://github.com/go-to-k/delstack/pull/504
 
