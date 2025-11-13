@@ -1921,6 +1921,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 				"AWS::CloudFormation::Stack",
 				"Custom::",
 			}
+
 			s3Mock := client.NewMockIS3(ctrl)
 			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock, targetResourceTypes)
 
@@ -4388,7 +4389,17 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 
 			tt.prepareMockCloudFormationFn(cloudformationMock)
 
-			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, nil)
+			targetResourceTypes := []string{
+				"AWS::S3::Bucket",
+				"AWS::IAM::Role",
+				"AWS::ECR::Repository",
+				"AWS::Backup::BackupVault",
+				"AWS::CloudFormation::Stack",
+				"Custom::",
+			}
+
+			s3Mock := client.NewMockIS3(ctrl)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock, targetResourceTypes)
 
 			graph, err := cloudformationStackOperator.BuildDependencyGraph(tt.args.ctx, tt.args.stackNames)
 
