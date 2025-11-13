@@ -18,6 +18,7 @@ type ICloudFormation interface {
 	ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error)
 	GetTemplate(ctx context.Context, stackName *string) (*string, error)
 	UpdateStack(ctx context.Context, stackName *string, templateBody *string, parameters []types.Parameter) error
+	UpdateStackWithTemplateURL(ctx context.Context, stackName *string, templateURL *string, parameters []types.Parameter) error
 }
 
 var _ ICloudFormation = (*CloudFormation)(nil)
@@ -208,6 +209,36 @@ func (c *CloudFormation) waitUpdateStack(ctx context.Context, stackName *string)
 	err := c.updateCompleteWaiter.Wait(ctx, input, CloudFormationWaitNanoSecTime)
 	if err != nil && !strings.Contains(err.Error(), "waiter state transitioned to Failure") {
 		return err // return non wrapping error because wrap in public callers
+	}
+
+	return nil
+}
+
+func (c *CloudFormation) UpdateStackWithTemplateURL(ctx context.Context, stackName *string, templateURL *string, parameters []types.Parameter) error {
+	input := &cloudformation.UpdateStackInput{
+		StackName:   stackName,
+		TemplateURL: templateURL,
+		Capabilities: []types.Capability{
+			types.CapabilityCapabilityIam,
+			types.CapabilityCapabilityNamedIam,
+			types.CapabilityCapabilityAutoExpand,
+		},
+		Parameters: parameters,
+	}
+
+	_, err := c.client.UpdateStack(ctx, input)
+	if err != nil {
+		return &ClientError{
+			ResourceName: stackName,
+			Err:          err,
+		}
+	}
+
+	if err := c.waitUpdateStack(ctx, stackName); err != nil {
+		return &ClientError{
+			ResourceName: stackName,
+			Err:          err,
+		}
 	}
 
 	return nil

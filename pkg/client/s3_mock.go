@@ -52,6 +52,20 @@ func (mr *MockIS3MockRecorder) CheckBucketExists(ctx, bucketName any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckBucketExists", reflect.TypeOf((*MockIS3)(nil).CheckBucketExists), ctx, bucketName)
 }
 
+// CreateBucket mocks base method.
+func (m *MockIS3) CreateBucket(ctx context.Context, bucketName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateBucket", ctx, bucketName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateBucket indicates an expected call of CreateBucket.
+func (mr *MockIS3MockRecorder) CreateBucket(ctx, bucketName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBucket", reflect.TypeOf((*MockIS3)(nil).CreateBucket), ctx, bucketName)
+}
+
 // DeleteBucket mocks base method.
 func (m *MockIS3) DeleteBucket(ctx context.Context, bucketName *string) error {
 	m.ctrl.T.Helper()
@@ -108,4 +122,18 @@ func (m *MockIS3) ListObjectsOrVersionsByPage(ctx context.Context, bucketName, k
 func (mr *MockIS3MockRecorder) ListObjectsOrVersionsByPage(ctx, bucketName, keyMarker, versionIdMarker any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjectsOrVersionsByPage", reflect.TypeOf((*MockIS3)(nil).ListObjectsOrVersionsByPage), ctx, bucketName, keyMarker, versionIdMarker)
+}
+
+// PutObject mocks base method.
+func (m *MockIS3) PutObject(ctx context.Context, bucketName, key, body *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PutObject", ctx, bucketName, key, body)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PutObject indicates an expected call of PutObject.
+func (mr *MockIS3MockRecorder) PutObject(ctx, bucketName, key, body any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObject", reflect.TypeOf((*MockIS3)(nil).PutObject), ctx, bucketName, key, body)
 }

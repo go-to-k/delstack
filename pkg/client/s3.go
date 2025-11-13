@@ -39,6 +39,8 @@ type IS3 interface {
 	) (*ListObjectsOrVersionsByPageOutput, error)
 	CheckBucketExists(ctx context.Context, bucketName *string) (bool, error)
 	GetDirectoryBucketsFlag() bool
+	PutObject(ctx context.Context, bucketName *string, key *string, body *string) error
+	CreateBucket(ctx context.Context, bucketName *string) error
 }
 
 var _ IS3 = (*S3)(nil)
@@ -346,4 +348,53 @@ func (s *S3) listDirectoryBuckets(ctx context.Context) ([]types.Bucket, error) {
 
 func (s *S3) GetDirectoryBucketsFlag() bool {
 	return s.directoryBucketsFlag
+}
+
+func (s *S3) PutObject(ctx context.Context, bucketName *string, key *string, body *string) error {
+	input := &s3.PutObjectInput{
+		Bucket: bucketName,
+		Key:    key,
+		Body:   strings.NewReader(*body),
+	}
+
+	optFn := func(o *s3.Options) {
+		o.Retryer = s.retryer
+	}
+
+	_, err := s.client.PutObject(ctx, input, optFn)
+	if err != nil {
+		return &ClientError{
+			ResourceName: bucketName,
+			Err:          err,
+		}
+	}
+
+	return nil
+}
+
+func (s *S3) CreateBucket(ctx context.Context, bucketName *string) error {
+	input := &s3.CreateBucketInput{
+		Bucket: bucketName,
+	}
+
+	region := s.client.Options().Region
+	if region != "us-east-1" && region != "" {
+		input.CreateBucketConfiguration = &types.CreateBucketConfiguration{
+			LocationConstraint: types.BucketLocationConstraint(region),
+		}
+	}
+
+	optFn := func(o *s3.Options) {
+		o.Retryer = s.retryer
+	}
+
+	_, err := s.client.CreateBucket(ctx, input, optFn)
+	if err != nil {
+		return &ClientError{
+			ResourceName: bucketName,
+			Err:          err,
+		}
+	}
+
+	return nil
 }
