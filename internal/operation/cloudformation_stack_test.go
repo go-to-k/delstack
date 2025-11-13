@@ -3769,6 +3769,225 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 			want:    fmt.Errorf("TemplateS3UploadError: failed to extract account ID from stack ARN"),
 			wantErr: true,
 		},
+		{
+			name: "remove deletion policy with large template - DeleteObjects fails but operation succeeds with warning",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test-large-deleteobjects-fail"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				largeTemplate := `{"Resources":{"Resource1":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"BucketName":"test-bucket","Tags":[`
+				for i := 0; i < 5000; i++ {
+					largeTemplate += `{"Key":"tag` + fmt.Sprintf("%d", i) + `","Value":"value` + fmt.Sprintf("%d", i) + `"},`
+				}
+				largeTemplate = largeTemplate[:len(largeTemplate)-1]
+				largeTemplate += `]}}}}`
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test-large-deleteobjects-fail")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test-large-deleteobjects-fail"),
+							StackId:     aws.String("arn:aws:cloudformation:us-east-1:123456789012:stack/test-large-deleteobjects-fail/guid"),
+							StackStatus: types.StackStatusCreateComplete,
+							Parameters:  []types.Parameter{},
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test-large-deleteobjects-fail")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("Resource1"),
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("test-bucket"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test-large-deleteobjects-fail")).Return(
+					aws.String(largeTemplate),
+					nil,
+				)
+
+				m.EXPECT().UpdateStackWithTemplateURL(gomock.Any(), aws.String("test-large-deleteobjects-fail"), gomock.Any(), gomock.Any()).Return(nil)
+			},
+			prepareMockS3Fn: func(m *client.MockIS3) {
+				m.EXPECT().CreateBucket(gomock.Any(), gomock.Any()).Return(nil)
+				m.EXPECT().PutObject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				// DeleteObjects fails
+				m.EXPECT().DeleteObjects(gomock.Any(), gomock.Any(), gomock.Any()).Return([]s3types.Error{}, fmt.Errorf("DeleteObjectsError"))
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "remove deletion policy with large template - DeleteBucket fails but operation succeeds with warning",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test-large-deletebucket-fail"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				largeTemplate := `{"Resources":{"Resource1":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"BucketName":"test-bucket","Tags":[`
+				for i := 0; i < 5000; i++ {
+					largeTemplate += `{"Key":"tag` + fmt.Sprintf("%d", i) + `","Value":"value` + fmt.Sprintf("%d", i) + `"},`
+				}
+				largeTemplate = largeTemplate[:len(largeTemplate)-1]
+				largeTemplate += `]}}}}`
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test-large-deletebucket-fail")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test-large-deletebucket-fail"),
+							StackId:     aws.String("arn:aws:cloudformation:us-east-1:123456789012:stack/test-large-deletebucket-fail/guid"),
+							StackStatus: types.StackStatusCreateComplete,
+							Parameters:  []types.Parameter{},
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test-large-deletebucket-fail")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("Resource1"),
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("test-bucket"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test-large-deletebucket-fail")).Return(
+					aws.String(largeTemplate),
+					nil,
+				)
+
+				m.EXPECT().UpdateStackWithTemplateURL(gomock.Any(), aws.String("test-large-deletebucket-fail"), gomock.Any(), gomock.Any()).Return(nil)
+			},
+			prepareMockS3Fn: func(m *client.MockIS3) {
+				m.EXPECT().CreateBucket(gomock.Any(), gomock.Any()).Return(nil)
+				m.EXPECT().PutObject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				m.EXPECT().DeleteObjects(gomock.Any(), gomock.Any(), gomock.Any()).Return([]s3types.Error{}, nil)
+				// DeleteBucket fails
+				m.EXPECT().DeleteBucket(gomock.Any(), gomock.Any()).Return(fmt.Errorf("DeleteBucketError"))
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "remove deletion policy with large template - DeleteObjects returns errors but operation succeeds with warning",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test-large-deleteobjects-errors"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				largeTemplate := `{"Resources":{"Resource1":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"BucketName":"test-bucket","Tags":[`
+				for i := 0; i < 5000; i++ {
+					largeTemplate += `{"Key":"tag` + fmt.Sprintf("%d", i) + `","Value":"value` + fmt.Sprintf("%d", i) + `"},`
+				}
+				largeTemplate = largeTemplate[:len(largeTemplate)-1]
+				largeTemplate += `]}}}}`
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test-large-deleteobjects-errors")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test-large-deleteobjects-errors"),
+							StackId:     aws.String("arn:aws:cloudformation:us-east-1:123456789012:stack/test-large-deleteobjects-errors/guid"),
+							StackStatus: types.StackStatusCreateComplete,
+							Parameters:  []types.Parameter{},
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test-large-deleteobjects-errors")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("Resource1"),
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("test-bucket"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test-large-deleteobjects-errors")).Return(
+					aws.String(largeTemplate),
+					nil,
+				)
+
+				m.EXPECT().UpdateStackWithTemplateURL(gomock.Any(), aws.String("test-large-deleteobjects-errors"), gomock.Any(), gomock.Any()).Return(nil)
+			},
+			prepareMockS3Fn: func(m *client.MockIS3) {
+				m.EXPECT().CreateBucket(gomock.Any(), gomock.Any()).Return(nil)
+				m.EXPECT().PutObject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				// DeleteObjects returns error list
+				m.EXPECT().DeleteObjects(gomock.Any(), gomock.Any(), gomock.Any()).Return([]s3types.Error{
+					{
+						Key:     aws.String("test.template"),
+						Code:    aws.String("InternalError"),
+						Message: aws.String("Internal error occurred"),
+					},
+				}, nil)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "remove deletion policy with large template - both DeleteObjects and DeleteBucket fail but operation succeeds with warning",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test-large-both-delete-fail"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				largeTemplate := `{"Resources":{"Resource1":{"Type":"AWS::S3::Bucket","DeletionPolicy":"Retain","Properties":{"BucketName":"test-bucket","Tags":[`
+				for i := 0; i < 5000; i++ {
+					largeTemplate += `{"Key":"tag` + fmt.Sprintf("%d", i) + `","Value":"value` + fmt.Sprintf("%d", i) + `"},`
+				}
+				largeTemplate = largeTemplate[:len(largeTemplate)-1]
+				largeTemplate += `]}}}}`
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test-large-both-delete-fail")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test-large-both-delete-fail"),
+							StackId:     aws.String("arn:aws:cloudformation:us-east-1:123456789012:stack/test-large-both-delete-fail/guid"),
+							StackStatus: types.StackStatusCreateComplete,
+							Parameters:  []types.Parameter{},
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().ListStackResources(gomock.Any(), aws.String("test-large-both-delete-fail")).Return(
+					[]types.StackResourceSummary{
+						{
+							LogicalResourceId:  aws.String("Resource1"),
+							ResourceType:       aws.String("AWS::S3::Bucket"),
+							PhysicalResourceId: aws.String("test-bucket"),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().GetTemplate(gomock.Any(), aws.String("test-large-both-delete-fail")).Return(
+					aws.String(largeTemplate),
+					nil,
+				)
+
+				m.EXPECT().UpdateStackWithTemplateURL(gomock.Any(), aws.String("test-large-both-delete-fail"), gomock.Any(), gomock.Any()).Return(nil)
+			},
+			prepareMockS3Fn: func(m *client.MockIS3) {
+				m.EXPECT().CreateBucket(gomock.Any(), gomock.Any()).Return(nil)
+				m.EXPECT().PutObject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				// Both DeleteObjects and DeleteBucket would fail, but DeleteObjects is called first
+				m.EXPECT().DeleteObjects(gomock.Any(), gomock.Any(), gomock.Any()).Return([]s3types.Error{}, fmt.Errorf("DeleteObjectsError"))
+			},
+			want:    nil,
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range cases {
