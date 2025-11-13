@@ -405,8 +405,9 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 	sanitizedStackName := strings.ToLower(*stackName)
 	sanitizedStackName = strings.ReplaceAll(sanitizedStackName, "_", "-")
 	// Truncate stack name to avoid exceeding S3 bucket name limit (63 chars)
-	// Format: delstack-tpl-{stack}-{account:12}-{region:14}-{random:4}
+	// Format: delstack-tpl-{stack}-{account:12}-{region:max14}-{random:4}
 	// Calculation: 13 (prefix) + 17 (stack) + 1 + 12 + 1 + 14 + 1 + 4 = 63 chars
+	// Region max length is 14 (e.g., ap-southeast-1, ap-northeast-1)
 	if len(sanitizedStackName) > 17 {
 		sanitizedStackName = sanitizedStackName[:17]
 	}
