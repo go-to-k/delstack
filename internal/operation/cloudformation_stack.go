@@ -346,7 +346,7 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 			defer func() {
 				if deleteErr := o.deleteTemplateFromS3(ctx, uploadResult.BucketName, uploadResult.Key); deleteErr != nil {
 					// Log the error but don't fail the operation
-					io.Logger.Warn().Msgf("Failed to delete temporary template from S3: %v", deleteErr)
+					io.Logger.Warn().Msgf("Failed to delete temporary S3 bucket and template (bucket: %s, key: %s). You may need to delete it manually: %v", *uploadResult.BucketName, *uploadResult.Key, deleteErr)
 				}
 			}()
 
@@ -399,7 +399,7 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 		if bucketCreated {
 			// If we return early due to error, clean up the bucket
 			if cleanupErr := o.s3Client.DeleteBucket(ctx, &bucketName); cleanupErr != nil {
-				io.Logger.Warn().Msgf("Failed to cleanup S3 bucket after error: %v", cleanupErr)
+				io.Logger.Warn().Msgf("Failed to cleanup temporary S3 bucket (bucket: %s) after upload error. You may need to delete it manually: %v", bucketName, cleanupErr)
 			}
 		}
 	}()
@@ -437,11 +437,11 @@ func (o *CloudFormationStackOperator) deleteTemplateFromS3(ctx context.Context, 
 		return err
 	}
 	if len(errors) > 0 {
-		return fmt.Errorf("S3 delete object errors: %v", errors)
+		return fmt.Errorf("S3DeleteError: failed to delete temporary template from S3: %v", errors)
 	}
 
 	if err := o.s3Client.DeleteBucket(ctx, bucketName); err != nil {
-		return fmt.Errorf("S3 delete bucket error: %w", err)
+		return fmt.Errorf("S3DeleteError: failed to delete temporary S3 bucket: %w", err)
 	}
 
 	return nil
