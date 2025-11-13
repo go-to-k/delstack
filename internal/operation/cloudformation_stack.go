@@ -343,15 +343,17 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 				return uploadErr
 			}
 
-			defer func() {
-				if deleteErr := o.deleteTemplateFromS3(ctx, uploadResult.BucketName, uploadResult.Key); deleteErr != nil {
-					// Log the error but don't fail the operation
-					io.Logger.Warn().Msgf("Failed to delete temporary S3 bucket and template (bucket: %s, key: %s). You may need to delete it manually: %v", *uploadResult.BucketName, *uploadResult.Key, deleteErr)
-				}
-			}()
+			updateErr := o.client.UpdateStackWithTemplateURL(ctx, stackName, uploadResult.TemplateURL, stack.Parameters)
 
-			if err = o.client.UpdateStackWithTemplateURL(ctx, stackName, uploadResult.TemplateURL, stack.Parameters); err != nil {
-				return err
+			// Ensure S3 cleanup happens even if UpdateStack fails (`updateErr != nil`)
+			// Delete temporary S3 bucket and template immediately after UpdateStack completes (success or failure)
+			if deleteErr := o.deleteTemplateFromS3(ctx, uploadResult.BucketName, uploadResult.Key); deleteErr != nil {
+				// Log the error but don't fail the operation
+				io.Logger.Warn().Msgf("Failed to delete temporary S3 bucket and template (bucket: %s, key: %s). You may need to delete it manually: %v", *uploadResult.BucketName, *uploadResult.Key, deleteErr)
+			}
+
+			if updateErr != nil {
+				return updateErr
 			}
 		} else {
 			if err = o.client.UpdateStack(ctx, stackName, &modifiedTemplate, stack.Parameters); err != nil {
