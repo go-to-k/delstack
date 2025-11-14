@@ -34,7 +34,6 @@ type Options struct {
 type DeployStackService struct {
 	Options       Options
 	CfnPjPrefix   string
-	CfnStackName  string
 	AccountID     string
 	ProfileOption string
 	Ctx           context.Context
@@ -70,11 +69,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Upload objects to S3
+	// Upload objects to S3 for all stacks (A, B, C, D, E, F)
 	color.Green("=== object_upload ===")
-	if err := service.objectUpload(service.CfnStackName); err != nil {
-		color.Red("Failed to upload objects: %v", err)
-		os.Exit(1)
+	stackNames := []string{
+		fmt.Sprintf("%s-Stack-A", service.CfnPjPrefix),
+		fmt.Sprintf("%s-Stack-B", service.CfnPjPrefix),
+		fmt.Sprintf("%s-Stack-C", service.CfnPjPrefix),
+		fmt.Sprintf("%s-Stack-D", service.CfnPjPrefix),
+		fmt.Sprintf("%s-Stack-E", service.CfnPjPrefix),
+		fmt.Sprintf("%s-Stack-F", service.CfnPjPrefix),
+	}
+	for _, stackName := range stackNames {
+		if err := service.objectUpload(stackName); err != nil {
+			color.Red("Failed to upload objects: %v", err)
+			os.Exit(1)
+		}
 	}
 }
 
@@ -98,7 +107,6 @@ func parseArgs() Options {
 
 func NewDeployStackService(ctx context.Context, options Options) *DeployStackService {
 	cfnPjPrefix := options.Stage
-	cfnStackName := fmt.Sprintf("%s-Test-Dependency", cfnPjPrefix)
 
 	profileOption := ""
 	if options.Profile != "" {
@@ -108,7 +116,6 @@ func NewDeployStackService(ctx context.Context, options Options) *DeployStackSer
 	return &DeployStackService{
 		Options:       options,
 		CfnPjPrefix:   cfnPjPrefix,
-		CfnStackName:  cfnStackName,
 		ProfileOption: profileOption,
 		Ctx:           ctx,
 	}

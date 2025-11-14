@@ -54,9 +54,8 @@ func NewStackA(scope constructs.Construct, id string, props *StackAProps) awscdk
 
 	// Create a minimal S3 bucket
 	bucket := awss3.NewBucket(stack, jsii.String("BucketA"), &awss3.BucketProps{
-		BucketName:        jsii.String(props.PjPrefix + "-stack-a-bucket"),
-		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
-		AutoDeleteObjects: jsii.Bool(true),
+		BucketName:    jsii.String(props.PjPrefix + "-stack-a-bucket"),
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 
 	// Export bucket ARN
@@ -82,9 +81,8 @@ func NewStackB(scope constructs.Construct, id string, props *StackBProps) awscdk
 
 	// Create a minimal S3 bucket
 	bucket := awss3.NewBucket(stack, jsii.String("BucketB"), &awss3.BucketProps{
-		BucketName:        jsii.String(props.PjPrefix + "-stack-b-bucket"),
-		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
-		AutoDeleteObjects: jsii.Bool(true),
+		BucketName:    jsii.String(props.PjPrefix + "-stack-b-bucket"),
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 
 	// Export bucket ARN
@@ -113,9 +111,8 @@ func NewStackC(scope constructs.Construct, id string, props *StackCProps) awscdk
 
 	// Create a minimal S3 bucket with a tag referencing the imported value
 	bucket := awss3.NewBucket(stack, jsii.String("BucketC"), &awss3.BucketProps{
-		BucketName:        jsii.String(props.PjPrefix + "-stack-c-bucket"),
-		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
-		AutoDeleteObjects: jsii.Bool(true),
+		BucketName:    jsii.String(props.PjPrefix + "-stack-c-bucket"),
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 	awscdk.Tags_Of(bucket).Add(jsii.String("DependsOn"), importedBucketArn, nil)
 
@@ -145,9 +142,8 @@ func NewStackD(scope constructs.Construct, id string, props *StackDProps) awscdk
 
 	// Create a minimal S3 bucket with a tag referencing the imported value
 	bucket := awss3.NewBucket(stack, jsii.String("BucketD"), &awss3.BucketProps{
-		BucketName:        jsii.String(props.PjPrefix + "-stack-d-bucket"),
-		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
-		AutoDeleteObjects: jsii.Bool(true),
+		BucketName:    jsii.String(props.PjPrefix + "-stack-d-bucket"),
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 	awscdk.Tags_Of(bucket).Add(jsii.String("DependsOn"), importedBucketArn, nil)
 
@@ -177,9 +173,8 @@ func NewStackE(scope constructs.Construct, id string, props *StackEProps) awscdk
 
 	// Create a minimal S3 bucket with a tag referencing the imported value
 	bucket := awss3.NewBucket(stack, jsii.String("BucketE"), &awss3.BucketProps{
-		BucketName:        jsii.String(props.PjPrefix + "-stack-e-bucket"),
-		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
-		AutoDeleteObjects: jsii.Bool(true),
+		BucketName:    jsii.String(props.PjPrefix + "-stack-e-bucket"),
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 	awscdk.Tags_Of(bucket).Add(jsii.String("DependsOn"), importedBucketArn, nil)
 
@@ -211,9 +206,8 @@ func NewStackF(scope constructs.Construct, id string, props *StackFProps) awscdk
 
 	// Create a minimal S3 bucket
 	awss3.NewBucket(stack, jsii.String("BucketF"), &awss3.BucketProps{
-		BucketName:        jsii.String(props.PjPrefix + "-stack-f-bucket"),
-		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
-		AutoDeleteObjects: jsii.Bool(true),
+		BucketName:    jsii.String(props.PjPrefix + "-stack-f-bucket"),
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 
 	// Create outputs to ensure dependencies
