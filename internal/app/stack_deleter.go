@@ -207,20 +207,20 @@ func (d *StackDeleter) deleteSingleStack(
 	operatorManager := operation.NewOperatorManager(operatorCollection)
 	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(stack.targetResourceTypes)
 
-	io.Logger.Info().Msgf("%v: Start deletion. Please wait a few minutes...", stack.stackName)
+	io.Logger.Info().Msgf("[%v]: Start deletion. Please wait a few minutes...", stack.stackName)
 
 	if d.forceMode {
 		if err := cloudformationStackOperator.RemoveDeletionPolicy(ctx, aws.String(stack.stackName)); err != nil {
-			io.Logger.Error().Msgf("%v: Failed to remove deletion policy: %v", stack.stackName, err)
+			io.Logger.Error().Msgf("[%v]: Failed to remove deletion policy: %v", stack.stackName, err)
 			return err
 		}
 	}
 
 	if err := cloudformationStackOperator.DeleteCloudFormationStack(ctx, aws.String(stack.stackName), isRootStack, operatorManager); err != nil {
-		io.Logger.Error().Msgf("%v: Failed to delete: %v", stack.stackName, err)
+		io.Logger.Error().Msgf("[%v]: Failed to delete: %v", stack.stackName, err)
 		return err
 	}
 
-	io.Logger.Info().Msgf("%v: Successfully deleted!!", stack.stackName)
+	io.Logger.Info().Msgf("[%v]: Successfully deleted!!", stack.stackName)
 	return nil
 }
