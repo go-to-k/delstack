@@ -300,6 +300,13 @@ func (o *CloudFormationStackOperator) BuildDependencyGraph(
 		stackNameSet[name] = struct{}{}
 	}
 
+	type externalReference struct {
+		exportingStack     string
+		exportName         string
+		nonTargetStackName string
+	}
+	var externalReferences []externalReference
+
 	for _, stackName := range stackNames {
 		stacks, err := o.client.DescribeStacks(ctx, aws.String(stackName))
 		if err != nil {
@@ -332,9 +339,23 @@ func (o *CloudFormationStackOperator) BuildDependencyGraph(
 			for _, importingStack := range importingStacks {
 				if _, isTarget := stackNameSet[importingStack]; isTarget {
 					graph.AddDependency(importingStack, stackName)
+				} else {
+					externalReferences = append(externalReferences, externalReference{
+						exportingStack:     stackName,
+						exportName:         exportName,
+						nonTargetStackName: importingStack,
+					})
 				}
 			}
 		}
+	}
+
+	if len(externalReferences) > 0 {
+		var errorMessages []string
+		for _, ref := range externalReferences {
+			errorMessages = append(errorMessages, fmt.Sprintf("Stack '%s' exports '%s' which is imported by non-target stack '%s'", ref.exportingStack, ref.exportName, ref.nonTargetStackName))
+		}
+		return nil, fmt.Errorf("deletion would break dependencies for non-target stacks:\n%s", strings.Join(errorMessages, "\n"))
 	}
 
 	return graph, nil

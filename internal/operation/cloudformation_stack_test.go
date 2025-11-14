@@ -4175,7 +4175,7 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "external stack reference is ignored",
+			name: "external stack reference causes error",
 			args: args{
 				ctx:        context.Background(),
 				stackNames: []string{"stack-a", "stack-b"},
@@ -4210,12 +4210,87 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 					nil,
 				)
 			},
-			wantDependencies: map[string]map[string]struct{}{
-				"stack-b": {
-					"stack-a": {},
-				},
+			wantDependencies: nil,
+			wantErr:          true,
+		},
+		{
+			name: "multiple external stack references cause error",
+			args: args{
+				ctx:        context.Background(),
+				stackNames: []string{"stack-a", "stack-b"},
 			},
-			wantErr: false,
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-a")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-a"),
+							Outputs: []types.Output{
+								{
+									OutputKey:   aws.String("ExportA"),
+									OutputValue: aws.String("value-a"),
+									ExportName:  aws.String("export-a"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a")).Return(
+					[]string{"external-stack-1", "external-stack-2"},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-b")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-b"),
+							Outputs: []types.Output{
+								{
+									OutputKey:   aws.String("ExportB"),
+									OutputValue: aws.String("value-b"),
+									ExportName:  aws.String("export-b"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-b")).Return(
+					[]string{"external-stack-3"},
+					nil,
+				)
+			},
+			wantDependencies: nil,
+			wantErr:          true,
+		},
+		{
+			name: "single stack with external reference causes error",
+			args: args{
+				ctx:        context.Background(),
+				stackNames: []string{"stack-a"},
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("stack-a")).Return(
+					[]types.Stack{
+						{
+							StackName: aws.String("stack-a"),
+							Outputs: []types.Output{
+								{
+									OutputKey:   aws.String("ExportA"),
+									OutputValue: aws.String("value-a"),
+									ExportName:  aws.String("export-a"),
+								},
+							},
+						},
+					},
+					nil,
+				)
+				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a")).Return(
+					[]string{"external-stack"},
+					nil,
+				)
+			},
+			wantDependencies: nil,
+			wantErr:          true,
 		},
 		{
 			name: "diamond dependency",
