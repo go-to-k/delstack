@@ -145,7 +145,7 @@ func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 		name      string
 		graph     *StackDependencyGraph
 		wantCycle []string
-		wantErr   bool
+		hasCycle  bool
 	}{
 		{
 			name: "no circular dependency",
@@ -156,7 +156,7 @@ func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 				return g
 			}(),
 			wantCycle: nil,
-			wantErr:   false,
+			hasCycle:  false,
 		},
 		{
 			name: "circular dependency with 2 stacks",
@@ -167,7 +167,7 @@ func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 				return g
 			}(),
 			wantCycle: []string{"stack-a", "stack-b", "stack-a"},
-			wantErr:   true,
+			hasCycle:  true,
 		},
 		{
 			name: "circular dependency with 3 stacks",
@@ -179,7 +179,7 @@ func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 				return g
 			}(),
 			wantCycle: []string{"stack-a", "stack-b", "stack-c", "stack-a"},
-			wantErr:   true,
+			hasCycle:  true,
 		},
 		{
 			name: "no dependency at all",
@@ -188,7 +188,7 @@ func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 				return g
 			}(),
 			wantCycle: nil,
-			wantErr:   false,
+			hasCycle:  false,
 		},
 		{
 			name: "diamond dependency (no cycle)",
@@ -201,20 +201,20 @@ func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 				return g
 			}(),
 			wantCycle: nil,
-			wantErr:   false,
+			hasCycle:  false,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCycle, gotErr := tt.graph.DetectCircularDependency()
+			gotCycle := tt.graph.DetectCircularDependency()
 
-			if (gotErr != nil) != tt.wantErr {
-				t.Errorf("DetectCircularDependency() error = %v, wantErr %v", gotErr, tt.wantErr)
+			if (gotCycle != nil) != tt.hasCycle {
+				t.Errorf("DetectCircularDependency() hasCycle = %v, want %v", gotCycle != nil, tt.hasCycle)
 				return
 			}
 
-			if tt.wantErr {
+			if tt.hasCycle {
 				// Verify cycle is valid (first and last elements should be same, length should match)
 				if len(gotCycle) != len(tt.wantCycle) {
 					t.Errorf("DetectCircularDependency() cycle length = %v, want %v", len(gotCycle), len(tt.wantCycle))

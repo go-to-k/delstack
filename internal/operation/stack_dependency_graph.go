@@ -1,10 +1,5 @@
 package operation
 
-import (
-	"fmt"
-	"strings"
-)
-
 /*
 stack_dependency_graph.go - CloudFormation stack dependency graph and concurrent deletion logic
 
@@ -396,7 +391,8 @@ func (g *StackDependencyGraph) GetAllStacks() map[string]struct{} {
 }
 
 // DetectCircularDependency detects circular dependencies using DFS
-func (g *StackDependencyGraph) DetectCircularDependency() ([]string, error) {
+// Returns the cycle path if a circular dependency is detected, nil otherwise
+func (g *StackDependencyGraph) DetectCircularDependency() []string {
 	visited := make(map[string]bool)
 	recursionStack := make(map[string]bool)
 	var cyclePath []string
@@ -435,9 +431,9 @@ func (g *StackDependencyGraph) DetectCircularDependency() ([]string, error) {
 
 		cyclePath = []string{}
 		if dfs(stack) {
-			return cyclePath, fmt.Errorf("CircularDependencyError: %v", strings.Join(cyclePath, " -> "))
+			return cyclePath
 		}
 	}
 
-	return nil, nil
+	return nil
 }
