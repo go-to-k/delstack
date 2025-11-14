@@ -390,7 +390,7 @@ func (g *StackDependencyGraph) GetAllStacks() map[string]struct{} {
 	return g.allStacks
 }
 
-// DetectCircularDependency detects circular dependencies using DFS
+// DetectCircularDependency detects circular dependencies using DFS (Depth-First Search)
 // Returns the cycle path if a circular dependency is detected, nil otherwise
 func (g *StackDependencyGraph) DetectCircularDependency() []string {
 	visited := make(map[string]bool)
