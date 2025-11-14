@@ -1,6 +1,47 @@
-# Delstack Test Environment
+# Delstack Test Environment - Dependency Graph
 
-This directory contains a tool for creating a test environment for `delstack`. This tool (`deploy.go`) deploys AWS CloudFormation stacks with various resources that can be used to test the stack deletion functionality of `delstack`.
+This directory contains a tool for creating a test environment to verify `delstack`'s dependency graph handling and concurrent deletion capabilities. This tool (`deploy.go`) deploys 6 CloudFormation stacks with complex multi-level dependencies.
+
+## Stack Dependency Structure
+
+The test environment creates the following stack dependency structure:
+
+```
+Stack Configuration:
+  A (Export: ExportA)
+  B (Export: ExportB)
+  C (Import: ExportA, Export: ExportC)
+  D (Import: ExportA, Export: ExportD)
+  E (Import: ExportB, Export: ExportE)
+  F (Import: ExportC, ExportD, ExportE)
+
+Dependencies:
+  C → A
+  D → A
+  E → B
+  F → C
+  F → D
+  F → E
+```
+
+### Expected Deletion Flow
+
+When deleting all 6 stacks with `delstack`, the following concurrent deletion flow should occur:
+
+1. **Step 1**: Start deleting Stack F (reverse in-degree 0)
+2. **Step 2**: F completes → C, D, E become ready (reverse in-degree 0)
+3. **Step 3**: Start deleting C, D, E concurrently
+4. **Step 4**: E completes → B becomes ready
+5. **Step 5**: Start deleting B (doesn't wait for C, D!)
+6. **Step 6**: C completes → A's reverse in-degree decreases (2→1)
+7. **Step 7**: D completes → A becomes ready (reverse in-degree 0)
+8. **Step 8**: Start deleting A
+9. **Step 9**: B and A complete → all done
+
+This demonstrates `delstack`'s ability to:
+- Build correct dependency graphs from CloudFormation exports/imports
+- Delete stacks in the correct order based on dependencies
+- Maximize parallelism by deleting independent stacks concurrently
 
 ## Test Stack Deployment
 
@@ -10,25 +51,20 @@ You can deploy test CloudFormation stacks using the included `deploy.go` script 
 npm install -g aws-cdk@latest
 ```
 
-This script creates a CloudFormation stack containing various resources that typically cause deletion issues, including:
+This script creates 6 CloudFormation stacks (A, B, C, D, E, F) with the dependency structure described above. Each stack contains:
 
-- S3 buckets with contents
-- S3 Express Directory buckets with contents
-- S3 Table buckets with namespaces and tables
-- S3 Table Namespaces with tables
-- S3 Vector buckets with indexes
-- IAM groups with users
-- ECR repositories with images
-- AWS Backup vaults with recovery points
-- And more
+- A minimal S3 bucket resource
+- CloudFormation Exports (for stacks A, B, C, D, E)
+- CloudFormation Imports using `Fn::ImportValue` (for stacks C, D, E, F)
+- S3 objects for testing deletion
 
 ```bash
-go run testdata/deploy.go -s <stage> [-p <profile>]
+go run testdata_dependency/deploy.go -s <stage> [-p <profile>]
 ```
 
 ### Options
 
-- `-s <stage>` : Stage name, used as part of stack naming (optional)
+- `-s <stage>` : Stage name, used as part of stack naming (optional, defaults to random name)
 - `-p <profile>` : AWS CLI profile name to use (optional)
 - `-r` : Make all resources RETAIN to test `-f` option for delstack (optional)
 
@@ -38,17 +74,11 @@ For convenience, you can also use the Makefile target:
 
 ```bash
 # Deploy with default stage and profile
-make testgen
+make testgen_dependency
 
 # Deploy with custom stage and profile
-make testgen OPT="-s my-stage -p my-profile"
+make testgen_dependency OPT="-s my-stage -p my-profile"
 
-# Deploy the stack with all RETAIN resources
-make testgen OPT="-r"
+# Deploy the stacks with all RETAIN resources
+make testgen_dependency OPT="-r"
 ```
-
-### Notes
-
-- Due to AWS quota limitations, only up to 5 test stacks can be created simultaneously with this script.
-- The script includes 2 `AWS::IAM::Group` resources only; one IAM user (`DelstackTestUser`) can only belong to 10 IAM groups, and we want to be able to make up to 5 stacks.
-- The script includes 2 `AWS::S3Tables::TableBucket` resources; an AWS account can have at most 10 table buckets per region.
