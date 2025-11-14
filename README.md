@@ -171,6 +171,64 @@ delstack -f -s dev-goto-01-TestStack
 
 Also, even if you specify `-i, --interactive` option together, the ResourceTypes selection prompt will not be displayed.
 
+## Parallel Stack Deletion with Automatic Dependency Resolution
+
+When you specify multiple stacks (via the `-s` option or interactive mode `-i`), `delstack` automatically analyzes CloudFormation stack dependencies (via Outputs/Exports and Imports) and deletes stacks in parallel while respecting dependency constraints.
+
+### How It Works
+
+1. **Dependency Analysis**: Analyzes stack dependencies through CloudFormation Exports and Imports
+2. **Circular Dependency Detection**: Detects and reports circular dependencies before deletion
+3. **External Reference Protection**: Prevents deletion of stacks whose exports are used by non-target stacks
+4. **Dynamic Parallel Deletion**: Deletes stacks in dependency order with maximum parallelism
+
+### Deletion Algorithm
+
+The deletion process uses a **reverse topological sort with dynamic scheduling**:
+
+```text
+Example: Stacks A, B, C, D, E, F with dependencies:
+  C → A (C depends on A)
+  D → A
+  E → B
+  F → C, D, E
+
+Deletion order (reverse dependencies):
+  Step 1: Delete F (no stacks depend on it)
+  Step 2: Delete C, D, E in parallel (after F completes)
+  Step 3: Delete B (after E completes)
+  Step 4: Delete A (after both C and D complete)
+```
+
+**Key Features**:
+
+- Stacks are deleted **as soon as all dependent stacks are deleted**
+- Multiple independent stacks are deleted **in parallel**
+- By default, there is **no limit** on the number of concurrent deletions
+- The `-n` option allows you to limit the maximum number of concurrent deletions if needed
+
+### Usage Examples
+
+```bash
+# Delete multiple stacks with automatic dependency resolution
+delstack -s stack-a -s stack-b -s stack-c
+
+# Use interactive mode to select multiple stacks
+delstack -i
+
+# Limit parallel deletions to 2 at a time
+delstack -s stack-a -s stack-b -s stack-c -s stack-d -n 2
+
+# Delete with force mode and dependency resolution
+delstack -f -s stack-a -s stack-b -s stack-c
+```
+
+### Error Handling
+
+- **Circular Dependencies**: Detected before deletion starts, with the dependency cycle path reported
+- **External References**: If a target stack's export is imported by a non-target stack, deletion is prevented with a detailed error message
+- **Partial Failures**: If any stack fails to delete, all remaining deletions are cancelled
+
 ## GitHub Actions
 
 You can use delstack with parameters **"stack-name", "region", and "concurrency-number"** in GitHub Actions Workflow.
