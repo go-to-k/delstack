@@ -88,6 +88,7 @@ func (d *StackDeleter) deleteStacksDynamically(
 
 	// Channel to signal stack deletion completion
 	completionChan := make(chan string, len(allStacks))
+	// Buffer size 1 allows the first error to be stored without blocking goroutines
 	errorChan := make(chan error, 1)
 
 	// Track deletion progress
