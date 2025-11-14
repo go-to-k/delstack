@@ -434,7 +434,7 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 				return uploadErr
 			}
 
-			io.Logger.Info().Msgf("[%v]: Created temporary S3 bucket for large template (%s)", *stackName, *uploadResult.BucketName)
+			io.Logger.Info().Msgf("[%v]: Created temporary S3 bucket for large template (bucket name: %s)", *stackName, *uploadResult.BucketName)
 
 			updateErr := o.client.UpdateStackWithTemplateURL(ctx, stackName, uploadResult.TemplateURL, stack.Parameters)
 
@@ -444,7 +444,7 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 				// Log the error but don't fail the operation
 				io.Logger.Warn().Msgf("[%v]: Failed to delete temporary S3 bucket and template (bucket: %s, key: %s). You may need to delete it manually: %v", *stackName, *uploadResult.BucketName, *uploadResult.Key, deleteErr)
 			} else {
-				io.Logger.Info().Msgf("[%v]: Deleted temporary S3 bucket (%s)", *stackName, *uploadResult.BucketName)
+				io.Logger.Info().Msgf("[%v]: Deleted temporary S3 bucket (bucket name: %s)", *stackName, *uploadResult.BucketName)
 			}
 
 			if updateErr != nil {
