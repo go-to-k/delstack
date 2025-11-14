@@ -1,6 +1,6 @@
-# Delstack Test Environment
+# Delstack Test Environment - Full Resources
 
-This directory contains a tool for creating a test environment for `delstack`. This tool (`deploy.go`) deploys AWS CloudFormation stacks with various resources that can be used to test the stack deletion functionality of `delstack`.
+This directory contains a tool for creating a comprehensive test environment for `delstack`. This tool (`deploy.go`) deploys AWS CloudFormation stacks with a full set of various resources that can be used to test the stack deletion functionality of `delstack`.
 
 ## Test Stack Deployment
 

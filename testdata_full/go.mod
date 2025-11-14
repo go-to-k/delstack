@@ -1,4 +1,4 @@
-module github.com/go-to-k/delstack/testdata
+module github.com/go-to-k/delstack/testdata_full
 
 go 1.23.0
 

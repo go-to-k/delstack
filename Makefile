@@ -62,12 +62,12 @@ clean:
 # Run test stack generator
 testgen:
 	@echo "Running test stack generator..."
-	@cd testdata && go mod tidy && go run deploy.go $(OPT)
+	@cd testdata_full && go mod tidy && go run deploy.go $(OPT)
 
 # Run test stack generator for all RETAIN resources to test \`-f\` option
 testgen_retain:
 	@echo "Running test stack generator for all RETAIN resources..."
-	@cd testdata && go mod tidy && go run deploy.go -r $(OPT)
+	@cd testdata_full && go mod tidy && go run deploy.go -r $(OPT)
 
 # Generate and deploy large CloudFormation template for testing S3 upload functionality (>51200 bytes)
 # S3 bucket is automatically deleted after stack creation
@@ -75,12 +75,18 @@ testgen_large_template:
 	@echo "Setting up large CloudFormation template test stack..."
 	@cd testdata_s3_template_cfn && go mod tidy && go run main.go $(OPT)
 
+# Generate and deploy CDK dependency test stacks for testing complex dependency graphs
+testgen_dependency:
+	@echo "Setting up CDK dependency test stacks..."
+	@cd testdata_dependency && go mod tidy && go run deploy.go $(OPT)
+
 # Help for test stack generation
 testgen_help:
 	@echo "Test stack generation targets:"
 	@echo "  testgen                - Run the test stack generator"
 	@echo "  testgen_retain         - Run the test stack generator for all RETAIN resources to test \`-f\` option"
 	@echo "  testgen_large_template - Generate and deploy large CFn template (>51KB), S3 bucket auto-deleted"
+	@echo "  testgen_dependency     - Generate and deploy CDK dependency test stacks for complex dependency graphs"
 	@echo ""
 	@echo "Example usage:"
 	@echo "  make testgen"
@@ -91,3 +97,6 @@ testgen_help:
 	@echo "  make testgen_retain OPT=\"-p my-profile\""
 	@echo "  make testgen_large_template"
 	@echo "  make testgen_large_template OPT=\"-p my-profile\""
+	@echo "  make testgen_dependency"
+	@echo "  make testgen_dependency OPT=\"-s my-stage\""
+	@echo "  make testgen_dependency OPT=\"-p my-profile\""
