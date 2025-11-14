@@ -434,7 +434,7 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 				return uploadErr
 			}
 
-			io.Logger.Info().Msgf("[%v]: Created temporary S3 bucket for large template (bucket: %s)", *stackName, *uploadResult.BucketName)
+			io.Logger.Info().Msgf("[%v]: Created temporary S3 bucket for large template (bucket: %s, template size: %d bytes exceeds %d byte limit)", *stackName, *uploadResult.BucketName, len(modifiedTemplate), maxTemplateBodySize)
 
 			updateErr := o.client.UpdateStackWithTemplateURL(ctx, stackName, uploadResult.TemplateURL, stack.Parameters)
 
