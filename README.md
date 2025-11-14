@@ -173,6 +173,15 @@ delstack -f -s dev-goto-01-TestStack
 
 Also, even if you specify `-i, --interactive` option together, the ResourceTypes selection prompt will not be displayed.
 
+### Large Template Handling**
+
+When using force mode with stacks that have large templates (exceeding **51,200 bytes**, CloudFormation's direct template size limit), `delstack` automatically:
+
+1. Creates a temporary S3 bucket in your account
+2. Uploads the modified template to the bucket
+3. Updates the stack via S3 template URL
+4. Deletes the temporary S3 bucket after the operation completes
+
 ## Parallel Stack Deletion with Automatic Dependency Resolution
 
 When you specify multiple stacks (via the `-s` option or interactive mode `-i`), `delstack` automatically analyzes CloudFormation stack dependencies (via Outputs/Exports and Imports) and deletes stacks in parallel while respecting dependency constraints.
