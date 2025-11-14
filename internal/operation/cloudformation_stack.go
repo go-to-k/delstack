@@ -362,24 +362,20 @@ func (o *CloudFormationStackOperator) BuildDependencyGraph(
 func (o *CloudFormationStackOperator) buildExternalReferenceError(externalReferences map[exportKey][]string) error {
 	keys := slices.Collect(maps.Keys(externalReferences))
 	slices.SortFunc(keys, func(a, b exportKey) int {
-		if a.exportingStack != b.exportingStack {
-			return strings.Compare(a.exportingStack, b.exportingStack)
+		if c := strings.Compare(a.exportingStack, b.exportingStack); c != 0 {
+			return c
 		}
 		return strings.Compare(a.exportName, b.exportName)
 	})
 
-	var errorMessages []string
+	var messages []string
 	for _, key := range keys {
 		stacks := slices.Sorted(slices.Values(externalReferences[key]))
-		quoted := make([]string, len(stacks))
-		for i, s := range stacks {
-			quoted[i] = fmt.Sprintf("'%s'", s)
-		}
-
-		errorMessages = append(errorMessages, fmt.Sprintf("Stack '%s' exports '%s' which is imported by non-target stack(s) %s",
-			key.exportingStack, key.exportName, strings.Join(quoted, ", ")))
+		stackList := "'" + strings.Join(stacks, "', '") + "'"
+		messages = append(messages, fmt.Sprintf("Stack '%s' exports '%s' which is imported by non-target stack(s) %s",
+			key.exportingStack, key.exportName, stackList))
 	}
-	return fmt.Errorf("deletion would break dependencies for non-target stacks:\n%s", strings.Join(errorMessages, "\n"))
+	return fmt.Errorf("deletion would break dependencies for non-target stacks:\n%s", strings.Join(messages, "\n"))
 }
 
 func (o *CloudFormationStackOperator) isExceptedByStackStatus(stackStatus types.StackStatus) bool {
