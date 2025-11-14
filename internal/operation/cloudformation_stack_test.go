@@ -4040,6 +4040,7 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 		prepareMockCloudFormationFn func(m *client.MockICloudFormation)
 		wantDependencies            map[string]map[string]struct{}
 		wantErr                     bool
+		wantErrMsg                  string
 	}{
 		{
 			name: "no dependencies between stacks",
@@ -4212,6 +4213,7 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 			},
 			wantDependencies: nil,
 			wantErr:          true,
+			wantErrMsg:       "deletion would break dependencies for non-target stacks:\nStack 'stack-a' exports 'export-a' which is imported by non-target stack(s) 'external-stack'",
 		},
 		{
 			name: "multiple external stack references cause error",
@@ -4261,6 +4263,7 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 			},
 			wantDependencies: nil,
 			wantErr:          true,
+			wantErrMsg:       "deletion would break dependencies for non-target stacks:\nStack 'stack-a' exports 'export-a' which is imported by non-target stack(s) 'external-stack-1', 'external-stack-2'\nStack 'stack-b' exports 'export-b' which is imported by non-target stack(s) 'external-stack-3'",
 		},
 		{
 			name: "single stack with external reference causes error",
@@ -4291,6 +4294,7 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 			},
 			wantDependencies: nil,
 			wantErr:          true,
+			wantErrMsg:       "deletion would break dependencies for non-target stacks:\nStack 'stack-a' exports 'export-a' which is imported by non-target stack(s) 'external-stack'",
 		},
 		{
 			name: "diamond dependency",
@@ -4481,6 +4485,12 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+
+			if tt.wantErr && tt.wantErrMsg != "" {
+				if err.Error() != tt.wantErrMsg {
+					t.Errorf("error message = %v, want %v", err.Error(), tt.wantErrMsg)
+				}
 			}
 
 			if !tt.wantErr {

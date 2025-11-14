@@ -3,8 +3,10 @@ package operation
 import (
 	"context"
 	"fmt"
+	"maps"
 	"regexp"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -288,6 +290,11 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 	return filteredStacks, nil
 }
 
+type exportKey struct {
+	exportingStack string
+	exportName     string
+}
+
 // BuildDependencyGraph analyzes Output/Import dependencies among the specified stacks
 func (o *CloudFormationStackOperator) BuildDependencyGraph(
 	ctx context.Context,
@@ -300,12 +307,7 @@ func (o *CloudFormationStackOperator) BuildDependencyGraph(
 		stackNameSet[name] = struct{}{}
 	}
 
-	type externalReference struct {
-		exportingStack     string
-		exportName         string
-		nonTargetStackName string
-	}
-	var externalReferences []externalReference
+	externalReferences := make(map[exportKey][]string)
 
 	for _, stackName := range stackNames {
 		stacks, err := o.client.DescribeStacks(ctx, aws.String(stackName))
@@ -340,25 +342,44 @@ func (o *CloudFormationStackOperator) BuildDependencyGraph(
 				if _, isTarget := stackNameSet[importingStack]; isTarget {
 					graph.AddDependency(importingStack, stackName)
 				} else {
-					externalReferences = append(externalReferences, externalReference{
-						exportingStack:     stackName,
-						exportName:         exportName,
-						nonTargetStackName: importingStack,
-					})
+					key := exportKey{
+						exportingStack: stackName,
+						exportName:     exportName,
+					}
+					externalReferences[key] = append(externalReferences[key], importingStack)
 				}
 			}
 		}
 	}
 
 	if len(externalReferences) > 0 {
-		var errorMessages []string
-		for _, ref := range externalReferences {
-			errorMessages = append(errorMessages, fmt.Sprintf("Stack '%s' exports '%s' which is imported by non-target stack '%s'", ref.exportingStack, ref.exportName, ref.nonTargetStackName))
-		}
-		return nil, fmt.Errorf("deletion would break dependencies for non-target stacks:\n%s", strings.Join(errorMessages, "\n"))
+		return nil, o.buildExternalReferenceError(externalReferences)
 	}
 
 	return graph, nil
+}
+
+func (o *CloudFormationStackOperator) buildExternalReferenceError(externalReferences map[exportKey][]string) error {
+	keys := slices.Collect(maps.Keys(externalReferences))
+	slices.SortFunc(keys, func(a, b exportKey) int {
+		if a.exportingStack != b.exportingStack {
+			return strings.Compare(a.exportingStack, b.exportingStack)
+		}
+		return strings.Compare(a.exportName, b.exportName)
+	})
+
+	var errorMessages []string
+	for _, key := range keys {
+		stacks := slices.Sorted(slices.Values(externalReferences[key]))
+		quoted := make([]string, len(stacks))
+		for i, s := range stacks {
+			quoted[i] = fmt.Sprintf("'%s'", s)
+		}
+
+		errorMessages = append(errorMessages, fmt.Sprintf("Stack '%s' exports '%s' which is imported by non-target stack(s) %s",
+			key.exportingStack, key.exportName, strings.Join(quoted, ", ")))
+	}
+	return fmt.Errorf("deletion would break dependencies for non-target stacks:\n%s", strings.Join(errorMessages, "\n"))
 }
 
 func (o *CloudFormationStackOperator) isExceptedByStackStatus(stackStatus types.StackStatus) bool {
