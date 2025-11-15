@@ -66,7 +66,8 @@ func (d *StackDeleter) deleteStacksDynamically(
 	// Calculate reverse in-degree: how many stacks depend on this stack
 	dependencies := graph.GetDependencies()
 	allStacks := graph.GetAllStacks()
-	reverseInDegree := make(map[string]int, len(allStacks))
+	totalStackCount := len(allStacks)
+	reverseInDegree := make(map[string]int, totalStackCount)
 
 	for stack := range allStacks {
 		reverseInDegree[stack] = 0
@@ -86,18 +87,17 @@ func (d *StackDeleter) deleteStacksDynamically(
 		}
 	}
 
-	completionChan := make(chan string, len(allStacks))
+	completionChan := make(chan string, totalStackCount)
 	errorChan := make(chan error)
 
 	var deletedCount int
-	totalStacks := len(allStacks)
 	deletedStacks := []string{}
 
 	var weight int64
 	if d.concurrencyNumber == UnspecifiedConcurrencyNumber {
-		weight = int64(totalStacks)
+		weight = int64(totalStackCount)
 	} else {
-		weight = min(int64(d.concurrencyNumber), int64(totalStacks))
+		weight = min(int64(d.concurrencyNumber), int64(totalStackCount))
 	}
 	sem := semaphore.NewWeighted(weight)
 
@@ -146,7 +146,7 @@ func (d *StackDeleter) deleteStacksDynamically(
 	stateMutex.Unlock()
 
 	// Process completions and start new deletions
-	for deletedCount < totalStacks {
+	for deletedCount < totalStackCount {
 		select {
 		case <-deleteCtx.Done():
 			// Wait for all goroutines to finish
@@ -163,7 +163,7 @@ func (d *StackDeleter) deleteStacksDynamically(
 			stateMutex.Lock()
 			deletedCount++
 			deletedStacks = append(deletedStacks, deletedStackName)
-			io.Logger.Info().Msgf("Progress: %d/%d stacks deleted [%s]", deletedCount, totalStacks, strings.Join(deletedStacks, ", "))
+			io.Logger.Info().Msgf("Progress: %d/%d stacks deleted [%s]", deletedCount, totalStackCount, strings.Join(deletedStacks, ", "))
 
 			for depStack := range dependencies[deletedStackName] {
 				reverseInDegree[depStack]--
