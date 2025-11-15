@@ -381,6 +381,8 @@ func (g *StackDependencyGraph) AddDependency(fromStack, toStack string) {
 }
 
 // GetDependencies returns the dependencies map
+// The map structure is: dependencies[fromStack][toStack] where fromStack depends on toStack
+// Example: dependencies["B"]["A"] means B depends on A (B must be deleted before A)
 func (g *StackDependencyGraph) GetDependencies() map[string]map[string]struct{} {
 	return g.dependencies
 }
