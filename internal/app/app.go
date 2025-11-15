@@ -134,7 +134,13 @@ func (a *App) getAction() func(c *cli.Context) error {
 		deleter := NewStackDeleter(a.ForceMode, a.ConcurrencyNumber)
 
 		if len(targetStacks) > 1 && (a.ConcurrencyNumber == UnspecifiedConcurrencyNumber || a.ConcurrencyNumber > 1) {
-			io.Logger.Info().Msg("The stacks will be removed concurrently, taking into account dependencies.")
+			var concurrency int
+			if a.ConcurrencyNumber == UnspecifiedConcurrencyNumber {
+				concurrency = len(targetStacks)
+			} else {
+				concurrency = min(a.ConcurrencyNumber, len(targetStacks))
+			}
+			io.Logger.Info().Msgf("The stacks will be removed concurrently, taking into account dependencies. (concurrency: %d)", concurrency)
 		}
 		if err := deleter.DeleteStacksConcurrently(c.Context, targetStacks, config, operatorFactory); err != nil {
 			return err
