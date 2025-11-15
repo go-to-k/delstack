@@ -104,10 +104,8 @@ func (d *StackDeleter) deleteStacksDynamically(
 	deleteCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// Worker to process deletions
 	var wg sync.WaitGroup
 
-	// Function to start deletion of a stack
 	startDeletion := func(stackName string) {
 		if err := sem.Acquire(deleteCtx, 1); err != nil {
 			select {
@@ -128,33 +126,26 @@ func (d *StackDeleter) deleteStacksDynamically(
 				case errorChan <- err:
 				default:
 				}
-				cancel() // Cancel all other operations on error
+				cancel()
 				return
 			}
 
-			// Signal completion
 			completionChan <- name
 		}(stackName)
 	}
 
-	// Start initial deletions
 	for _, stackName := range deletableStacks {
 		startDeletion(stackName)
 	}
-	stateMutex.Lock()
 	deletableStacks = []string{} // Clear the queue
-	stateMutex.Unlock()
 
-	// Process completions and start new deletions
 	for deletedCount < totalStackCount {
 		select {
 		case <-deleteCtx.Done():
-			// Wait for all goroutines to finish
 			wg.Wait()
 			return deleteCtx.Err()
 
 		case err := <-errorChan:
-			// Wait for all goroutines to finish
 			wg.Wait()
 			return err
 
@@ -172,7 +163,6 @@ func (d *StackDeleter) deleteStacksDynamically(
 				}
 			}
 
-			// Start deletions for newly available stacks
 			newlyAvailableStacks := make([]string, len(deletableStacks))
 			copy(newlyAvailableStacks, deletableStacks)
 			deletableStacks = []string{} // Clear the queue
