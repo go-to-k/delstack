@@ -133,14 +133,19 @@ func (d *StackDeleter) deleteStacksDynamically(
 		}
 	}
 
+	// Ensure cleanup on all exit paths (success, error, cancellation)
+	defer func() {
+		wg.Wait()
+		close(completionChan)
+		close(errorChan)
+	}()
+
 	for deletedCount < totalStackCount {
 		select {
 		case <-deleteCtx.Done():
-			wg.Wait()
 			return deleteCtx.Err()
 
 		case err := <-errorChan:
-			wg.Wait()
 			return err
 
 		case deletedStackName := <-completionChan:
@@ -158,11 +163,6 @@ func (d *StackDeleter) deleteStacksDynamically(
 			}
 		}
 	}
-
-	// Wait for all goroutines to finish
-	wg.Wait()
-	close(completionChan)
-	close(errorChan)
 
 	return nil
 }
