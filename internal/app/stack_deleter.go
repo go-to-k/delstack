@@ -98,6 +98,11 @@ func (d *StackDeleter) deleteStacksDynamically(
 	var wg sync.WaitGroup
 
 	startDeletion := func(stackName string) {
+		defer wg.Done()
+
+		// Acquire semaphore inside goroutine to avoid blocking the main goroutine.
+		// This ensures completion messages from other stacks are processed immediately,
+		// even when waiting for concurrency limit.
 		if err := sem.Acquire(deleteCtx, 1); err != nil {
 			select {
 			case errorChan <- err:
@@ -105,30 +110,26 @@ func (d *StackDeleter) deleteStacksDynamically(
 			}
 			return
 		}
+		defer sem.Release(1)
 
-		wg.Add(1)
-		go func(name string) {
-			defer wg.Done()
-			defer sem.Release(1)
-
-			stack := targetStacksMap[name]
-			if err := d.deleteSingleStack(deleteCtx, stack, config, operatorFactory, true); err != nil {
-				select {
-				case errorChan <- err:
-				default:
-				}
-				cancel()
-				return
+		stack := targetStacksMap[stackName]
+		if err := d.deleteSingleStack(deleteCtx, stack, config, operatorFactory, true); err != nil {
+			select {
+			case errorChan <- err:
+			default:
 			}
+			cancel()
+			return
+		}
 
-			completionChan <- name
-		}(stackName)
+		completionChan <- stackName
 	}
 
 	// Start initial deletions for stacks with reverse in-degree 0
 	for stack := range allStacks {
 		if reverseInDegree[stack] == 0 {
-			startDeletion(stack)
+			wg.Add(1)
+			go startDeletion(stack)
 		}
 	}
 
@@ -151,7 +152,8 @@ func (d *StackDeleter) deleteStacksDynamically(
 			for depStack := range dependencies[deletedStackName] {
 				reverseInDegree[depStack]--
 				if reverseInDegree[depStack] == 0 {
-					startDeletion(depStack)
+					wg.Add(1)
+					go startDeletion(depStack)
 				}
 			}
 		}
