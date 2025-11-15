@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/internal/operation"
-	"github.com/go-to-k/delstack/internal/resourcetype"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -31,7 +30,7 @@ func (d *StackDeleter) DeleteStacksConcurrently(
 	config aws.Config,
 	operatorFactory *operation.OperatorFactory,
 ) error {
-	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(resourcetype.GetResourceTypes())
+	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator()
 
 	io.Logger.Info().Msg("Analyzing stack dependencies...")
 	graph, err := cloudformationStackOperator.BuildDependencyGraph(ctx, stackNames)
@@ -166,10 +165,9 @@ func (d *StackDeleter) deleteSingleStack(
 	operatorFactory *operation.OperatorFactory,
 	isRootStack bool,
 ) error {
-	targetResourceTypes := resourcetype.GetResourceTypes()
-	operatorCollection := operation.NewOperatorCollection(config, operatorFactory, targetResourceTypes)
+	operatorCollection := operation.NewOperatorCollection(config, operatorFactory)
 	operatorManager := operation.NewOperatorManager(operatorCollection)
-	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(targetResourceTypes)
+	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator()
 
 	io.Logger.Info().Msgf("[%v]: Start deletion. Please wait a few minutes...", stack)
 

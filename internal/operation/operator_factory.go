@@ -24,7 +24,7 @@ func NewOperatorFactory(config aws.Config) *OperatorFactory {
 	}
 }
 
-func (f *OperatorFactory) CreateCloudFormationStackOperator(targetResourceTypes []string) *CloudFormationStackOperator {
+func (f *OperatorFactory) CreateCloudFormationStackOperator() *CloudFormationStackOperator {
 	sdkCfnClient := cloudformation.NewFromConfig(f.config, func(o *cloudformation.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
@@ -43,7 +43,6 @@ func (f *OperatorFactory) CreateCloudFormationStackOperator(targetResourceTypes 
 			sdkCfnUpdateWaiter,
 		),
 		client.NewS3(sdkS3Client, false),
-		targetResourceTypes,
 	)
 }
 

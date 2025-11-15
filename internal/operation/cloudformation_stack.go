@@ -49,20 +49,18 @@ type S3UploadResult struct {
 }
 
 type CloudFormationStackOperator struct {
-	config              aws.Config
-	client              client.ICloudFormation
-	s3Client            client.IS3
-	resources           []*types.StackResourceSummary
-	targetResourceTypes []string
+	config    aws.Config
+	client    client.ICloudFormation
+	s3Client  client.IS3
+	resources []*types.StackResourceSummary
 }
 
-func NewCloudFormationStackOperator(config aws.Config, client client.ICloudFormation, s3Client client.IS3, targetResourceTypes []string) *CloudFormationStackOperator {
+func NewCloudFormationStackOperator(config aws.Config, client client.ICloudFormation, s3Client client.IS3) *CloudFormationStackOperator {
 	return &CloudFormationStackOperator{
-		config:              config,
-		client:              client,
-		s3Client:            s3Client,
-		resources:           []*types.StackResourceSummary{},
-		targetResourceTypes: targetResourceTypes,
+		config:    config,
+		client:    client,
+		s3Client:  s3Client,
+		resources: []*types.StackResourceSummary{},
 	}
 }
 
@@ -88,7 +86,7 @@ func (o *CloudFormationStackOperator) DeleteResources(ctx context.Context) error
 
 			isRootStack := false
 			operatorFactory := NewOperatorFactory(o.config)
-			operatorCollection := NewOperatorCollection(o.config, operatorFactory, o.targetResourceTypes)
+			operatorCollection := NewOperatorCollection(o.config, operatorFactory)
 			operatorManager := NewOperatorManager(operatorCollection)
 
 			return o.DeleteCloudFormationStack(ctx, aws.String(stackName), isRootStack, operatorManager)

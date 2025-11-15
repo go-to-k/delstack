@@ -13,17 +13,15 @@ const (
 	CustomResource      = "Custom::"
 )
 
-func GetResourceTypes() []string {
-	return []string{
-		S3Bucket,
-		S3DirectoryBucket,
-		S3TableBucket,
-		S3TableNamespace,
-		S3VectorBucket,
-		IamGroup,
-		EcrRepository,
-		BackupVault,
-		CloudformationStack,
-		CustomResource,
-	}
+var ResourceTypes = []string{
+	S3Bucket,
+	S3DirectoryBucket,
+	S3TableBucket,
+	S3TableNamespace,
+	S3VectorBucket,
+	IamGroup,
+	EcrRepository,
+	BackupVault,
+	CloudformationStack,
+	CustomResource,
 }

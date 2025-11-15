@@ -1395,17 +1395,8 @@ func TestCloudFormationStackOperator_DeleteCloudFormationStack(t *testing.T) {
 			tt.prepareMockCloudFormationFn(cloudformationMock)
 			tt.prepareMockOperatorManagerFn(operatorManagerMock)
 
-			targetResourceTypes := []string{
-				"AWS::S3::Bucket",
-				"AWS::IAM::Role",
-				"AWS::ECR::Repository",
-				"AWS::Backup::BackupVault",
-				"AWS::CloudFormation::Stack",
-				"Custom::",
-			}
-
 			s3Mock := client.NewMockIS3(ctrl)
-			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock, targetResourceTypes)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock)
 
 			err := cloudformationStackOperator.DeleteCloudFormationStack(tt.args.ctx, tt.args.stackName, tt.args.isRootStack, operatorManagerMock)
 			if (err != nil) != tt.wantErr {
@@ -1913,17 +1904,8 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 
 			tt.prepareMockCloudFormationFn(cloudformationMock)
 
-			targetResourceTypes := []string{
-				"AWS::S3::Bucket",
-				"AWS::IAM::Role",
-				"AWS::ECR::Repository",
-				"AWS::Backup::BackupVault",
-				"AWS::CloudFormation::Stack",
-				"Custom::",
-			}
-
 			s3Mock := client.NewMockIS3(ctrl)
-			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock, targetResourceTypes)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock)
 
 			got, err := cloudformationStackOperator.deleteStackNormally(tt.args.ctx, tt.args.stackName, tt.args.isRootStack)
 			if (err != nil) != tt.wantErr {
@@ -2610,17 +2592,8 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 
 			tt.prepareMockCloudFormationFn(cloudformationMock)
 
-			targetResourceTypes := []string{
-				"AWS::S3::Bucket",
-				"AWS::IAM::Role",
-				"AWS::ECR::Repository",
-				"AWS::Backup::BackupVault",
-				"AWS::CloudFormation::Stack",
-				"Custom::",
-			}
-
 			s3Mock := client.NewMockIS3(ctrl)
-			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock, targetResourceTypes)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock)
 
 			output, err := cloudformationStackOperator.GetSortedStackNames(tt.args.ctx, tt.args.stackNames)
 			if (err != nil) != tt.wantErr {
@@ -2994,17 +2967,8 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 
 			tt.prepareMockCloudFormationFn(cloudformationMock)
 
-			targetResourceTypes := []string{
-				"AWS::S3::Bucket",
-				"AWS::IAM::Role",
-				"AWS::ECR::Repository",
-				"AWS::Backup::BackupVault",
-				"AWS::CloudFormation::Stack",
-				"Custom::",
-			}
-
 			s3Mock := client.NewMockIS3(ctrl)
-			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock, targetResourceTypes)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock)
 
 			output, err := cloudformationStackOperator.ListStacksFilteredByKeyword(tt.args.ctx, &tt.args.keyword)
 			if (err != nil) != tt.wantErr {
@@ -3998,20 +3962,11 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 
 			tt.prepareMockCloudFormationFn(cloudformationMock)
 
-			targetResourceTypes := []string{
-				"AWS::S3::Bucket",
-				"AWS::IAM::Role",
-				"AWS::ECR::Repository",
-				"AWS::Backup::BackupVault",
-				"AWS::CloudFormation::Stack",
-				"Custom::",
-			}
-
 			s3Mock := client.NewMockIS3(ctrl)
 			if tt.prepareMockS3Fn != nil {
 				tt.prepareMockS3Fn(s3Mock)
 			}
-			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{Region: "us-east-1"}, cloudformationMock, s3Mock, targetResourceTypes)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{Region: "us-east-1"}, cloudformationMock, s3Mock)
 
 			err := cloudformationStackOperator.RemoveDeletionPolicy(tt.args.ctx, tt.args.stackName)
 			if (err != nil) != tt.wantErr {
@@ -4468,17 +4423,8 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 
 			tt.prepareMockCloudFormationFn(cloudformationMock)
 
-			targetResourceTypes := []string{
-				"AWS::S3::Bucket",
-				"AWS::IAM::Role",
-				"AWS::ECR::Repository",
-				"AWS::Backup::BackupVault",
-				"AWS::CloudFormation::Stack",
-				"Custom::",
-			}
-
 			s3Mock := client.NewMockIS3(ctrl)
-			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock, targetResourceTypes)
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock)
 
 			graph, err := cloudformationStackOperator.BuildDependencyGraph(tt.args.ctx, tt.args.stackNames)
 
