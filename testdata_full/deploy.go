@@ -163,7 +163,7 @@ func parseArgs() Options {
 
 func NewDeployStackService(ctx context.Context, options Options) *DeployStackService {
 	cfnPjPrefix := options.Stage
-	cfnStackName := fmt.Sprintf("%s-Test-Stack", cfnPjPrefix)
+	cfnStackName := fmt.Sprintf("%s-Test-Full", cfnPjPrefix)
 
 	profileOption := ""
 	if options.Profile != "" {

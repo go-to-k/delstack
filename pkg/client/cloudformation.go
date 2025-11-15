@@ -19,6 +19,7 @@ type ICloudFormation interface {
 	GetTemplate(ctx context.Context, stackName *string) (*string, error)
 	UpdateStack(ctx context.Context, stackName *string, templateBody *string, parameters []types.Parameter) error
 	UpdateStackWithTemplateURL(ctx context.Context, stackName *string, templateURL *string, parameters []types.Parameter) error
+	ListImports(ctx context.Context, exportName *string) ([]string, error)
 }
 
 var _ ICloudFormation = (*CloudFormation)(nil)
@@ -199,6 +200,49 @@ func (c *CloudFormation) waitDeleteStack(ctx context.Context, stackName *string)
 	}
 
 	return nil
+}
+
+func (c *CloudFormation) ListImports(ctx context.Context, exportName *string) ([]string, error) {
+	var nextToken *string
+	importingStackNames := []string{}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return importingStackNames, &ClientError{
+				ResourceName: exportName,
+				Err:          ctx.Err(),
+			}
+		default:
+		}
+
+		input := &cloudformation.ListImportsInput{
+			ExportName: exportName,
+			NextToken:  nextToken,
+		}
+
+		output, err := c.client.ListImports(ctx, input)
+		if err != nil {
+			// If the export is not imported by any stack, ListImports returns ValidationError
+			// This is not an error condition, so return an empty list
+			if strings.Contains(err.Error(), "is not imported by any stack") {
+				return importingStackNames, nil
+			}
+			return importingStackNames, &ClientError{
+				ResourceName: exportName,
+				Err:          err,
+			}
+		}
+
+		importingStackNames = append(importingStackNames, output.Imports...)
+
+		nextToken = output.NextToken
+		if nextToken == nil {
+			break
+		}
+	}
+
+	return importingStackNames, nil
 }
 
 func (c *CloudFormation) waitUpdateStack(ctx context.Context, stackName *string) error {

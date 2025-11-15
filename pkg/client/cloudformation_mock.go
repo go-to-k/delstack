@@ -81,6 +81,21 @@ func (mr *MockICloudFormationMockRecorder) GetTemplate(ctx, stackName any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTemplate", reflect.TypeOf((*MockICloudFormation)(nil).GetTemplate), ctx, stackName)
 }
 
+// ListImports mocks base method.
+func (m *MockICloudFormation) ListImports(ctx context.Context, exportName *string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListImports", ctx, exportName)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListImports indicates an expected call of ListImports.
+func (mr *MockICloudFormationMockRecorder) ListImports(ctx, exportName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListImports", reflect.TypeOf((*MockICloudFormation)(nil).ListImports), ctx, exportName)
+}
+
 // ListStackResources mocks base method.
 func (m *MockICloudFormation) ListStackResources(ctx context.Context, stackName *string) ([]types.StackResourceSummary, error) {
 	m.ctrl.T.Helper()

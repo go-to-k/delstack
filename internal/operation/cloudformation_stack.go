@@ -3,8 +3,10 @@ package operation
 import (
 	"context"
 	"fmt"
+	"maps"
 	"regexp"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -169,7 +171,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 		return false, err
 	}
 	if len(stacksAfterDelete) == 0 {
-		io.Logger.Info().Msgf("%v: No resources were DELETE_FAILED.", *stackName)
+		io.Logger.Debug().Msgf("[%v]: No resources were DELETE_FAILED.", *stackName)
 		return true, nil
 	}
 	if stacksAfterDelete[0].StackStatus != types.StackStatusDeleteFailed {
@@ -288,6 +290,89 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 	return filteredStacks, nil
 }
 
+type exportKey struct {
+	exportingStack string
+	exportName     string
+}
+
+// BuildDependencyGraph analyzes Output/Import dependencies among the specified stacks
+func (o *CloudFormationStackOperator) BuildDependencyGraph(
+	ctx context.Context,
+	stackNames []string,
+) (*StackDependencyGraph, error) {
+	graph := NewStackDependencyGraph(stackNames)
+
+	stackNameSet := make(map[string]struct{})
+	for _, name := range stackNames {
+		stackNameSet[name] = struct{}{}
+	}
+
+	externalReferences := make(map[exportKey][]string)
+
+	for _, stackName := range stackNames {
+		stacks, err := o.client.DescribeStacks(ctx, aws.String(stackName))
+		if err != nil {
+			return nil, err
+		}
+
+		if len(stacks) == 0 {
+			continue
+		}
+
+		stack := stacks[0]
+
+		for _, output := range stack.Outputs {
+			if output.ExportName == nil {
+				continue
+			}
+
+			exportName := *output.ExportName
+
+			importingStacks, err := o.client.ListImports(ctx, aws.String(exportName))
+			if err != nil {
+				return nil, err
+			}
+
+			for _, importingStack := range importingStacks {
+				if _, isTarget := stackNameSet[importingStack]; isTarget {
+					graph.AddDependency(importingStack, stackName)
+				} else {
+					key := exportKey{
+						exportingStack: stackName,
+						exportName:     exportName,
+					}
+					externalReferences[key] = append(externalReferences[key], importingStack)
+				}
+			}
+		}
+	}
+
+	if len(externalReferences) > 0 {
+		return nil, o.buildExternalReferenceError(externalReferences)
+	}
+
+	return graph, nil
+}
+
+func (o *CloudFormationStackOperator) buildExternalReferenceError(externalReferences map[exportKey][]string) error {
+	keys := slices.Collect(maps.Keys(externalReferences))
+	slices.SortFunc(keys, func(a, b exportKey) int {
+		if c := strings.Compare(a.exportingStack, b.exportingStack); c != 0 {
+			return c
+		}
+		return strings.Compare(a.exportName, b.exportName)
+	})
+
+	var messages []string
+	for _, key := range keys {
+		stacks := slices.Sorted(slices.Values(externalReferences[key]))
+		stackList := "'" + strings.Join(stacks, "', '") + "'"
+		messages = append(messages, fmt.Sprintf("Stack '%s' exports '%s' which is imported by non-target stack(s) %s",
+			key.exportingStack, key.exportName, stackList))
+	}
+	return fmt.Errorf("deletion would break dependencies for non-target stacks:\n%s", strings.Join(messages, "\n"))
+}
+
 func (o *CloudFormationStackOperator) isExceptedByStackStatus(stackStatus types.StackStatus) bool {
 	for _, status := range StackStatusExceptionsForDescribeStacks {
 		if stackStatus == status {
@@ -344,7 +429,7 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 				return uploadErr
 			}
 
-			io.Logger.Info().Msgf("Created temporary S3 bucket for large template: %s", *uploadResult.BucketName)
+			io.Logger.Info().Msgf("[%v]: Created temporary S3 bucket for large template (bucket: %s, template size: %d bytes exceeds %d byte limit)", *stackName, *uploadResult.BucketName, len(modifiedTemplate), maxTemplateBodySize)
 
 			updateErr := o.client.UpdateStackWithTemplateURL(ctx, stackName, uploadResult.TemplateURL, stack.Parameters)
 
@@ -352,9 +437,9 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 			// Delete temporary S3 bucket and template immediately after UpdateStack completes (success or failure)
 			if deleteErr := o.deleteTemplateFromS3(ctx, uploadResult.BucketName, uploadResult.Key); deleteErr != nil {
 				// Log the error but don't fail the operation
-				io.Logger.Warn().Msgf("Failed to delete temporary S3 bucket and template (bucket: %s, key: %s). You may need to delete it manually: %v", *uploadResult.BucketName, *uploadResult.Key, deleteErr)
+				io.Logger.Warn().Msgf("[%v]: Failed to delete temporary S3 bucket and template (bucket: %s, key: %s). You may need to delete it manually: %v", *stackName, *uploadResult.BucketName, *uploadResult.Key, deleteErr)
 			} else {
-				io.Logger.Info().Msgf("Deleted temporary S3 bucket: %s", *uploadResult.BucketName)
+				io.Logger.Info().Msgf("[%v]: Deleted temporary S3 bucket (bucket: %s)", *stackName, *uploadResult.BucketName)
 			}
 
 			if updateErr != nil {
@@ -406,7 +491,7 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 		if bucketCreated {
 			// If we return early due to error, clean up the bucket
 			if cleanupErr := o.s3Client.DeleteBucket(ctx, &bucketName); cleanupErr != nil {
-				io.Logger.Warn().Msgf("Failed to cleanup temporary S3 bucket (bucket: %s) after upload error. You may need to delete it manually: %v", bucketName, cleanupErr)
+				io.Logger.Warn().Msgf("[%v]: Failed to cleanup temporary S3 bucket (bucket: %s) after upload error. You may need to delete it manually: %v", *stackName, bucketName, cleanupErr)
 			}
 		}
 	}()
