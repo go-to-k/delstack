@@ -171,7 +171,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 		return false, err
 	}
 	if len(stacksAfterDelete) == 0 {
-		io.Logger.Info().Msgf("[%v]: No resources were DELETE_FAILED.", *stackName)
+		io.Logger.Debug().Msgf("[%v]: No resources were DELETE_FAILED.", *stackName)
 		return true, nil
 	}
 	if stacksAfterDelete[0].StackStatus != types.StackStatusDeleteFailed {
