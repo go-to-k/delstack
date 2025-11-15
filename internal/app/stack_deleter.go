@@ -78,14 +78,6 @@ func (d *StackDeleter) deleteStacksDynamically(
 		}
 	}
 
-	// Initialize queue with stacks that have reverse in-degree 0
-	deletableStacks := []string{}
-	for stack := range allStacks {
-		if reverseInDegree[stack] == 0 {
-			deletableStacks = append(deletableStacks, stack)
-		}
-	}
-
 	completionChan := make(chan string, totalStackCount)
 	errorChan := make(chan error)
 
@@ -133,10 +125,12 @@ func (d *StackDeleter) deleteStacksDynamically(
 		}(stackName)
 	}
 
-	for _, stackName := range deletableStacks {
-		startDeletion(stackName)
+	// Start initial deletions for stacks with reverse in-degree 0
+	for stack := range allStacks {
+		if reverseInDegree[stack] == 0 {
+			startDeletion(stack)
+		}
 	}
-	deletableStacks = []string{} // Clear the queue
 
 	for deletedCount < totalStackCount {
 		select {
@@ -149,7 +143,7 @@ func (d *StackDeleter) deleteStacksDynamically(
 			return err
 
 		case deletedStackName := <-completionChan:
-			// Update reverse in-degree and find newly available stacks
+			// Update reverse in-degree and start newly available stacks
 			deletedCount++
 			deletedStacks = append(deletedStacks, deletedStackName)
 			io.Logger.Info().Msgf("Progress: %d/%d stacks deleted [%s]", deletedCount, totalStackCount, strings.Join(deletedStacks, ", "))
@@ -157,14 +151,9 @@ func (d *StackDeleter) deleteStacksDynamically(
 			for depStack := range dependencies[deletedStackName] {
 				reverseInDegree[depStack]--
 				if reverseInDegree[depStack] == 0 {
-					deletableStacks = append(deletableStacks, depStack)
+					startDeletion(depStack)
 				}
 			}
-
-			for _, stackName := range deletableStacks {
-				startDeletion(stackName)
-			}
-			deletableStacks = []string{} // Clear the queue
 		}
 	}
 
