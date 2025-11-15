@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2.0.0](https://github.com/go-to-k/delstack/compare/v1.17.2...v2.0.0) - 2025-11-15
+- feat: support concurrent stack deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/506
+- feat!: remove resource types selection in interactive mode (`-i`) by @go-to-k in https://github.com/go-to-k/delstack/pull/509
+
 ## [v1.17.2](https://github.com/go-to-k/delstack/compare/v1.17.1...v1.17.2) - 2025-11-13
 - fix: `-f` option fails with large CloudFormation templates over 51KB for stacks including RETAIN resources by @go-to-k in https://github.com/go-to-k/delstack/pull/507
 
