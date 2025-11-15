@@ -64,9 +64,9 @@ func (d *StackDeleter) deleteStacksDynamically(
 	operatorFactory *operation.OperatorFactory,
 ) error {
 	// Calculate reverse in-degree: how many stacks depend on this stack
-	reverseInDegree := make(map[string]int)
 	dependencies := graph.GetDependencies()
 	allStacks := graph.GetAllStacks()
+	reverseInDegree := make(map[string]int, len(allStacks))
 
 	for stack := range allStacks {
 		reverseInDegree[stack] = 0
