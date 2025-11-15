@@ -78,24 +78,21 @@ func (d *StackDeleter) deleteStacksDynamically(
 	}
 
 	// Initialize queue with stacks that have reverse in-degree 0
-	var stateMutex sync.Mutex // Protects queue, reverseInDegree, and deletedStacks
-	queue := []string{}
+	var stateMutex sync.Mutex // Protects deletableStacks, reverseInDegree, and deletedStacks
+	deletableStacks := []string{}
 	for stack := range allStacks {
 		if reverseInDegree[stack] == 0 {
-			queue = append(queue, stack)
+			deletableStacks = append(deletableStacks, stack)
 		}
 	}
 
-	// Channel to signal stack deletion completion
 	completionChan := make(chan string, len(allStacks))
 	errorChan := make(chan error)
 
-	// Track deletion progress
 	var deletedCount int
 	totalStacks := len(allStacks)
 	deletedStacks := []string{}
 
-	// Semaphore for concurrency control
 	var weight int64
 	if d.concurrencyNumber == UnspecifiedConcurrencyNumber {
 		weight = int64(totalStacks)
@@ -104,7 +101,6 @@ func (d *StackDeleter) deleteStacksDynamically(
 	}
 	sem := semaphore.NewWeighted(weight)
 
-	// Context for goroutines
 	deleteCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -142,11 +138,11 @@ func (d *StackDeleter) deleteStacksDynamically(
 	}
 
 	// Start initial deletions
-	for _, stackName := range queue {
+	for _, stackName := range deletableStacks {
 		startDeletion(stackName)
 	}
 	stateMutex.Lock()
-	queue = []string{} // Clear the queue
+	deletableStacks = []string{} // Clear the queue
 	stateMutex.Unlock()
 
 	// Process completions and start new deletions
@@ -172,14 +168,14 @@ func (d *StackDeleter) deleteStacksDynamically(
 			for depStack := range dependencies[deletedStackName] {
 				reverseInDegree[depStack]--
 				if reverseInDegree[depStack] == 0 {
-					queue = append(queue, depStack)
+					deletableStacks = append(deletableStacks, depStack)
 				}
 			}
 
 			// Start deletions for newly available stacks
-			newlyAvailableStacks := make([]string, len(queue))
-			copy(newlyAvailableStacks, queue)
-			queue = []string{} // Clear the queue
+			newlyAvailableStacks := make([]string, len(deletableStacks))
+			copy(newlyAvailableStacks, deletableStacks)
+			deletableStacks = []string{} // Clear the queue
 			stateMutex.Unlock()
 
 			for _, stackName := range newlyAvailableStacks {
