@@ -20,7 +20,7 @@ TEST_COV_RESULT := "$$(go test -race -cover -v ./... -coverpkg=./... -coverprofi
 
 FAIL_CHECK := "^[^\s\t]*FAIL[^\s\t]*$$"
 
-.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen testgen_retain testgen_large_template testgen_help
+.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_help
 
 test_diff:
 	@! echo $(TEST_DIFF_RESULT) | $(COLORIZE_PASS) | $(COLORIZE_FAIL) | tee /dev/stderr | grep $(FAIL_CHECK) > /dev/null
@@ -59,15 +59,15 @@ clean:
 # Test stack generation commands
 # ==================================
 
-# Run test stack generator
-testgen:
-	@echo "Running test stack generator..."
-	@cd testdata && go mod tidy && go run deploy.go $(OPT)
+# Run test stack generator with full resources
+testgen_full:
+	@echo "Running test stack generator with full resources..."
+	@cd testdata_full && go mod tidy && go run deploy.go $(OPT)
 
 # Run test stack generator for all RETAIN resources to test \`-f\` option
-testgen_retain:
+testgen_full_retain:
 	@echo "Running test stack generator for all RETAIN resources..."
-	@cd testdata && go mod tidy && go run deploy.go -r $(OPT)
+	@cd testdata_full && go mod tidy && go run deploy.go -r $(OPT)
 
 # Generate and deploy large CloudFormation template for testing S3 upload functionality (>51200 bytes)
 # S3 bucket is automatically deleted after stack creation
@@ -75,19 +75,37 @@ testgen_large_template:
 	@echo "Setting up large CloudFormation template test stack..."
 	@cd testdata_s3_template_cfn && go mod tidy && go run main.go $(OPT)
 
+# Generate and deploy CDK dependency test stacks for testing complex dependency graphs
+testgen_dependency:
+	@echo "Setting up CDK dependency test stacks..."
+	@cd testdata_dependency && go mod tidy && go run deploy.go $(OPT)
+
+# Generate and deploy CDK dependency test stacks with RETAIN resources
+testgen_dependency_retain:
+	@echo "Setting up CDK dependency test stacks with RETAIN resources..."
+	@cd testdata_dependency && go mod tidy && go run deploy.go -r $(OPT)
+
 # Help for test stack generation
 testgen_help:
 	@echo "Test stack generation targets:"
-	@echo "  testgen                - Run the test stack generator"
-	@echo "  testgen_retain         - Run the test stack generator for all RETAIN resources to test \`-f\` option"
-	@echo "  testgen_large_template - Generate and deploy large CFn template (>51KB), S3 bucket auto-deleted"
+	@echo "  testgen_full                - Run the test stack generator with full resources"
+	@echo "  testgen_full_retain         - Run the test stack generator for all RETAIN resources to test \`-f\` option"
+	@echo "  testgen_large_template      - Generate and deploy large CFn template (>51KB), S3 bucket auto-deleted"
+	@echo "  testgen_dependency          - Generate and deploy CDK dependency test stacks for complex dependency graphs"
+	@echo "  testgen_dependency_retain   - Generate and deploy CDK dependency test stacks with RETAIN resources"
 	@echo ""
 	@echo "Example usage:"
-	@echo "  make testgen"
-	@echo "  make testgen OPT=\"-s my-stage\""
-	@echo "  make testgen OPT=\"-p my-profile\""
-	@echo "  make testgen_retain"
-	@echo "  make testgen_retain OPT=\"-s my-stage\""
-	@echo "  make testgen_retain OPT=\"-p my-profile\""
+	@echo "  make testgen_full"
+	@echo "  make testgen_full OPT=\"-s my-stage\""
+	@echo "  make testgen_full OPT=\"-p my-profile\""
+	@echo "  make testgen_full_retain"
+	@echo "  make testgen_full_retain OPT=\"-s my-stage\""
+	@echo "  make testgen_full_retain OPT=\"-p my-profile\""
 	@echo "  make testgen_large_template"
 	@echo "  make testgen_large_template OPT=\"-p my-profile\""
+	@echo "  make testgen_dependency"
+	@echo "  make testgen_dependency OPT=\"-s my-stage\""
+	@echo "  make testgen_dependency OPT=\"-p my-profile\""
+	@echo "  make testgen_dependency_retain"
+	@echo "  make testgen_dependency_retain OPT=\"-s my-stage\""
+	@echo "  make testgen_dependency_retain OPT=\"-p my-profile\""

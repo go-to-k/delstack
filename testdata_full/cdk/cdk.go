@@ -67,7 +67,7 @@ func main() {
 		isRetain = true
 	}
 
-	stackName := pjPrefix + "-Test-Stack"
+	stackName := pjPrefix + "-Test-Full"
 
 	NewTestStack(app, stackName, &TestStackProps{
 		StackProps: awscdk.StackProps{
