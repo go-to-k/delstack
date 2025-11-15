@@ -372,7 +372,7 @@ func NewStackDependencyGraph(stackNames []string) *StackDependencyGraph {
 
 // AddDependency adds a dependency relationship (with automatic deduplication)
 // fromStack depends on toStack (fromStack → toStack)
-// This means toStack must be deleted before fromStack
+// This means fromStack must be deleted before toStack
 func (g *StackDependencyGraph) AddDependency(fromStack, toStack string) {
 	if _, exists := g.dependencies[fromStack]; !exists {
 		g.dependencies[fromStack] = make(map[string]struct{})
