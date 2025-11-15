@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/internal/operation"
-	"github.com/go-to-k/delstack/internal/resourcetype"
 	"github.com/go-to-k/delstack/pkg/client"
 	"github.com/urfave/cli/v2"
 )
@@ -25,11 +24,6 @@ type App struct {
 	InteractiveMode   bool
 	ForceMode         bool
 	ConcurrencyNumber int
-}
-
-type targetStack struct {
-	stackName           string
-	targetResourceTypes []string
 }
 
 func NewApp(version string) *App {
@@ -99,8 +93,8 @@ func (a *App) getAction() func(c *cli.Context) error {
 			errMsg := fmt.Sprintln("At least one stack name must be specified in command options (-s) or a flow of the interactive mode (-i).")
 			return fmt.Errorf("InvalidOptionError: %v", errMsg)
 		}
-		if a.ForceMode && a.InteractiveMode && len(a.StackNames.Value()) != 0 {
-			errMsg := fmt.Sprintln("There is no need to specify Force Mode and Interactive Mode at the same time when stack names are specified.")
+		if a.InteractiveMode && len(a.StackNames.Value()) != 0 {
+			errMsg := fmt.Sprintln("Stack names (-s) cannot be specified when using Interactive Mode (-i).")
 			return fmt.Errorf("InvalidOptionError: %v", errMsg)
 		}
 		if a.ConcurrencyNumber < UnspecifiedConcurrencyNumber {
@@ -114,7 +108,7 @@ func (a *App) getAction() func(c *cli.Context) error {
 		}
 
 		operatorFactory := operation.NewOperatorFactory(config)
-		cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(resourcetype.GetResourceTypes())
+		cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator()
 
 		deduplicatedStackNames := a.deduplicateStackNames()
 
@@ -126,23 +120,19 @@ func (a *App) getAction() func(c *cli.Context) error {
 			return nil
 		}
 
-		targetStacks, err := a.attachTargetResourceTypes(sortedStackNames, deduplicatedStackNames)
-		if err != nil {
-			return err
-		}
-
 		deleter := NewStackDeleter(a.ForceMode, a.ConcurrencyNumber)
 
-		if len(targetStacks) > 1 && (a.ConcurrencyNumber == UnspecifiedConcurrencyNumber || a.ConcurrencyNumber > 1) {
+		stackLength := len(sortedStackNames)
+		if stackLength > 1 && (a.ConcurrencyNumber == UnspecifiedConcurrencyNumber || a.ConcurrencyNumber > 1) {
 			var concurrency int
 			if a.ConcurrencyNumber == UnspecifiedConcurrencyNumber {
-				concurrency = len(targetStacks)
+				concurrency = stackLength
 			} else {
-				concurrency = min(a.ConcurrencyNumber, len(targetStacks))
+				concurrency = min(a.ConcurrencyNumber, stackLength)
 			}
 			io.Logger.Info().Msgf("The stacks will be removed concurrently, taking into account dependencies. (concurrency: %d)", concurrency)
 		}
-		if err := deleter.DeleteStacksConcurrently(c.Context, targetStacks, config, operatorFactory); err != nil {
+		if err := deleter.DeleteStacksConcurrently(c.Context, sortedStackNames, config, operatorFactory); err != nil {
 			return err
 		}
 		return nil
@@ -185,7 +175,6 @@ func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperat
 		}
 
 		// The `ListStacksFilteredByKeyword` with SDK's `DescribeStacks` returns the stacks in descending order of CreationTime.
-		// Therefore, by deleting stacks in the same order, we can delete from a new stack that is not depended on by any stack.
 		stackNames, continuation, err := a.selectStackNames(stacks)
 		if err != nil {
 			return nil, false, err
@@ -198,82 +187,9 @@ func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperat
 	return nil, false, nil
 }
 
-func (a *App) attachTargetResourceTypes(sortedStackNames []string, specifiedStackNames []string) ([]targetStack, error) {
-	targetStacks := []targetStack{}
-
-	// If stackNames are specified with an interactive mode option, select ResourceTypes in the order specified (not sorted order).
-	if a.InteractiveMode && !a.ForceMode && len(specifiedStackNames) != 0 {
-		var selectedResourceTypes []targetStack
-		for _, stackName := range specifiedStackNames {
-			targetResourceTypes, continuation, err := a.selectResourceTypes(stackName)
-			if err != nil {
-				return nil, err
-			}
-			if !continuation {
-				return nil, nil
-			}
-			selectedResourceTypes = append(selectedResourceTypes, targetStack{
-				stackName:           stackName,
-				targetResourceTypes: targetResourceTypes,
-			})
-		}
-		for _, stackName := range sortedStackNames {
-			for _, selectedResourceType := range selectedResourceTypes {
-				if stackName == selectedResourceType.stackName {
-					targetStacks = append(targetStacks, selectedResourceType)
-				}
-			}
-		}
-	}
-	if a.InteractiveMode && !a.ForceMode && len(specifiedStackNames) == 0 {
-		for _, stackName := range sortedStackNames {
-			targetResourceTypes, continuation, err := a.selectResourceTypes(stackName)
-			if err != nil {
-				return nil, err
-			}
-			if !continuation {
-				return nil, nil
-			}
-			targetStacks = append(targetStacks, targetStack{
-				stackName:           stackName,
-				targetResourceTypes: targetResourceTypes,
-			})
-		}
-	}
-	if !a.InteractiveMode || a.ForceMode {
-		for _, stackName := range sortedStackNames {
-			targetResourceTypes := resourcetype.GetResourceTypes()
-			targetStacks = append(targetStacks, targetStack{
-				stackName:           stackName,
-				targetResourceTypes: targetResourceTypes,
-			})
-		}
-	}
-
-	return targetStacks, nil
-}
-
 func (a *App) inputKeywordForFilter() string {
 	label := "Filter a keyword of stack names(case-insensitive): "
 	return io.InputKeywordForFilter(label)
-}
-
-func (a *App) selectResourceTypes(stackName string) ([]string, bool, error) {
-	var checkboxes []string
-
-	label := []string{
-		stackName,
-		"Select ResourceTypes you wish to delete even if DELETE_FAILED.",
-		"However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type.",
-	}
-
-	opts := resourcetype.GetResourceTypes()
-
-	checkboxes, continuation, err := io.GetCheckboxes(label, opts, true)
-	if err != nil {
-		return nil, false, err
-	}
-	return checkboxes, continuation, nil
 }
 
 func (a *App) selectStackNames(stackNames []string) ([]string, bool, error) {

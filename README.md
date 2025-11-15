@@ -135,34 +135,6 @@ And stacks with **the XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) CloudFormation 
 
 Also, **"Termination Protection"** stacks will not be displayed, because it probably really should not want to delete it.
 
-### ResourceTypes
-
-The `-i, --interactive` option allows you to select the ResourceTypes **you wish to force delete even if DELETE_FAILED**. This feature allows you to **protect resources** you really do not want to delete by **"do not select the ResourceTypes"**!
-
-However, if a resource can be deleted **without becoming DELETE_FAILED** by the **normal** CloudFormation stack deletion feature, the resource will be deleted **even if you do not select that resource type**. This tool is not intended to protect specific resources from the normal CloudFormation stack deletion feature, so I implemented this feature with the nuance that **only those resources that really should not be deleted will not be forced to be deleted**.
-
-If the stack contains resources that will be DELETE_FAILED but is not selected, **all DELETE_FAILED resources including the selected or not selected resources and the stack will remain undeleted**.
-
-Also, if `-f, --force` option is specified together, all supported resource types will be deleted **without the selection prompt**.
-
-```bash
-❯ delstack -i -s dev-goto-01-TestStack
-? dev-goto-01-TestStack
-Select ResourceTypes you wish to delete even if DELETE_FAILED.
-However, if a resource can be deleted without becoming DELETE_FAILED by the normal CloudFormation stack deletion feature, the resource will be deleted even if you do not select that resource type.
-  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
-  [x]  AWS::S3::Bucket
-  [ ]  AWS::S3Express::DirectoryBucket
-  [ ]  AWS::S3Tables::TableBucket
-  [ ]  AWS::S3Tables::Namespace
-  [ ]  AWS::S3Vectors::VectorBucket
-  [ ]  AWS::IAM::Group
-> [x]  AWS::ECR::Repository
-  [ ]  AWS::Backup::BackupVault
-  [ ]  AWS::CloudFormation::Stack
-  [ ]  Custom::
-```
-
 ## Force Mode
 
 If you specify the `-f, --force` option, stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`** will be deleted.
@@ -170,8 +142,6 @@ If you specify the `-f, --force` option, stacks including resources with **the d
 ```bash
 delstack -f -s dev-goto-01-TestStack
 ```
-
-Also, even if you specify `-i, --interactive` option together, the ResourceTypes selection prompt will not be displayed.
 
 ### Large Template Handling
 

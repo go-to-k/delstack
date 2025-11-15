@@ -26,13 +26,11 @@ type OperatorCollection struct {
 	logicalResourceIds        []string
 	unsupportedStackResources []types.StackResourceSummary
 	operators                 []IOperator
-	targetResourceTypes       []string
 }
 
-func NewOperatorCollection(config aws.Config, operatorFactory *OperatorFactory, targetResourceTypes []string) *OperatorCollection {
+func NewOperatorCollection(config aws.Config, operatorFactory *OperatorFactory) *OperatorCollection {
 	return &OperatorCollection{
-		operatorFactory:     operatorFactory,
-		targetResourceTypes: targetResourceTypes,
+		operatorFactory: operatorFactory,
 	}
 }
 
@@ -52,7 +50,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	iamGroupOperator := c.operatorFactory.CreateIamGroupOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
-	cloudformationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator(c.targetResourceTypes)
+	cloudformationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator()
 	customOperator := c.operatorFactory.CreateCustomOperator()
 
 	for _, resource := range stackResourceSummaries {
@@ -105,7 +103,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 }
 
 func (c *OperatorCollection) containsResourceType(resource string) bool {
-	for _, t := range c.targetResourceTypes {
+	for _, t := range resourcetype.ResourceTypes {
 		if t == resource || (t == resourcetype.CustomResource && strings.Contains(resource, resourcetype.CustomResource)) {
 			return true
 		}
@@ -130,7 +128,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 	for _, resource := range c.unsupportedStackResources {
 		unsupportedStackResourcesData = append(unsupportedStackResourcesData, []string{*resource.ResourceType, *resource.LogicalResourceId})
 	}
-	unsupportedStackResources := "\nThese are the resources unsupported (or you did not selected in the interactive prompt), so failed delete:\n" + *io.ToStringAsTableFormat(unsupportedStackResourcesHeader, unsupportedStackResourcesData)
+	unsupportedStackResources := "\nThese are the resources unsupported, so failed delete:\n" + *io.ToStringAsTableFormat(unsupportedStackResourcesHeader, unsupportedStackResourcesData)
 
 	supportedStackResourcesHeader := []string{"ResourceType", "Description"}
 	supportedStackResourcesData := [][]string{
