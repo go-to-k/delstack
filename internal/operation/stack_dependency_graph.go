@@ -359,7 +359,7 @@ type StackDependencyGraph struct {
 
 // NewStackDependencyGraph creates a new dependency graph
 func NewStackDependencyGraph(stackNames []string) *StackDependencyGraph {
-	allStacks := make(map[string]struct{})
+	allStacks := make(map[string]struct{}, len(stackNames))
 	for _, name := range stackNames {
 		allStacks[name] = struct{}{}
 	}
