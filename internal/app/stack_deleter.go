@@ -97,6 +97,7 @@ func (d *StackDeleter) deleteStacksDynamically(
 
 	var wg sync.WaitGroup
 
+	// for goroutine
 	startDeletion := func(stackName string) {
 		defer wg.Done()
 
