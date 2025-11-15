@@ -103,8 +103,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 }
 
 func (c *OperatorCollection) containsResourceType(resource string) bool {
-	targetResourceTypes := resourcetype.ResourceTypes
-	for _, t := range targetResourceTypes {
+	for _, t := range resourcetype.ResourceTypes {
 		if t == resource || (t == resourcetype.CustomResource && strings.Contains(resource, resourcetype.CustomResource)) {
 			return true
 		}
