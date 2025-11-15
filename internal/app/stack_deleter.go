@@ -79,7 +79,6 @@ func (d *StackDeleter) deleteStacksDynamically(
 	}
 
 	// Initialize queue with stacks that have reverse in-degree 0
-	var stateMutex sync.Mutex // Protects deletableStacks, reverseInDegree, and deletedStacks
 	deletableStacks := []string{}
 	for stack := range allStacks {
 		if reverseInDegree[stack] == 0 {
@@ -151,7 +150,6 @@ func (d *StackDeleter) deleteStacksDynamically(
 
 		case deletedStackName := <-completionChan:
 			// Update reverse in-degree and find newly available stacks
-			stateMutex.Lock()
 			deletedCount++
 			deletedStacks = append(deletedStacks, deletedStackName)
 			io.Logger.Info().Msgf("Progress: %d/%d stacks deleted [%s]", deletedCount, totalStackCount, strings.Join(deletedStacks, ", "))
@@ -163,14 +161,10 @@ func (d *StackDeleter) deleteStacksDynamically(
 				}
 			}
 
-			newlyAvailableStacks := make([]string, len(deletableStacks))
-			copy(newlyAvailableStacks, deletableStacks)
-			deletableStacks = []string{} // Clear the queue
-			stateMutex.Unlock()
-
-			for _, stackName := range newlyAvailableStacks {
+			for _, stackName := range deletableStacks {
 				startDeletion(stackName)
 			}
+			deletableStacks = []string{} // Clear the queue
 		}
 	}
 
