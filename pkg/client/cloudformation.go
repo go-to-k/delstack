@@ -223,6 +223,11 @@ func (c *CloudFormation) ListImports(ctx context.Context, exportName *string) ([
 
 		output, err := c.client.ListImports(ctx, input)
 		if err != nil {
+			// If the export is not imported by any stack, ListImports returns ValidationError
+			// This is not an error condition, so return an empty list
+			if strings.Contains(err.Error(), "is not imported by any stack") {
+				return importingStackNames, nil
+			}
 			return importingStackNames, &ClientError{
 				ResourceName: exportName,
 				Err:          err,

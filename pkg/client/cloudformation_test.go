@@ -1530,6 +1530,26 @@ func TestCloudFormation_ListImports(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "list imports with no imports (not imported by any stack)",
+			args: args{
+				ctx:        context.Background(),
+				exportName: aws.String("export-a"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListImportsNotImportedMock",
+							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{}, middleware.Metadata{}, fmt.Errorf("ValidationError: Export export-a is not imported by any stack")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    []string{},
+			wantErr: false,
+		},
+		{
 			name: "list imports with error",
 			args: args{
 				ctx:        context.Background(),

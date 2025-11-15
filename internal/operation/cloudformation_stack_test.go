@@ -4422,8 +4422,8 @@ func TestCloudFormationStackOperator_BuildDependencyGraph(t *testing.T) {
 					nil,
 				)
 				m.EXPECT().ListImports(gomock.Any(), aws.String("export-a")).Return(
+					[]string{},
 					nil,
-					fmt.Errorf("ValidationError: Export 'export-a' is not imported by any stack."),
 				)
 			},
 			wantDependencies: map[string]map[string]struct{}{},
