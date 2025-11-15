@@ -173,7 +173,7 @@ delstack -f -s dev-goto-01-TestStack
 
 Also, even if you specify `-i, --interactive` option together, the ResourceTypes selection prompt will not be displayed.
 
-### Large Template Handling**
+### Large Template Handling
 
 When using force mode with stacks that have large templates (exceeding **51,200 bytes**, CloudFormation's direct template size limit), `delstack` automatically:
 
