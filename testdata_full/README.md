@@ -1,6 +1,6 @@
-# Delstack Test Environment
+# Delstack Test Environment - Full Resources
 
-This directory contains a tool for creating a test environment for `delstack`. This tool (`deploy.go`) deploys AWS CloudFormation stacks with various resources that can be used to test the stack deletion functionality of `delstack`.
+This directory contains a tool for creating a comprehensive test environment for `delstack`. This tool (`deploy.go`) deploys AWS CloudFormation stacks with a full set of various resources that can be used to test the stack deletion functionality of `delstack`.
 
 ## Test Stack Deployment
 
@@ -23,7 +23,7 @@ This script creates a CloudFormation stack containing various resources that typ
 - And more
 
 ```bash
-go run testdata/deploy.go -s <stage> [-p <profile>]
+go run testdata_full/deploy.go -s <stage> [-p <profile>]
 ```
 
 ### Options
@@ -38,13 +38,14 @@ For convenience, you can also use the Makefile target:
 
 ```bash
 # Deploy with default stage and profile
-make testgen
+make testgen_full
 
 # Deploy with custom stage and profile
-make testgen OPT="-s my-stage -p my-profile"
+make testgen_full OPT="-s my-stage -p my-profile"
 
 # Deploy the stack with all RETAIN resources
-make testgen OPT="-r"
+make testgen_full_retain
+make testgen_full_retain OPT="-s my-stage -p my-profile"
 ```
 
 ### Notes

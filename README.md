@@ -10,7 +10,9 @@ The description in **English** is available on the following blog page. -> [Blog
 
 Tool to force delete the **entire** AWS CloudFormation stack, even if it contains resources that **fail to delete** by the CloudFormation delete operation.
 
-![delstack](https://github.com/user-attachments/assets/61dd23ce-5fc2-4c5f-bcb8-f74f621f8756)
+**Works with stacks created by any tool**: Not just raw CloudFormation, but also stacks deployed via **AWS CDK**, **AWS SAM**, **Serverless Framework**, and other Infrastructure as Code tools that use CloudFormation under the hood.
+
+![delstack](https://github.com/user-attachments/assets/4f02526d-536c-4a23-81fd-10484902133f)
 
 ## Resource Types that can be forced to delete
 
@@ -78,7 +80,7 @@ All resources that do not fail normal deletion can be deleted as is.
 ## How to use
 
   ```bash
-  delstack [-s <stackName>] [-p <profile>] [-r <region>] [-i|--interactive] [-f|--force]
+  delstack [-s <stackName>] [-p <profile>] [-r <region>] [-i|--interactive] [-f|--force] [-n <concurrencyNumber>]
   ```
 
 - -s, --stackName: optional
@@ -87,7 +89,8 @@ All resources that do not fail normal deletion can be deleted as is.
     - Otherwise you can specify it in the interactive mode
   - **Multiple specifications are possible.**
     - `delstack -s test1 -s test2`
-    - **Dependencies between stacks are taken into account, the stacks are deleted in order, starting with the newly created stack.**
+    - **Multiple stacks are deleted in parallel by default, taking dependencies between stacks into account.**
+    - You can limit the number of parallel deletions with the `-n` option (e.g., `delstack -s test1 -s test2 -s test3 -n 2`).
 - -p, --profile: optional
   - AWS profile name
 - -r, --region: optional(default: `us-east-1`)
@@ -96,6 +99,8 @@ All resources that do not fail normal deletion can be deleted as is.
   - Interactive Mode
 - -f, --force: optional
   - Force Mode to delete stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`**
+- -n, --concurrencyNumber: optional(default: unlimited)
+  - Specify the number of parallel stack deletions. Default is unlimited (delete all stacks in parallel).
 
 ## Interactive Mode
 
@@ -168,9 +173,60 @@ delstack -f -s dev-goto-01-TestStack
 
 Also, even if you specify `-i, --interactive` option together, the ResourceTypes selection prompt will not be displayed.
 
+### Large Template Handling
+
+When using force mode with stacks that have large templates (exceeding **51,200 bytes**, CloudFormation's direct template size limit), `delstack` automatically:
+
+1. Creates a temporary S3 bucket in your account
+2. Uploads the modified template to the bucket
+3. Updates the stack via S3 template URL
+4. Deletes the temporary S3 bucket after the operation completes
+
+## Parallel Stack Deletion with Automatic Dependency Resolution
+
+When you specify multiple stacks (via the `-s` option or interactive mode `-i`), `delstack` automatically analyzes CloudFormation stack dependencies (via Outputs/Exports and Imports) and deletes stacks in parallel while respecting dependency constraints.
+
+### How It Works
+
+1. **Dependency Analysis**: Analyzes stack dependencies through CloudFormation Exports and Imports
+2. **Circular Dependency Detection**: Detects and reports circular dependencies before deletion
+3. **External Reference Protection**: Prevents deletion of stacks whose exports are used by non-target stacks
+4. **Dynamic Parallel Deletion**: Deletes stacks in dependency order with maximum parallelism
+
+### Deletion Algorithm
+
+The deletion process uses a **reverse topological sort with dynamic scheduling**:
+
+```text
+Example: Stacks A, B, C, D, E, F with dependencies:
+  C → A (C depends on A)
+  D → A
+  E → B
+  F → C, D, E
+
+Deletion order (reverse dependencies):
+  Step 1: Delete F (no stacks depend on it)
+  Step 2: Delete C, D, E in parallel (after F completes)
+  Step 3: Delete B (after E completes)
+  Step 4: Delete A (after both C and D complete)
+```
+
+**Key Features**:
+
+- Stacks are deleted **as soon as all dependent stacks are deleted**
+- Multiple independent stacks are deleted **in parallel**
+- By default, there is **no limit** on the number of concurrent deletions
+- The `-n` option allows you to limit the maximum number of concurrent deletions if needed
+
+### Error Handling
+
+- **Circular Dependencies**: Detected before deletion starts, with the dependency cycle path reported
+- **External References**: If a target stack's export is imported by a non-target stack, deletion is prevented with a detailed error message
+- **Partial Failures**: If any stack fails to delete, all remaining deletions are cancelled
+
 ## GitHub Actions
 
-You can use delstack with parameters **"stack-name" and "region"** in GitHub Actions Workflow.
+You can use delstack with parameters **"stack-name", "region", and "concurrency-number"** in GitHub Actions Workflow.
 To delete multiple stacks, specify stack names separated by commas.
 
 ```yaml
@@ -192,8 +248,9 @@ jobs:
         uses: go-to-k/delstack@main # Or specify the version instead of main
         with:
           stack-name: YourStack
-          # stack-name: YourStack1, YourStack2, YourStack3 # To delete multiple stacks
+          # stack-name: YourStack1, YourStack2, YourStack3 # To delete multiple stacks (deleted in parallel by default)
           force: true # Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate (default: false)
+          concurrency-number: 4 # Number of parallel stack deletions (default: unlimited)
           region: us-east-1
 ```
 
