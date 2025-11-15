@@ -175,7 +175,6 @@ func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperat
 		}
 
 		// The `ListStacksFilteredByKeyword` with SDK's `DescribeStacks` returns the stacks in descending order of CreationTime.
-		// Therefore, by deleting stacks in the same order, we can delete from a new stack that is not depended on by any stack.
 		stackNames, continuation, err := a.selectStackNames(stacks)
 		if err != nil {
 			return nil, false, err
