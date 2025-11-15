@@ -218,22 +218,6 @@ Deletion order (reverse dependencies):
 - By default, there is **no limit** on the number of concurrent deletions
 - The `-n` option allows you to limit the maximum number of concurrent deletions if needed
 
-### Usage Examples
-
-```bash
-# Delete multiple stacks with automatic dependency resolution
-delstack -s stack-a -s stack-b -s stack-c
-
-# Use interactive mode to select multiple stacks
-delstack -i
-
-# Limit parallel deletions to 2 at a time
-delstack -s stack-a -s stack-b -s stack-c -s stack-d -n 2
-
-# Delete with force mode and dependency resolution
-delstack -f -s stack-a -s stack-b -s stack-c
-```
-
 ### Error Handling
 
 - **Circular Dependencies**: Detected before deletion starts, with the dependency cycle path reported
