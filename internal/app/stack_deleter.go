@@ -27,17 +27,10 @@ func NewStackDeleter(forceMode bool, concurrencyNumber int) *StackDeleter {
 
 func (d *StackDeleter) DeleteStacksConcurrently(
 	ctx context.Context,
-	targetStacks []targetStack,
+	stackNames []string,
 	config aws.Config,
 	operatorFactory *operation.OperatorFactory,
 ) error {
-	stackNames := make([]string, 0, len(targetStacks))
-	targetStacksMap := make(map[string]targetStack)
-	for _, stack := range targetStacks {
-		stackNames = append(stackNames, stack.stackName)
-		targetStacksMap[stack.stackName] = stack
-	}
-
 	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(resourcetype.GetResourceTypes())
 
 	io.Logger.Info().Msg("Analyzing stack dependencies...")
@@ -53,13 +46,12 @@ func (d *StackDeleter) DeleteStacksConcurrently(
 
 	io.Logger.Info().Msgf("Starting deletion of %d stack(s) with dynamic scheduling...", len(stackNames))
 
-	return d.deleteStacksDynamically(ctx, graph, targetStacksMap, config, operatorFactory)
+	return d.deleteStacksDynamically(ctx, graph, config, operatorFactory)
 }
 
 func (d *StackDeleter) deleteStacksDynamically(
 	ctx context.Context,
 	graph *operation.StackDependencyGraph,
-	targetStacksMap map[string]targetStack,
 	config aws.Config,
 	operatorFactory *operation.OperatorFactory,
 ) error {
@@ -113,8 +105,7 @@ func (d *StackDeleter) deleteStacksDynamically(
 		}
 		defer sem.Release(1)
 
-		stack := targetStacksMap[stackName]
-		if err := d.deleteSingleStack(deleteCtx, stack, config, operatorFactory, true); err != nil {
+		if err := d.deleteSingleStack(deleteCtx, stackName, config, operatorFactory, true); err != nil {
 			select {
 			case errorChan <- err:
 			default:
@@ -170,29 +161,30 @@ func (d *StackDeleter) deleteStacksDynamically(
 
 func (d *StackDeleter) deleteSingleStack(
 	ctx context.Context,
-	stack targetStack,
+	stack string,
 	config aws.Config,
 	operatorFactory *operation.OperatorFactory,
 	isRootStack bool,
 ) error {
-	operatorCollection := operation.NewOperatorCollection(config, operatorFactory, stack.targetResourceTypes)
+	targetResourceTypes := resourcetype.GetResourceTypes()
+	operatorCollection := operation.NewOperatorCollection(config, operatorFactory, targetResourceTypes)
 	operatorManager := operation.NewOperatorManager(operatorCollection)
-	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(stack.targetResourceTypes)
+	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator(targetResourceTypes)
 
-	io.Logger.Info().Msgf("[%v]: Start deletion. Please wait a few minutes...", stack.stackName)
+	io.Logger.Info().Msgf("[%v]: Start deletion. Please wait a few minutes...", stack)
 
 	if d.forceMode {
-		if err := cloudformationStackOperator.RemoveDeletionPolicy(ctx, aws.String(stack.stackName)); err != nil {
-			io.Logger.Error().Msgf("[%v]: Failed to remove deletion policy: %v", stack.stackName, err)
+		if err := cloudformationStackOperator.RemoveDeletionPolicy(ctx, aws.String(stack)); err != nil {
+			io.Logger.Error().Msgf("[%v]: Failed to remove deletion policy: %v", stack, err)
 			return err
 		}
 	}
 
-	if err := cloudformationStackOperator.DeleteCloudFormationStack(ctx, aws.String(stack.stackName), isRootStack, operatorManager); err != nil {
-		io.Logger.Error().Msgf("[%v]: Failed to delete: %v", stack.stackName, err)
+	if err := cloudformationStackOperator.DeleteCloudFormationStack(ctx, aws.String(stack), isRootStack, operatorManager); err != nil {
+		io.Logger.Error().Msgf("[%v]: Failed to delete: %v", stack, err)
 		return err
 	}
 
-	io.Logger.Info().Msgf("[%v]: Successfully deleted!!", stack.stackName)
+	io.Logger.Info().Msgf("[%v]: Successfully deleted!!", stack)
 	return nil
 }
