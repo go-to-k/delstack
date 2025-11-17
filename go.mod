@@ -7,7 +7,7 @@ toolchain go1.23.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.39.6
 	github.com/aws/aws-sdk-go-v2/config v1.27.27
-	github.com/aws/aws-sdk-go-v2/service/backup v1.36.3
+	github.com/aws/aws-sdk-go-v2/service/backup v1.52.0
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.53.3
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.32.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.34.3
