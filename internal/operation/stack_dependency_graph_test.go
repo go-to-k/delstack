@@ -142,10 +142,10 @@ func TestStackDependencyGraph_AddDependency(t *testing.T) {
 
 func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 	cases := []struct {
-		name      string
-		graph     *StackDependencyGraph
-		wantCycle []string
-		hasCycle  bool
+		name       string
+		graph      *StackDependencyGraph
+		wantCycles [][]string
+		hasCycle   bool
 	}{
 		{
 			name: "no circular dependency",
@@ -155,8 +155,8 @@ func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 				g.AddDependency("stack-c", "stack-b")
 				return g
 			}(),
-			wantCycle: nil,
-			hasCycle:  false,
+			wantCycles: nil,
+			hasCycle:   false,
 		},
 		{
 			name: "circular dependency with 2 stacks",
@@ -166,8 +166,10 @@ func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 				g.AddDependency("stack-b", "stack-a")
 				return g
 			}(),
-			wantCycle: []string{"stack-a", "stack-b", "stack-a"},
-			hasCycle:  true,
+			wantCycles: [][]string{
+				{"stack-a", "stack-b", "stack-a"},
+			},
+			hasCycle: true,
 		},
 		{
 			name: "circular dependency with 3 stacks",
@@ -178,8 +180,10 @@ func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 				g.AddDependency("stack-c", "stack-a")
 				return g
 			}(),
-			wantCycle: []string{"stack-a", "stack-b", "stack-c", "stack-a"},
-			hasCycle:  true,
+			wantCycles: [][]string{
+				{"stack-a", "stack-b", "stack-c", "stack-a"},
+			},
+			hasCycle: true,
 		},
 		{
 			name: "no dependency at all",
@@ -187,8 +191,8 @@ func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 				g := NewStackDependencyGraph([]string{"stack-a", "stack-b", "stack-c"})
 				return g
 			}(),
-			wantCycle: nil,
-			hasCycle:  false,
+			wantCycles: nil,
+			hasCycle:   false,
 		},
 		{
 			name: "diamond dependency (no cycle)",
@@ -200,28 +204,105 @@ func TestStackDependencyGraph_DetectCircularDependency(t *testing.T) {
 				g.AddDependency("stack-d", "stack-c")
 				return g
 			}(),
-			wantCycle: nil,
-			hasCycle:  false,
+			wantCycles: nil,
+			hasCycle:   false,
+		},
+		{
+			name: "multiple independent circular dependencies",
+			graph: func() *StackDependencyGraph {
+				g := NewStackDependencyGraph([]string{"stack-a", "stack-b", "stack-c", "stack-d"})
+				// First cycle: A -> B -> A
+				g.AddDependency("stack-a", "stack-b")
+				g.AddDependency("stack-b", "stack-a")
+				// Second cycle: C -> D -> C
+				g.AddDependency("stack-c", "stack-d")
+				g.AddDependency("stack-d", "stack-c")
+				return g
+			}(),
+			wantCycles: [][]string{
+				{"stack-a", "stack-b", "stack-a"},
+				{"stack-c", "stack-d", "stack-c"},
+			},
+			hasCycle: true,
+		},
+		{
+			name: "complex graph with multiple cycles",
+			graph: func() *StackDependencyGraph {
+				g := NewStackDependencyGraph([]string{"stack-a", "stack-b", "stack-c", "stack-d", "stack-e"})
+				// First cycle: A -> B -> C -> A
+				g.AddDependency("stack-a", "stack-b")
+				g.AddDependency("stack-b", "stack-c")
+				g.AddDependency("stack-c", "stack-a")
+				// Second cycle: D -> E -> D
+				g.AddDependency("stack-d", "stack-e")
+				g.AddDependency("stack-e", "stack-d")
+				return g
+			}(),
+			wantCycles: [][]string{
+				{"stack-a", "stack-b", "stack-c", "stack-a"},
+				{"stack-d", "stack-e", "stack-d"},
+			},
+			hasCycle: true,
+		},
+		{
+			name: "non-cycle node depending on cycle member (A->B->A, C->B)",
+			graph: func() *StackDependencyGraph {
+				g := NewStackDependencyGraph([]string{"stack-a", "stack-b", "stack-c"})
+				// Cycle: A -> B -> A
+				g.AddDependency("stack-a", "stack-b")
+				g.AddDependency("stack-b", "stack-a")
+				// Non-cycle node C depends on cycle member B
+				g.AddDependency("stack-c", "stack-b")
+				return g
+			}(),
+			wantCycles: [][]string{
+				{"stack-a", "stack-b", "stack-a"},
+			},
+			hasCycle: true,
+		},
+		{
+			name: "non-cycle node depending on cycle member (A->B->A, C->A)",
+			graph: func() *StackDependencyGraph {
+				g := NewStackDependencyGraph([]string{"stack-a", "stack-b", "stack-c"})
+				// Cycle: A -> B -> A
+				g.AddDependency("stack-a", "stack-b")
+				g.AddDependency("stack-b", "stack-a")
+				// Non-cycle node C depends on cycle member A
+				g.AddDependency("stack-c", "stack-a")
+				return g
+			}(),
+			wantCycles: [][]string{
+				{"stack-a", "stack-b", "stack-a"},
+			},
+			hasCycle: true,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCycle := tt.graph.DetectCircularDependency()
+			gotCycles := tt.graph.DetectCircularDependency()
 
-			if (gotCycle != nil) != tt.hasCycle {
-				t.Errorf("DetectCircularDependency() hasCycle = %v, want %v", gotCycle != nil, tt.hasCycle)
+			if (len(gotCycles) > 0) != tt.hasCycle {
+				t.Errorf("DetectCircularDependency() hasCycle = %v, want %v", len(gotCycles) > 0, tt.hasCycle)
 				return
 			}
 
 			if tt.hasCycle {
-				// Verify cycle is valid (first and last elements should be same, length should match)
-				if len(gotCycle) != len(tt.wantCycle) {
-					t.Errorf("DetectCircularDependency() cycle length = %v, want %v", len(gotCycle), len(tt.wantCycle))
+				// Verify number of cycles
+				if len(gotCycles) != len(tt.wantCycles) {
+					t.Errorf("DetectCircularDependency() number of cycles = %v, want %v", len(gotCycles), len(tt.wantCycles))
 					return
 				}
-				if len(gotCycle) > 0 && gotCycle[0] != gotCycle[len(gotCycle)-1] {
-					t.Errorf("DetectCircularDependency() cycle does not close: %v", gotCycle)
+
+				// Verify each cycle is valid (first and last elements should be same)
+				for i, cycle := range gotCycles {
+					if len(cycle) == 0 {
+						t.Errorf("DetectCircularDependency() cycle[%d] is empty", i)
+						continue
+					}
+					if cycle[0] != cycle[len(cycle)-1] {
+						t.Errorf("DetectCircularDependency() cycle[%d] does not close: %v", i, cycle)
+					}
 				}
 			}
 		})
