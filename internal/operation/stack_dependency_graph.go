@@ -258,7 +258,10 @@ Note:
 ## Error Cases
 
 ### Circular Dependency Detection
+DetectCircularDependency() detects all circular dependencies in the graph using DFS.
+
 ```
+Example 1: Single Circular Dependency
 Stack Configuration:
   A (Export: ExportA, Import: ExportC)
   B (Export: ExportB, Import: ExportA)
@@ -272,10 +275,35 @@ Dependencies:
 This is a circular dependency: A → C → B → A
 
 DetectCircularDependency() Result:
-  cyclePath: ["A", "C", "B", "A"]
-  error: "CircularDependencyError: A -> C -> B -> A"
+  cycles: [["A", "C", "B", "A"]]
+  error: "CircularDependencyError: circular dependencies detected:\n  A -> C -> B -> A"
 
 Behavior:
+  Deletion is not executed, exits with error message
+```
+
+```
+Example 2: Multiple Independent Circular Dependencies
+Stack Configuration:
+  A (Export: ExportA, Import: ExportB)
+  B (Export: ExportB, Import: ExportA)
+  C (Export: ExportC, Import: ExportD)
+  D (Export: ExportD, Import: ExportC)
+
+Dependencies:
+  A → B
+  B → A
+  C → D
+  D → C
+
+These are two independent circular dependencies: A ↔ B and C ↔ D
+
+DetectCircularDependency() Result:
+  cycles: [["A", "B", "A"], ["C", "D", "C"]]
+  error: "CircularDependencyError: circular dependencies detected:\n  A -> B -> A\n  C -> D -> C"
+
+Behavior:
+  All circular dependencies are reported
   Deletion is not executed, exits with error message
 ```
 
