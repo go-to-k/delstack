@@ -38,9 +38,13 @@ func (d *StackDeleter) DeleteStacksConcurrently(
 		return fmt.Errorf("DependencyAnalysisError: failed to build dependency graph: %w", err)
 	}
 
-	cyclePath := graph.DetectCircularDependency()
-	if len(cyclePath) > 0 {
-		return fmt.Errorf("DependencyAnalysisError: circular dependency detected: %s", strings.Join(cyclePath, " -> "))
+	cycles := graph.DetectCircularDependency()
+	if len(cycles) > 0 {
+		var errorMessages []string
+		for _, cycle := range cycles {
+			errorMessages = append(errorMessages, strings.Join(cycle, " -> "))
+		}
+		return fmt.Errorf("DependencyAnalysisError: circular dependencies detected:\n  %s", strings.Join(errorMessages, "\n  "))
 	}
 
 	io.Logger.Info().Msgf("Starting deletion of %d stack(s) with dynamic scheduling...", len(stackNames))

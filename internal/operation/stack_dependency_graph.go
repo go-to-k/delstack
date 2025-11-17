@@ -258,7 +258,10 @@ Note:
 ## Error Cases
 
 ### Circular Dependency Detection
+DetectCircularDependency() detects all circular dependencies in the graph using DFS.
+
 ```
+Example 1: Single Circular Dependency
 Stack Configuration:
   A (Export: ExportA, Import: ExportC)
   B (Export: ExportB, Import: ExportA)
@@ -272,10 +275,35 @@ Dependencies:
 This is a circular dependency: A → C → B → A
 
 DetectCircularDependency() Result:
-  cyclePath: ["A", "C", "B", "A"]
-  error: "CircularDependencyError: A -> C -> B -> A"
+  cycles: [["A", "C", "B", "A"]]
+  error: "CircularDependencyError: circular dependencies detected:\n  A -> C -> B -> A"
 
 Behavior:
+  Deletion is not executed, exits with error message
+```
+
+```
+Example 2: Multiple Independent Circular Dependencies
+Stack Configuration:
+  A (Export: ExportA, Import: ExportB)
+  B (Export: ExportB, Import: ExportA)
+  C (Export: ExportC, Import: ExportD)
+  D (Export: ExportD, Import: ExportC)
+
+Dependencies:
+  A → B
+  B → A
+  C → D
+  D → C
+
+These are two independent circular dependencies: A ↔ B and C ↔ D
+
+DetectCircularDependency() Result:
+  cycles: [["A", "B", "A"], ["C", "D", "C"]]
+  error: "CircularDependencyError: circular dependencies detected:\n  A -> B -> A\n  C -> D -> C"
+
+Behavior:
+  All circular dependencies are reported
   Deletion is not executed, exits with error message
 ```
 
@@ -392,38 +420,39 @@ func (g *StackDependencyGraph) GetAllStacks() map[string]struct{} {
 	return g.allStacks
 }
 
-// DetectCircularDependency detects circular dependencies using DFS (Depth-First Search)
-// Returns the cycle path if a circular dependency is detected, nil otherwise
-func (g *StackDependencyGraph) DetectCircularDependency() []string {
+// DetectCircularDependency detects all circular dependencies using DFS (Depth-First Search)
+// Returns all cycle paths found in the graph
+func (g *StackDependencyGraph) DetectCircularDependency() [][]string {
 	visited := make(map[string]bool)
-	recursionStack := make(map[string]bool)
-	var cyclePath []string
+	var allCycles [][]string
 
-	var dfs func(string) bool
-	dfs = func(node string) bool {
+	var dfs func(string, map[string]bool, []string) [][]string
+	dfs = func(node string, recursionStack map[string]bool, cyclePath []string) [][]string {
 		visited[node] = true
 		recursionStack[node] = true
 		cyclePath = append(cyclePath, node)
+		var cycles [][]string
 
 		for dep := range g.dependencies[node] {
 			if !visited[dep] {
-				if dfs(dep) {
-					return true
-				}
+				foundCycles := dfs(dep, recursionStack, cyclePath)
+				cycles = append(cycles, foundCycles...)
 			} else if recursionStack[dep] {
+				// Found a cycle
 				for i, n := range cyclePath {
 					if n == dep {
-						cyclePath = cyclePath[i:]
-						cyclePath = append(cyclePath, dep)
-						return true
+						cycle := make([]string, len(cyclePath[i:])+1)
+						copy(cycle, cyclePath[i:])
+						cycle[len(cycle)-1] = dep
+						cycles = append(cycles, cycle)
+						break
 					}
 				}
 			}
 		}
 
 		recursionStack[node] = false
-		cyclePath = cyclePath[:len(cyclePath)-1]
-		return false
+		return cycles
 	}
 
 	for stack := range g.allStacks {
@@ -431,11 +460,11 @@ func (g *StackDependencyGraph) DetectCircularDependency() []string {
 			continue
 		}
 
-		cyclePath = []string{}
-		if dfs(stack) {
-			return cyclePath
-		}
+		recursionStack := make(map[string]bool)
+		cyclePath := []string{}
+		foundCycles := dfs(stack, recursionStack, cyclePath)
+		allCycles = append(allCycles, foundCycles...)
 	}
 
-	return nil
+	return allCycles
 }
