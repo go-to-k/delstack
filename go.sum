@@ -16,8 +16,8 @@ github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 h1:WKuaxf++XKWlHWu9ECbMlha8WOEG
 github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4/go.mod h1:ZWy7j6v1vWGmPReu0iSGvRiise4YI5SkR3OHKTZ6Wuc=
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.15 h1:Z5r7SycxmSllHYmaAZPpmN8GviDrSGhMS6bldqtXZPw=
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.15/go.mod h1:CetW7bDE00QoGEmPUoZuRog07SGVAUVW6LFpNP0YfIg=
-github.com/aws/aws-sdk-go-v2/service/backup v1.36.3 h1:8yBWFpIBlL8uOHKFgWykiRnku2wQVQP+hF91/FKFdnc=
-github.com/aws/aws-sdk-go-v2/service/backup v1.36.3/go.mod h1:HLROV+NOBQ/hGMGc72X65qRctcEIKvaf6k7PekTLw+k=
+github.com/aws/aws-sdk-go-v2/service/backup v1.54.2 h1:wg+nIMc397V8syUn/bXMo5ySrojzDt41ebML3l30qhE=
+github.com/aws/aws-sdk-go-v2/service/backup v1.54.2/go.mod h1:jPKoVknYePQQIuFqYb9MJQrUmokCl+oqFD1Nz6Ly4F8=
 github.com/aws/aws-sdk-go-v2/service/cloudformation v1.53.3 h1:mIpL+FXa+2U6oc85b/15JwJhNUU+c/LHwxM3hpQIxXQ=
 github.com/aws/aws-sdk-go-v2/service/cloudformation v1.53.3/go.mod h1:lcQ7+K0Q9x0ozhjBwDfBkuY8qexSP/QXLgp0jj+/NZg=
 github.com/aws/aws-sdk-go-v2/service/ecr v1.32.0 h1:lZoKOTEQUf5Oi9qVaZM/Hb0Z6SHIwwpDjbLFOVgB2t8=
