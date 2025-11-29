@@ -14,7 +14,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3vectors v1.4.12
 	github.com/aws/smithy-go v1.23.2
 	github.com/charmbracelet/bubbletea v1.3.10
-	github.com/fatih/color v1.17.0
+	github.com/fatih/color v1.18.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/rs/zerolog v1.33.0
 	github.com/urfave/cli/v2 v2.27.4
