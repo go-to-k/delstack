@@ -19,8 +19,8 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/urfave/cli/v2 v2.27.4
 	go.uber.org/goleak v1.3.0
-	go.uber.org/mock v0.4.0
-	golang.org/x/sync v0.8.0
+	go.uber.org/mock v0.6.0
+	golang.org/x/sync v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
