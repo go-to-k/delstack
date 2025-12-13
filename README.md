@@ -12,7 +12,7 @@ Tool to force delete the **entire** AWS CloudFormation stack, even if it contain
 
 **Works with stacks created by any tool**: Not just raw CloudFormation, but also stacks deployed via **AWS CDK**, **AWS SAM**, **Serverless Framework**, and other Infrastructure as Code tools that use CloudFormation under the hood.
 
-![delstack](https://github.com/user-attachments/assets/b8c17ce6-527b-4056-a2f5-635a2c16d967)
+![Image](https://github.com/user-attachments/assets/f1702feb-0655-49cf-84ed-371c4f1eb0be)
 
 ## Resource Types that can be forced to delete
 
