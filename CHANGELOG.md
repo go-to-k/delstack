@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.1.1](https://github.com/go-to-k/delstack/compare/v2.1.0...v2.1.1) - 2025-12-13
+- chore(deps): upgrade tablewriter to v1 by @go-to-k in https://github.com/go-to-k/delstack/pull/532
+- chore: remove duplicated error messages by @go-to-k in https://github.com/go-to-k/delstack/pull/534
+- chore(deps): bump actions/cache from 4 to 5 by @dependabot[bot] in https://github.com/go-to-k/delstack/pull/530
+- chore(deps): bump actions/upload-artifact from 5 to 6 by @dependabot[bot] in https://github.com/go-to-k/delstack/pull/531
+- chore(deps): bump go.uber.org/mock from 0.4.0 to 0.6.0 by @dependabot[bot] in https://github.com/go-to-k/delstack/pull/529
+- chore(deps): bump github.com/aws/smithy-go from 1.23.2 to 1.24.0 by @dependabot[bot] in https://github.com/go-to-k/delstack/pull/526
+- chore(deps): bump golang.org/x/sync from 0.8.0 to 0.18.0 by @dependabot[bot] in https://github.com/go-to-k/delstack/pull/527
+- chore(deps): bump github.com/aws/aws-sdk-go-v2/service/ecr from 1.32.0 to 1.54.1 by @dependabot[bot] in https://github.com/go-to-k/delstack/pull/528
+- chore(deps): bump github.com/aws/aws-sdk-go-v2/service/s3tables from 1.2.2 to 1.12.2 by @dependabot[bot] in https://github.com/go-to-k/delstack/pull/525
+
 ## [v2.1.0](https://github.com/go-to-k/delstack/compare/v2.0.1...v2.1.0) - 2025-11-29
 - chore(deps): bump actions/setup-go from 5 to 6 by @dependabot[bot] in https://github.com/go-to-k/delstack/pull/519
 - feat: support `aws login` by @go-to-k in https://github.com/go-to-k/delstack/pull/524
