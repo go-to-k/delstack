@@ -7,7 +7,7 @@ import (
 	"github.com/olekukonko/tablewriter/tw"
 )
 
-func ToStringAsTableFormat(header []string, data [][]string) *string {
+func ToStringAsTableFormat(header []string, data [][]string) (*string, error) {
 	tableString := &strings.Builder{}
 	table := tablewriter.NewTable(tableString,
 		tablewriter.WithRendition(
@@ -32,9 +32,15 @@ func ToStringAsTableFormat(header []string, data [][]string) *string {
 	)
 
 	table.Header(header)
-	table.Bulk(data)
-	table.Render()
+	err := table.Bulk(data)
+	if err != nil {
+		return nil, err
+	}
+	err = table.Render()
+	if err != nil {
+		return nil, err
+	}
 
 	stringAsTableFormat := tableString.String()
-	return &stringAsTableFormat
+	return &stringAsTableFormat, nil
 }
