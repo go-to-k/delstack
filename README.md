@@ -1,275 +1,207 @@
-# cls3
+# delstack
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/go-to-k/cls3)](https://goreportcard.com/report/github.com/go-to-k/cls3) ![GitHub](https://img.shields.io/github/license/go-to-k/cls3) ![GitHub](https://img.shields.io/github/v/release/go-to-k/cls3) [![ci](https://github.com/go-to-k/cls3/actions/workflows/ci.yml/badge.svg)](https://github.com/go-to-k/cls3/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/go-to-k/delstack)](https://goreportcard.com/report/github.com/go-to-k/delstack) ![GitHub](https://img.shields.io/github/license/go-to-k/delstack) ![GitHub](https://img.shields.io/github/v/release/go-to-k/delstack) [![ci](https://github.com/go-to-k/delstack/actions/workflows/ci.yml/badge.svg)](https://github.com/go-to-k/delstack/actions/workflows/ci.yml)
 
-The description in **English** is available on the following page. -> [Blog](https://dev.to/aws-builders/tool-for-fast-deletion-and-emptying-of-s3-buckets-versioning-supported-6dn)
+The description in **Japanese** is available on the following blog page. -> [Blog](https://go-to-k.hatenablog.com/entry/delstack)
 
-The description in **Japanese** is available on the following page. -> [Blog](https://go-to-k.hatenablog.com/entry/cls3)
-
-The description in **Spanish** is available on the following page. -> [Blog](https://dev.to/aws-espanol/cls3-busqueda-y-eliminacion-masiva-de-buckets-s3-1gb)
+The description in **English** is available on the following blog page. -> [Blog](https://dev.to/aws-builders/a-cli-tool-to-force-delete-cloudformation-stacks-3808)
 
 ## What is
 
-The CLI tool **"cls3"** is to <ins>**CL**</ins>ear Amazon <ins>**S3**</ins> Buckets(AWS).
+Tool to force delete the **entire** AWS CloudFormation stack, even if it contains resources that **fail to delete** by the CloudFormation delete operation.
 
-It <ins>empties</ins> (so deletes all objects and versions/delete-markers in) S3 Buckets or <ins>deletes</ins> the buckets themselves.
+**Works with stacks created by any tool**: Not just raw CloudFormation, but also stacks deployed via **AWS CDK**, **AWS SAM**, **Serverless Framework**, and other Infrastructure as Code tools that use CloudFormation under the hood.
 
-This tool allows you to **search for bucket names** and empty or delete **multiple buckets**.
+![delstack](https://github.com/user-attachments/assets/0797009d-890f-4e6e-9f31-4600c78d6262)
 
-![cls3](https://github.com/user-attachments/assets/b8c17ce6-527b-4056-a2f5-635a2c16d967)
+## Resource Types that can be forced to delete
 
-## Features
+Among the resources that **fail in the normal CloudFormation stack deletion**, this tool supports the following resources.
 
-### Bucket deletion option
+If you want to delete the unsupported resources, please create an issue at [GitHub](https://github.com/go-to-k/delstack/issues).
 
-Initially, the tool was intended to "empty the bucket", but since I was going to go through the trouble, I also added an option (`-f|--force`) to "delete the bucket as well".
+All resources that do not fail normal deletion can be deleted as is.
 
-### Search for bucket names and delete multiple buckets
+|  RESOURCE TYPE  |  DETAILS  |
+| ---- | ---- |
+|  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled**.  |
+|  AWS::S3Express::DirectoryBucket  |  S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty.  |
+|  AWS::S3Tables::TableBucket  |  S3 Table Buckets, including buckets with any namespaces or tables.  |
+|  AWS::S3Tables::Namespace  |  S3 Table Namespaces, including namespaces with any tables.  |
+|  AWS::S3Vectors::VectorBucket  |  S3 Vector Buckets, including buckets with any indexes.  |
+|  AWS::IAM::Group  |  IAM Groups, including groups **with IAM users from outside the stack.** In that case, this tool detaches the IAM users and then deletes the IAM group (but not the IAM users themselves).  |
+|  AWS::ECR::Repository  |  ECR Repositories, including repositories that contain images and where **the `EmptyOnDelete` is not true.**  |
+|  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
+|  AWS::CloudFormation::Stack  |  **Nested Child Stacks** that failed to delete. If any of the other resources are included in the child stack, **they too will be deleted**.  |
+|  Custom::Xxx  |  Custom Resources, including resources that **do not return a SUCCESS status.**  |
 
-As described below ([Interactive Mode](#interactive-mode)), you can **search for bucket names** and delete or empty **multiple buckets at once**.
-
-### Cross-region
-
-In deleting multiple buckets, you can list and delete them all at once, even if they are in multiple regions.
-
-(In the **Directory Buckets** Mode for S3 Express One Zone (`-d` option), the **Table Buckets** Mode for S3 Tables (`-t` option), and the **Vector Buckets** Mode for S3 Vectors (`-V` option), operation across regions is not possible, but only in **one region**. You can specify the region with the `-r` option.)
-
-### Deletion of buckets with versioning enabled
-
-Even if versioning is turned on, you can empty it just as if it were turned off. Therefore, you can use it without being aware of the versioning settings.
-
-### Deletion of old version objects only
-
-The `-o | --oldVersionsOnly` option allows you to delete only old versions and all delete-markers without new versions and a bucket itself.
-
-**So you can retain the latest version objects only.**
-
-This option cannot be specified with the `-f | --force` option.
-
-### Deletion of Directory Buckets for S3 Express One Zone
-
-The `-d | --directoryBucketsMode` option allows you to delete the Directory Buckets for S3 Express One Zone.
-
-In this mode, operation across regions is not possible, but only in **one region**. You can specify the region with the `-r` option.
-
-### Deletion of Table Buckets for S3 Tables
-
-The `-t | --tableBucketsMode` option allows you to delete the Table Buckets for S3 Tables.
-
-In this mode, operation across regions is not possible, but only in **one region**. You can specify the region with the `-r` option.
-
-### Deletion of Vector Buckets for S3 Vectors
-
-The `-V | --vectorBucketsMode` option allows you to delete the Vector Buckets for S3 Vectors.
-
-In this mode, operation across regions is not possible, but only in **one region**. You can specify the region with the `-r` option.
-
-### Custom Endpoint URL
-
-The `-e | --endpointUrl` option allows you to specify a custom endpoint URL to access S3-compatible storage or a specific S3 endpoint.
-
-You can use cls3 with S3-compatible storage such as MinIO or Cloudflare R2 by specifying the custom endpoint URL.
-
-Note: Google Cloud Storage is not supported as it uses a different API structure that is not fully S3-compatible.
-
-You can also set the endpoint URL using the `CLS3_ENDPOINT_URL` environment variable. If both the environment variable and the command-line option are specified, the command-line option takes precedence.
-
-```bash
-export CLS3_ENDPOINT_URL=https://your-account.r2.cloudflarestorage.com
-```
-
-While `AWS_ENDPOINT_URL` and `AWS_ENDPOINT_URL_S3` environment variables are also supported (via AWS SDK), we recommend using `CLS3_ENDPOINT_URL` for clarity and to avoid conflicts with other AWS tools.
-
-### Concurrent Deletion of Multiple Buckets
-
-The `-c | --concurrentMode` option allows you to delete **multiple buckets in parallel**. By default, when this option is specified, all buckets will be deleted in parallel.
-
-If you want to limit the number of parallel deletions, you can specify the `-n | --concurrencyNumber` option. For example, `-c -n 5` will delete buckets with a maximum of 5 parallel operations.
-
-**Too many parallel deletions may cause S3 API errors.** If it fails, please run it again.
-
-This option is not available in the Table Buckets Mode (`-t`) because the throttling threshold for S3 Tables is very low.
-
-### Number of objects that can be deleted
-
-The delete-objects API provided by the CLI and SDK has a limit of "the number of objects that can be deleted in one command is limited to 1000", but This tool has no limit on the number.
-
-### Retry on 503 error
-
-When there are tens of thousands of objects, a SlowDown error (503 error) may occur on the S3 api side in rare cases when deleting them all at once using the CLI or SDK.
-
-When this occurs, cls3 responds by adding a mechanism that waits a few seconds and retries automatically several times.
-
-### Delete objects with a specific key prefix
-
-The `-k | --keyPrefix` option allows you to delete objects with **a specific key prefix**.
-
-For Directory Buckets, only prefixes that end in a delimiter ( / ) are supported. If you do not specify the delimiter, it will be added automatically.
-
-For Table Buckets, the key prefix is not supported.
-
-For Vector Buckets, this option allows you to delete indexes with a specific key prefix.
+- This tool can be used even for stacks that do not contain any of the above targets for forced deletion.
+  - So **all stack deletions can basically be done with this tool!!**
+- If there are resources other than those listed above that result in DELETE_FAILED, the deletion will fail.
+- **"Termination Protection" stacks will not be deleted.** Because it probably really should not want to delete it.
+- Deletion of resources that fail to be deleted because they are used by other stack resources, i.e., **resources that are referenced (depended on) from outside the stack, is not supported**. Only forced deletion of resources that can be completed only within the stack is supported.
 
 ## Install
 
 - Homebrew
 
   ```bash
-  brew install go-to-k/tap/cls3
+  brew install go-to-k/tap/delstack
   ```
 
 - Linux, Darwin (macOS) and Windows
 
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/go-to-k/cls3/main/install.sh | sh
-  cls3 -h
+  curl -fsSL https://raw.githubusercontent.com/go-to-k/delstack/main/install.sh | sh
+  delstack -h
 
-  # To install a specific version of cls3
-  # e.g. version 0.13.2
-  curl -fsSL https://raw.githubusercontent.com/go-to-k/cls3/main/install.sh | sh -s "v0.13.2"
-  cls3 -h
+  # To install a specific version of delstack
+  # e.g. version 1.2.0
+  curl -fsSL https://raw.githubusercontent.com/go-to-k/delstack/main/install.sh | sh -s "v1.2.0"
+  delstack -h
   ```
 
 - aqua
 
   ```bash
-  aqua g -i go-to-k/cls3
-  ```
-
-- asdf
-
-  ```bash
-  # Add the plugin
-  asdf plugin add cls3 https://github.com/xavbourdeau/cls3-asdf-plugin.git
-
-  # Show all installable versions
-  asdf list-all cls3
-
-  # Install specific version
-  asdf install cls3 latest
-
-  # Set a version globally (on your ~/.tool-versions file)
-  asdf global cls3 latest
+  aqua g -i go-to-k/delstack
   ```
 
 - Binary
-  - [Releases](https://github.com/go-to-k/cls3/releases)
+  - [Releases](https://github.com/go-to-k/delstack/releases)
 - Git Clone and install(for developers)
 
   ```bash
-  git clone https://github.com/go-to-k/cls3.git
-  cd cls3
+  git clone https://github.com/go-to-k/delstack.git
+  cd delstack
   make install
   ```
 
 ## How to use
 
   ```bash
-  cls3 -b <bucketName> [-b <bucketName>] [-p <profile>] [-r <region>] [-e|--endpointUrl <endpointUrl>] [-f|--force] [-i|--interactive] [-o|--oldVersionsOnly] [-q|--quietMode] [-d|--directoryBucketsMode] [-t|--tableBucketsMode] [-V|--vectorBucketsMode] [-c|--concurrentMode] [-n|--concurrencyNumber <number>] [-k|--keyPrefix <keyPrefix>]
+  delstack [-s <stackName>] [-p <profile>] [-r <region>] [-i|--interactive] [-f|--force] [-n <concurrencyNumber>]
   ```
 
-- -b, --bucketName: optional
-  - Bucket name
+- -s, --stackName: optional
+  - CloudFormation stack name
     - Must be specified in **not** interactive mode
-    - Otherwise (so in the interactive mode), you **can not** specify this!
-  - Multiple specifications are possible.
-    - `cls3 -b test1 -b test2`
+    - Otherwise you can specify it in the interactive mode
+  - **Multiple specifications are possible.**
+    - `delstack -s test1 -s test2`
+    - **Multiple stacks are deleted in parallel by default, taking dependencies between stacks into account.**
+    - You can limit the number of parallel deletions with the `-n` option (e.g., `delstack -s test1 -s test2 -s test3 -n 2`).
 - -p, --profile: optional
   - AWS profile name
 - -r, --region: optional(default: `us-east-1`)
   - AWS Region
-    - If this option is not specified and your AWS profile is tied to a region, the region is used instead of the default region.
-  - It is not necessary to be aware of this as it can be used **across regions**.
-    - But in the Directory Buckets Mode for **S3 Express One Zone** (with `-d` option), Table Buckets Mode for **S3 Tables** (with `-t` option), and Vector Buckets Mode for **S3 Vectors** (with `-V` option), you should specify the region. The mode is not available across regions.
-- -e, --endpointUrl: optional
-  - Custom endpoint URL to access **S3-compatible storage** or a specific S3 endpoint.
-  - You can use cls3 with S3-compatible storage such as **MinIO or Cloudflare R2** by specifying the custom endpoint URL.
-    - **Note:** Google Cloud Storage is not supported as it uses a different API structure that is not fully S3-compatible.
-  - This option can also be set using the `CLS3_ENDPOINT_URL` environment variable.
-    - Example: `export CLS3_ENDPOINT_URL=https://your-account.r2.cloudflarestorage.com`
-    - The command-line option takes precedence over the environment variable.
-    - While `AWS_ENDPOINT_URL` and `AWS_ENDPOINT_URL_S3` environment variables are also supported (via AWS SDK), we recommend using `CLS3_ENDPOINT_URL` for clarity and to avoid conflicts with other AWS tools.
-- -f, --force: optional
-  - ForceMode (Delete the bucket together)
-    - If you specify this option with -t (--tableBucketsMode), it will delete not only the namespaces and the tables but also the table bucket itself.
-    - If you specify this option with -V (--vectorBucketsMode), it will delete not only the indexes but also the vector bucket itself.
 - -i, --interactive: optional
-  - Interactive Mode for buckets selection
-- -o, --oldVersionsOnly: optional
-  - Delete old version objects only (including all delete-markers)
-  - Do not specify the `-f` option if you specify this option.
-- -q, --quietMode: optional
-  - Hide live display of number of deletions
-  - It would be good to use in CI
-- -d, --directoryBucketsMode: optional
-  - Directory Buckets Mode for **S3 Express One Zone**
-  - Operation across regions is not possible, but only in **one region**.
-    - You can specify the region with the `-r` option.
-- -t, --tableBucketsMode: optional
-  - Table Buckets Mode for **S3 Tables**
-  - Operation across regions is not possible, but only in **one region**.
-    - You can specify the region with the `-r` option.
-  - If you specify this option WITHOUT -f (--force), it will delete ONLY the namespaces and the tables without the table bucket itself.
-- -V, --vectorBucketsMode: optional
-  - Vector Buckets Mode for **S3 Vectors**
-  - Operation across regions is not possible, but only in **one region**.
-    - You can specify the region with the `-r` option.
-  - If you specify this option WITHOUT -f (--force), it will delete ONLY the indexes without the vector bucket itself.
-- -c, --concurrentMode: optional
-  - Delete multiple buckets in parallel.
-  - If you want to limit the number of parallel deletions, specify the -n option.
-  - **Too many parallel deletions may cause S3 API errors.** If it fails, please run it again.
-  - This option is not available in the Table Buckets Mode (-t) because the throttling threshold for S3 Tables is very low.
-- -n, --concurrencyNumber: optional
-  - Specify the number of parallel deletions.
-  - To specify this option, the -c option must be specified.
-  - The default is to delete all buckets in parallel if only the -c option is specified.
-- -k, --keyPrefix: optional
-  - Key prefix of the objects to be deleted.
-  - For Directory Buckets, only prefixes that end in a delimiter ( / ) are supported. If you do not specify the delimiter, it will be added automatically.
-  - For Table Buckets, the key prefix is not supported.
-  - For Vector Buckets, this option allows you to delete indexes with a specific key prefix.
+  - Interactive Mode
+- -f, --force: optional
+  - Force Mode to delete stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`**
+- -n, --concurrencyNumber: optional(default: unlimited)
+  - Specify the number of parallel stack deletions. Default is unlimited (delete all stacks in parallel).
 
 ## Interactive Mode
 
-### BucketName Selection
+### StackName Selection
 
-In the interactive mode(`-i` option), you can search bucket names and select buckets.
+If you do not specify a stack name in command options in the interactive mode (`-i, --interactive`), you can search stack names in a **case-insensitive** and select a stack.
 
-It is designed to be searchable and deletable **across regions**, so it can be used without being region-aware.
-
-It can be empty.
+It can be **empty**.
 
 ```bash
-❯ cls3 -i
-Filter a keyword of bucket names: test-goto
+❯ delstack -i
+Filter a keyword of stack names(case-insensitive): goto
 ```
 
-Then you select bucket names in the UI.
+Then you select stack names in the UI.
 
 ```bash
-? Select buckets.
+? Select StackNames.
+Nested child stacks, XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks and EnableTerminationProtection stacks are not displayed.
   [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
-> [x]  test-goto-bucket-1
-  [ ]  test-goto-bucket-2
-  [x]  test-goto-bucket-3
+  [x]  dev-goto-04-TestStack
+  [ ]  dev-GOTO-03-TestStack
+> [x]  dev-Goto-02-TestStack
+  [ ]  dev-goto-01-TestStack
 ```
+
+In addition, **child stacks of nested stacks are not displayed**. This is because it is unlikely that there are cases where only child stacks of nested stacks are deleted without deleting the parent stack, and also because it is possible that the parent stack may be buried in the stack list if there are child stacks, or that the child stacks may be accidentally deleted.
+
+However, **the `-s` command option allows deletion of CHILD stacks by specifying their names**, so please use this option if you want.
+
+And stacks with **the XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) CloudFormation status** are not displayed, because multiple CloudFormation operations should not be duplicated at the same time.
+
+Also, **"Termination Protection"** stacks will not be displayed, because it probably really should not want to delete it.
+
+## Force Mode
+
+If you specify the `-f, --force` option, stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`** will be deleted.
+
+```bash
+delstack -f -s dev-goto-01-TestStack
+```
+
+### Large Template Handling
+
+When using force mode with stacks that have large templates (exceeding **51,200 bytes**, CloudFormation's direct template size limit), `delstack` automatically:
+
+1. Creates a temporary S3 bucket in your account
+2. Uploads the modified template to the bucket
+3. Updates the stack via S3 template URL
+4. Deletes the temporary S3 bucket after the operation completes
+
+## Parallel Stack Deletion with Automatic Dependency Resolution
+
+When you specify multiple stacks (via the `-s` option or interactive mode `-i`), `delstack` automatically analyzes CloudFormation stack dependencies (via Outputs/Exports and Imports) and deletes stacks in parallel while respecting dependency constraints.
+
+### How It Works
+
+1. **Dependency Analysis**: Analyzes stack dependencies through CloudFormation Exports and Imports
+2. **Circular Dependency Detection**: Detects and reports circular dependencies before deletion
+3. **External Reference Protection**: Prevents deletion of stacks whose exports are used by non-target stacks
+4. **Dynamic Parallel Deletion**: Deletes stacks in dependency order with maximum parallelism
+
+### Deletion Algorithm
+
+The deletion process uses a **reverse topological sort with dynamic scheduling**:
+
+```text
+Example: Stacks A, B, C, D, E, F with dependencies:
+  C → A (C depends on A)
+  D → A
+  E → B
+  F → C, D, E
+
+Deletion order (reverse dependencies):
+  Step 1: Delete F (no stacks depend on it)
+  Step 2: Delete C, D, E in parallel (after F completes)
+  Step 3: Delete B (after E completes)
+  Step 4: Delete A (after both C and D complete)
+```
+
+**Key Features**:
+
+- Stacks are deleted **as soon as all dependent stacks are deleted**
+- Multiple independent stacks are deleted **in parallel**
+- By default, there is **no limit** on the number of concurrent deletions
+- The `-n` option allows you to limit the maximum number of concurrent deletions if needed
+
+### Error Handling
+
+- **Circular Dependencies**: Detected before deletion starts, with the dependency cycle path reported
+- **External References**: If a target stack's export is imported by a non-target stack, deletion is prevented with a detailed error message
+- **Partial Failures**: If any stack fails to delete, all remaining deletions are cancelled
 
 ## GitHub Actions
 
-You can use cls3 in GitHub Actions Workflow.
-
-The `quiet` allows you to hive live display of number of deletions (**default: true in GitHub Actions ONLY**).
-
-Basically, you do not need to specify a `region` parameter, since you can delete buckets across regions. However,
-in Directory Buckets mode (`directory-buckets-mode`) for S3 Express One Zone, Table Buckets mode (`table-buckets-mode`)
-for S3 Tables, and Vector Buckets mode (`vector-buckets-mode`) for S3 Vectors, the region must be specified. These modes cannot be used across regions.
-
-To delete multiple buckets, specify bucket names separated by commas.
+You can use delstack with parameters **"stack-name", "region", and "concurrency-number"** in GitHub Actions Workflow.
+To delete multiple stacks, specify stack names separated by commas.
 
 ```yaml
 jobs:
-  cls3:
+  delstack:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -282,29 +214,21 @@ jobs:
           # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-      - name: Delete bucket
-        uses: go-to-k/cls3@main # Or specify the version instead of main
+      - name: Delete stack
+        uses: go-to-k/delstack@main # Or specify the version instead of main
         with:
-          bucket-name: YourBucket
-          # bucket-name: YourBucket1, YourBucket2, YourBucket3 # To delete multiple buckets
-          force: true # Whether to delete the bucket itself, not just the object (default: false)
-          quiet: false # Hide live display of number of deletions (default: true in GitHub Actions ONLY.)
-          old-versions-only: false # Delete old version objects only (including all delete-markers) (default: false)
-          directory-buckets-mode: false # Directory Buckets Mode for S3 Express One Zone (default: false)
-          table-buckets-mode: false # Table Buckets Mode for S3 Tables (default: false)
-          vector-buckets-mode: false # Vector Buckets Mode for S3 Vectors (default: false)
-          region: us-east-1 # Specify the region in the Directory Buckets Mode for S3 Express One Zone, Table Buckets Mode for S3 Tables, and Vector Buckets Mode for S3 Vectors.
-          endpoint-url: https://s3.custom.endpoint.com # Custom endpoint URL (default: "")
-          concurrent-mode: true # Delete multiple buckets in parallel (default: false)
-          concurrency-number: 8 # Specify the number of parallel deletions (requires concurrent-mode to be true)
-          key-prefix: test-prefix # Key prefix of the objects to be deleted.
+          stack-name: YourStack
+          # stack-name: YourStack1, YourStack2, YourStack3 # To delete multiple stacks (deleted in parallel by default)
+          force: true # Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate (default: false)
+          concurrency-number: 4 # Number of parallel stack deletions (default: unlimited)
+          region: us-east-1
 ```
 
-You can also run raw commands after installing the cls3 binary.
+You can also run raw commands after installing the delstack binary.
 
 ```yaml
 jobs:
-  cls3:
+  delstack:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -317,11 +241,11 @@ jobs:
           # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-      - name: Install cls3
-        uses: go-to-k/cls3@main # Or specify the version instead of main
-      - name: Run cls3
+      - name: Install delstack
+        uses: go-to-k/delstack@main # Or specify the version instead of main
+      - name: Run delstack
         run: |
-          echo "cls3"
-          cls3 -v
-          cls3 -b YourBucket1 -b YourBucket2
+          echo "delstack"
+          delstack -v
+          delstack -s YourStack1 -s YourStack2 -r us-east-1
 ```
