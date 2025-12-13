@@ -128,7 +128,12 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 	for _, resource := range c.unsupportedStackResources {
 		unsupportedStackResourcesData = append(unsupportedStackResourcesData, []string{*resource.ResourceType, *resource.LogicalResourceId})
 	}
-	unsupportedStackResources := "\nThese are the resources unsupported, so failed delete:\n" + *io.ToStringAsTableFormat(unsupportedStackResourcesHeader, unsupportedStackResourcesData)
+
+	unsupportedTable, err := io.ToStringAsTableFormat(unsupportedStackResourcesHeader, unsupportedStackResourcesData)
+	if err != nil {
+		return fmt.Errorf("UnsupportedResourceError: failed to create unsupported resources table, %w", err)
+	}
+	unsupportedStackResources := "\nThese are the resources unsupported, so failed delete:\n" + *unsupportedTable
 
 	supportedStackResourcesHeader := []string{"ResourceType", "Description"}
 	supportedStackResourcesData := [][]string{
@@ -143,7 +148,12 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.CloudformationStack, "Nested Child Stacks that failed to delete."},
 		{"Custom::Xxx", "Custom Resources, including resources that do not return a SUCCESS status."},
 	}
-	supportedStackResources := "\nSupported resources for force deletion of DELETE_FAILED resources are followings.\n" + *io.ToStringAsTableFormat(supportedStackResourcesHeader, supportedStackResourcesData)
+
+	supportedTable, err := io.ToStringAsTableFormat(supportedStackResourcesHeader, supportedStackResourcesData)
+	if err != nil {
+		return fmt.Errorf("UnsupportedResourceError: failed to create supported resources table, %w", err)
+	}
+	supportedStackResources := "\nSupported resources for force deletion of DELETE_FAILED resources are followings.\n" + *supportedTable
 
 	issueLink := "\nIf you want to delete the unsupported resources, please create an issue at GitHub(https://github.com/go-to-k/delstack/issues).\n"
 
