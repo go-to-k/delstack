@@ -177,14 +177,12 @@ func (d *StackDeleter) deleteSingleStack(
 
 	if d.forceMode {
 		if err := cloudformationStackOperator.RemoveDeletionPolicy(ctx, aws.String(stack)); err != nil {
-			io.Logger.Error().Msgf("[%v]: Failed to remove deletion policy: %v", stack, err)
-			return err
+			return fmt.Errorf("[%v]: Failed to remove deletion policy: %w", stack, err)
 		}
 	}
 
 	if err := cloudformationStackOperator.DeleteCloudFormationStack(ctx, aws.String(stack), isRootStack, operatorManager); err != nil {
-		io.Logger.Error().Msgf("[%v]: Failed to delete: %v", stack, err)
-		return err
+		return fmt.Errorf("[%v]: Failed to delete: %w", stack, err)
 	}
 
 	io.Logger.Info().Msgf("[%v]: Successfully deleted!!", stack)
