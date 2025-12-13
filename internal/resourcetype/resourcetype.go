@@ -14,7 +14,7 @@ const (
 )
 
 var ResourceTypes = []string{
-	S3Bucket,
+	// S3Bucket,
 	S3DirectoryBucket,
 	S3TableBucket,
 	S3TableNamespace,
