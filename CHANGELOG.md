@@ -1,5 +1,8 @@
 # Changelog
 
+## [v2.1.2](https://github.com/go-to-k/delstack/compare/v2.1.1...v2.1.2) - 2026-01-04
+- chore(client): improve retryer by @go-to-k in https://github.com/go-to-k/delstack/pull/541
+
 ## [v2.1.1](https://github.com/go-to-k/delstack/compare/v2.1.0...v2.1.1) - 2025-12-13
 - chore(deps): upgrade tablewriter to v1 by @go-to-k in https://github.com/go-to-k/delstack/pull/532
 - chore: remove duplicated error messages by @go-to-k in https://github.com/go-to-k/delstack/pull/534
