@@ -91,7 +91,7 @@ func TestS3Tables_DeleteTableBucket(t *testing.T) {
 								return middleware.FinalizeOutput{
 										Result: nil,
 									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxAttempts,
+										Attempt: MaxRetryCount,
 										Err:     fmt.Errorf("api error SlowDown"),
 									}
 							},
@@ -695,7 +695,7 @@ func TestS3Tables_CheckTableBucketExists(t *testing.T) {
 								return middleware.FinalizeOutput{
 										Result: nil,
 									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxAttempts,
+										Attempt: MaxRetryCount,
 										Err:     fmt.Errorf("api error SlowDown"),
 									}
 							},
@@ -867,7 +867,7 @@ func TestS3Tables_CheckNamespaceExists(t *testing.T) {
 								return middleware.FinalizeOutput{
 										Result: nil,
 									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxAttempts,
+										Attempt: MaxRetryCount,
 										Err:     fmt.Errorf("api error SlowDown"),
 									}
 							},
