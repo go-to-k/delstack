@@ -1,5 +1,8 @@
 # Changelog
 
+## [v2.1.3](https://github.com/go-to-k/delstack/compare/v2.1.2...v2.1.3) - 2026-01-04
+- revert: "chore(client): improve retryer (#541)" by @go-to-k in https://github.com/go-to-k/delstack/pull/543
+
 ## [v2.1.2](https://github.com/go-to-k/delstack/compare/v2.1.1...v2.1.2) - 2026-01-04
 - chore(client): improve retryer by @go-to-k in https://github.com/go-to-k/delstack/pull/541
 
