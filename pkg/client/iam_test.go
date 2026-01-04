@@ -88,7 +88,7 @@ func TestIam_DeleteGroup(t *testing.T) {
 								return middleware.FinalizeOutput{
 										Result: &iam.DeleteGroupOutput{},
 									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxRetryCount,
+										Attempt: MaxAttempts,
 										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
 									}
 							},
@@ -245,7 +245,7 @@ func TestIam_CheckGroupExists(t *testing.T) {
 								return middleware.FinalizeOutput{
 										Result: &iam.GetGroupOutput{},
 									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxRetryCount,
+										Attempt: MaxAttempts,
 										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
 									}
 							},
@@ -423,7 +423,7 @@ func TestIam_GetGroupUsers(t *testing.T) {
 								return middleware.FinalizeOutput{
 										Result: &iam.GetGroupOutput{},
 									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxRetryCount,
+										Attempt: MaxAttempts,
 										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
 									}
 							},
@@ -583,7 +583,7 @@ func TestIam_RemoveUsersFromGroup(t *testing.T) {
 								return middleware.FinalizeOutput{
 										Result: &iam.RemoveUserFromGroupOutput{},
 									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxRetryCount,
+										Attempt: MaxAttempts,
 										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
 									}
 							},
