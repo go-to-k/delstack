@@ -91,7 +91,7 @@ func TestS3Vectors_DeleteVectorBucket(t *testing.T) {
 								return middleware.FinalizeOutput{
 										Result: nil,
 									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxRetryCount,
+										Attempt: MaxAttempts,
 										Err:     fmt.Errorf("api error SlowDown"),
 									}
 							},
@@ -481,7 +481,7 @@ func TestS3Vectors_CheckVectorBucketExists(t *testing.T) {
 								return middleware.FinalizeOutput{
 										Result: nil,
 									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxRetryCount,
+										Attempt: MaxAttempts,
 										Err:     fmt.Errorf("api error SlowDown"),
 									}
 							},
