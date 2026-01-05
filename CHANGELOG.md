@@ -1,5 +1,8 @@
 # Changelog
 
+## [v2.1.4](https://github.com/go-to-k/delstack/compare/v2.1.3...v2.1.4) - 2026-01-05
+- chore: improve retryer with ratelimit none by @go-to-k in https://github.com/go-to-k/delstack/pull/545
+
 ## [v2.1.3](https://github.com/go-to-k/delstack/compare/v2.1.2...v2.1.3) - 2026-01-04
 - revert: "chore(client): improve retryer (#541)" by @go-to-k in https://github.com/go-to-k/delstack/pull/543
 
