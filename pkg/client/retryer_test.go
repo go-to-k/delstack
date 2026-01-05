@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -210,5 +211,77 @@ func TestCheckErrorRetryable_Integration(t *testing.T) {
 				t.Errorf("attemptCount = %d, want %d", attemptCount, tt.expectedAttempts)
 			}
 		})
+	}
+}
+
+// TestRetryer_NoRateLimitQuotaExceeded verifies that rate limiter is disabled
+// and retries can exceed 500 tokens without "retry quota exceeded" error.
+// This test verifies the fix for https://github.com/go-to-k/cls3/issues/427
+func TestRetryer_NoRateLimitQuotaExceeded(t *testing.T) {
+	retryableErr := errors.New("retryable error")
+	var attemptCount atomic.Int32
+
+	retryer := NewRetryer(func(err error) bool {
+		return errors.Is(err, retryableErr)
+	}, 0)
+
+	cfg, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(aws.AnonymousCredentials{}),
+		config.WithRetryer(func() aws.Retryer { return retryer }),
+		config.WithAPIOptions([]func(*middleware.Stack) error{
+			func(stack *middleware.Stack) error {
+				return stack.Finalize.Add(
+					middleware.FinalizeMiddlewareFunc(
+						"RateLimitTestMock",
+						func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							attemptCount.Add(1)
+							return middleware.FinalizeOutput{
+								Result: nil,
+							}, middleware.Metadata{}, retryableErr
+						},
+					),
+					middleware.After,
+				)
+			},
+		}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client := s3.NewFromConfig(cfg)
+
+	// Run multiple requests in parallel to exceed 500 tokens
+	// With default rate limiter: 500 tokens / 5 tokens per retry = 100 retries max
+	// We'll run 20 parallel requests * 10 attempts each = 200 total attempts = 1000 tokens
+	// This should fail with default rate limiter but succeed with disabled rate limiter
+	const parallelCount = 20
+	errCh := make(chan error, parallelCount)
+
+	for i := 0; i < parallelCount; i++ {
+		go func() {
+			_, err := client.ListBuckets(context.Background(), &s3.ListBucketsInput{})
+			errCh <- err
+		}()
+	}
+
+	var rateLimitErr error
+	for i := 0; i < parallelCount; i++ {
+		err := <-errCh
+		if err != nil && rateLimitErr == nil && strings.Contains(err.Error(), "retry quota exceeded") {
+			rateLimitErr = err // Save first rate limit error
+		}
+	}
+
+	if rateLimitErr != nil {
+		t.Errorf("unexpected rate limit error: %v", rateLimitErr)
+	}
+
+	// Verify that all attempts were made (200 attempts = 10 parallel * 20 max attempts each)
+	expectedAttempts := int32(parallelCount * MaxAttempts)
+	if attemptCount.Load() != expectedAttempts {
+		t.Errorf("attemptCount = %d, want %d", attemptCount.Load(), expectedAttempts)
 	}
 }

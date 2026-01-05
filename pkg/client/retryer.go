@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/ratelimit"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 )
 
@@ -19,6 +20,7 @@ func NewRetryer(isErrorRetryableFunc func(error) bool, delayTimeSec int) *Retrye
 		o.MaxAttempts = MaxAttempts
 		o.Backoff = retry.BackoffDelayerFunc(backoffDelay(delayTimeSec))
 		o.Retryables = append(o.Retryables, retry.IsErrorRetryableFunc(checkErrorRetryable(isErrorRetryableFunc)))
+		o.RateLimiter = ratelimit.None
 	})
 
 	return &Retryer{
