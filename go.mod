@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/backup v1.54.2
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.53.3
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.54.1
-	github.com/aws/aws-sdk-go-v2/service/iam v1.34.3
+	github.com/aws/aws-sdk-go-v2/service/iam v1.53.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.92.1
 	github.com/aws/aws-sdk-go-v2/service/s3tables v1.13.1
 	github.com/aws/aws-sdk-go-v2/service/s3vectors v1.4.12
