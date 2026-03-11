@@ -19,69 +19,40 @@ var _ IPreprocessor = (*LambdaVPCDetacher)(nil)
 
 type LambdaVPCDetacher struct {
 	lambdaClient client.ILambda
-	cfnClient    client.ICloudFormation
 	ec2Client    client.IEC2
 }
 
-func NewLambdaVPCDetacher(lambdaClient client.ILambda, cfnClient client.ICloudFormation, ec2Client client.IEC2) *LambdaVPCDetacher {
+func NewLambdaVPCDetacher(lambdaClient client.ILambda, ec2Client client.IEC2) *LambdaVPCDetacher {
 	return &LambdaVPCDetacher{
 		lambdaClient: lambdaClient,
-		cfnClient:    cfnClient,
 		ec2Client:    ec2Client,
 	}
 }
 
 func (d *LambdaVPCDetacher) Preprocess(ctx context.Context, stackName *string, resources []types.StackResourceSummary) error {
-	return d.preprocessStack(ctx, stackName, resources)
-}
-
-func (d *LambdaVPCDetacher) preprocessStack(ctx context.Context, stackName *string, resources []types.StackResourceSummary) error {
-	if len(resources) == 0 {
-		var err error
-		resources, err = d.cfnClient.ListStackResources(ctx, stackName)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Process Lambda functions and nested stacks in parallel
+	// Filter Lambda functions from the provided resources
 	lambdaFunctions := FilterResourcesByType(resources, resourcetype.LambdaFunction)
-	nestedStacks := FilterResourcesByType(resources, resourcetype.CloudformationStack)
 
-	var wg sync.WaitGroup
-
-	// Process Lambda functions in this stack
-	if len(lambdaFunctions) > 0 {
-		io.Logger.Debug().Msgf("[%v]: Found %d Lambda function(s), checking VPC attachment", aws.ToString(stackName), len(lambdaFunctions))
-
-		for _, resource := range lambdaFunctions {
-			functionName := resource.PhysicalResourceId
-			wg.Add(1)
-			go func(name *string) {
-				defer wg.Done()
-				if err := d.detachVPCFromFunction(ctx, stackName, name); err != nil {
-					io.Logger.Warn().Msgf("[%v]: Failed to detach VPC from function %s: %v",
-						aws.ToString(stackName), aws.ToString(name), err)
-				}
-			}(functionName)
-		}
+	if len(lambdaFunctions) == 0 {
+		return nil
 	}
 
-	// Process nested stacks recursively in parallel
-	for _, nestedStack := range nestedStacks {
-		nestedStackName := nestedStack.PhysicalResourceId
+	io.Logger.Debug().Msgf("[%v]: Found %d Lambda function(s), checking VPC attachment", aws.ToString(stackName), len(lambdaFunctions))
+
+	// Process all Lambda functions in parallel
+	var wg sync.WaitGroup
+	for _, resource := range lambdaFunctions {
+		functionName := resource.PhysicalResourceId
 		wg.Add(1)
 		go func(name *string) {
 			defer wg.Done()
-			io.Logger.Debug().Msgf("[%v]: Processing nested stack %s", aws.ToString(stackName), aws.ToString(name))
-			if err := d.preprocessStack(ctx, name, nil); err != nil {
-				io.Logger.Warn().Msgf("[%v]: Failed to process nested stack %s: %v",
+			if err := d.detachVPCFromFunction(ctx, stackName, name); err != nil {
+				io.Logger.Warn().Msgf("[%v]: Failed to detach VPC from function %s: %v",
 					aws.ToString(stackName), aws.ToString(name), err)
 			}
-		}(nestedStackName)
+		}(functionName)
 	}
 
-	// Wait for all Lambda functions and nested stacks to complete
 	wg.Wait()
 
 	return nil
