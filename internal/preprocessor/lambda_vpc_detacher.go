@@ -11,12 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/go-to-k/delstack/internal/io"
+	"github.com/go-to-k/delstack/internal/resourcetype"
 	"github.com/go-to-k/delstack/pkg/client"
-)
-
-const (
-	LambdaFunction      = "AWS::Lambda::Function"
-	CloudFormationStack = "AWS::CloudFormation::Stack"
 )
 
 var _ IPreprocessor = (*LambdaVPCDetacher)(nil)
@@ -49,8 +45,8 @@ func (d *LambdaVPCDetacher) preprocessStack(ctx context.Context, stackName *stri
 	}
 
 	// Process Lambda functions and nested stacks in parallel
-	lambdaFunctions := FilterResourcesByType(resources, LambdaFunction)
-	nestedStacks := FilterResourcesByType(resources, CloudFormationStack)
+	lambdaFunctions := FilterResourcesByType(resources, resourcetype.LambdaFunction)
+	nestedStacks := FilterResourcesByType(resources, resourcetype.CloudformationStack)
 
 	var wg sync.WaitGroup
 
