@@ -179,6 +179,27 @@ func (d *StackDeleter) deleteSingleStack(
 
 	io.Logger.Info().Msgf("[%v]: Start deletion. Please wait a few minutes...", stack)
 
+	if d.forceMode {
+		if err := cloudformationStackOperator.RemoveDeletionPolicy(ctx, aws.String(stack)); err != nil {
+			return fmt.Errorf("[%v]: Failed to remove deletion policy: %w", stack, err)
+		}
+	}
+
+	if err := d.runPreprocessing(ctx, aws.String(stack), config); err != nil {
+		io.Logger.Warn().Msgf("[%v]: Preprocessing failed (continuing): %v", stack, err)
+	}
+
+	if err := cloudformationStackOperator.DeleteCloudFormationStack(ctx, aws.String(stack), isRootStack, operatorManager); err != nil {
+		return fmt.Errorf("[%v]: Failed to delete: %w", stack, err)
+	}
+
+	io.Logger.Info().Msgf("[%v]: Successfully deleted!!", stack)
+	return nil
+}
+
+// runPreprocessing creates necessary clients and preprocessors, then runs preprocessing
+// for the stack and all its nested stacks.
+func (d *StackDeleter) runPreprocessing(ctx context.Context, stackName *string, config aws.Config) error {
 	sdkCfnClient := cloudformation.NewFromConfig(config, func(o *cloudformation.Options) {
 		o.RetryMaxAttempts = operation.SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
@@ -191,24 +212,9 @@ func (d *StackDeleter) deleteSingleStack(
 		sdkCfnUpdateWaiter,
 	)
 
-	detacher := preprocessor.NewLambdaVPCDetacherFromConfig(config)
+	lambdaVPCDetacher := preprocessor.NewLambdaVPCDetacherFromConfig(config)
 
-	if err := d.preprocessStackRecursively(ctx, aws.String(stack), cfnClient, detacher); err != nil {
-		io.Logger.Warn().Msgf("[%v]: Preprocessing failed (continuing): %v", stack, err)
-	}
-
-	if d.forceMode {
-		if err := cloudformationStackOperator.RemoveDeletionPolicy(ctx, aws.String(stack)); err != nil {
-			return fmt.Errorf("[%v]: Failed to remove deletion policy: %w", stack, err)
-		}
-	}
-
-	if err := cloudformationStackOperator.DeleteCloudFormationStack(ctx, aws.String(stack), isRootStack, operatorManager); err != nil {
-		return fmt.Errorf("[%v]: Failed to delete: %w", stack, err)
-	}
-
-	io.Logger.Info().Msgf("[%v]: Successfully deleted!!", stack)
-	return nil
+	return d.preprocessStackRecursively(ctx, stackName, cfnClient, lambdaVPCDetacher)
 }
 
 // preprocessStackRecursively processes a stack and all its nested stacks recursively.
