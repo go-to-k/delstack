@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ENIDetachmentWaitTime = 60 * time.Second // Maximum wait time for ENI detachment
+	ENIDetachmentWaitTime = 90 * time.Second // Maximum wait time for ENI detachment
 )
 
 type IEC2 interface {

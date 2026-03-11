@@ -49,7 +49,7 @@ All resources that do not fail normal deletion can be deleted as is.
 
 When deleting CloudFormation stacks containing VPC-attached Lambda functions, the deletion process can be significantly slower due to ENI (Elastic Network Interface) cleanup wait time.
 
-**delstack automatically optimizes this** by detecting and detaching VPC configurations from Lambda functions before deletion, eliminating the ENI cleanup wait time:
+**delstack automatically optimizes this** by detecting and detaching VPC configurations from Lambda functions before deletion, and actively deleting their ENIs instead of waiting for AWS's asynchronous cleanup, eliminating the ENI cleanup wait time.
 
 ## Install
 

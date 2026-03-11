@@ -3,6 +3,7 @@ package preprocessor
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
@@ -154,15 +155,23 @@ func (d *LambdaVPCDetacher) cleanupENIs(ctx context.Context, stackName *string, 
 	io.Logger.Debug().Msgf("[%v]: Found %d ENI(s) for Lambda function %s, deleting",
 		aws.ToString(stackName), len(enis), aws.ToString(functionName))
 
+	var wg sync.WaitGroup
 	for _, eni := range enis {
-		if err := d.ec2Client.DeleteNetworkInterface(ctx, eni.NetworkInterfaceId); err != nil {
-			io.Logger.Warn().Msgf("[%v]: Failed to delete ENI %s: %v",
-				aws.ToString(stackName), aws.ToString(eni.NetworkInterfaceId), err)
-			continue
-		}
-		io.Logger.Debug().Msgf("[%v]: Deleted ENI %s",
-			aws.ToString(stackName), aws.ToString(eni.NetworkInterfaceId))
+		eniId := eni.NetworkInterfaceId
+		wg.Add(1)
+		go func(id *string) {
+			defer wg.Done()
+			if err := d.ec2Client.DeleteNetworkInterface(ctx, id); err != nil {
+				io.Logger.Warn().Msgf("[%v]: Failed to delete ENI %s: %v",
+					aws.ToString(stackName), aws.ToString(id), err)
+				return
+			}
+			io.Logger.Debug().Msgf("[%v]: Deleted ENI %s",
+				aws.ToString(stackName), aws.ToString(id))
+		}(eniId)
 	}
+
+	wg.Wait()
 
 	return nil
 }
