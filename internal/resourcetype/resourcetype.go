@@ -1,5 +1,6 @@
 package resourcetype
 
+// For Force Deletion
 const (
 	S3Bucket            = "AWS::S3::Bucket"
 	S3DirectoryBucket   = "AWS::S3Express::DirectoryBucket"
@@ -11,6 +12,11 @@ const (
 	BackupVault         = "AWS::Backup::BackupVault"
 	CloudformationStack = "AWS::CloudFormation::Stack"
 	CustomResource      = "Custom::"
+)
+
+// For Preprocessors to filter resources by type
+const (
+	LambdaFunction = "AWS::Lambda::Function"
 )
 
 var ResourceTypes = []string{
