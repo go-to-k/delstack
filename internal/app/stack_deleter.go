@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/internal/operation"
+	"github.com/go-to-k/delstack/internal/preprocessor"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -174,6 +175,11 @@ func (d *StackDeleter) deleteSingleStack(
 	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator()
 
 	io.Logger.Info().Msgf("[%v]: Start deletion. Please wait a few minutes...", stack)
+
+	detacher := preprocessor.NewLambdaVPCDetacherFromConfig(config)
+	if err := detacher.Preprocess(ctx, aws.String(stack), nil); err != nil {
+		io.Logger.Warn().Msgf("[%v]: Lambda VPC detach preprocessing failed (continuing): %v", stack, err)
+	}
 
 	if d.forceMode {
 		if err := cloudformationStackOperator.RemoveDeletionPolicy(ctx, aws.String(stack)); err != nil {
