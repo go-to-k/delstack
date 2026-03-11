@@ -47,32 +47,45 @@ func (d *LambdaVPCDetacher) preprocessStack(ctx context.Context, stackName *stri
 		}
 	}
 
-	// Process Lambda functions in this stack
+	// Process Lambda functions and nested stacks in parallel
 	lambdaFunctions := FilterResourcesByType(resources, LambdaFunction)
+	nestedStacks := FilterResourcesByType(resources, "AWS::CloudFormation::Stack")
+
+	var wg sync.WaitGroup
+
+	// Process Lambda functions in this stack
 	if len(lambdaFunctions) > 0 {
 		io.Logger.Debug().Msgf("[%v]: Found %d Lambda function(s), checking VPC attachment", aws.ToString(stackName), len(lambdaFunctions))
 
 		for _, resource := range lambdaFunctions {
 			functionName := resource.PhysicalResourceId
-			if err := d.detachVPCFromFunction(ctx, stackName, functionName); err != nil {
-				io.Logger.Warn().Msgf("[%v]: Failed to detach VPC from function %s: %v",
-					aws.ToString(stackName), aws.ToString(functionName), err)
-				continue
-			}
+			wg.Add(1)
+			go func(name *string) {
+				defer wg.Done()
+				if err := d.detachVPCFromFunction(ctx, stackName, name); err != nil {
+					io.Logger.Warn().Msgf("[%v]: Failed to detach VPC from function %s: %v",
+						aws.ToString(stackName), aws.ToString(name), err)
+				}
+			}(functionName)
 		}
 	}
 
-	// Process nested stacks recursively
-	nestedStacks := FilterResourcesByType(resources, "AWS::CloudFormation::Stack")
+	// Process nested stacks recursively in parallel
 	for _, nestedStack := range nestedStacks {
 		nestedStackName := nestedStack.PhysicalResourceId
-		io.Logger.Debug().Msgf("[%v]: Processing nested stack %s", aws.ToString(stackName), aws.ToString(nestedStackName))
-		if err := d.preprocessStack(ctx, nestedStackName, nil); err != nil {
-			io.Logger.Warn().Msgf("[%v]: Failed to process nested stack %s: %v",
-				aws.ToString(stackName), aws.ToString(nestedStackName), err)
-			continue
-		}
+		wg.Add(1)
+		go func(name *string) {
+			defer wg.Done()
+			io.Logger.Debug().Msgf("[%v]: Processing nested stack %s", aws.ToString(stackName), aws.ToString(name))
+			if err := d.preprocessStack(ctx, name, nil); err != nil {
+				io.Logger.Warn().Msgf("[%v]: Failed to process nested stack %s: %v",
+					aws.ToString(stackName), aws.ToString(name), err)
+			}
+		}(nestedStackName)
 	}
+
+	// Wait for all Lambda functions and nested stacks to complete
+	wg.Wait()
 
 	return nil
 }
