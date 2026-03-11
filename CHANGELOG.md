@@ -1,5 +1,10 @@
 # Changelog
 
+## [v2.2.0](https://github.com/go-to-k/delstack/compare/v2.1.4...v2.2.0) - 2026-03-11
+- docs: improve what is in README by @go-to-k in https://github.com/go-to-k/delstack/pull/549
+- docs: Update README.md by @go-to-k in https://github.com/go-to-k/delstack/pull/551
+- feat: Auto-detach VPC from Lambda functions before stack deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/556
+
 ## [v2.1.4](https://github.com/go-to-k/delstack/compare/v2.1.3...v2.1.4) - 2026-01-05
 - chore: improve retryer with ratelimit none by @go-to-k in https://github.com/go-to-k/delstack/pull/545
 
