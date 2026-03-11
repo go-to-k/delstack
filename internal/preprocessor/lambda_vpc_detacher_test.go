@@ -32,7 +32,7 @@ func TestLambdaVPCDetacher_Preprocess(t *testing.T) {
 	cases := []struct {
 		name    string
 		args    args
-		setup   func(*client.MockILambda, *client.MockICloudFormation)
+		setup   func(*client.MockILambda, *client.MockICloudFormation, *client.MockIEC2)
 		wantErr bool
 	}{
 		{
@@ -47,7 +47,7 @@ func TestLambdaVPCDetacher_Preprocess(t *testing.T) {
 					},
 				},
 			},
-			setup:   func(m *client.MockILambda, c *client.MockICloudFormation) {},
+			setup:   func(m *client.MockILambda, c *client.MockICloudFormation, e *client.MockIEC2) {},
 			wantErr: false,
 		},
 		{
@@ -62,7 +62,7 @@ func TestLambdaVPCDetacher_Preprocess(t *testing.T) {
 					},
 				},
 			},
-			setup: func(m *client.MockILambda, c *client.MockICloudFormation) {
+			setup: func(m *client.MockILambda, c *client.MockICloudFormation, e *client.MockIEC2) {
 				m.EXPECT().GetFunction(gomock.Any(), aws.String("test-function")).Return(
 					&lambda.GetFunctionOutput{
 						Configuration: &lambdatypes.FunctionConfiguration{
@@ -88,7 +88,7 @@ func TestLambdaVPCDetacher_Preprocess(t *testing.T) {
 					},
 				},
 			},
-			setup: func(m *client.MockILambda, c *client.MockICloudFormation) {
+			setup: func(m *client.MockILambda, c *client.MockICloudFormation, e *client.MockIEC2) {
 				m.EXPECT().GetFunction(gomock.Any(), aws.String("test-function")).Return(
 					&lambda.GetFunctionOutput{
 						Configuration: &lambdatypes.FunctionConfiguration{
@@ -101,6 +101,7 @@ func TestLambdaVPCDetacher_Preprocess(t *testing.T) {
 					nil,
 				)
 				m.EXPECT().UpdateFunctionConfiguration(gomock.Any(), gomock.Any()).Return(nil)
+				e.EXPECT().DescribeNetworkInterfaces(gomock.Any(), gomock.Any()).Return(nil, nil)
 			},
 			wantErr: false,
 		},
@@ -116,7 +117,7 @@ func TestLambdaVPCDetacher_Preprocess(t *testing.T) {
 					},
 				},
 			},
-			setup: func(m *client.MockILambda, c *client.MockICloudFormation) {
+			setup: func(m *client.MockILambda, c *client.MockICloudFormation, e *client.MockIEC2) {
 				m.EXPECT().GetFunction(gomock.Any(), aws.String("test-function")).Return(
 					&lambda.GetFunctionOutput{
 						Configuration: &lambdatypes.FunctionConfiguration{
@@ -130,6 +131,7 @@ func TestLambdaVPCDetacher_Preprocess(t *testing.T) {
 				)
 				// Now only one UpdateFunctionConfiguration call (IPv6 disable + VPC remove in one call)
 				m.EXPECT().UpdateFunctionConfiguration(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+				e.EXPECT().DescribeNetworkInterfaces(gomock.Any(), gomock.Any()).Return(nil, nil)
 			},
 			wantErr: false,
 		},
@@ -145,7 +147,7 @@ func TestLambdaVPCDetacher_Preprocess(t *testing.T) {
 					},
 				},
 			},
-			setup: func(m *client.MockILambda, c *client.MockICloudFormation) {
+			setup: func(m *client.MockILambda, c *client.MockICloudFormation, e *client.MockIEC2) {
 				m.EXPECT().GetFunction(gomock.Any(), aws.String("test-function")).Return(
 					nil,
 					fmt.Errorf("function not found"),
@@ -159,9 +161,10 @@ func TestLambdaVPCDetacher_Preprocess(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockLambda := client.NewMockILambda(ctrl)
 			mockCfn := client.NewMockICloudFormation(ctrl)
-			tt.setup(mockLambda, mockCfn)
+			mockEC2 := client.NewMockIEC2(ctrl)
+			tt.setup(mockLambda, mockCfn, mockEC2)
 
-			detacher := NewLambdaVPCDetacher(mockLambda, mockCfn)
+			detacher := NewLambdaVPCDetacher(mockLambda, mockCfn, mockEC2)
 			err := detacher.Preprocess(tt.args.ctx, tt.args.stackName, tt.args.resources)
 
 			if (err != nil) != tt.wantErr {
@@ -177,7 +180,8 @@ func TestLambdaVPCDetacher_isAttachedToVPC(t *testing.T) {
 
 	mockLambda := client.NewMockILambda(ctrl)
 	mockCfn := client.NewMockICloudFormation(ctrl)
-	detacher := NewLambdaVPCDetacher(mockLambda, mockCfn)
+	mockEC2 := client.NewMockIEC2(ctrl)
+	detacher := NewLambdaVPCDetacher(mockLambda, mockCfn, mockEC2)
 
 	cases := []struct {
 		name   string
@@ -251,7 +255,8 @@ func TestLambdaVPCDetacher_isIPv6Enabled(t *testing.T) {
 
 	mockLambda := client.NewMockILambda(ctrl)
 	mockCfn := client.NewMockICloudFormation(ctrl)
-	detacher := NewLambdaVPCDetacher(mockLambda, mockCfn)
+	mockEC2 := client.NewMockIEC2(ctrl)
+	detacher := NewLambdaVPCDetacher(mockLambda, mockCfn, mockEC2)
 
 	cases := []struct {
 		name   string

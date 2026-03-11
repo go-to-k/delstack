@@ -3,6 +3,7 @@ package preprocessor
 import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/go-to-k/delstack/internal/operation"
 	"github.com/go-to-k/delstack/pkg/client"
@@ -22,6 +23,11 @@ func NewLambdaVPCDetacherFromConfig(config aws.Config) *LambdaVPCDetacher {
 	sdkCfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
 	sdkCfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(sdkCfnClient)
 
+	sdkEC2Client := ec2.NewFromConfig(config, func(o *ec2.Options) {
+		o.RetryMaxAttempts = operation.SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
 	return NewLambdaVPCDetacher(
 		client.NewLambdaClient(
 			sdkLambdaClient,
@@ -32,5 +38,6 @@ func NewLambdaVPCDetacherFromConfig(config aws.Config) *LambdaVPCDetacher {
 			sdkCfnDeleteWaiter,
 			sdkCfnUpdateWaiter,
 		),
+		client.NewEC2Client(sdkEC2Client),
 	)
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/go-to-k/delstack/internal/io"
@@ -21,12 +22,14 @@ var _ IPreprocessor = (*LambdaVPCDetacher)(nil)
 type LambdaVPCDetacher struct {
 	lambdaClient client.ILambda
 	cfnClient    client.ICloudFormation
+	ec2Client    client.IEC2
 }
 
-func NewLambdaVPCDetacher(lambdaClient client.ILambda, cfnClient client.ICloudFormation) *LambdaVPCDetacher {
+func NewLambdaVPCDetacher(lambdaClient client.ILambda, cfnClient client.ICloudFormation, ec2Client client.IEC2) *LambdaVPCDetacher {
 	return &LambdaVPCDetacher{
 		lambdaClient: lambdaClient,
 		cfnClient:    cfnClient,
+		ec2Client:    ec2Client,
 	}
 }
 
@@ -115,6 +118,52 @@ func (d *LambdaVPCDetacher) detachVPCFromFunction(ctx context.Context, stackName
 
 	io.Logger.Debug().Msgf("[%v]: Lambda function %s VPC detached successfully",
 		aws.ToString(stackName), aws.ToString(functionName))
+
+	// Clean up ENIs associated with this Lambda function
+	if err := d.cleanupENIs(ctx, stackName, functionName); err != nil {
+		io.Logger.Warn().Msgf("[%v]: Failed to clean up ENIs for function %s (continuing): %v",
+			aws.ToString(stackName), aws.ToString(functionName), err)
+	}
+
+	return nil
+}
+
+func (d *LambdaVPCDetacher) cleanupENIs(ctx context.Context, stackName *string, functionName *string) error {
+	// Find ENIs associated with this Lambda function
+	// Lambda creates ENIs with description "AWS Lambda VPC ENI-<function-name>"
+	// Note: We don't filter by status because immediately after VPC detach,
+	// ENIs may still be "in-use" and transitioning to "available"
+	filters := []ec2types.Filter{
+		{
+			Name:   aws.String("description"),
+			Values: []string{"AWS Lambda VPC ENI-" + aws.ToString(functionName)},
+		},
+	}
+
+	enis, err := d.ec2Client.DescribeNetworkInterfaces(ctx, filters)
+	if err != nil {
+		return fmt.Errorf("failed to describe ENIs: %w", err)
+	}
+
+	if len(enis) == 0 {
+		io.Logger.Debug().Msgf("[%v]: No ENIs found for Lambda function %s",
+			aws.ToString(stackName), aws.ToString(functionName))
+		return nil
+	}
+
+	io.Logger.Debug().Msgf("[%v]: Found %d ENI(s) for Lambda function %s, deleting",
+		aws.ToString(stackName), len(enis), aws.ToString(functionName))
+
+	for _, eni := range enis {
+		if err := d.ec2Client.DeleteNetworkInterface(ctx, eni.NetworkInterfaceId); err != nil {
+			io.Logger.Warn().Msgf("[%v]: Failed to delete ENI %s: %v",
+				aws.ToString(stackName), aws.ToString(eni.NetworkInterfaceId), err)
+			continue
+		}
+		io.Logger.Debug().Msgf("[%v]: Deleted ENI %s",
+			aws.ToString(stackName), aws.ToString(eni.NetworkInterfaceId))
+	}
+
 	return nil
 }
 
