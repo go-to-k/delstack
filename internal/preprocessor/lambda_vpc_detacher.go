@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	LambdaFunction = "AWS::Lambda::Function"
+	LambdaFunction      = "AWS::Lambda::Function"
+	CloudFormationStack = "AWS::CloudFormation::Stack"
 )
 
 var _ IPreprocessor = (*LambdaVPCDetacher)(nil)
@@ -49,7 +50,7 @@ func (d *LambdaVPCDetacher) preprocessStack(ctx context.Context, stackName *stri
 
 	// Process Lambda functions and nested stacks in parallel
 	lambdaFunctions := FilterResourcesByType(resources, LambdaFunction)
-	nestedStacks := FilterResourcesByType(resources, "AWS::CloudFormation::Stack")
+	nestedStacks := FilterResourcesByType(resources, CloudFormationStack)
 
 	var wg sync.WaitGroup
 
