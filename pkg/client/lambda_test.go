@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -114,8 +115,8 @@ func TestLambdaClient_GetFunction(t *testing.T) {
 				if !strings.Contains(err.Error(), "GetFunctionError") {
 					t.Errorf("expected ClientError, got = %#v", err)
 				}
-				if err, ok := err.(*ClientError); ok {
-					clientErr = err
+				if !errors.As(err, &clientErr) {
+					t.Errorf("expected ClientError, got = %#v", err)
 				}
 				if clientErr == nil || *clientErr.ResourceName != *tt.args.functionName {
 					t.Errorf("ClientError ResourceName = %#v, want %#v", clientErr, tt.args.functionName)
@@ -165,8 +166,8 @@ func TestLambdaClient_UpdateFunctionConfiguration(t *testing.T) {
 									return middleware.FinalizeOutput{
 										Result: &lambda.GetFunctionOutput{
 											Configuration: &types.FunctionConfiguration{
-												State:              types.StateActive,
-												LastUpdateStatus:   types.LastUpdateStatusSuccessful,
+												State:            types.StateActive,
+												LastUpdateStatus: types.LastUpdateStatusSuccessful,
 											},
 										},
 									}, middleware.Metadata{}, nil
@@ -227,8 +228,8 @@ func TestLambdaClient_UpdateFunctionConfiguration(t *testing.T) {
 			}
 			if tt.wantErr {
 				var clientErr *ClientError
-				if err, ok := err.(*ClientError); ok {
-					clientErr = err
+				if !errors.As(err, &clientErr) {
+					t.Errorf("expected ClientError, got = %#v", err)
 				}
 				if clientErr == nil || *clientErr.ResourceName != *tt.args.input.FunctionName {
 					t.Errorf("ClientError ResourceName = %#v, want %#v", clientErr, tt.args.input.FunctionName)

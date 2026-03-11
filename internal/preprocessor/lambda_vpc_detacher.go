@@ -67,14 +67,13 @@ func (d *LambdaVPCDetacher) detachVPCFromFunction(ctx context.Context, functionN
 	}
 
 	if d.isIPv6Enabled(output) {
-		err := d.lambdaClient.UpdateFunctionConfiguration(ctx, &lambda.UpdateFunctionConfigurationInput{
+		if ipv6Err := d.lambdaClient.UpdateFunctionConfiguration(ctx, &lambda.UpdateFunctionConfigurationInput{
 			FunctionName: functionName,
 			VpcConfig: &lambdatypes.VpcConfig{
 				Ipv6AllowedForDualStack: aws.Bool(false),
 			},
-		})
-		if err != nil {
-			return fmt.Errorf("failed to disable IPv6: %w", err)
+		}); ipv6Err != nil {
+			return fmt.Errorf("failed to disable IPv6: %w", ipv6Err)
 		}
 	}
 
