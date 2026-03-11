@@ -128,7 +128,8 @@ func TestLambdaVPCDetacher_Preprocess(t *testing.T) {
 					},
 					nil,
 				)
-				m.EXPECT().UpdateFunctionConfiguration(gomock.Any(), gomock.Any()).Return(nil).Times(2)
+				// Now only one UpdateFunctionConfiguration call (IPv6 disable + VPC remove in one call)
+				m.EXPECT().UpdateFunctionConfiguration(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			},
 			wantErr: false,
 		},

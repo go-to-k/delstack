@@ -31,6 +31,10 @@ func NewLambdaVPCDetacher(lambdaClient client.ILambda, cfnClient client.ICloudFo
 }
 
 func (d *LambdaVPCDetacher) Preprocess(ctx context.Context, stackName *string, resources []types.StackResourceSummary) error {
+	return d.preprocessStack(ctx, stackName, resources)
+}
+
+func (d *LambdaVPCDetacher) preprocessStack(ctx context.Context, stackName *string, resources []types.StackResourceSummary) error {
 	if len(resources) == 0 {
 		var err error
 		resources, err = d.cfnClient.ListStackResources(ctx, stackName)
@@ -39,18 +43,29 @@ func (d *LambdaVPCDetacher) Preprocess(ctx context.Context, stackName *string, r
 		}
 	}
 
+	// Process Lambda functions in this stack
 	lambdaFunctions := FilterResourcesByType(resources, LambdaFunction)
-	if len(lambdaFunctions) == 0 {
-		return nil
+	if len(lambdaFunctions) > 0 {
+		io.Logger.Debug().Msgf("[%v]: Found %d Lambda function(s), checking VPC attachment", aws.ToString(stackName), len(lambdaFunctions))
+
+		for _, resource := range lambdaFunctions {
+			functionName := resource.PhysicalResourceId
+			if err := d.detachVPCFromFunction(ctx, stackName, functionName); err != nil {
+				io.Logger.Warn().Msgf("[%v]: Failed to detach VPC from function %s: %v",
+					aws.ToString(stackName), aws.ToString(functionName), err)
+				continue
+			}
+		}
 	}
 
-	io.Logger.Debug().Msgf("[%v]: Found %d Lambda function(s), checking VPC attachment", aws.ToString(stackName), len(lambdaFunctions))
-
-	for _, resource := range lambdaFunctions {
-		functionName := resource.PhysicalResourceId
-		if err := d.detachVPCFromFunction(ctx, stackName, functionName); err != nil {
-			io.Logger.Warn().Msgf("[%v]: Failed to detach VPC from function %s: %v",
-				aws.ToString(stackName), aws.ToString(functionName), err)
+	// Process nested stacks recursively
+	nestedStacks := FilterResourcesByType(resources, "AWS::CloudFormation::Stack")
+	for _, nestedStack := range nestedStacks {
+		nestedStackName := nestedStack.PhysicalResourceId
+		io.Logger.Debug().Msgf("[%v]: Processing nested stack %s", aws.ToString(stackName), aws.ToString(nestedStackName))
+		if err := d.preprocessStack(ctx, nestedStackName, nil); err != nil {
+			io.Logger.Warn().Msgf("[%v]: Failed to process nested stack %s: %v",
+				aws.ToString(stackName), aws.ToString(nestedStackName), err)
 			continue
 		}
 	}
@@ -68,32 +83,31 @@ func (d *LambdaVPCDetacher) detachVPCFromFunction(ctx context.Context, stackName
 		return nil
 	}
 
-	io.Logger.Debug().Msgf("[%v]: Lambda function %s is attached to VPC %s, detaching",
-		aws.ToString(stackName), aws.ToString(functionName), aws.ToString(output.Configuration.VpcConfig.VpcId))
+	vpcId := aws.ToString(output.Configuration.VpcConfig.VpcId)
+	isIPv6 := d.isIPv6Enabled(output)
 
-	if d.isIPv6Enabled(output) {
-		io.Logger.Debug().Msgf("[%v]: Lambda function %s has IPv6 enabled, disabling IPv6 first",
-			aws.ToString(stackName), aws.ToString(functionName))
-		if ipv6Err := d.lambdaClient.UpdateFunctionConfiguration(ctx, &lambda.UpdateFunctionConfigurationInput{
-			FunctionName: functionName,
-			VpcConfig: &lambdatypes.VpcConfig{
-				Ipv6AllowedForDualStack: aws.Bool(false),
-			},
-		}); ipv6Err != nil {
-			return fmt.Errorf("failed to disable IPv6: %w", ipv6Err)
-		}
-		io.Logger.Debug().Msgf("[%v]: Lambda function %s IPv6 disabled successfully",
-			aws.ToString(stackName), aws.ToString(functionName))
+	if isIPv6 {
+		io.Logger.Debug().Msgf("[%v]: Lambda function %s is attached to VPC %s with IPv6 enabled, detaching",
+			aws.ToString(stackName), aws.ToString(functionName), vpcId)
+	} else {
+		io.Logger.Debug().Msgf("[%v]: Lambda function %s is attached to VPC %s, detaching",
+			aws.ToString(stackName), aws.ToString(functionName), vpcId)
+	}
+
+	// Remove VPC configuration (and disable IPv6 if enabled)
+	vpcConfig := &lambdatypes.VpcConfig{
+		SubnetIds:        []string{},
+		SecurityGroupIds: []string{},
+	}
+	if isIPv6 {
+		vpcConfig.Ipv6AllowedForDualStack = aws.Bool(false)
 	}
 
 	io.Logger.Debug().Msgf("[%v]: Removing VPC configuration from Lambda function %s",
 		aws.ToString(stackName), aws.ToString(functionName))
 	err = d.lambdaClient.UpdateFunctionConfiguration(ctx, &lambda.UpdateFunctionConfigurationInput{
 		FunctionName: functionName,
-		VpcConfig: &lambdatypes.VpcConfig{
-			SubnetIds:        []string{},
-			SecurityGroupIds: []string{},
-		},
+		VpcConfig:    vpcConfig,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to remove VPC config: %w", err)
