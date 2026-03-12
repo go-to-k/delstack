@@ -15,7 +15,7 @@ type IPreprocessor interface {
 func FilterResourcesByType(resources []types.StackResourceSummary, resourceType string) []types.StackResourceSummary {
 	var filtered []types.StackResourceSummary
 	for _, resource := range resources {
-		if aws.ToString(resource.ResourceType) == resourceType {
+		if aws.ToString(resource.ResourceType) == resourceType && resource.ResourceStatus != types.ResourceStatusDeleteComplete {
 			filtered = append(filtered, resource)
 		}
 	}
