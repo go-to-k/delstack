@@ -14,7 +14,7 @@ Tool to force delete the **entire** AWS CloudFormation stack, even if it contain
 
 You can delete multiple stacks **in parallel with automatic dependency resolution**, select stacks **interactively** in the UI, and force delete resources with **`Retain` or `RetainExceptOnCreate` deletion policies**.
 
-**Pre-deletion Processing**: delstack automatically performs processing before CloudFormation deletion starts, such as detaching VPC configurations from Lambda functions to eliminate ENI cleanup wait time.
+**Pre-deletion Processing**: delstack automatically performs processing before CloudFormation deletion starts to optimize and prepare for stack deletion.
 
 ![delstack](https://github.com/user-attachments/assets/4f02526d-536c-4a23-81fd-10484902133f)
 
@@ -47,7 +47,7 @@ All resources that do not fail normal deletion can be deleted as is.
 
 ## Pre-deletion Processing
 
-Among the resources in the stack, this tool automatically performs the following processing **before CloudFormation deletion starts**. These are not resources that fail during normal deletion, but processing that speeds up or unblocks the deletion process.
+Among the resources in the stack, this tool automatically performs the following processing **before CloudFormation deletion starts**. These are not resources that fail during normal deletion, but are processed in advance to optimize or prepare for deletion.
 
 |  RESOURCE TYPE  |  DETAILS  |
 | ---- | ---- |
