@@ -142,13 +142,13 @@ func TestAgentCoreClient_UpdateAgentRuntime(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				input: &bedrockagentcorecontrol.UpdateAgentRuntimeInput{
-					AgentRuntimeId:       aws.String("test-runtime-abc1234567"),
+					AgentRuntimeId: aws.String("test-runtime-abc1234567"),
 					AgentRuntimeArtifact: &types.AgentRuntimeArtifactMemberContainerConfiguration{
 						Value: types.ContainerConfiguration{
 							ContainerUri: aws.String("123456789012.dkr.ecr.us-east-1.amazonaws.com/test:latest"),
 						},
 					},
-					RoleArn:              aws.String("arn:aws:iam::123456789012:role/test-role"),
+					RoleArn: aws.String("arn:aws:iam::123456789012:role/test-role"),
 					NetworkConfiguration: &types.NetworkConfiguration{
 						NetworkMode: types.NetworkModePublic,
 					},
@@ -185,13 +185,13 @@ func TestAgentCoreClient_UpdateAgentRuntime(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				input: &bedrockagentcorecontrol.UpdateAgentRuntimeInput{
-					AgentRuntimeId:       aws.String("test-runtime-abc1234567"),
+					AgentRuntimeId: aws.String("test-runtime-abc1234567"),
 					AgentRuntimeArtifact: &types.AgentRuntimeArtifactMemberContainerConfiguration{
 						Value: types.ContainerConfiguration{
 							ContainerUri: aws.String("123456789012.dkr.ecr.us-east-1.amazonaws.com/test:latest"),
 						},
 					},
-					RoleArn:              aws.String("arn:aws:iam::123456789012:role/test-role"),
+					RoleArn: aws.String("arn:aws:iam::123456789012:role/test-role"),
 					NetworkConfiguration: &types.NetworkConfiguration{
 						NetworkMode: types.NetworkModePublic,
 					},
@@ -217,13 +217,13 @@ func TestAgentCoreClient_UpdateAgentRuntime(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				input: &bedrockagentcorecontrol.UpdateAgentRuntimeInput{
-					AgentRuntimeId:       aws.String("test-runtime-abc1234567"),
+					AgentRuntimeId: aws.String("test-runtime-abc1234567"),
 					AgentRuntimeArtifact: &types.AgentRuntimeArtifactMemberContainerConfiguration{
 						Value: types.ContainerConfiguration{
 							ContainerUri: aws.String("123456789012.dkr.ecr.us-east-1.amazonaws.com/test:latest"),
 						},
 					},
-					RoleArn:              aws.String("arn:aws:iam::123456789012:role/test-role"),
+					RoleArn: aws.String("arn:aws:iam::123456789012:role/test-role"),
 					NetworkConfiguration: &types.NetworkConfiguration{
 						NetworkMode: types.NetworkModePublic,
 					},
@@ -260,13 +260,13 @@ func TestAgentCoreClient_UpdateAgentRuntime(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				input: &bedrockagentcorecontrol.UpdateAgentRuntimeInput{
-					AgentRuntimeId:       aws.String("test-runtime-abc1234567"),
+					AgentRuntimeId: aws.String("test-runtime-abc1234567"),
 					AgentRuntimeArtifact: &types.AgentRuntimeArtifactMemberContainerConfiguration{
 						Value: types.ContainerConfiguration{
 							ContainerUri: aws.String("123456789012.dkr.ecr.us-east-1.amazonaws.com/test:latest"),
 						},
 					},
-					RoleArn:              aws.String("arn:aws:iam::123456789012:role/test-role"),
+					RoleArn: aws.String("arn:aws:iam::123456789012:role/test-role"),
 					NetworkConfiguration: &types.NetworkConfiguration{
 						NetworkMode: types.NetworkModePublic,
 					},

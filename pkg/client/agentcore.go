@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	AgentRuntimeUpdateWaitTime    = 5 * time.Minute
+	AgentRuntimeUpdateWaitTime     = 5 * time.Minute
 	AgentRuntimeUpdatePollInterval = 5 * time.Second
 )
 
