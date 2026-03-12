@@ -213,18 +213,20 @@ func (d *StackDeleter) runPreprocessing(ctx context.Context, stackName *string, 
 	)
 
 	lambdaVPCDetacher := preprocessor.NewLambdaVPCDetacherFromConfig(config)
+	agentCoreVPCDetacher := preprocessor.NewAgentCoreVPCDetacherFromConfig(config)
+	composite := preprocessor.NewCompositePreprocessor(lambdaVPCDetacher, agentCoreVPCDetacher)
 
-	return d.preprocessStackRecursively(ctx, stackName, cfnClient, lambdaVPCDetacher)
+	return d.preprocessStackRecursively(ctx, stackName, cfnClient, composite)
 }
 
 // preprocessStackRecursively processes a stack and all its nested stacks recursively.
 // It processes the current stack's resources and nested stacks in parallel.
-// This ensures that all Lambda functions (both parent and nested stacks) are detached before deletion.
+// This ensures that all resources requiring preprocessing (both parent and nested stacks) are handled before deletion.
 func (d *StackDeleter) preprocessStackRecursively(
 	ctx context.Context,
 	stackName *string,
 	cfnClient client.ICloudFormation,
-	detacher preprocessor.IPreprocessor,
+	pp preprocessor.IPreprocessor,
 ) error {
 	resources, err := cfnClient.ListStackResources(ctx, stackName)
 	if err != nil {
@@ -239,7 +241,7 @@ func (d *StackDeleter) preprocessStackRecursively(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := detacher.Preprocess(ctx, stackName, resources); err != nil {
+		if err := pp.Preprocess(ctx, stackName, resources); err != nil {
 			io.Logger.Warn().Msgf("[%v]: Failed to preprocess stack: %v", aws.ToString(stackName), err)
 		}
 	}()
@@ -251,7 +253,7 @@ func (d *StackDeleter) preprocessStackRecursively(
 		go func(name *string) {
 			defer wg.Done()
 			io.Logger.Debug().Msgf("[%v]: Processing nested stack %s", aws.ToString(stackName), aws.ToString(name))
-			if err := d.preprocessStackRecursively(ctx, name, cfnClient, detacher); err != nil {
+			if err := d.preprocessStackRecursively(ctx, name, cfnClient, pp); err != nil {
 				io.Logger.Warn().Msgf("[%v]: Failed to preprocess nested stack %s: %v",
 					aws.ToString(stackName), aws.ToString(name), err)
 			}

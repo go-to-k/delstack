@@ -18,6 +18,8 @@ github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.14 h1:ITi7qiDSv/mSGDSWNpZ4k4Ve0DQ
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.14/go.mod h1:k1xtME53H1b6YpZt74YmwlONMWf4ecM+lut1WQLAF/U=
 github.com/aws/aws-sdk-go-v2/service/backup v1.54.2 h1:wg+nIMc397V8syUn/bXMo5ySrojzDt41ebML3l30qhE=
 github.com/aws/aws-sdk-go-v2/service/backup v1.54.2/go.mod h1:jPKoVknYePQQIuFqYb9MJQrUmokCl+oqFD1Nz6Ly4F8=
+github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol v1.22.0 h1:wBAke2m5ZCzDj8QdQ3QfKtO2Xf90CJRph6rVRYBoZns=
+github.com/aws/aws-sdk-go-v2/service/bedrockagentcorecontrol v1.22.0/go.mod h1:xxanNjwSnkBOVeMVs2MYvGyVidyxYCE2Vb4GjUn5n/c=
 github.com/aws/aws-sdk-go-v2/service/cloudformation v1.53.3 h1:mIpL+FXa+2U6oc85b/15JwJhNUU+c/LHwxM3hpQIxXQ=
 github.com/aws/aws-sdk-go-v2/service/cloudformation v1.53.3/go.mod h1:lcQ7+K0Q9x0ozhjBwDfBkuY8qexSP/QXLgp0jj+/NZg=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.294.0 h1:776KnBqePBBR6zEDi0bUIHXzUBOISa2WgAKEgckUF8M=

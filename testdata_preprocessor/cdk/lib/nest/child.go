@@ -3,6 +3,7 @@ package nest
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
@@ -39,6 +40,45 @@ def handler(event, context):
 			SubnetType: awsec2.SubnetType_PRIVATE_ISOLATED,
 		},
 	})
+
+	// AgentCore Runtime in nested stack with VPC
+	containerUri := scope.Node().TryGetContext(jsii.String("AGENTCORE_CONTAINER_URI"))
+	if containerUri != nil {
+		role := awsiam.NewRole(stack, jsii.String("ChildAgentCoreRuntimeRole"), &awsiam.RoleProps{
+			RoleName:  jsii.String(props.PjPrefix + "-Child-AgentCoreRuntimeRole"),
+			AssumedBy: awsiam.NewServicePrincipal(jsii.String("bedrock.amazonaws.com"), nil),
+		})
+
+		sg := awsec2.NewSecurityGroup(stack, jsii.String("ChildAgentCoreSG"), &awsec2.SecurityGroupProps{
+			Vpc:               props.Vpc,
+			SecurityGroupName: jsii.String(props.PjPrefix + "-Child-AgentCoreSG"),
+			Description:       jsii.String("Security group for child AgentCore Runtime"),
+		})
+
+		subnets := props.Vpc.SelectSubnets(&awsec2.SubnetSelection{
+			SubnetType: awsec2.SubnetType_PRIVATE_ISOLATED,
+		})
+
+		awscdk.NewCfnResource(stack, jsii.String("ChildAgentCoreRuntime"), &awscdk.CfnResourceProps{
+			Type: jsii.String("AWS::BedrockAgentCore::Runtime"),
+			Properties: &map[string]interface{}{
+				"AgentRuntimeName": props.PjPrefix + "-Child-AgentCoreRuntime",
+				"RoleArn":          role.RoleArn(),
+				"AgentRuntimeArtifact": map[string]interface{}{
+					"ContainerConfiguration": map[string]interface{}{
+						"ContainerUri": containerUri.(string),
+					},
+				},
+				"NetworkConfiguration": map[string]interface{}{
+					"NetworkMode": "VPC",
+					"NetworkModeConfig": map[string]interface{}{
+						"SecurityGroups": []*string{sg.SecurityGroupId()},
+						"Subnets":        subnets.SubnetIds,
+					},
+				},
+			},
+		})
+	}
 
 	// Lambda function in nested stack with VPC (IPv6 enabled)
 	awslambda.NewFunction(stack, jsii.String("ChildLambdaVpcIpv6"), &awslambda.FunctionProps{
