@@ -73,9 +73,9 @@ func (d *AgentCoreVPCDetacher) detachVPCFromRuntime(ctx context.Context, stackNa
 
 	// Update network mode from VPC to PUBLIC to detach VPC
 	err = d.agentCoreClient.UpdateAgentRuntime(ctx, &bedrockagentcorecontrol.UpdateAgentRuntimeInput{
-		AgentRuntimeId:   runtimeId,
+		AgentRuntimeId:       runtimeId,
 		AgentRuntimeArtifact: output.AgentRuntimeArtifact,
-		RoleArn:          output.RoleArn,
+		RoleArn:              output.RoleArn,
 		NetworkConfiguration: &types.NetworkConfiguration{
 			NetworkMode: types.NetworkModePublic,
 		},

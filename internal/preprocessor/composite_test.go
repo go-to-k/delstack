@@ -32,9 +32,9 @@ func TestCompositePreprocessor_Preprocess(t *testing.T) {
 	}
 
 	cases := []struct {
-		name           string
-		preprocessors  []IPreprocessor
-		wantErr        bool
+		name          string
+		preprocessors []IPreprocessor
+		wantErr       bool
 	}{
 		{
 			name:          "empty list",
