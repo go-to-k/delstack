@@ -61,6 +61,25 @@ func TestFilterResourcesByType(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "exclude DELETE_COMPLETE resources",
+			args: args{
+				resources: []types.StackResourceSummary{
+					{
+						ResourceType:       aws.String("AWS::Lambda::Function"),
+						PhysicalResourceId: aws.String("active-function"),
+						ResourceStatus:     types.ResourceStatusCreateComplete,
+					},
+					{
+						ResourceType:       aws.String("AWS::Lambda::Function"),
+						PhysicalResourceId: aws.String("deleted-function"),
+						ResourceStatus:     types.ResourceStatusDeleteComplete,
+					},
+				},
+				resourceType: "AWS::Lambda::Function",
+			},
+			want: 1,
+		},
+		{
 			name: "no matching resources",
 			args: args{
 				resources: []types.StackResourceSummary{
