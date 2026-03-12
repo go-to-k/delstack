@@ -31,6 +31,9 @@ func NewPreprocessorTestStack(scope constructs.Construct, id string, props *Prep
 	resource.NewLambdaVpcAttached(stack, props.PjPrefix, vpc, true)  // VPC attached, IPv6 enabled
 	resource.NewLambdaNoVpc(stack, props.PjPrefix)                   // No VPC
 
+	// Create AgentCore Runtime with VPC configuration
+	resource.NewAgentCoreRuntimeVpcAttached(stack, props.PjPrefix, vpc)
+
 	// Create nested stack with VPC-attached Lambda functions
 	nest.NewChildStack(stack, "Child", &nest.ChildStackProps{
 		PjPrefix: props.PjPrefix,

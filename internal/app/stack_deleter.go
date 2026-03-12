@@ -213,7 +213,8 @@ func (d *StackDeleter) runPreprocessing(ctx context.Context, stackName *string, 
 	)
 
 	lambdaVPCDetacher := preprocessor.NewLambdaVPCDetacherFromConfig(config)
-	composite := preprocessor.NewCompositePreprocessor(lambdaVPCDetacher)
+	agentCoreVPCDetacher := preprocessor.NewAgentCoreVPCDetacherFromConfig(config)
+	composite := preprocessor.NewCompositePreprocessor(lambdaVPCDetacher, agentCoreVPCDetacher)
 
 	return d.preprocessStackRecursively(ctx, stackName, cfnClient, composite)
 }

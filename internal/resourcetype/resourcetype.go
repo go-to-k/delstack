@@ -16,7 +16,8 @@ const (
 
 // For Preprocessors to filter resources by type
 const (
-	LambdaFunction = "AWS::Lambda::Function"
+	LambdaFunction          = "AWS::Lambda::Function"
+	BedrockAgentCoreRuntime = "AWS::BedrockAgentCore::Runtime"
 )
 
 var ResourceTypes = []string{
