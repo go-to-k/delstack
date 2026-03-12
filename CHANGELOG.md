@@ -3,6 +3,9 @@
 ## [v2.2.2](https://github.com/go-to-k/delstack/compare/v2.2.1...v2.2.2) - 2026-03-12
 - fix: exclude DELETE_COMPLETE resources from FilterResourcesByType by @go-to-k in https://github.com/go-to-k/delstack/pull/564
 
+## [v2.2.2](https://github.com/go-to-k/delstack/compare/v2.2.1...v2.2.2) - 2026-03-12
+- fix: exclude DELETE_COMPLETE resources from FilterResourcesByType by @go-to-k in https://github.com/go-to-k/delstack/pull/564
+
 ## [v2.2.1](https://github.com/go-to-k/delstack/compare/v2.2.0...v2.2.1) - 2026-03-12
 - refactor: add CompositePreprocessor for preprocessors by @go-to-k in https://github.com/go-to-k/delstack/pull/559
 - test: add ec2 test in client by @go-to-k in https://github.com/go-to-k/delstack/pull/561
