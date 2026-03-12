@@ -14,7 +14,7 @@ Tool to force delete the **entire** AWS CloudFormation stack, even if it contain
 
 You can delete multiple stacks **in parallel with automatic dependency resolution**, select stacks **interactively** in the UI, and force delete resources with **`Retain` or `RetainExceptOnCreate` deletion policies**.
 
-**Automatic Lambda VPC Optimization**: delstack automatically detaches VPC configurations from Lambda functions before stack deletion. This significantly speeds up deletion by eliminating the wait time for ENI (Elastic Network Interface) cleanup, which can take several minutes per function. This optimization is applied automatically to all stacks containing VPC-attached Lambda functions.
+**Pre-deletion Processing**: delstack automatically performs processing before CloudFormation deletion starts to optimize and prepare for stack deletion.
 
 ![delstack](https://github.com/user-attachments/assets/4f02526d-536c-4a23-81fd-10484902133f)
 
@@ -45,11 +45,13 @@ All resources that do not fail normal deletion can be deleted as is.
 - **"Termination Protection" stacks will not be deleted.** Because it probably really should not want to delete it.
 - Deletion of resources that fail to be deleted because they are used by other stack resources, i.e., **resources that are referenced (depended on) from outside the stack, is not supported**. Only forced deletion of resources that can be completed only within the stack is supported.
 
-## Lambda VPC Auto-Detachment
+## Pre-deletion Processing
 
-When deleting CloudFormation stacks containing VPC-attached Lambda functions, the deletion process can be significantly slower due to ENI (Elastic Network Interface) cleanup wait time.
+Among the resources in the stack, this tool automatically performs the following processing **before CloudFormation deletion starts**. These are not resources that fail during normal deletion, but are processed in advance to optimize or prepare for deletion.
 
-**delstack automatically optimizes this** by detecting and detaching VPC configurations from Lambda functions before deletion, and actively deleting their ENIs in parallel instead of waiting for AWS's asynchronous cleanup, eliminating the ENI cleanup wait time. All Lambda functions within a stack (including nested stacks) are processed in parallel for maximum performance.
+|  RESOURCE TYPE  |  DETAILS  |
+| ---- | ---- |
+|  AWS::Lambda::Function  |  Automatically detaches VPC configurations from Lambda functions and deletes their ENIs in parallel, **eliminating ENI cleanup wait time**. All Lambda functions within a stack (including nested stacks) are processed in parallel for maximum performance.  |
 
 ## Install
 
