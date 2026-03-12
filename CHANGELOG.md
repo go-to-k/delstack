@@ -5,6 +5,11 @@
 - test: add ec2 test in client by @go-to-k in https://github.com/go-to-k/delstack/pull/561
 - docs: Reorganize README to add Pre-deletion Processing section by @go-to-k in https://github.com/go-to-k/delstack/pull/562
 
+## [v2.2.1](https://github.com/go-to-k/delstack/compare/v2.2.0...v2.2.1) - 2026-03-12
+- refactor: add CompositePreprocessor for preprocessors by @go-to-k in https://github.com/go-to-k/delstack/pull/559
+- test: add ec2 test in client by @go-to-k in https://github.com/go-to-k/delstack/pull/561
+- docs: Reorganize README to add Pre-deletion Processing section by @go-to-k in https://github.com/go-to-k/delstack/pull/562
+
 ## [v2.2.0](https://github.com/go-to-k/delstack/compare/v2.1.4...v2.2.0) - 2026-03-11
 - docs: improve what is in README by @go-to-k in https://github.com/go-to-k/delstack/pull/549
 - docs: Update README.md by @go-to-k in https://github.com/go-to-k/delstack/pull/551
