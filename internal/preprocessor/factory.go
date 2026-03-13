@@ -9,6 +9,25 @@ import (
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
+func NewRecursivePreprocessorFromConfig(config aws.Config) *RecursivePreprocessor {
+	sdkCfnClient := cloudformation.NewFromConfig(config, func(o *cloudformation.Options) {
+		o.RetryMaxAttempts = operation.SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+	sdkCfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
+	sdkCfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(sdkCfnClient)
+	cfnClient := client.NewCloudFormation(
+		sdkCfnClient,
+		sdkCfnDeleteWaiter,
+		sdkCfnUpdateWaiter,
+	)
+
+	lambdaVPCDetacher := newLambdaVPCDetacherFromConfig(config)
+	composite := NewCompositePreprocessor(lambdaVPCDetacher)
+
+	return NewRecursivePreprocessor(cfnClient, composite)
+}
+
 func newLambdaVPCDetacherFromConfig(config aws.Config) *LambdaVPCDetacher {
 	sdkLambdaClient := lambda.NewFromConfig(config, func(o *lambda.Options) {
 		o.RetryMaxAttempts = operation.SDKRetryMaxAttempts
@@ -28,23 +47,4 @@ func newLambdaVPCDetacherFromConfig(config aws.Config) *LambdaVPCDetacher {
 		),
 		client.NewEC2Client(sdkEC2Client),
 	)
-}
-
-func NewRecursivePreprocessorFromConfig(config aws.Config) *RecursivePreprocessor {
-	sdkCfnClient := cloudformation.NewFromConfig(config, func(o *cloudformation.Options) {
-		o.RetryMaxAttempts = operation.SDKRetryMaxAttempts
-		o.RetryMode = aws.RetryModeStandard
-	})
-	sdkCfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
-	sdkCfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(sdkCfnClient)
-	cfnClient := client.NewCloudFormation(
-		sdkCfnClient,
-		sdkCfnDeleteWaiter,
-		sdkCfnUpdateWaiter,
-	)
-
-	lambdaVPCDetacher := newLambdaVPCDetacherFromConfig(config)
-	composite := NewCompositePreprocessor(lambdaVPCDetacher)
-
-	return NewRecursivePreprocessor(cfnClient, composite)
 }
