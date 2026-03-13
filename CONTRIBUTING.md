@@ -63,7 +63,7 @@ For a reference implementation, see [PR #569 (Athena WorkGroup)](https://github.
    - Add row to `supportedStackResourcesData` in `RaiseUnsupportedResourceError()`
 9. **`internal/operation/operator_collection_test.go`**: Update test cases
 10. **`go.mod` / `go.sum`**: Add AWS SDK service dependency (`go get github.com/aws/aws-sdk-go-v2/service/<service>`)
-11. **[`README.md`](README.md)**: Add row to "Resource Types that can be forced to delete" table
+11. **[`README.md`](README.md#resource-types-that-can-be-forced-to-delete)**: Add row to "Resource Types that can be forced to delete" table
 12. **`testdata_full/`**: See [E2E Testing](#e2e-testing-testdata_full) section
 
 ### Adding a New Preprocessor
@@ -72,7 +72,7 @@ For a reference implementation, see [PR #569 (Athena WorkGroup)](https://github.
 2. **`internal/preprocessor/<name>_test.go`** (new):Tests
 3. **`internal/preprocessor/factory.go`**: Add `New<Name>FromConfig()` factory function
 4. **`internal/preprocessor/recursive.go`**: Add to `NewRecursivePreprocessorFromConfig()` inside `NewCompositePreprocessor()` call
-5. **[`README.md`](README.md)**: Add row to "Pre-deletion Processing" table
+5. **[`README.md`](README.md#pre-deletion-processing)**: Add row to "Pre-deletion Processing" table
 
 ## Testing
 
