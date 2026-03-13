@@ -37,7 +37,6 @@ func (o *BackupVaultOperator) DeleteResources(ctx context.Context) error {
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, backupVault := range o.resources {
-		backupVault := backupVault
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return err
 		}
