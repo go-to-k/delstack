@@ -2,6 +2,7 @@ package preprocessor
 
 import (
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/go-to-k/delstack/internal/operation"
@@ -27,4 +28,23 @@ func NewLambdaVPCDetacherFromConfig(config aws.Config) *LambdaVPCDetacher {
 		),
 		client.NewEC2Client(sdkEC2Client),
 	)
+}
+
+func NewRecursivePreprocessorFromConfig(config aws.Config) *RecursivePreprocessor {
+	sdkCfnClient := cloudformation.NewFromConfig(config, func(o *cloudformation.Options) {
+		o.RetryMaxAttempts = operation.SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+	sdkCfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(sdkCfnClient)
+	sdkCfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(sdkCfnClient)
+	cfnClient := client.NewCloudFormation(
+		sdkCfnClient,
+		sdkCfnDeleteWaiter,
+		sdkCfnUpdateWaiter,
+	)
+
+	lambdaVPCDetacher := NewLambdaVPCDetacherFromConfig(config)
+	composite := NewCompositePreprocessor(lambdaVPCDetacher)
+
+	return NewRecursivePreprocessor(cfnClient, composite)
 }
