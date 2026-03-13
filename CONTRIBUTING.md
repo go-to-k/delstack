@@ -153,12 +153,3 @@ For changes other than new target resource types (e.g., new preprocessor), consi
 
 - All tests use **table-driven tests** with a `name` field for sub-test names
 - Top-level test function: `Test[ReceiverType]_[MethodName]` (e.g., `TestEcr_DeleteRepository`, `TestS3BucketOperator_DeleteS3Bucket`)
-- Sub-test names: lowercase, descriptive, sentence-like. Success cases end with `"successfully"`, failure cases end with `"failure"` + reason
-
-```go
-// Examples of sub-test names:
-"delete bucket successfully"
-"delete bucket failure"
-"delete bucket failure for list object versions errors"
-"delete recovery points with next token successfully"
-```
