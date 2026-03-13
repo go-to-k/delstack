@@ -151,5 +151,4 @@ For changes other than new target resource types (e.g., new preprocessor), consi
 
 ### Test Naming Conventions
 
-- All tests use **table-driven tests** with a `name` field for sub-test names
 - Top-level test function: `Test[ReceiverType]_[MethodName]` (e.g., `TestEcr_DeleteRepository`, `TestS3BucketOperator_DeleteS3Bucket`)
