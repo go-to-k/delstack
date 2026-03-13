@@ -1132,7 +1132,7 @@ func (s *DeployStackService) createAthenaNamedQueries(stackName string) error {
 
 		// Create prepared statements
 		for i := range 3 {
-			statementName := fmt.Sprintf("test-statement-%d", i)
+			statementName := fmt.Sprintf("test_statement_%d", i)
 			_, err := s.AthenaClient.CreatePreparedStatement(s.Ctx, &athena.CreatePreparedStatementInput{
 				StatementName: aws.String(statementName),
 				WorkGroup:     aws.String(workGroupName),
