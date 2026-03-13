@@ -38,7 +38,8 @@ All resources that do not fail normal deletion can be deleted as is.
 |  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
 |  AWS::Athena::WorkGroup  |  Athena WorkGroups, including workgroups containing **named queries or prepared statements**.  |
 |  AWS::CloudFormation::Stack  |  **Nested Child Stacks** that failed to delete. If any of the other resources are included in the child stack, **they too will be deleted**.  |
-|  Custom::Xxx  |  Custom Resources, including resources that **do not return a SUCCESS status.**  |
+|  AWS::CloudFormation::CustomResource  |  Custom Resources (AWS::CloudFormation::CustomResource), including resources that **do not return a SUCCESS status.**  |
+|  Custom::Xxx  |  Custom Resources (Custom::Xxx), including resources that **do not return a SUCCESS status.**  |
 
 - This tool can be used even for stacks that do not contain any of the above targets for forced deletion.
   - So **all stack deletions can basically be done with this tool!!**

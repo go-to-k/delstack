@@ -85,6 +85,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				athenaWorkGroupOperator.AddResource(&resource)
 			case resourcetype.CloudformationStack:
 				cloudformationStackOperator.AddResource(&resource)
+			case resourcetype.CloudformationCustomResource:
+				customOperator.AddResource(&resource)
 			default:
 				if strings.Contains(*resource.ResourceType, resourcetype.CustomResource) {
 					customOperator.AddResource(&resource)
@@ -151,7 +153,8 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.BackupVault, "Backup Vaults, including vaults containing recovery points."},
 		{resourcetype.AthenaWorkGroup, "Athena WorkGroups, including workgroups containing named queries or prepared statements."},
 		{resourcetype.CloudformationStack, "Nested Child Stacks that failed to delete."},
-		{"Custom::Xxx", "Custom Resources, including resources that do not return a SUCCESS status."},
+		{resourcetype.CloudformationCustomResource, "Custom Resources (AWS::CloudFormation::CustomResource), including resources that do not return a SUCCESS status."},
+		{"Custom::Xxx", "Custom Resources (Custom::Xxx), including resources that do not return a SUCCESS status."},
 	}
 
 	supportedTable, err := io.ToStringAsTableFormat(supportedStackResourcesHeader, supportedStackResourcesData)

@@ -35,6 +35,7 @@ func NewTestStack(scope constructs.Construct, id string, props *TestStackProps) 
 	resource.NewS3VectorBucket(stack, props.PjPrefix+"-Root")
 	resource.NewIamGroup(stack) // can only contain [2 AWS::IAM::Group] in this CDK app: 1 IAM user (DelstackTestUser) can only belong to 10 IAM groups, and we want to be able to make up to 5 stacks
 	resource.NewCustomResources(stack)
+	resource.NewCustomResourceWithCustomType(stack)
 	resource.NewDynamoDB(stack, props.PjPrefix+"-Root")
 	resource.NewBackup(stack, props.PjPrefix+"-Root")
 	resource.NewAthena(stack, props.PjPrefix+"-Root")

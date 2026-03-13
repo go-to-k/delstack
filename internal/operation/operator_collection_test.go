@@ -116,10 +116,16 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 						ResourceType:       aws.String("Custom::CustomResource"),
 						PhysicalResourceId: aws.String("PhysicalResourceId11"),
 					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId12"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::CloudFormation::CustomResource"),
+						PhysicalResourceId: aws.String("PhysicalResourceId12"),
+					},
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                   11,
+				logicalResourceIdsLength:                   12,
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   1,
@@ -131,7 +137,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				backupVaultOperatorResourcesLength:         1,
 				athenaWorkGroupOperatorResourcesLength:     1,
 				cloudformationStackOperatorResourcesLength: 1,
-				customOperatorResourcesLength:              1,
+				customOperatorResourcesLength:              2,
 			},
 		},
 		{
@@ -625,6 +631,15 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 				ctx:       context.Background(),
 				stackName: aws.String("test"),
 				resource:  "Custom::Abc",
+			},
+			want: true,
+		},
+		{
+			name: "cloudformation custom resource",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				resource:  "AWS::CloudFormation::CustomResource",
 			},
 			want: true,
 		},
