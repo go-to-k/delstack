@@ -262,3 +262,7 @@ jobs:
           delstack -v
           delstack -s YourStack1 -s YourStack2 -r us-east-1
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, adding new resource support, and coding conventions.
