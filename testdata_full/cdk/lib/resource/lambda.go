@@ -9,27 +9,28 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-func NewCustomResource(scope constructs.Construct) {
-	logGroup := awslogs.NewLogGroup(scope, jsii.String("LogGroup"), &awslogs.LogGroupProps{
+func NewCustomResourceWithCustomType(scope constructs.Construct) {
+	logGroup := awslogs.NewLogGroup(scope, jsii.String("LogGroupForCustomType"), &awslogs.LogGroupProps{
 		Retention:     awslogs.RetentionDays_ONE_DAY,
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 
-	resourcePolicyLambda := awslambda.NewFunction(scope, jsii.String("ResourcePolicyLambdaForLogs"), &awslambda.FunctionProps{
+	resourcePolicyLambda := awslambda.NewFunction(scope, jsii.String("ResourcePolicyLambdaForCustomType"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PYTHON_3_13(),
 		Handler: jsii.String("index.handler"),
-		Code:    awslambda.Code_FromInline(jsii.String(getCode())),
+		Code:    awslambda.Code_FromInline(jsii.String(getLambdaCode())),
 	})
 
-	provider := customresources.NewProvider(scope, jsii.String("CustomResourceProvider"), &customresources.ProviderProps{
+	provider := customresources.NewProvider(scope, jsii.String("CustomTypeProvider"), &customresources.ProviderProps{
 		OnEventHandler: resourcePolicyLambda,
 	})
 
-	awscdk.NewCustomResource(scope, jsii.String("AddResourcePolicy"), &awscdk.CustomResourceProps{
+	awscdk.NewCustomResource(scope, jsii.String("AddResourcePolicyCustomType"), &awscdk.CustomResourceProps{
 		ServiceToken: provider.ServiceToken(),
+		ResourceType: jsii.String("Custom::AddResourcePolicy"),
 		Properties: &map[string]interface{}{
 			"CloudWatchLogsLogGroupArn": []interface{}{logGroup.LogGroupArn()},
-			"PolicyName":                "ResourcePolicyForDNSLog",
+			"PolicyName":                "ResourcePolicyForDNSLogCustomType",
 			"ServiceName":               "route53.amazonaws.com",
 			"ServiceTimeout":            "5",
 		},

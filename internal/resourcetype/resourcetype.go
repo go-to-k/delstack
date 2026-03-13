@@ -11,8 +11,9 @@ const (
 	EcrRepository       = "AWS::ECR::Repository"
 	BackupVault         = "AWS::Backup::BackupVault"
 	AthenaWorkGroup     = "AWS::Athena::WorkGroup"
-	CloudformationStack = "AWS::CloudFormation::Stack"
-	CustomResource      = "Custom::"
+	CloudformationStack         = "AWS::CloudFormation::Stack"
+	CloudformationCustomResource = "AWS::CloudFormation::CustomResource"
+	CustomResource               = "Custom::"
 )
 
 // For Preprocessors to filter resources by type
@@ -31,5 +32,6 @@ var ResourceTypes = []string{
 	BackupVault,
 	AthenaWorkGroup,
 	CloudformationStack,
+	CloudformationCustomResource,
 	CustomResource,
 }
