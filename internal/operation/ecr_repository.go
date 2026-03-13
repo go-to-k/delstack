@@ -37,7 +37,6 @@ func (o *EcrRepositoryOperator) DeleteResources(ctx context.Context) error {
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, repository := range o.resources {
-		repository := repository
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return err
 		}

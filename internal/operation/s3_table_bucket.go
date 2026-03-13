@@ -42,7 +42,6 @@ func (o *S3TableBucketOperator) DeleteResources(ctx context.Context) error {
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, bucket := range o.resources {
-		bucket := bucket
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return err
 		}

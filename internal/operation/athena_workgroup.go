@@ -37,7 +37,6 @@ func (o *AthenaWorkGroupOperator) DeleteResources(ctx context.Context) error {
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
 	for _, resource := range o.resources {
-		resource := resource
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return err
 		}
