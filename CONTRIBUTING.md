@@ -109,7 +109,7 @@ client := service.NewFromConfig(cfg)
 
 For pagination tests, an Initialize-stage middleware captures request parameters (e.g., `NextToken`) via `middleware.WithStackValue()`, which the Finalize-stage middleware retrieves via `middleware.GetStackValue()` to return different responses per page. See `backup_test.go` or `s3_test.go` for examples.
 
-For more details on the AWS SDK for Go v2 middleware mechanism, see [this article](https://future-architect.github.io/articles/20240709a/).
+For more details on the AWS SDK for Go v2 middleware mechanism, see [this article](https://dev.to/aws-builders/testing-with-aws-sdk-for-go-v2-without-interface-mocks-55de).
 
 #### `internal/operation/` tests:gomock
 
