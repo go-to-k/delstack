@@ -70,9 +70,8 @@ For a reference implementation, see [PR #569 (Athena WorkGroup)](https://github.
 
 1. **`internal/preprocessor/<name>.go`** (new):Implement `IPreprocessor` interface
 2. **`internal/preprocessor/<name>_test.go`** (new):Tests
-3. **`internal/preprocessor/factory.go`**: Add `New<Name>FromConfig()` factory function
-4. **`internal/preprocessor/recursive.go`**: Add to `NewRecursivePreprocessorFromConfig()` inside `NewCompositePreprocessor()` call
-5. **[`README.md`](README.md#pre-deletion-processing)**: Add row to "Pre-deletion Processing" table
+3. **`internal/preprocessor/factory.go`**: Add `new<Name>FromConfig()` factory function + add to `NewCompositePreprocessor()` call inside `NewRecursivePreprocessorFromConfig()`
+4. **[`README.md`](README.md#pre-deletion-processing)**: Add row to "Pre-deletion Processing" table
 
 ## Testing
 
