@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.3.0](https://github.com/go-to-k/delstack/compare/v2.2.2...v2.3.0) - 2026-03-13
+- refactor: move preprocessing logic from app to preprocessor package by @go-to-k in https://github.com/go-to-k/delstack/pull/567
+- style: format by @go-to-k in https://github.com/go-to-k/delstack/pull/571
+- docs: add CONTRIBUTING.md with development guide by @go-to-k in https://github.com/go-to-k/delstack/pull/568
+- feat: add Athena WorkGroup operator for force deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/569
+- refactor: remove unnecessary vars for range by @go-to-k in https://github.com/go-to-k/delstack/pull/572
+
 ## [v2.2.2](https://github.com/go-to-k/delstack/compare/v2.2.1...v2.2.2) - 2026-03-12
 - fix: exclude DELETE_COMPLETE resources from FilterResourcesByType by @go-to-k in https://github.com/go-to-k/delstack/pull/564
 
