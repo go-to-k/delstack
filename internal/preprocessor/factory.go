@@ -9,7 +9,7 @@ import (
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
-func NewLambdaVPCDetacherFromConfig(config aws.Config) *LambdaVPCDetacher {
+func newLambdaVPCDetacherFromConfig(config aws.Config) *LambdaVPCDetacher {
 	sdkLambdaClient := lambda.NewFromConfig(config, func(o *lambda.Options) {
 		o.RetryMaxAttempts = operation.SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
@@ -43,7 +43,7 @@ func NewRecursivePreprocessorFromConfig(config aws.Config) *RecursivePreprocesso
 		sdkCfnUpdateWaiter,
 	)
 
-	lambdaVPCDetacher := NewLambdaVPCDetacherFromConfig(config)
+	lambdaVPCDetacher := newLambdaVPCDetacherFromConfig(config)
 	composite := NewCompositePreprocessor(lambdaVPCDetacher)
 
 	return NewRecursivePreprocessor(cfnClient, composite)
