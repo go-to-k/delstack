@@ -4,6 +4,10 @@
 - test: add S3 bucket and query execution to Athena E2E test by @go-to-k in https://github.com/go-to-k/delstack/pull/573
 - fix: support AWS::CloudFormation::CustomResource type for force deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/575
 
+## [v2.3.1](https://github.com/go-to-k/delstack/compare/v2.3.0...v2.3.1) - 2026-03-13
+- test: add S3 bucket and query execution to Athena E2E test by @go-to-k in https://github.com/go-to-k/delstack/pull/573
+- fix: support AWS::CloudFormation::CustomResource type for force deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/575
+
 ## [v2.3.0](https://github.com/go-to-k/delstack/compare/v2.2.2...v2.3.0) - 2026-03-13
 - refactor: move preprocessing logic from app to preprocessor package by @go-to-k in https://github.com/go-to-k/delstack/pull/567
 - style: format by @go-to-k in https://github.com/go-to-k/delstack/pull/571
