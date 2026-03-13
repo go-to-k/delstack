@@ -194,4 +194,3 @@ func (d *StackDeleter) deleteSingleStack(
 	io.Logger.Info().Msgf("[%v]: Successfully deleted!!", stack)
 	return nil
 }
-
