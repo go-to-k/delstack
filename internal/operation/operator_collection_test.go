@@ -34,6 +34,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		iamGroupOperatorResourcesLength            int
 		ecrRepositoryOperatorResourcesLength       int
 		backupVaultOperatorResourcesLength         int
+		athenaWorkGroupOperatorResourcesLength     int
 		cloudformationStackOperatorResourcesLength int
 		customOperatorResourcesLength              int
 	}
@@ -106,13 +107,19 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId10"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("Custom::CustomResource"),
+						ResourceType:       aws.String("AWS::Athena::WorkGroup"),
 						PhysicalResourceId: aws.String("PhysicalResourceId10"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId11"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("Custom::CustomResource"),
+						PhysicalResourceId: aws.String("PhysicalResourceId11"),
 					},
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                   10,
+				logicalResourceIdsLength:                   11,
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   1,
@@ -122,6 +129,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				iamGroupOperatorResourcesLength:            1,
 				ecrRepositoryOperatorResourcesLength:       1,
 				backupVaultOperatorResourcesLength:         1,
+				athenaWorkGroupOperatorResourcesLength:     1,
 				cloudformationStackOperatorResourcesLength: 1,
 				customOperatorResourcesLength:              1,
 			},
@@ -157,6 +165,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
+				athenaWorkGroupOperatorResourcesLength:     0,
 				cloudformationStackOperatorResourcesLength: 1,
 				customOperatorResourcesLength:              0,
 			},
@@ -204,6 +213,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
+				athenaWorkGroupOperatorResourcesLength:     0,
 				cloudformationStackOperatorResourcesLength: 2,
 				customOperatorResourcesLength:              0,
 			},
@@ -239,6 +249,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
+				athenaWorkGroupOperatorResourcesLength:     0,
 				cloudformationStackOperatorResourcesLength: 0,
 				customOperatorResourcesLength:              0,
 			},
@@ -286,6 +297,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
+				athenaWorkGroupOperatorResourcesLength:     0,
 				cloudformationStackOperatorResourcesLength: 0,
 				customOperatorResourcesLength:              0,
 			},
@@ -321,6 +333,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
+				athenaWorkGroupOperatorResourcesLength:     0,
 				cloudformationStackOperatorResourcesLength: 1,
 				customOperatorResourcesLength:              0,
 			},
@@ -368,6 +381,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				iamGroupOperatorResourcesLength:            0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
+				athenaWorkGroupOperatorResourcesLength:     0,
 				cloudformationStackOperatorResourcesLength: 2,
 				customOperatorResourcesLength:              0,
 			},
@@ -390,6 +404,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			iamGroupOperatorResourcesLength := 0
 			ecrRepositoryOperatorResourcesLength := 0
 			backupVaultOperatorResourcesLength := 0
+			athenaWorkGroupOperatorResourcesLength := 0
 			cloudformationStackOperatorResourcesLength := 0
 			customOperatorResourcesLength := 0
 
@@ -413,6 +428,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					ecrRepositoryOperatorResourcesLength += operator.GetResourcesLength()
 				case *BackupVaultOperator:
 					backupVaultOperatorResourcesLength += operator.GetResourcesLength()
+				case *AthenaWorkGroupOperator:
+					athenaWorkGroupOperatorResourcesLength += operator.GetResourcesLength()
 				case *CloudFormationStackOperator:
 					cloudformationStackOperatorResourcesLength += operator.GetResourcesLength()
 				case *CustomOperator:
@@ -432,6 +449,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				iamGroupOperatorResourcesLength:            iamGroupOperatorResourcesLength,
 				ecrRepositoryOperatorResourcesLength:       ecrRepositoryOperatorResourcesLength,
 				backupVaultOperatorResourcesLength:         backupVaultOperatorResourcesLength,
+				athenaWorkGroupOperatorResourcesLength:     athenaWorkGroupOperatorResourcesLength,
 				cloudformationStackOperatorResourcesLength: cloudformationStackOperatorResourcesLength,
 				customOperatorResourcesLength:              customOperatorResourcesLength,
 			}
@@ -580,6 +598,15 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 				ctx:       context.Background(),
 				stackName: aws.String("test"),
 				resource:  "AWS::Backup::BackupVault",
+			},
+			want: true,
+		},
+		{
+			name: "Athena WorkGroup",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				resource:  "AWS::Athena::WorkGroup",
 			},
 			want: true,
 		},

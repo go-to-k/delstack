@@ -15,6 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
@@ -57,6 +58,7 @@ type DeployStackService struct {
 	EcrClient       *ecr.Client
 	StsClient       *sts.Client
 	BackupClient    *backup.Client
+	AthenaClient    *athena.Client
 }
 
 // This script allows you to deploy the stack for delstack testing.
@@ -134,6 +136,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Create Athena named queries and prepared statements
+	color.Green("=== create_athena_named_queries ===")
+	if err := service.createAthenaNamedQueries(service.CfnStackName); err != nil {
+		color.Red("Failed to create Athena named queries: %v", err)
+		os.Exit(1)
+	}
+
 	// Attach policy to role
 	// The following function is no longer needed as the IAM role no longer fails on normal deletion, but it is left in place just in case.
 	color.Green("=== attach_policy_to_role ===")
@@ -206,6 +215,7 @@ func (s *DeployStackService) initAWSClients() error {
 	s.EcrClient = ecr.NewFromConfig(cfg)
 	s.StsClient = sts.NewFromConfig(cfg)
 	s.BackupClient = backup.NewFromConfig(cfg)
+	s.AthenaClient = athena.NewFromConfig(cfg)
 
 	// Get account ID
 	stsOutput, err := s.StsClient.GetCallerIdentity(s.Ctx, &sts.GetCallerIdentityInput{})
@@ -1063,6 +1073,77 @@ func (s *DeployStackService) indexesUploadToVectorBucket(stackName string) error
 		if err := eg.Wait(); err != nil {
 			return fmt.Errorf("failed to upload vectors to indexes: %v", err)
 		}
+	}
+
+	return nil
+}
+
+func (s *DeployStackService) createAthenaNamedQueries(stackName string) error {
+	// Get resources in the stack
+	resources, nestedStackNames, err := s.getStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	// Process nested stacks in parallel
+	var wg sync.WaitGroup
+	errorChan := make(chan error, len(nestedStackNames))
+
+	for _, nestedStackName := range nestedStackNames {
+		wg.Add(1)
+		go func(name string) {
+			defer wg.Done()
+			if err := s.createAthenaNamedQueries(name); err != nil {
+				errorChan <- err
+			}
+		}(nestedStackName)
+	}
+
+	wg.Wait()
+	close(errorChan)
+
+	for err := range errorChan {
+		if err != nil {
+			return err
+		}
+	}
+
+	// Create named queries and prepared statements in Athena work groups
+	for _, resource := range resources {
+		if resource["ResourceType"] != "AWS::Athena::WorkGroup" {
+			continue
+		}
+
+		workGroupName := resource["PhysicalResourceId"]
+
+		// Create named queries
+		for i := range 3 {
+			queryName := fmt.Sprintf("test-query-%d", i)
+			_, err := s.AthenaClient.CreateNamedQuery(s.Ctx, &athena.CreateNamedQueryInput{
+				Name:      aws.String(queryName),
+				Database:  aws.String("default"),
+				QueryString: aws.String(fmt.Sprintf("SELECT %d", i)),
+				WorkGroup: aws.String(workGroupName),
+			})
+			if err != nil {
+				return fmt.Errorf("failed to create named query %s: %v", queryName, err)
+			}
+		}
+
+		// Create prepared statements
+		for i := range 3 {
+			statementName := fmt.Sprintf("test-statement-%d", i)
+			_, err := s.AthenaClient.CreatePreparedStatement(s.Ctx, &athena.CreatePreparedStatementInput{
+				StatementName: aws.String(statementName),
+				WorkGroup:     aws.String(workGroupName),
+				QueryStatement: aws.String(fmt.Sprintf("SELECT ? + %d", i)),
+			})
+			if err != nil {
+				return fmt.Errorf("failed to create prepared statement %s: %v", statementName, err)
+			}
+		}
+
+		color.Green("Successfully created named queries and prepared statements in work group %s", workGroupName)
 	}
 
 	return nil

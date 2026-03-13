@@ -20,6 +20,7 @@ This script creates a CloudFormation stack containing various resources that typ
 - IAM groups with users
 - ECR repositories with images
 - AWS Backup vaults with recovery points
+- Athena WorkGroups with named queries and prepared statements
 - And more
 
 ```bash

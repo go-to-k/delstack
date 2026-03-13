@@ -10,6 +10,7 @@ const (
 	IamGroup            = "AWS::IAM::Group"
 	EcrRepository       = "AWS::ECR::Repository"
 	BackupVault         = "AWS::Backup::BackupVault"
+	AthenaWorkGroup     = "AWS::Athena::WorkGroup"
 	CloudformationStack = "AWS::CloudFormation::Stack"
 	CustomResource      = "Custom::"
 )
@@ -28,6 +29,7 @@ var ResourceTypes = []string{
 	IamGroup,
 	EcrRepository,
 	BackupVault,
+	AthenaWorkGroup,
 	CloudformationStack,
 	CustomResource,
 }
