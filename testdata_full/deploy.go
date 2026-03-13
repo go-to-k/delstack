@@ -1143,7 +1143,36 @@ func (s *DeployStackService) createAthenaNamedQueries(stackName string) error {
 			}
 		}
 
-		color.Green("Successfully created named queries and prepared statements in work group %s", workGroupName)
+		// Execute queries to generate results in S3
+		for i := range 3 {
+			queryOutput, err := s.AthenaClient.StartQueryExecution(s.Ctx, &athena.StartQueryExecutionInput{
+				QueryString: aws.String(fmt.Sprintf("SELECT %d", i)),
+				WorkGroup:   aws.String(workGroupName),
+			})
+			if err != nil {
+				return fmt.Errorf("failed to start query execution: %v", err)
+			}
+
+			for {
+				status, err := s.AthenaClient.GetQueryExecution(s.Ctx, &athena.GetQueryExecutionInput{
+					QueryExecutionId: queryOutput.QueryExecutionId,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to get query execution status: %v", err)
+				}
+
+				state := string(status.QueryExecution.Status.State)
+				if state == "SUCCEEDED" {
+					break
+				} else if state == "FAILED" || state == "CANCELLED" {
+					return fmt.Errorf("query execution %s: %s", state, aws.ToString(status.QueryExecution.Status.StateChangeReason))
+				}
+
+				time.Sleep(2 * time.Second)
+			}
+		}
+
+		color.Green("Successfully created named queries, prepared statements, and executed queries in work group %s", workGroupName)
 	}
 
 	return nil
