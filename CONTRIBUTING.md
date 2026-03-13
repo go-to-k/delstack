@@ -147,3 +147,17 @@ For changes other than new target resource types (e.g., new preprocessor), consi
 - Errors: Public methods in `pkg/client` must wrap errors with `ClientError`. In `internal/operation`, return client errors as-is (already wrapped); only wrap with `ClientError` for errors generated directly in the operation layer (e.g., `ctx.Done()`, validation)
 - Idempotency: Check existence before deletion
 - `//go:generate mockgen` comment must be on **line 1** of the file
+
+### Test Naming Conventions
+
+- All tests use **table-driven tests** with a `name` field for sub-test names
+- Top-level test function: `Test[ReceiverType]_[MethodName]` (e.g., `TestEcr_DeleteRepository`, `TestS3BucketOperator_DeleteS3Bucket`). For package-level functions: `Test[FunctionName]` (e.g., `TestFilterResourcesByType`)
+- Sub-test names: lowercase, descriptive, sentence-like. Success cases end with `"successfully"`, failure cases end with `"failure"` + reason
+
+```go
+// Examples of sub-test names:
+"delete bucket successfully"
+"delete bucket failure"
+"delete bucket failure for list object versions errors"
+"delete recovery points with next token successfully"
+```
