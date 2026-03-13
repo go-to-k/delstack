@@ -50,6 +50,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	iamGroupOperator := c.operatorFactory.CreateIamGroupOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
+	athenaWorkGroupOperator := c.operatorFactory.CreateAthenaWorkGroupOperator()
 	cloudformationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator()
 	customOperator := c.operatorFactory.CreateCustomOperator()
 
@@ -80,6 +81,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				ecrRepositoryOperator.AddResource(&resource)
 			case resourcetype.BackupVault:
 				backupVaultOperator.AddResource(&resource)
+			case resourcetype.AthenaWorkGroup:
+				athenaWorkGroupOperator.AddResource(&resource)
 			case resourcetype.CloudformationStack:
 				cloudformationStackOperator.AddResource(&resource)
 			default:
@@ -98,6 +101,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, iamGroupOperator)
 	c.operators = append(c.operators, ecrRepositoryOperator)
 	c.operators = append(c.operators, backupVaultOperator)
+	c.operators = append(c.operators, athenaWorkGroupOperator)
 	c.operators = append(c.operators, cloudformationStackOperator)
 	c.operators = append(c.operators, customOperator)
 }
@@ -145,6 +149,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.IamGroup, "IAM Groups, including groups with IAM users from outside the stack."},
 		{resourcetype.EcrRepository, "ECR Repositories, including repositories that contain images and where the `EmptyOnDelete` is not true."},
 		{resourcetype.BackupVault, "Backup Vaults, including vaults containing recovery points."},
+		{resourcetype.AthenaWorkGroup, "Athena WorkGroups, including workgroups containing named queries or prepared statements."},
 		{resourcetype.CloudformationStack, "Nested Child Stacks that failed to delete."},
 		{"Custom::Xxx", "Custom Resources, including resources that do not return a SUCCESS status."},
 	}

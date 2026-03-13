@@ -2,6 +2,7 @@ package operation
 
 import (
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
@@ -153,6 +154,19 @@ func (f *OperatorFactory) CreateS3VectorBucketOperator() *S3VectorBucketOperator
 	return NewS3VectorBucketOperator(
 		client.NewS3Vectors(
 			sdkS3VectorsClient,
+		),
+	)
+}
+
+func (f *OperatorFactory) CreateAthenaWorkGroupOperator() *AthenaWorkGroupOperator {
+	sdkAthenaClient := athena.NewFromConfig(f.config, func(o *athena.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	return NewAthenaWorkGroupOperator(
+		client.NewAthena(
+			sdkAthenaClient,
 		),
 	)
 }

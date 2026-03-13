@@ -23,6 +23,7 @@ func NewChildStack(scope constructs.Construct, id string, props *ChildStackProps
 	resource.NewS3Bucket(stack)
 	resource.NewS3DirectoryBucket(stack, props.PjPrefix+"-Child")
 	resource.NewCustomResources(stack)
+	resource.NewAthena(stack, props.PjPrefix+"-Child")
 
 	NewDescendStack(stack, "Descend", &DescendStackProps{
 		PjPrefix: props.PjPrefix,
