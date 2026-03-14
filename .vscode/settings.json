@@ -24,4 +24,7 @@
     "go.lintFlags": [
         "--fast"
     ],
+    "[markdown]": {
+        "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+    },
 }
