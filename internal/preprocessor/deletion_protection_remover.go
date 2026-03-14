@@ -63,13 +63,8 @@ func (r *DeletionProtectionRemover) Preprocess(ctx context.Context, stackName *s
 }
 
 func (r *DeletionProtectionRemover) findProtectedResources(ctx context.Context, stackName *string, resources []types.StackResourceSummary) []protectedResource {
-	type checkResult struct {
-		resource  types.StackResourceSummary
-		protected bool
-	}
-
 	var mu sync.Mutex
-	var results []checkResult
+	var results []protectedResource
 	var wg sync.WaitGroup
 
 	checkResource := func(res types.StackResourceSummary) {
@@ -83,7 +78,11 @@ func (r *DeletionProtectionRemover) findProtectedResources(ctx context.Context, 
 		}
 		if protected {
 			mu.Lock()
-			results = append(results, checkResult{resource: res, protected: true})
+			results = append(results, protectedResource{
+				resourceType:       aws.ToString(res.ResourceType),
+				logicalResourceId:  aws.ToString(res.LogicalResourceId),
+				physicalResourceId: aws.ToString(res.PhysicalResourceId),
+			})
 			mu.Unlock()
 		}
 	}
@@ -100,15 +99,7 @@ func (r *DeletionProtectionRemover) findProtectedResources(ctx context.Context, 
 	}
 	wg.Wait()
 
-	protected := make([]protectedResource, 0, len(results))
-	for _, result := range results {
-		protected = append(protected, protectedResource{
-			resourceType:       aws.ToString(result.resource.ResourceType),
-			logicalResourceId:  aws.ToString(result.resource.LogicalResourceId),
-			physicalResourceId: aws.ToString(result.resource.PhysicalResourceId),
-		})
-	}
-	return protected
+	return results
 }
 
 func (r *DeletionProtectionRemover) checkProtection(ctx context.Context, resource types.StackResourceSummary) (bool, error) {
