@@ -21,6 +21,16 @@ const (
 	LambdaFunction = "AWS::Lambda::Function"
 )
 
+// For Deletion Protection Check
+const (
+	Ec2Instance       = "AWS::EC2::Instance"
+	RdsDBInstance     = "AWS::RDS::DBInstance"
+	RdsDBCluster      = "AWS::RDS::DBCluster"
+	CognitoUserPool   = "AWS::Cognito::UserPool"
+	LogsLogGroup      = "AWS::Logs::LogGroup"
+	Elbv2LoadBalancer = "AWS::ElasticLoadBalancingV2::LoadBalancer"
+)
+
 var ResourceTypes = []string{
 	S3Bucket,
 	S3DirectoryBucket,

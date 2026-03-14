@@ -14,7 +14,7 @@ CloudFormation has a built-in force delete option (`FORCE_DELETE_STACK`), but it
 
 **Works with stacks created by any tool**: Not just raw CloudFormation, but also stacks deployed via **AWS CDK**, **AWS Amplify**, **AWS SAM**, **Serverless Framework**, and other Infrastructure as Code tools that use CloudFormation under the hood.
 
-You can delete multiple stacks **in parallel with automatic dependency resolution**, select stacks **interactively** in the UI, and force delete resources with **`Retain` or `RetainExceptOnCreate` deletion policies**.
+You can delete multiple stacks **in parallel with automatic dependency resolution**, select stacks **interactively** in the UI, and force delete resources with **`Retain` or `RetainExceptOnCreate` deletion policies**. If any resources have **deletion protection** enabled (EC2, RDS, Cognito, etc.), the tool **reports them and aborts** without attempting deletion. With the `-f` option, it **automatically disables** the protection and proceeds with deletion.
 
 **Pre-deletion Processing**: delstack automatically performs processing before CloudFormation deletion starts to optimize and prepare for stack deletion.
 
@@ -51,7 +51,28 @@ All resources that do not fail normal deletion can be deleted as is.
 
 ## Pre-deletion Processing
 
-Among the resources in the stack, this tool automatically performs the following processing **before CloudFormation deletion starts**. These are not resources that fail during normal deletion, but are processed in advance to optimize or prepare for deletion.
+This tool automatically performs the following processing **before CloudFormation deletion starts**.
+
+### Deletion Protection Check
+
+Checks for resource-level deletion protection before attempting stack deletion.
+
+**Without `-f` option**: If any resources have deletion protection enabled, the tool reports them and aborts without attempting deletion.
+
+**With `-f` option**: Deletion protection is automatically disabled via AWS API before deletion proceeds.
+
+|  RESOURCE TYPE  |  PROTECTION TYPE  |  CHECK API  |  DISABLE API  |
+| ---- | ---- | ---- | ---- |
+|  `AWS::EC2::Instance`  |  Termination Protection  |  `DescribeInstanceAttribute`  |  `ModifyInstanceAttribute`  |
+|  `AWS::RDS::DBInstance`  |  Deletion Protection  |  `DescribeDBInstances`  |  `ModifyDBInstance`  |
+|  `AWS::RDS::DBCluster`  |  Deletion Protection  |  `DescribeDBClusters`  |  `ModifyDBCluster`  |
+|  `AWS::Cognito::UserPool`  |  Deletion Protection  |  `DescribeUserPool`  |  `UpdateUserPool`  |
+|  `AWS::Logs::LogGroup`  |  Deletion Protection  |  `DescribeLogGroups`  |  `PutLogGroupDeletionProtection`  |
+|  `AWS::ElasticLoadBalancingV2::LoadBalancer`  |  Deletion Protection  |  `DescribeLoadBalancerAttributes`  |  `ModifyLoadBalancerAttributes`  |
+
+### Resource Preparation
+
+Among the resources in the stack, the following are not resources that fail during normal deletion, but are processed in advance to prepare for smooth deletion.
 
 |  RESOURCE TYPE  |  DETAILS  |
 | ---- | ---- |
@@ -153,7 +174,7 @@ Also, **"Termination Protection"** stacks will not be displayed, because it prob
 
 ## Force Mode
 
-If you specify the `-f, --force` option, stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`** will be deleted.
+If you specify the `-f, --force` option, stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`** will be deleted. Additionally, if any resources have **deletion protection** enabled (EC2, RDS, Cognito, etc.), the protection is **automatically disabled** before deletion.
 
 ```bash
 delstack -f -s dev-goto-01-TestStack

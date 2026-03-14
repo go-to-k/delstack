@@ -448,6 +448,7 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 				return err
 			}
 		}
+		io.Logger.Info().Msgf("[%v]: Removed DeletionPolicy from template", *stackName)
 	}
 	if len(nestedStacks) == 0 {
 		return nil

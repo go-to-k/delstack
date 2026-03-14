@@ -2,6 +2,7 @@ package preprocessor
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -12,26 +13,77 @@ import (
 var _ IPreprocessor = (*CompositePreprocessor)(nil)
 
 type CompositePreprocessor struct {
-	preprocessors []IPreprocessor
+	checkers  []IPreprocessor
+	modifiers []IPreprocessor
 }
 
-func NewCompositePreprocessor(preprocessors ...IPreprocessor) *CompositePreprocessor {
+func NewCompositePreprocessor(checkers []IPreprocessor, modifiers []IPreprocessor) *CompositePreprocessor {
 	return &CompositePreprocessor{
-		preprocessors: preprocessors,
+		checkers:  checkers,
+		modifiers: modifiers,
 	}
 }
 
 func (c *CompositePreprocessor) Preprocess(ctx context.Context, stackName *string, resources []types.StackResourceSummary) error {
+	// Phase 1: Run checkers in parallel, collect errors
+	// Checker errors are fatal and abort the process
+	if err := c.runCheckers(ctx, stackName, resources); err != nil {
+		return err
+	}
+
+	// Phase 2: Run modifiers in parallel, log warnings
+	// Modifier errors are logged but not returned
+	c.runModifiers(ctx, stackName, resources)
+
+	return nil
+}
+
+func (c *CompositePreprocessor) runCheckers(ctx context.Context, stackName *string, resources []types.StackResourceSummary) error {
+	if len(c.checkers) == 0 {
+		return nil
+	}
+
+	// Use WaitGroup instead of errgroup to collect ALL errors from all checkers.
+	// errgroup cancels remaining goroutines on first error, which would prevent
+	// reporting all protected resources at once.
+	var mu sync.Mutex
+	var errs []error
 	var wg sync.WaitGroup
-	for _, p := range c.preprocessors {
+
+	for _, checker := range c.checkers {
 		wg.Add(1)
-		go func(pp IPreprocessor) {
+		go func(ch IPreprocessor) {
 			defer wg.Done()
-			if err := pp.Preprocess(ctx, stackName, resources); err != nil {
-				io.Logger.Warn().Msgf("[%v]: Preprocessor failed: %v", aws.ToString(stackName), err)
+			if err := ch.Preprocess(ctx, stackName, resources); err != nil {
+				mu.Lock()
+				errs = append(errs, err)
+				mu.Unlock()
 			}
-		}(p)
+		}(checker)
 	}
 	wg.Wait()
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
 	return nil
+}
+
+func (c *CompositePreprocessor) runModifiers(ctx context.Context, stackName *string, resources []types.StackResourceSummary) {
+	if len(c.modifiers) == 0 {
+		return
+	}
+
+	var wg sync.WaitGroup
+	for _, modifier := range c.modifiers {
+		wg.Add(1)
+		go func(m IPreprocessor) {
+			defer wg.Done()
+			if err := m.Preprocess(ctx, stackName, resources); err != nil {
+				io.Logger.Warn().Msgf("[%v]: Preprocessor failed: %v", aws.ToString(stackName), err)
+			}
+		}(modifier)
+	}
+	wg.Wait()
 }

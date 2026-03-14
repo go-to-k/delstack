@@ -17,6 +17,7 @@ pkg/
 testdata_full/          E2E test environment for full resources (CDK + deploy script)
 testdata_dependency/    E2E test environment for dependency graph testing
 testdata_preprocessor/  E2E test environment for preprocessor testing
+testdata_deletion_protection/ E2E test environment for deletion protection testing
 testdata_s3_template_cfn/ E2E test environment for large CloudFormation template testing
 ```
 
@@ -62,15 +63,22 @@ For a reference implementation, see [PR #569 (Athena WorkGroup)](https://github.
    - Append to `operators` slice
    - Add row to `supportedStackResourcesData` in `RaiseUnsupportedResourceError()`
 9. **`internal/operation/operator_collection_test.go`**: Update test cases
-10. **`go.mod` / `go.sum`**: Add AWS SDK service dependency (`go get github.com/aws/aws-sdk-go-v2/service/<service>`)
+10. **`go.mod` / `go.sum`**: Add AWS SDK service dependency (`go get github.com/aws/aws-sdk-go-v2/service/<service>`), then run `go mod tidy` to ensure dependencies are correctly classified as direct/indirect
 11. **[`README.md`](README.md#resource-types-that-can-be-forced-to-delete)**: Add row to "Resource Types that can be forced to delete" table
 12. **`testdata_full/`**: See [E2E Testing](#e2e-testing-testdata_full) section
 
 ### Adding a New Preprocessor
 
+`CompositePreprocessor` runs preprocessors in two phases:
+
+- **Checkers**: Run first. Errors are **fatal** and abort the entire deletion process. Used for validation that must pass before proceeding (e.g., deletion protection check). All checkers run in parallel and all errors are collected before returning.
+- **Modifiers**: Run after all checkers pass. Errors are **logged as warnings** but do not stop deletion. Used for optimizations that improve deletion but are not required (e.g., Lambda VPC detachment).
+
+When adding a new preprocessor, determine which phase it belongs to and add it to the appropriate slice (`checkers` or `modifiers`) in `factory.go`.
+
 1. **`internal/preprocessor/<name>.go`** (new):Implement `IPreprocessor` interface
 2. **`internal/preprocessor/<name>_test.go`** (new):Tests
-3. **`internal/preprocessor/factory.go`**: Add `new<Name>FromConfig()` factory function + add to `NewCompositePreprocessor()` call inside `NewRecursivePreprocessorFromConfig()`
+3. **`internal/preprocessor/factory.go`**: Add `new<Name>FromConfig()` factory function + add to the `checkers` or `modifiers` slice in `NewRecursivePreprocessorFromConfig()`
 4. **[`README.md`](README.md#pre-deletion-processing)**: Add row to "Pre-deletion Processing" table
 
 ## Testing
@@ -132,6 +140,8 @@ When adding a new target resource type, update:
 
 For changes other than new target resource types (e.g., new preprocessor), consider creating a dedicated `testdata_<name>/` directory instead of modifying `testdata_full/`. For existing logic changes, unit tests are sufficient.
 
+When creating a new `testdata_<name>/` directory, add a `cdk/.gitignore` that excludes `cdk.context.json` (CDK generates this file at deploy time with account-specific context).
+
 ### Other E2E Test Environments
 
 - `make testgen_full`: Deploy full resource test stack
@@ -140,6 +150,7 @@ For changes other than new target resource types (e.g., new preprocessor), consi
 - `make testgen_dependency`: Deploy CDK dependency test stacks for complex dependency graph testing
 - `make testgen_dependency_retain`: Deploy CDK dependency test stacks with RETAIN resources
 - `make testgen_preprocessor`: Deploy preprocessor test stacks for Lambda VPC detachment testing
+- `make testgen_deletion_protection`: Deploy deletion protection test stacks for resource-level protection check/disable testing
 - `make testgen_help`: Show help for all test stack generation targets
 
 ## Code Style & Conventions
