@@ -6,6 +6,12 @@
 - feat: check and disable resource deletion protection before stack deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/581
 - feat: display and force-delete TerminationProtection stacks with -f flag by @go-to-k in https://github.com/go-to-k/delstack/pull/582
 
+## [v2.4.0](https://github.com/go-to-k/delstack/compare/v2.3.1...v2.4.0) - 2026-03-14
+- docs: add comparison with CloudFormation FORCE_DELETE_STACK by @go-to-k in https://github.com/go-to-k/delstack/pull/578
+- docs: use markdownlint instead of editorconfig by @go-to-k in https://github.com/go-to-k/delstack/pull/580
+- feat: check and disable resource deletion protection before stack deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/581
+- feat: display and force-delete TerminationProtection stacks with -f flag by @go-to-k in https://github.com/go-to-k/delstack/pull/582
+
 ## [v2.3.1](https://github.com/go-to-k/delstack/compare/v2.3.0...v2.3.1) - 2026-03-13
 - test: add S3 bucket and query execution to Athena E2E test by @go-to-k in https://github.com/go-to-k/delstack/pull/573
 - fix: support AWS::CloudFormation::CustomResource type for force deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/575
