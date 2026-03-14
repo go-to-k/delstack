@@ -63,12 +63,12 @@ Checks for resource-level deletion protection before attempting stack deletion.
 
 |  RESOURCE TYPE  |
 | ---- |
-|  `AWS::EC2::Instance`  |
-|  `AWS::RDS::DBInstance`  |
-|  `AWS::RDS::DBCluster`  |
-|  `AWS::Cognito::UserPool`  |
-|  `AWS::Logs::LogGroup`  |
-|  `AWS::ElasticLoadBalancingV2::LoadBalancer`  |
+|  AWS::EC2::Instance  |
+|  AWS::RDS::DBInstance  |
+|  AWS::RDS::DBCluster  |
+|  AWS::Cognito::UserPool  |
+|  AWS::Logs::LogGroup  |
+|  AWS::ElasticLoadBalancingV2::LoadBalancer  |
 
 ### Resource Preparation
 
