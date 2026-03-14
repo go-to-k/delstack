@@ -17,6 +17,7 @@ pkg/
 testdata_full/          E2E test environment for full resources (CDK + deploy script)
 testdata_dependency/    E2E test environment for dependency graph testing
 testdata_preprocessor/  E2E test environment for preprocessor testing
+testdata_deletion_protection/ E2E test environment for deletion protection testing
 testdata_s3_template_cfn/ E2E test environment for large CloudFormation template testing
 ```
 
@@ -68,9 +69,16 @@ For a reference implementation, see [PR #569 (Athena WorkGroup)](https://github.
 
 ### Adding a New Preprocessor
 
+`CompositePreprocessor` runs preprocessors in two phases:
+
+- **Checkers**: Run first. Errors are **fatal** and abort the entire deletion process. Used for validation that must pass before proceeding (e.g., deletion protection check). All checkers run in parallel and all errors are collected before returning.
+- **Modifiers**: Run after all checkers pass. Errors are **logged as warnings** but do not stop deletion. Used for optimizations that improve deletion but are not required (e.g., Lambda VPC detachment).
+
+When adding a new preprocessor, determine which phase it belongs to and add it to the appropriate slice (`checkers` or `modifiers`) in `factory.go`.
+
 1. **`internal/preprocessor/<name>.go`** (new):Implement `IPreprocessor` interface
 2. **`internal/preprocessor/<name>_test.go`** (new):Tests
-3. **`internal/preprocessor/factory.go`**: Add `new<Name>FromConfig()` factory function + add to `NewCompositePreprocessor()` call inside `NewRecursivePreprocessorFromConfig()`
+3. **`internal/preprocessor/factory.go`**: Add `new<Name>FromConfig()` factory function + add to the `checkers` or `modifiers` slice in `NewRecursivePreprocessorFromConfig()`
 4. **[`README.md`](README.md#pre-deletion-processing)**: Add row to "Pre-deletion Processing" table
 
 ## Testing
