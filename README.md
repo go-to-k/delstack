@@ -49,6 +49,23 @@ All resources that do not fail normal deletion can be deleted as is.
 - **"Termination Protection" stacks will not be deleted.** Because it probably really should not want to delete it.
 - Deletion of resources that fail to be deleted because they are used by other stack resources, i.e., **resources that are referenced (depended on) from outside the stack, is not supported**. Only forced deletion of resources that can be completed only within the stack is supported.
 
+## Deletion Protection Check
+
+This feature checks for resource-level deletion protection before attempting stack deletion.
+
+**Without `-f` option**: If any resources have deletion protection enabled, the tool reports them and aborts without attempting deletion.
+
+**With `-f` option**: Deletion protection is automatically disabled via AWS API before deletion proceeds.
+
+|  RESOURCE TYPE  |  PROTECTION TYPE  |  CHECK API  |  DISABLE API  |
+| ---- | ---- | ---- | ---- |
+|  `AWS::EC2::Instance`  |  Termination Protection  |  `DescribeInstanceAttribute`  |  `ModifyInstanceAttribute`  |
+|  `AWS::RDS::DBInstance`  |  Deletion Protection  |  `DescribeDBInstances`  |  `ModifyDBInstance`  |
+|  `AWS::RDS::DBCluster`  |  Deletion Protection  |  `DescribeDBClusters`  |  `ModifyDBCluster`  |
+|  `AWS::Cognito::UserPool`  |  Deletion Protection  |  `DescribeUserPool`  |  `UpdateUserPool`  |
+|  `AWS::Logs::LogGroup`  |  Deletion Protection  |  `DescribeLogGroups`  |  `PutLogGroupDeletionProtection`  |
+|  `AWS::ElasticLoadBalancingV2::LoadBalancer`  |  Deletion Protection  |  `DescribeLoadBalancerAttributes`  |  `ModifyLoadBalancerAttributes`  |
+
 ## Pre-deletion Processing
 
 Among the resources in the stack, this tool automatically performs the following processing **before CloudFormation deletion starts**. These are not resources that fail during normal deletion, but are processed in advance to optimize or prepare for deletion.

@@ -182,9 +182,9 @@ func (d *StackDeleter) deleteSingleStack(
 		}
 	}
 
-	pp := preprocessor.NewRecursivePreprocessorFromConfig(config)
+	pp := preprocessor.NewRecursivePreprocessorFromConfig(config, d.forceMode)
 	if err := pp.PreprocessRecursively(ctx, aws.String(stack)); err != nil {
-		io.Logger.Warn().Msgf("[%v]: Preprocessing failed (continuing): %v", stack, err)
+		return fmt.Errorf("[%v]: %w", stack, err)
 	}
 
 	if err := cloudformationStackOperator.DeleteCloudFormationStack(ctx, aws.String(stack), isRootStack, operatorManager); err != nil {

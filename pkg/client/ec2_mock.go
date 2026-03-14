@@ -40,6 +40,21 @@ func (m *MockIEC2) EXPECT() *MockIEC2MockRecorder {
 	return m.recorder
 }
 
+// CheckTerminationProtection mocks base method.
+func (m *MockIEC2) CheckTerminationProtection(ctx context.Context, instanceId *string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckTerminationProtection", ctx, instanceId)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckTerminationProtection indicates an expected call of CheckTerminationProtection.
+func (mr *MockIEC2MockRecorder) CheckTerminationProtection(ctx, instanceId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckTerminationProtection", reflect.TypeOf((*MockIEC2)(nil).CheckTerminationProtection), ctx, instanceId)
+}
+
 // DeleteNetworkInterface mocks base method.
 func (m *MockIEC2) DeleteNetworkInterface(ctx context.Context, networkInterfaceId *string) error {
 	m.ctrl.T.Helper()
@@ -67,4 +82,18 @@ func (m *MockIEC2) DescribeNetworkInterfaces(ctx context.Context, filters []type
 func (mr *MockIEC2MockRecorder) DescribeNetworkInterfaces(ctx, filters any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeNetworkInterfaces", reflect.TypeOf((*MockIEC2)(nil).DescribeNetworkInterfaces), ctx, filters)
+}
+
+// DisableTerminationProtection mocks base method.
+func (m *MockIEC2) DisableTerminationProtection(ctx context.Context, instanceId *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DisableTerminationProtection", ctx, instanceId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DisableTerminationProtection indicates an expected call of DisableTerminationProtection.
+func (mr *MockIEC2MockRecorder) DisableTerminationProtection(ctx, instanceId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableTerminationProtection", reflect.TypeOf((*MockIEC2)(nil).DisableTerminationProtection), ctx, instanceId)
 }

@@ -62,7 +62,7 @@ For a reference implementation, see [PR #569 (Athena WorkGroup)](https://github.
    - Append to `operators` slice
    - Add row to `supportedStackResourcesData` in `RaiseUnsupportedResourceError()`
 9. **`internal/operation/operator_collection_test.go`**: Update test cases
-10. **`go.mod` / `go.sum`**: Add AWS SDK service dependency (`go get github.com/aws/aws-sdk-go-v2/service/<service>`)
+10. **`go.mod` / `go.sum`**: Add AWS SDK service dependency (`go get github.com/aws/aws-sdk-go-v2/service/<service>`), then run `go mod tidy` to ensure dependencies are correctly classified as direct/indirect
 11. **[`README.md`](README.md#resource-types-that-can-be-forced-to-delete)**: Add row to "Resource Types that can be forced to delete" table
 12. **`testdata_full/`**: See [E2E Testing](#e2e-testing-testdata_full) section
 

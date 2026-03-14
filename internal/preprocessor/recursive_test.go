@@ -90,7 +90,7 @@ func TestRecursivePreprocessor_PreprocessRecursively(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "preprocessor failure is logged but does not cause error",
+			name: "preprocessor failure is propagated as error",
 			setup: func(cfn *client.MockICloudFormation, pp *mockPreprocessor) {
 				pp.err = fmt.Errorf("preprocess failed")
 				cfn.EXPECT().ListStackResources(gomock.Any(), aws.String("test-stack")).Return(
@@ -102,7 +102,47 @@ func TestRecursivePreprocessor_PreprocessRecursively(t *testing.T) {
 					}, nil,
 				)
 			},
-			wantErr: false,
+			wantErr: true,
+		},
+		{
+			name: "nested stack preprocessor failure propagates error",
+			setup: func(cfn *client.MockICloudFormation, pp *mockPreprocessor) {
+				pp.err = fmt.Errorf("nested preprocess failed")
+				cfn.EXPECT().ListStackResources(gomock.Any(), aws.String("test-stack")).Return(
+					[]types.StackResourceSummary{
+						{
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("nested-stack"),
+						},
+					}, nil,
+				)
+				cfn.EXPECT().ListStackResources(gomock.Any(), aws.String("nested-stack")).Return(
+					[]types.StackResourceSummary{
+						{
+							ResourceType:       aws.String("AWS::Lambda::Function"),
+							PhysicalResourceId: aws.String("nested-function"),
+						},
+					}, nil,
+				)
+			},
+			wantErr: true,
+		},
+		{
+			name: "nested stack list resources error propagates",
+			setup: func(cfn *client.MockICloudFormation, pp *mockPreprocessor) {
+				cfn.EXPECT().ListStackResources(gomock.Any(), aws.String("test-stack")).Return(
+					[]types.StackResourceSummary{
+						{
+							ResourceType:       aws.String("AWS::CloudFormation::Stack"),
+							PhysicalResourceId: aws.String("nested-stack"),
+						},
+					}, nil,
+				)
+				cfn.EXPECT().ListStackResources(gomock.Any(), aws.String("nested-stack")).Return(
+					nil, fmt.Errorf("nested list error"),
+				)
+			},
+			wantErr: true,
 		},
 	}
 

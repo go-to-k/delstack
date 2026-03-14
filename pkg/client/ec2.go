@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
@@ -18,6 +19,8 @@ const (
 type IEC2 interface {
 	DescribeNetworkInterfaces(ctx context.Context, filters []types.Filter) ([]types.NetworkInterface, error)
 	DeleteNetworkInterface(ctx context.Context, networkInterfaceId *string) error
+	CheckTerminationProtection(ctx context.Context, instanceId *string) (bool, error)
+	DisableTerminationProtection(ctx context.Context, instanceId *string) error
 }
 
 var _ IEC2 = (*EC2Client)(nil)
@@ -79,4 +82,44 @@ func (c *EC2Client) DeleteNetworkInterface(ctx context.Context, networkInterface
 			Err:          fmt.Errorf("timeout waiting for ENI to be deletable: %w", err),
 		}
 	}
+}
+
+func (c *EC2Client) CheckTerminationProtection(ctx context.Context, instanceId *string) (bool, error) {
+	input := &ec2.DescribeInstanceAttributeInput{
+		InstanceId: instanceId,
+		Attribute:  types.InstanceAttributeNameDisableApiTermination,
+	}
+
+	output, err := c.client.DescribeInstanceAttribute(ctx, input)
+	if err != nil {
+		return false, &ClientError{
+			ResourceName: instanceId,
+			Err:          err,
+		}
+	}
+
+	if output.DisableApiTermination != nil && output.DisableApiTermination.Value != nil {
+		return aws.ToBool(output.DisableApiTermination.Value), nil
+	}
+
+	return false, nil
+}
+
+func (c *EC2Client) DisableTerminationProtection(ctx context.Context, instanceId *string) error {
+	input := &ec2.ModifyInstanceAttributeInput{
+		InstanceId: instanceId,
+		DisableApiTermination: &types.AttributeBooleanValue{
+			Value: aws.Bool(false),
+		},
+	}
+
+	_, err := c.client.ModifyInstanceAttribute(ctx, input)
+	if err != nil {
+		return &ClientError{
+			ResourceName: instanceId,
+			Err:          err,
+		}
+	}
+
+	return nil
 }

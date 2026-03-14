@@ -32,43 +32,85 @@ func TestCompositePreprocessor_Preprocess(t *testing.T) {
 	}
 
 	cases := []struct {
-		name          string
-		preprocessors []IPreprocessor
-		wantErr       bool
+		name      string
+		checkers  []IPreprocessor
+		modifiers []IPreprocessor
+		wantErr   bool
 	}{
 		{
-			name:          "empty list",
-			preprocessors: []IPreprocessor{},
-			wantErr:       false,
+			name:      "empty lists",
+			checkers:  []IPreprocessor{},
+			modifiers: []IPreprocessor{},
+			wantErr:   false,
 		},
 		{
-			name: "single preprocessor success",
-			preprocessors: []IPreprocessor{
+			name: "single checker success",
+			checkers: []IPreprocessor{
+				&mockPreprocessor{err: nil},
+			},
+			modifiers: []IPreprocessor{},
+			wantErr:   false,
+		},
+		{
+			name:     "single modifier success",
+			checkers: []IPreprocessor{},
+			modifiers: []IPreprocessor{
 				&mockPreprocessor{err: nil},
 			},
 			wantErr: false,
 		},
 		{
-			name: "multiple preprocessors success",
-			preprocessors: []IPreprocessor{
+			name: "checker failure returns error",
+			checkers: []IPreprocessor{
+				&mockPreprocessor{err: fmt.Errorf("checker failed")},
+			},
+			modifiers: []IPreprocessor{},
+			wantErr:   true,
+		},
+		{
+			name: "multiple checker failures returns combined error",
+			checkers: []IPreprocessor{
+				&mockPreprocessor{err: fmt.Errorf("checker 1 failed")},
+				&mockPreprocessor{err: fmt.Errorf("checker 2 failed")},
+			},
+			modifiers: []IPreprocessor{},
+			wantErr:   true,
+		},
+		{
+			name:     "modifier failure does not return error",
+			checkers: []IPreprocessor{},
+			modifiers: []IPreprocessor{
+				&mockPreprocessor{err: fmt.Errorf("modifier failed")},
+			},
+			wantErr: false,
+		},
+		{
+			name: "checker failure prevents modifiers from running",
+			checkers: []IPreprocessor{
+				&mockPreprocessor{err: fmt.Errorf("checker failed")},
+			},
+			modifiers: []IPreprocessor{
 				&mockPreprocessor{err: nil},
+			},
+			wantErr: true,
+		},
+		{
+			name: "both checkers and modifiers succeed",
+			checkers: []IPreprocessor{
+				&mockPreprocessor{err: nil},
+			},
+			modifiers: []IPreprocessor{
 				&mockPreprocessor{err: nil},
 			},
 			wantErr: false,
 		},
 		{
-			name: "one failure does not affect others",
-			preprocessors: []IPreprocessor{
-				&mockPreprocessor{err: fmt.Errorf("preprocessor failed")},
+			name: "checker success then modifier failure returns no error",
+			checkers: []IPreprocessor{
 				&mockPreprocessor{err: nil},
 			},
-			wantErr: false,
-		},
-		{
-			name: "all failures still returns nil",
-			preprocessors: []IPreprocessor{
-				&mockPreprocessor{err: fmt.Errorf("preprocessor 1 failed")},
-				&mockPreprocessor{err: fmt.Errorf("preprocessor 2 failed")},
+			modifiers: []IPreprocessor{
+				&mockPreprocessor{err: fmt.Errorf("modifier failed")},
 			},
 			wantErr: false,
 		},
@@ -76,7 +118,7 @@ func TestCompositePreprocessor_Preprocess(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			composite := NewCompositePreprocessor(tt.preprocessors...)
+			composite := NewCompositePreprocessor(tt.checkers, tt.modifiers)
 			err := composite.Preprocess(context.Background(), aws.String("test-stack"), resources)
 
 			if (err != nil) != tt.wantErr {
