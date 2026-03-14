@@ -151,6 +151,7 @@ When creating a new `testdata_<name>/` directory, add a `cdk/.gitignore` that ex
 - `make testgen_dependency_retain`: Deploy CDK dependency test stacks with RETAIN resources
 - `make testgen_preprocessor`: Deploy preprocessor test stacks for Lambda VPC detachment testing
 - `make testgen_deletion_protection`: Deploy deletion protection test stacks for resource-level protection check/disable testing
+- `make testgen_deletion_protection_no_tp`: Deploy deletion protection test stacks without TerminationProtection (for testing resource-level protection only)
 - `make testgen_help`: Show help for all test stack generation targets
 
 ## Code Style & Conventions
