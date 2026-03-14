@@ -43,6 +43,9 @@ func (c *CompositePreprocessor) runCheckers(ctx context.Context, stackName *stri
 		return nil
 	}
 
+	// Use WaitGroup instead of errgroup to collect ALL errors from all checkers.
+	// errgroup cancels remaining goroutines on first error, which would prevent
+	// reporting all protected resources at once.
 	var mu sync.Mutex
 	var errs []error
 	var wg sync.WaitGroup
