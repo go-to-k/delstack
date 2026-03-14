@@ -61,14 +61,14 @@ Checks for resource-level deletion protection before attempting stack deletion.
 
 **With `-f` option**: Deletion protection is automatically disabled via AWS API before deletion proceeds.
 
-|  RESOURCE TYPE  |  PROTECTION TYPE  |  CHECK API  |  DISABLE API  |
-| ---- | ---- | ---- | ---- |
-|  `AWS::EC2::Instance`  |  Termination Protection  |  `DescribeInstanceAttribute`  |  `ModifyInstanceAttribute`  |
-|  `AWS::RDS::DBInstance`  |  Deletion Protection  |  `DescribeDBInstances`  |  `ModifyDBInstance`  |
-|  `AWS::RDS::DBCluster`  |  Deletion Protection  |  `DescribeDBClusters`  |  `ModifyDBCluster`  |
-|  `AWS::Cognito::UserPool`  |  Deletion Protection  |  `DescribeUserPool`  |  `UpdateUserPool`  |
-|  `AWS::Logs::LogGroup`  |  Deletion Protection  |  `DescribeLogGroups`  |  `PutLogGroupDeletionProtection`  |
-|  `AWS::ElasticLoadBalancingV2::LoadBalancer`  |  Deletion Protection  |  `DescribeLoadBalancerAttributes`  |  `ModifyLoadBalancerAttributes`  |
+|  RESOURCE TYPE  |
+| ---- |
+|  `AWS::EC2::Instance`  |
+|  `AWS::RDS::DBInstance`  |
+|  `AWS::RDS::DBCluster`  |
+|  `AWS::Cognito::UserPool`  |
+|  `AWS::Logs::LogGroup`  |
+|  `AWS::ElasticLoadBalancingV2::LoadBalancer`  |
 
 ### Resource Preparation
 
