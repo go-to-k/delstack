@@ -135,3 +135,4 @@ testgen_help:
 	@echo "  make testgen_deletion_protection OPT=\"-p my-profile\""
 	@echo "  make testgen_deletion_protection_no_tp"
 	@echo "  make testgen_deletion_protection_no_tp OPT=\"-s my-stage\""
+	@echo "  make testgen_deletion_protection_no_tp OPT=\"-p my-profile\""
