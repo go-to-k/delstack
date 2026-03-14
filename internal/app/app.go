@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/internal/io"
@@ -63,7 +64,7 @@ func NewApp(version string) *App {
 				Name:        "force",
 				Aliases:     []string{"f"},
 				Value:       false,
-				Usage:       "Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate",
+				Usage:       "Force Mode to delete stacks including resources with deletion policy Retain/RetainExceptOnCreate, resources with deletion protection, and stacks with TerminationProtection",
 				Destination: &app.ForceMode,
 			},
 			&cli.IntFlag{
@@ -107,17 +108,29 @@ func (a *App) getAction() func(c *cli.Context) error {
 			return err
 		}
 
-		operatorFactory := operation.NewOperatorFactory(config)
+		operatorFactory := operation.NewOperatorFactory(config, a.ForceMode)
 		cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator()
 
 		deduplicatedStackNames := a.deduplicateStackNames()
 
-		sortedStackNames, continuation, err := a.getSortedStackNames(c.Context, cloudformationStackOperator, deduplicatedStackNames)
+		sortedStackNames, tpStackNames, continuation, err := a.getSortedStackNames(c.Context, cloudformationStackOperator, deduplicatedStackNames)
 		if err != nil {
 			return err
 		}
 		if !continuation {
 			return nil
+		}
+
+		if len(tpStackNames) > 0 {
+			fmt.Fprintf(os.Stderr, "\nThe following stacks have TerminationProtection enabled:\n")
+			for _, name := range tpStackNames {
+				fmt.Fprintf(os.Stderr, "  - %s\n", name)
+			}
+			fmt.Fprintf(os.Stderr, "\nTerminationProtection will be disabled before deletion.\n")
+			if !io.GetYesNo("Do you want to proceed?") {
+				io.Logger.Info().Msg("Canceled.")
+				return nil
+			}
 		}
 
 		deleter := NewStackDeleter(a.ForceMode, a.ConcurrencyNumber)
@@ -158,33 +171,48 @@ func (a *App) deduplicateStackNames() []string {
 	return deduplicatedStackNames
 }
 
-func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperator *operation.CloudFormationStackOperator, specifiedStackNames []string) ([]string, bool, error) {
+func (a *App) getSortedStackNames(ctx context.Context, cloudformationStackOperator *operation.CloudFormationStackOperator, specifiedStackNames []string) ([]string, []string, bool, error) {
 	if len(specifiedStackNames) != 0 {
-		stackNames, err := cloudformationStackOperator.GetSortedStackNames(ctx, specifiedStackNames)
+		stackNames, tpStackNames, err := cloudformationStackOperator.GetSortedStackNames(ctx, specifiedStackNames, a.ForceMode)
 		if err != nil {
-			return nil, false, err
+			return nil, nil, false, err
 		}
-		return stackNames, true, nil
+		return stackNames, tpStackNames, true, nil
 	}
 
 	if a.InteractiveMode {
 		keyword := a.inputKeywordForFilter()
-		stacks, err := cloudformationStackOperator.ListStacksFilteredByKeyword(ctx, aws.String(keyword))
+		stacks, err := cloudformationStackOperator.ListStacksFilteredByKeyword(ctx, aws.String(keyword), a.ForceMode)
 		if err != nil {
-			return nil, false, err
+			return nil, nil, false, err
 		}
 
 		// The `ListStacksFilteredByKeyword` with SDK's `DescribeStacks` returns the stacks in descending order of CreationTime.
 		stackNames, continuation, err := a.selectStackNames(stacks)
 		if err != nil {
-			return nil, false, err
+			return nil, nil, false, err
+		}
+		if !continuation {
+			return nil, nil, false, nil
 		}
 
-		return stackNames, continuation, nil
+		// Strip TP marker and build TP stack list
+		var cleanStackNames []string
+		var tpStackNames []string
+		for _, name := range stackNames {
+			if strings.HasPrefix(name, operation.TerminationProtectionMarker) {
+				cleanName := strings.TrimPrefix(name, operation.TerminationProtectionMarker)
+				cleanStackNames = append(cleanStackNames, cleanName)
+				tpStackNames = append(tpStackNames, cleanName)
+			} else {
+				cleanStackNames = append(cleanStackNames, name)
+			}
+		}
+		return cleanStackNames, tpStackNames, true, nil
 	}
 
 	// never reach here
-	return nil, false, nil
+	return nil, nil, false, nil
 }
 
 func (a *App) inputKeywordForFilter() string {
@@ -195,7 +223,12 @@ func (a *App) inputKeywordForFilter() string {
 func (a *App) selectStackNames(stackNames []string) ([]string, bool, error) {
 	label := []string{
 		"Select StackNames.",
-		"Nested child stacks, XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks and EnableTerminationProtection stacks are not displayed.",
+	}
+	if a.ForceMode {
+		label = append(label, "Nested child stacks and XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks are not displayed.")
+		label = append(label, "(* = TerminationProtection)")
+	} else {
+		label = append(label, "Nested child stacks, XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks and EnableTerminationProtection stacks are not displayed.")
 	}
 
 	selectedStackNames, continuation, err := io.GetCheckboxes(label, stackNames, false)

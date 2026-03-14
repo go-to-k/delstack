@@ -1428,6 +1428,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 	cases := []struct {
 		name                        string
 		args                        args
+		forceMode                   bool
 		prepareMockCloudFormationFn func(m *client.MockICloudFormation)
 		want                        want
 		wantErr                     bool
@@ -1895,6 +1896,69 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name:      "delete stack successfully with forceMode for TP enabled stack",
+			forceMode: true,
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "DELETE_FAILED",
+							EnableTerminationProtection: aws.Bool(true),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().DisableTerminationProtection(gomock.Any(), aws.String("test")).Return(nil)
+
+				m.EXPECT().DeleteStack(gomock.Any(), aws.String("test"), []string{}).Return(nil)
+
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{},
+					nil,
+				)
+			},
+			want: want{
+				got: true,
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name:      "delete stack failure with forceMode for DisableTerminationProtection error",
+			forceMode: true,
+			args: args{
+				ctx:         context.Background(),
+				stackName:   aws.String("test"),
+				isRootStack: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("test"),
+							StackStatus:                 "CREATE_COMPLETE",
+							EnableTerminationProtection: aws.Bool(true),
+						},
+					},
+					nil,
+				)
+
+				m.EXPECT().DisableTerminationProtection(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DisableTerminationProtectionError"))
+			},
+			want: want{
+				got: false,
+				err: fmt.Errorf("TerminationProtectionError: failed to disable termination protection for test: DisableTerminationProtectionError"),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range cases {
@@ -1906,6 +1970,7 @@ func TestCloudFormationStackOperator_deleteStackNormally(t *testing.T) {
 
 			s3Mock := client.NewMockIS3(ctrl)
 			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock)
+			cloudformationStackOperator.forceMode = tt.forceMode
 
 			got, err := cloudformationStackOperator.deleteStackNormally(tt.args.ctx, tt.args.stackName, tt.args.isRootStack)
 			if (err != nil) != tt.wantErr {
@@ -1929,10 +1994,12 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		stackNames []string
+		forceMode  bool
 	}
 
 	type want struct {
 		sortedStackNames []string
+		tpStackNames     []string
 		err              error
 	}
 
@@ -2249,6 +2316,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
+				tpStackNames:     []string{"Stack2", "Stack4"},
 				err:              fmt.Errorf("TerminationProtectionError: Stack2, Stack4"),
 			},
 			wantErr: true,
@@ -2372,6 +2440,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
+				tpStackNames:     []string{"Stack3"},
 				err:              fmt.Errorf("NotExistsError: Stack4 not found"),
 			},
 			wantErr: true,
@@ -2489,6 +2558,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
+				tpStackNames:     []string{"Stack3"},
 				err:              fmt.Errorf("NotExistsError: Stack4 not found"),
 			},
 			wantErr: true,
@@ -2554,6 +2624,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			want: want{
 				sortedStackNames: []string{},
+				tpStackNames:     []string{"Stack3"},
 				err:              fmt.Errorf("TerminationProtectionError: Stack3"),
 			},
 			wantErr: true,
@@ -2583,6 +2654,53 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "sort stacks with forceMode successfully including TP stacks",
+			args: args{
+				ctx:        ctx,
+				stackNames: []string{"Stack1", "Stack2", "Stack3"},
+				forceMode:  true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack1")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack1"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now().Add(-30 * time.Minute)),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack2")).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("Stack2"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							CreationTime:                aws.Time(time.Now().Add(-20 * time.Minute)),
+							EnableTerminationProtection: aws.Bool(true),
+						},
+					},
+					nil,
+				)
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("Stack3")).Return(
+					[]types.Stack{
+						{
+							StackName:    aws.String("Stack3"),
+							StackStatus:  types.StackStatusCreateComplete,
+							CreationTime: aws.Time(time.Now()),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				sortedStackNames: []string{"Stack3", "Stack2", "Stack1"},
+				tpStackNames:     []string{"Stack2"},
+				err:              nil,
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range cases {
@@ -2595,7 +2713,7 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			s3Mock := client.NewMockIS3(ctrl)
 			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock)
 
-			output, err := cloudformationStackOperator.GetSortedStackNames(tt.args.ctx, tt.args.stackNames)
+			output, tpStackNames, err := cloudformationStackOperator.GetSortedStackNames(tt.args.ctx, tt.args.stackNames, tt.args.forceMode)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
@@ -2607,6 +2725,13 @@ func TestCloudFormationStackOperator_GetSortedStackNames(t *testing.T) {
 			if !reflect.DeepEqual(output, tt.want.sortedStackNames) {
 				t.Errorf("output = %#v, want %#v", output, tt.want.sortedStackNames)
 			}
+			wantTP := tt.want.tpStackNames
+			if wantTP == nil {
+				wantTP = []string{}
+			}
+			if !reflect.DeepEqual(tpStackNames, wantTP) {
+				t.Errorf("tpStackNames = %#v, want %#v", tpStackNames, wantTP)
+			}
 		})
 	}
 }
@@ -2616,8 +2741,9 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
-		ctx     context.Context
-		keyword string
+		ctx       context.Context
+		keyword   string
+		forceMode bool
 	}
 
 	type want struct {
@@ -2958,6 +3084,72 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "list stacks filtered by keyword with forceMode including TP stacks with marker",
+			args: args{
+				ctx:       ctx,
+				keyword:   "TestStack",
+				forceMode: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("TestStack1"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							EnableTerminationProtection: aws.Bool(false),
+						},
+						{
+							StackName:                   aws.String("TestStack2"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							EnableTerminationProtection: aws.Bool(true),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				filteredStacks: []string{
+					"TestStack1",
+					"* TestStack2",
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list stacks filtered by keyword with forceMode all TP stacks with marker",
+			args: args{
+				ctx:       ctx,
+				keyword:   "TestStack",
+				forceMode: true,
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), nil).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("TestStack1"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							EnableTerminationProtection: aws.Bool(true),
+						},
+						{
+							StackName:                   aws.String("TestStack2"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							EnableTerminationProtection: aws.Bool(true),
+						},
+					},
+					nil,
+				)
+			},
+			want: want{
+				filteredStacks: []string{
+					"* TestStack1",
+					"* TestStack2",
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range cases {
@@ -2970,7 +3162,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 			s3Mock := client.NewMockIS3(ctrl)
 			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{}, cloudformationMock, s3Mock)
 
-			output, err := cloudformationStackOperator.ListStacksFilteredByKeyword(tt.args.ctx, &tt.args.keyword)
+			output, err := cloudformationStackOperator.ListStacksFilteredByKeyword(tt.args.ctx, &tt.args.keyword, tt.args.forceMode)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return

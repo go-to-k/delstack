@@ -127,3 +127,4 @@ testgen_help:
 	@echo "  make testgen_deletion_protection"
 	@echo "  make testgen_deletion_protection OPT=\"-s my-stage\""
 	@echo "  make testgen_deletion_protection OPT=\"-p my-profile\""
+	@echo "  make testgen_deletion_protection OPT=\"-t\"       # Disable stack TerminationProtection"

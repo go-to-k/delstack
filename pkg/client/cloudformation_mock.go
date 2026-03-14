@@ -69,6 +69,20 @@ func (mr *MockICloudFormationMockRecorder) DescribeStacks(ctx, stackName any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStacks", reflect.TypeOf((*MockICloudFormation)(nil).DescribeStacks), ctx, stackName)
 }
 
+// DisableTerminationProtection mocks base method.
+func (m *MockICloudFormation) DisableTerminationProtection(ctx context.Context, stackName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DisableTerminationProtection", ctx, stackName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DisableTerminationProtection indicates an expected call of DisableTerminationProtection.
+func (mr *MockICloudFormationMockRecorder) DisableTerminationProtection(ctx, stackName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableTerminationProtection", reflect.TypeOf((*MockICloudFormation)(nil).DisableTerminationProtection), ctx, stackName)
+}
+
 // GetTemplate mocks base method.
 func (m *MockICloudFormation) GetTemplate(ctx context.Context, stackName *string) (*string, error) {
 	m.ctrl.T.Helper()

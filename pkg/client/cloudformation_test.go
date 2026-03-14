@@ -1602,3 +1602,93 @@ func TestCloudFormation_ListImports(t *testing.T) {
 		})
 	}
 }
+
+func TestCloudFormation_DisableTerminationProtection(t *testing.T) {
+	type args struct {
+		ctx                context.Context
+		stackName          *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    error
+		wantErr bool
+	}{
+		{
+			name: "disable termination protection successfully",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DisableTerminationProtectionMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &cloudformation.UpdateTerminationProtectionOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "disable termination protection failure",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DisableTerminationProtectionErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{}, middleware.Metadata{}, fmt.Errorf("UpdateTerminationProtectionError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    &ClientError{ResourceName: aws.String("test"), Err: fmt.Errorf("operation error CloudFormation: UpdateTerminationProtection, UpdateTerminationProtectionError")},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := cloudformation.NewFromConfig(cfg)
+			cfnDeleteWaiter := cloudformation.NewStackDeleteCompleteWaiter(client)
+			cfnUpdateWaiter := cloudformation.NewStackUpdateCompleteWaiter(client)
+			cfnClient := NewCloudFormation(
+				client,
+				cfnDeleteWaiter,
+				cfnUpdateWaiter,
+			)
+
+			err = cfnClient.DisableTerminationProtection(tt.args.ctx, tt.args.stackName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.Error())
+				return
+			}
+		})
+	}
+}

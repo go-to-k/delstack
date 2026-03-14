@@ -48,11 +48,14 @@ type S3UploadResult struct {
 	Key         *string
 }
 
+const TerminationProtectionMarker = "* "
+
 type CloudFormationStackOperator struct {
 	config    aws.Config
 	client    client.ICloudFormation
 	s3Client  client.IS3
 	resources []*types.StackResourceSummary
+	forceMode bool
 }
 
 func NewCloudFormationStackOperator(config aws.Config, client client.ICloudFormation, s3Client client.IS3) *CloudFormationStackOperator {
@@ -85,7 +88,7 @@ func (o *CloudFormationStackOperator) DeleteResources(ctx context.Context) error
 			stackName := StackNameRuleRegExp.ReplaceAllString(aws.ToString(stack.PhysicalResourceId), `$1`)
 
 			isRootStack := false
-			operatorFactory := NewOperatorFactory(o.config)
+			operatorFactory := NewOperatorFactory(o.config, o.forceMode)
 			operatorCollection := NewOperatorCollection(o.config, operatorFactory)
 			operatorManager := NewOperatorManager(operatorCollection)
 
@@ -154,7 +157,14 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 	}
 
 	if stacksBeforeDelete[0].EnableTerminationProtection != nil && *stacksBeforeDelete[0].EnableTerminationProtection {
-		return false, fmt.Errorf("TerminationProtectionError: %v", *stackName)
+		if !o.forceMode {
+			return false, fmt.Errorf("TerminationProtectionError: %v", *stackName)
+		}
+		io.Logger.Info().Msgf("[%v]: Disabling TerminationProtection...", *stackName)
+		if disableErr := o.client.DisableTerminationProtection(ctx, stackName); disableErr != nil {
+			return false, fmt.Errorf("TerminationProtectionError: failed to disable termination protection for %v: %w", *stackName, disableErr)
+		}
+		io.Logger.Info().Msgf("[%v]: TerminationProtection disabled.", *stackName)
 	}
 	if o.isExceptedByStackStatus(stacksBeforeDelete[0].StackStatus) {
 		return false, fmt.Errorf("OperationInProgressError: Stacks with XxxInProgress cannot be deleted, but %v: %v", stacksBeforeDelete[0].StackStatus, *stackName)
@@ -179,7 +189,7 @@ func (o *CloudFormationStackOperator) deleteStackNormally(ctx context.Context, s
 	return false, nil
 }
 
-func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, stackNames []string) ([]string, error) {
+func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, stackNames []string, forceMode bool) ([]string, []string, error) {
 	sortedStackNames := []string{}
 	gotStacks := []types.Stack{}
 	notFoundStackNames := []string{}
@@ -194,7 +204,7 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 	for _, stackName := range stackNames {
 		stack, err := o.client.DescribeStacks(ctx, aws.String(stackName))
 		if err != nil {
-			return sortedStackNames, err
+			return sortedStackNames, terminationProtectionStackNames, err
 		}
 
 		if len(stack) == 0 {
@@ -202,10 +212,12 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 			continue
 		}
 
-		// except the stacks with EnableTerminationProtection
+		// check the stacks with EnableTerminationProtection
 		if stack[0].EnableTerminationProtection != nil && *stack[0].EnableTerminationProtection {
 			terminationProtectionStackNames = append(terminationProtectionStackNames, stackName)
-			continue
+			if !forceMode {
+				continue
+			}
 		}
 
 		// except the stacks that are in the exception list
@@ -222,10 +234,10 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 
 	if len(notFoundStackNames) > 0 {
 		errMsg := fmt.Sprintf("%s not found", strings.Join(notFoundStackNames, ", "))
-		return sortedStackNames, fmt.Errorf("NotExistsError: %v", errMsg)
+		return sortedStackNames, terminationProtectionStackNames, fmt.Errorf("NotExistsError: %v", errMsg)
 	}
-	if len(terminationProtectionStackNames) > 0 {
-		return sortedStackNames, fmt.Errorf("TerminationProtectionError: %v", strings.Join(terminationProtectionStackNames, ", "))
+	if len(terminationProtectionStackNames) > 0 && !forceMode {
+		return sortedStackNames, terminationProtectionStackNames, fmt.Errorf("TerminationProtectionError: %v", strings.Join(terminationProtectionStackNames, ", "))
 	}
 	if len(stackNamesInProgress) > 0 {
 		var stackNamesWithStatus []string
@@ -233,7 +245,7 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 			stackNamesWithStatus = append(stackNamesWithStatus, fmt.Sprintf("%s: %s", stack.stackStatus, stack.stackName))
 		}
 		errMsg := fmt.Sprintf("Stacks with XxxInProgress cannot be deleted, but %s", strings.Join(stackNamesWithStatus, ", "))
-		return sortedStackNames, fmt.Errorf("OperationInProgressError: %v", errMsg)
+		return sortedStackNames, terminationProtectionStackNames, fmt.Errorf("OperationInProgressError: %v", errMsg)
 	}
 
 	// Sort gotStacks in descending order by stack.CreationTime
@@ -243,10 +255,10 @@ func (o *CloudFormationStackOperator) GetSortedStackNames(ctx context.Context, s
 	for _, stack := range gotStacks {
 		sortedStackNames = append(sortedStackNames, *stack.StackName)
 	}
-	return sortedStackNames, nil
+	return sortedStackNames, terminationProtectionStackNames, nil
 }
 
-func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword *string) ([]string, error) {
+func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Context, keyword *string, forceMode bool) ([]string, error) {
 	filteredStacks := []string{}
 
 	// Use DescribeStacks instead of ListStacks to take EnableTerminationProtection
@@ -263,8 +275,10 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 			continue
 		}
 
-		// except the stacks with EnableTerminationProtection
-		if stack.EnableTerminationProtection != nil && *stack.EnableTerminationProtection {
+		isTerminationProtected := stack.EnableTerminationProtection != nil && *stack.EnableTerminationProtection
+
+		// except the stacks with EnableTerminationProtection (unless forceMode)
+		if isTerminationProtected && !forceMode {
 			continue
 		}
 
@@ -276,7 +290,11 @@ func (o *CloudFormationStackOperator) ListStacksFilteredByKeyword(ctx context.Co
 		// for case-insensitive
 		lowerStackName := strings.ToLower(*stack.StackName)
 		if strings.Contains(lowerStackName, lowerKeyword) {
-			filteredStacks = append(filteredStacks, *stack.StackName)
+			stackName := *stack.StackName
+			if isTerminationProtected {
+				stackName = TerminationProtectionMarker + stackName
+			}
+			filteredStacks = append(filteredStacks, stackName)
 		}
 	}
 

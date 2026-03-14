@@ -397,7 +397,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			config := aws.Config{}
-			operatorFactory := NewOperatorFactory(config)
+			operatorFactory := NewOperatorFactory(config, false)
 			operatorCollection := NewOperatorCollection(config, operatorFactory)
 
 			operatorCollection.SetOperatorCollection(tt.args.stackName, tt.args.stackResourceSummaries)
@@ -471,7 +471,7 @@ func TestOperatorCollection_SetOperatorCollection_MultipleCallsResetState(t *tes
 	io.NewLogger(false)
 
 	config := aws.Config{}
-	operatorFactory := NewOperatorFactory(config)
+	operatorFactory := NewOperatorFactory(config, false)
 	operatorCollection := NewOperatorCollection(config, operatorFactory)
 
 	stackName := aws.String("test-stack")
@@ -657,7 +657,7 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			config := aws.Config{}
-			operatorFactory := NewOperatorFactory(config)
+			operatorFactory := NewOperatorFactory(config, false)
 			operatorCollection := NewOperatorCollection(config, operatorFactory)
 
 			got := operatorCollection.containsResourceType(tt.args.resource)

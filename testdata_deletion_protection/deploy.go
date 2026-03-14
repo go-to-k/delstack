@@ -19,8 +19,9 @@ const (
 )
 
 type Options struct {
-	Profile string
-	Stage   string
+	Profile                  string
+	Stage                    string
+	NoTerminationProtection  bool
 }
 
 type DeployStackService struct {
@@ -121,10 +122,16 @@ func (s *DeployStackService) initAWSClients() error {
 func (s *DeployStackService) cdkDeploy() error {
 	color.Green("=== cdk_deploy ===")
 
+	terminationProtection := "true"
+	if s.Options.NoTerminationProtection {
+		terminationProtection = "false"
+	}
+
 	cmd := fmt.Sprintf(
-		"cd cdk && cdk deploy --all --require-approval never %s -c PJ_PREFIX=%s",
+		"cd cdk && cdk deploy --all --require-approval never %s -c PJ_PREFIX=%s -c TERMINATION_PROTECTION=%s",
 		s.ProfileOption,
 		s.CfnPjPrefix,
+		terminationProtection,
 	)
 
 	if err := runCommand(cmd); err != nil {
@@ -157,11 +164,14 @@ func parseArgs() Options {
 				options.Stage = os.Args[i+1]
 				i++
 			}
+		case "-t", "--no-tp":
+			options.NoTerminationProtection = true
 		case "-h", "--help":
 			fmt.Println("Usage: go run deploy.go [options]")
 			fmt.Println("Options:")
 			fmt.Println("  -p, --profile <profile>  AWS profile name")
 			fmt.Println("  -s, --stage <stage>      Stage name (default: auto-generated)")
+			fmt.Println("  -t, --no-tp              Disable stack TerminationProtection (default: enabled)")
 			os.Exit(0)
 		}
 	}
