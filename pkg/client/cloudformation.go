@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 )
@@ -20,6 +21,7 @@ type ICloudFormation interface {
 	UpdateStack(ctx context.Context, stackName *string, templateBody *string, parameters []types.Parameter) error
 	UpdateStackWithTemplateURL(ctx context.Context, stackName *string, templateURL *string, parameters []types.Parameter) error
 	ListImports(ctx context.Context, exportName *string) ([]string, error)
+	DisableTerminationProtection(ctx context.Context, stackName *string) error
 }
 
 var _ ICloudFormation = (*CloudFormation)(nil)
@@ -243,6 +245,22 @@ func (c *CloudFormation) ListImports(ctx context.Context, exportName *string) ([
 	}
 
 	return importingStackNames, nil
+}
+
+func (c *CloudFormation) DisableTerminationProtection(ctx context.Context, stackName *string) error {
+	input := &cloudformation.UpdateTerminationProtectionInput{
+		StackName:                   stackName,
+		EnableTerminationProtection: aws.Bool(false),
+	}
+
+	if _, err := c.client.UpdateTerminationProtection(ctx, input); err != nil {
+		return &ClientError{
+			ResourceName: stackName,
+			Err:          err,
+		}
+	}
+
+	return nil
 }
 
 func (c *CloudFormation) waitUpdateStack(ctx context.Context, stackName *string) error {

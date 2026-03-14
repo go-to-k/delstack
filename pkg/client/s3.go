@@ -58,7 +58,8 @@ func NewS3(client *s3.Client, directoryBucketsFlag bool) *S3 {
 			strings.Contains(err.Error(), "https response error StatusCode: 0") ||
 			strings.Contains(err.Error(), "EOF") ||
 			strings.Contains(err.Error(), "Please try again") ||
-			strings.Contains(err.Error(), "connection reset by peer")
+			strings.Contains(err.Error(), "connection reset by peer") ||
+			strings.Contains(err.Error(), "no such host")
 	}
 	retryer := NewRetryer(retryable, SleepTimeSecForS3)
 

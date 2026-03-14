@@ -22,6 +22,9 @@ func NewDeletionProtectionTestStack(scope constructs.Construct, id string, props
 	// Create RDS DBInstance with deletion protection
 	resource.NewRdsInstance(stack, vpc)
 
+	// Create RDS Aurora DBCluster with deletion protection
+	resource.NewRdsCluster(stack, vpc)
+
 	// Create Cognito UserPool with deletion protection
 	resource.NewCognitoUserPool(stack)
 
@@ -44,11 +47,19 @@ func main() {
 		pjPrefix = "DelstackDeletionProtectionTest"
 	}
 
+	terminationProtection := true
+	if tp := app.Node().TryGetContext(jsii.String("TERMINATION_PROTECTION")); tp != nil {
+		if tp.(string) == "false" {
+			terminationProtection = false
+		}
+	}
+
 	stackName := pjPrefix
 
 	NewDeletionProtectionTestStack(app, stackName, &awscdk.StackProps{
-		Env:       env(),
-		StackName: jsii.String(stackName),
+		Env:                   env(),
+		StackName:             jsii.String(stackName),
+		TerminationProtection: jsii.Bool(terminationProtection),
 	})
 
 	app.Synth(nil)

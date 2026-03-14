@@ -16,12 +16,14 @@ import (
 const SDKRetryMaxAttempts = 3
 
 type OperatorFactory struct {
-	config aws.Config
+	config    aws.Config
+	forceMode bool
 }
 
-func NewOperatorFactory(config aws.Config) *OperatorFactory {
+func NewOperatorFactory(config aws.Config, forceMode bool) *OperatorFactory {
 	return &OperatorFactory{
-		config,
+		config:    config,
+		forceMode: forceMode,
 	}
 }
 
@@ -36,7 +38,7 @@ func (f *OperatorFactory) CreateCloudFormationStackOperator() *CloudFormationSta
 		o.RetryMaxAttempts = SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
 	})
-	return NewCloudFormationStackOperator(
+	op := NewCloudFormationStackOperator(
 		f.config,
 		client.NewCloudFormation(
 			sdkCfnClient,
@@ -45,6 +47,8 @@ func (f *OperatorFactory) CreateCloudFormationStackOperator() *CloudFormationSta
 		),
 		client.NewS3(sdkS3Client, false),
 	)
+	op.forceMode = f.forceMode
+	return op
 }
 
 func (f *OperatorFactory) CreateBackupVaultOperator() *BackupVaultOperator {

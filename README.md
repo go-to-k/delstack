@@ -14,7 +14,7 @@ CloudFormation has a built-in force delete option (`FORCE_DELETE_STACK`), but it
 
 **Works with stacks created by any tool**: Not just raw CloudFormation, but also stacks deployed via **AWS CDK**, **AWS Amplify**, **AWS SAM**, **Serverless Framework**, and other Infrastructure as Code tools that use CloudFormation under the hood.
 
-You can delete multiple stacks **in parallel with automatic dependency resolution**, select stacks **interactively** in the UI, and force delete resources with **`Retain` or `RetainExceptOnCreate` deletion policies**. If any resources have **deletion protection** enabled (EC2, RDS, Cognito, etc.), the tool **reports them and aborts** without attempting deletion. With the `-f` option, it **automatically disables** the protection and proceeds with deletion.
+You can delete multiple stacks **in parallel with automatic dependency resolution**, select stacks **interactively** in the UI, and force delete resources with **`Retain` or `RetainExceptOnCreate` deletion policies**. If any resources have **deletion protection** enabled (EC2, RDS, Cognito, etc.), the tool **reports them and aborts** without attempting deletion. With the `-f` option, it **automatically disables** the protection and proceeds with deletion. Stacks with **TerminationProtection** enabled can also be force-deleted with `-f`.
 
 **Pre-deletion Processing**: delstack automatically performs processing before CloudFormation deletion starts to optimize and prepare for stack deletion.
 
@@ -46,7 +46,7 @@ All resources that do not fail normal deletion can be deleted as is.
 - This tool can be used even for stacks that do not contain any of the above targets for forced deletion.
   - So **all stack deletions can basically be done with this tool!!**
 - If there are resources other than those listed above that result in DELETE_FAILED, the deletion will fail.
-- **"Termination Protection" stacks will not be deleted.** Because it probably really should not want to delete it.
+- **"Termination Protection" stacks will not be deleted** without `-f`. With `-f`, TerminationProtection is automatically disabled before deletion (with a confirmation prompt).
 - Deletion of resources that fail to be deleted because they are used by other stack resources, i.e., **resources that are referenced (depended on) from outside the stack, is not supported**. Only forced deletion of resources that can be completed only within the stack is supported.
 
 ## Pre-deletion Processing
@@ -61,14 +61,14 @@ Checks for resource-level deletion protection before attempting stack deletion.
 
 **With `-f` option**: Deletion protection is automatically disabled via AWS API before deletion proceeds.
 
-|  RESOURCE TYPE  |  PROTECTION TYPE  |  CHECK API  |  DISABLE API  |
-| ---- | ---- | ---- | ---- |
-|  `AWS::EC2::Instance`  |  Termination Protection  |  `DescribeInstanceAttribute`  |  `ModifyInstanceAttribute`  |
-|  `AWS::RDS::DBInstance`  |  Deletion Protection  |  `DescribeDBInstances`  |  `ModifyDBInstance`  |
-|  `AWS::RDS::DBCluster`  |  Deletion Protection  |  `DescribeDBClusters`  |  `ModifyDBCluster`  |
-|  `AWS::Cognito::UserPool`  |  Deletion Protection  |  `DescribeUserPool`  |  `UpdateUserPool`  |
-|  `AWS::Logs::LogGroup`  |  Deletion Protection  |  `DescribeLogGroups`  |  `PutLogGroupDeletionProtection`  |
-|  `AWS::ElasticLoadBalancingV2::LoadBalancer`  |  Deletion Protection  |  `DescribeLoadBalancerAttributes`  |  `ModifyLoadBalancerAttributes`  |
+|  RESOURCE TYPE  |
+| ---- |
+|  AWS::EC2::Instance  |
+|  AWS::RDS::DBInstance  |
+|  AWS::RDS::DBCluster  |
+|  AWS::Cognito::UserPool  |
+|  AWS::Logs::LogGroup  |
+|  AWS::ElasticLoadBalancingV2::LoadBalancer  |
 
 ### Resource Preparation
 
@@ -135,7 +135,7 @@ Among the resources in the stack, the following are not resources that fail duri
 - -i, --interactive: optional
   - Interactive Mode
 - -f, --force: optional
-  - Force Mode to delete stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`**
+  - Force Mode to delete stacks including resources with **deletion policy `Retain`/`RetainExceptOnCreate`**, resources with **deletion protection**, and stacks with **TerminationProtection**
 - -n, --concurrencyNumber: optional(default: unlimited)
   - Specify the number of parallel stack deletions. Default is unlimited (delete all stacks in parallel).
 
@@ -170,11 +170,11 @@ However, **the `-s` command option allows deletion of CHILD stacks by specifying
 
 And stacks with **the XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) CloudFormation status** are not displayed, because multiple CloudFormation operations should not be duplicated at the same time.
 
-Also, **"Termination Protection"** stacks will not be displayed, because it probably really should not want to delete it.
+Also, **"Termination Protection"** stacks will not be displayed without `-f`. With `-f`, they are displayed with a **`*` prefix marker** indicating TerminationProtection is enabled.
 
 ## Force Mode
 
-If you specify the `-f, --force` option, stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`** will be deleted. Additionally, if any resources have **deletion protection** enabled (EC2, RDS, Cognito, etc.), the protection is **automatically disabled** before deletion.
+If you specify the `-f, --force` option, stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`** will be deleted. Additionally, if any resources have **deletion protection** enabled (EC2, RDS, Cognito, etc.), the protection is **automatically disabled** before deletion. Stacks with **TerminationProtection** enabled are also supported: after a confirmation prompt, the protection is disabled and the stack is deleted.
 
 ```bash
 delstack -f -s dev-goto-01-TestStack
