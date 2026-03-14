@@ -10,6 +10,8 @@ The description in **English** is available on the following blog page. -> [Blog
 
 Tool to force delete the **entire** AWS CloudFormation stack, even if it contains resources that **fail to delete** by the CloudFormation delete operation.
 
+CloudFormation has a built-in force delete option (`FORCE_DELETE_STACK`), but it just removes the stack and **leaves the failed resources behind** in your account. **delstack** actually cleans them up. It empties S3 buckets, removes ECR images, and more, then deletes the stack cleanly with **no orphaned resources**.
+
 **Works with stacks created by any tool**: Not just raw CloudFormation, but also stacks deployed via **AWS CDK**, **AWS Amplify**, **AWS SAM**, **Serverless Framework**, and other Infrastructure as Code tools that use CloudFormation under the hood.
 
 You can delete multiple stacks **in parallel with automatic dependency resolution**, select stacks **interactively** in the UI, and force delete resources with **`Retain` or `RetainExceptOnCreate` deletion policies**.
