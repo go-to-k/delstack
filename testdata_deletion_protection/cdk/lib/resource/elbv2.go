@@ -8,10 +8,9 @@ import (
 )
 
 // NewAlb creates an ELBv2 Application Load Balancer with deletion protection enabled.
-func NewAlb(scope constructs.Construct, pjPrefix string, vpc awsec2.Vpc) awselasticloadbalancingv2.ApplicationLoadBalancer {
+func NewAlb(scope constructs.Construct, vpc awsec2.Vpc) awselasticloadbalancingv2.ApplicationLoadBalancer {
 	alb := awselasticloadbalancingv2.NewApplicationLoadBalancer(scope, jsii.String("Alb"), &awselasticloadbalancingv2.ApplicationLoadBalancerProps{
-		LoadBalancerName: jsii.String(pjPrefix + "-ALB"),
-		Vpc:              vpc,
+		Vpc: vpc,
 		InternetFacing:   jsii.Bool(true),
 		VpcSubnets: &awsec2.SubnetSelection{
 			SubnetType: awsec2.SubnetType_PUBLIC,

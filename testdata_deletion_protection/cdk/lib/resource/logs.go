@@ -11,9 +11,8 @@ import (
 // Note: CDK v2.176.0 does not support DeletionProtectionEnabled in LogGroupProps or
 // CfnLogGroupProps directly. We use AddPropertyOverride on the underlying CfnLogGroup
 // to set the DeletionProtectionEnabled property at the CloudFormation level.
-func NewLogGroup(scope constructs.Construct, pjPrefix string) awslogs.LogGroup {
+func NewLogGroup(scope constructs.Construct) awslogs.LogGroup {
 	logGroup := awslogs.NewLogGroup(scope, jsii.String("LogGroup"), &awslogs.LogGroupProps{
-		LogGroupName:  jsii.String(pjPrefix + "-LogGroup"),
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 		Retention:     awslogs.RetentionDays_ONE_DAY,
 	})

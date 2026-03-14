@@ -10,35 +10,26 @@ import (
 	"cdk/lib/resource"
 )
 
-type DeletionProtectionTestStackProps struct {
-	awscdk.StackProps
-	PjPrefix string
-}
-
-func NewDeletionProtectionTestStack(scope constructs.Construct, id string, props *DeletionProtectionTestStackProps) awscdk.Stack {
-	var sprops awscdk.StackProps
-	if props != nil {
-		sprops = props.StackProps
-	}
-	stack := awscdk.NewStack(scope, &id, &sprops)
+func NewDeletionProtectionTestStack(scope constructs.Construct, id string, props *awscdk.StackProps) awscdk.Stack {
+	stack := awscdk.NewStack(scope, &id, props)
 
 	// Create VPC resources (shared by EC2, RDS, and ELBv2)
-	vpc := resource.NewVpc(stack, props.PjPrefix)
+	vpc := resource.NewVpc(stack)
 
 	// Create EC2 Instance with API termination protection
-	resource.NewEc2Instance(stack, props.PjPrefix, vpc)
+	resource.NewEc2Instance(stack, vpc)
 
 	// Create RDS DBInstance with deletion protection
-	resource.NewRdsInstance(stack, props.PjPrefix, vpc)
+	resource.NewRdsInstance(stack, vpc)
 
 	// Create Cognito UserPool with deletion protection
-	resource.NewCognitoUserPool(stack, props.PjPrefix)
+	resource.NewCognitoUserPool(stack)
 
 	// Create ELBv2 ALB with deletion protection
-	resource.NewAlb(stack, props.PjPrefix, vpc)
+	resource.NewAlb(stack, vpc)
 
 	// Create CloudWatch LogGroup with deletion protection
-	resource.NewLogGroup(stack, props.PjPrefix)
+	resource.NewLogGroup(stack)
 
 	return stack
 }
@@ -55,12 +46,9 @@ func main() {
 
 	stackName := pjPrefix
 
-	NewDeletionProtectionTestStack(app, stackName, &DeletionProtectionTestStackProps{
-		StackProps: awscdk.StackProps{
-			Env:       env(),
-			StackName: jsii.String(stackName),
-		},
-		PjPrefix: pjPrefix,
+	NewDeletionProtectionTestStack(app, stackName, &awscdk.StackProps{
+		Env:       env(),
+		StackName: jsii.String(stackName),
 	})
 
 	app.Synth(nil)

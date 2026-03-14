@@ -6,7 +6,7 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-func NewVpc(scope constructs.Construct, pjPrefix string) awsec2.Vpc {
+func NewVpc(scope constructs.Construct) awsec2.Vpc {
 	vpc := awsec2.NewVpc(scope, jsii.String("Vpc"), &awsec2.VpcProps{
 		IpAddresses: awsec2.IpAddresses_Cidr(jsii.String("10.194.0.0/16")),
 		MaxAzs:      jsii.Number(2), // ALB requires at least 2 AZs

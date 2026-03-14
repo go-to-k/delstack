@@ -8,9 +8,8 @@ import (
 )
 
 // NewEc2Instance creates an EC2 Instance with API termination protection enabled.
-func NewEc2Instance(scope constructs.Construct, pjPrefix string, vpc awsec2.Vpc) awsec2.Instance {
+func NewEc2Instance(scope constructs.Construct, vpc awsec2.Vpc) awsec2.Instance {
 	instance := awsec2.NewInstance(scope, jsii.String("Ec2Instance"), &awsec2.InstanceProps{
-		InstanceName: jsii.String(pjPrefix + "-Ec2Instance"),
 		InstanceType: awsec2.InstanceType_Of(awsec2.InstanceClass_T3, awsec2.InstanceSize_MICRO),
 		MachineImage: awsec2.MachineImage_LatestAmazonLinux2023(&awsec2.AmazonLinux2023ImageSsmParameterProps{}),
 		Vpc:          vpc,

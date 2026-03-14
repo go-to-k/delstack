@@ -9,9 +9,8 @@ import (
 )
 
 // NewRdsInstance creates an RDS DBInstance with deletion protection enabled.
-func NewRdsInstance(scope constructs.Construct, pjPrefix string, vpc awsec2.Vpc) awsrds.DatabaseInstance {
+func NewRdsInstance(scope constructs.Construct, vpc awsec2.Vpc) awsrds.DatabaseInstance {
 	dbInstance := awsrds.NewDatabaseInstance(scope, jsii.String("RdsInstance"), &awsrds.DatabaseInstanceProps{
-		InstanceIdentifier: jsii.String(pjPrefix + "-rds-instance"),
 		Engine: awsrds.DatabaseInstanceEngine_Mysql(&awsrds.MySqlInstanceEngineProps{
 			Version: awsrds.MysqlEngineVersion_VER_8_0(),
 		}),

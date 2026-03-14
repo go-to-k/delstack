@@ -8,9 +8,8 @@ import (
 )
 
 // NewCognitoUserPool creates a Cognito UserPool with deletion protection active.
-func NewCognitoUserPool(scope constructs.Construct, pjPrefix string) awscognito.UserPool {
+func NewCognitoUserPool(scope constructs.Construct) awscognito.UserPool {
 	userPool := awscognito.NewUserPool(scope, jsii.String("CognitoUserPool"), &awscognito.UserPoolProps{
-		UserPoolName: jsii.String(pjPrefix + "-UserPool"),
 		// Enable deletion protection
 		DeletionProtection: jsii.Bool(true),
 		RemovalPolicy:      awscdk.RemovalPolicy_DESTROY,
