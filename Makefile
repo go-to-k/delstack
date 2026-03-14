@@ -20,7 +20,7 @@ TEST_COV_RESULT := "$$(go test -race -cover -v ./... -coverpkg=./... -coverprofi
 
 FAIL_CHECK := "^[^\s\t]*FAIL[^\s\t]*$$"
 
-.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_deletion_protection testgen_help
+.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_deletion_protection testgen_deletion_protection_no_tp testgen_help
 
 test_diff:
 	@! echo $(TEST_DIFF_RESULT) | $(COLORIZE_PASS) | $(COLORIZE_FAIL) | tee /dev/stderr | grep $(FAIL_CHECK) > /dev/null
@@ -95,6 +95,11 @@ testgen_deletion_protection:
 	@echo "Setting up deletion protection test stacks..."
 	@cd testdata_deletion_protection && go mod tidy && go run deploy.go $(OPT)
 
+# Generate and deploy deletion protection test stacks without stack TerminationProtection
+testgen_deletion_protection_no_tp:
+	@echo "Setting up deletion protection test stacks without stack TerminationProtection..."
+	@cd testdata_deletion_protection && go mod tidy && go run deploy.go -t $(OPT)
+
 # Help for test stack generation
 testgen_help:
 	@echo "Test stack generation targets:"
@@ -104,7 +109,8 @@ testgen_help:
 	@echo "  testgen_dependency          - Generate and deploy CDK dependency test stacks for complex dependency graphs"
 	@echo "  testgen_dependency_retain   - Generate and deploy CDK dependency test stacks with RETAIN resources"
 	@echo "  testgen_preprocessor        - Generate and deploy preprocessor test stacks for Lambda VPC detachment"
-	@echo "  testgen_deletion_protection - Generate and deploy deletion protection test stacks"
+	@echo "  testgen_deletion_protection       - Generate and deploy deletion protection test stacks"
+	@echo "  testgen_deletion_protection_no_tp - Generate and deploy deletion protection test stacks without stack TP"
 	@echo ""
 	@echo "Example usage:"
 	@echo "  make testgen_full"
@@ -127,4 +133,5 @@ testgen_help:
 	@echo "  make testgen_deletion_protection"
 	@echo "  make testgen_deletion_protection OPT=\"-s my-stage\""
 	@echo "  make testgen_deletion_protection OPT=\"-p my-profile\""
-	@echo "  make testgen_deletion_protection OPT=\"-t\"       # Disable stack TerminationProtection"
+	@echo "  make testgen_deletion_protection_no_tp"
+	@echo "  make testgen_deletion_protection_no_tp OPT=\"-s my-stage\""
