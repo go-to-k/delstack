@@ -122,7 +122,7 @@ func (a *App) getAction() func(c *cli.Context) error {
 		}
 
 		if len(tpStackNames) > 0 {
-			fmt.Fprintf(os.Stderr, "\nThe following stacks have TerminationProtection enabled:\n")
+			fmt.Fprintf(os.Stderr, "The following stacks have TerminationProtection enabled:\n")
 			for _, name := range tpStackNames {
 				fmt.Fprintf(os.Stderr, "  - %s\n", name)
 			}
