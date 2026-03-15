@@ -18,7 +18,7 @@ inputs:
     required: false
   yes:
     description: "Skip confirmation prompts (e.g., TerminationProtection disable confirmation)"
-    default: false
+    default: true
     required: false
   concurrency-number:
     description: "Number of parallel stack deletions (default: unlimited)"

@@ -238,7 +238,7 @@ Deletion order (reverse dependencies):
 You can use delstack with parameters **"stack-name", "region", and "concurrency-number"** in GitHub Actions Workflow.
 To delete multiple stacks, specify stack names separated by commas.
 
-> **Note**: When deleting stacks with **TerminationProtection** enabled using `force: true`, you must also set `yes: true` to skip the confirmation prompt. Without it, the action will hang waiting for interactive input and eventually fail.
+> **Note**: The `yes` option defaults to `true` in GitHub Actions because CI/CD environments cannot handle interactive prompts. Set `yes: false` only if you want the action to abort when a confirmation prompt would appear (e.g., TerminationProtection disable confirmation).
 
 ```yaml
 jobs:
@@ -261,7 +261,7 @@ jobs:
           stack-name: YourStack
           # stack-name: YourStack1, YourStack2, YourStack3 # To delete multiple stacks (deleted in parallel by default)
           force: true # Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate (default: false)
-          yes: true # Skip confirmation prompts (default: false)
+          # yes: true # Skip confirmation prompts (default: true in GitHub Actions)
           concurrency-number: 4 # Number of parallel stack deletions (default: unlimited)
           region: us-east-1
 ```
