@@ -66,7 +66,13 @@ func InputKeywordForFilter(label string) string {
 	return s
 }
 
+var AutoYes bool
+
 func GetYesNo(label string) bool {
+	if AutoYes {
+		return true
+	}
+
 	choices := "Y/n"
 	r := bufio.NewReader(os.Stdin)
 	var s string

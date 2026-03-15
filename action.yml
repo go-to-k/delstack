@@ -16,6 +16,10 @@ inputs:
     description: "Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate"
     default: false
     required: false
+  yes:
+    description: "Skip confirmation prompts (e.g., TerminationProtection disable confirmation)"
+    default: true
+    required: false
   concurrency-number:
     description: "Number of parallel stack deletions (default: unlimited)"
     required: false
@@ -44,9 +48,13 @@ runs:
           if [ "${{ inputs.force }}" = "true" ]; then
             force="-f"
           fi
+          yes=""
+          if [ "${{ inputs.yes }}" = "true" ]; then
+            yes="-y"
+          fi
           concurrency=""
           if [ -n "${{ inputs.concurrency-number }}" ]; then
             concurrency="-n ${{ inputs.concurrency-number }}"
           fi
-          delstack -r ${{ inputs.region }} $stacks $force $concurrency
+          delstack -r ${{ inputs.region }} $stacks $force $yes $concurrency
         fi

@@ -182,7 +182,7 @@ e2e_preprocessor:
 e2e_deletion_protection: STAGE = e2e-dp-$(E2E_RANDOM)
 e2e_deletion_protection:
 	@$(MAKE) testgen_deletion_protection OPT="-s $(STAGE) $(OPT)"
-	@$(MAKE) run OPT="-s $(STAGE) -f $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE) -f -y $(OPT)"
 
 # Run deletion protection E2E test without TerminationProtection (deploy + force delete)
 e2e_deletion_protection_no_tp: STAGE = e2e-dp-$(E2E_RANDOM)
