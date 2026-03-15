@@ -1,4 +1,4 @@
-module github.com/go-to-k/delstack/e2e/testdata_preprocessor
+module github.com/go-to-k/delstack/e2e/deletion_protection
 
 go 1.24.0
 

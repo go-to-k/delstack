@@ -62,43 +62,43 @@ clean:
 # Run test stack generator with full resources
 testgen_full:
 	@echo "Running test stack generator with full resources..."
-	@cd e2e/testdata_full && go mod tidy && go run deploy.go $(OPT)
+	@cd e2e/full && go mod tidy && go run deploy.go $(OPT)
 
 # Run test stack generator for all RETAIN resources to test \`-f\` option
 testgen_full_retain:
 	@echo "Running test stack generator for all RETAIN resources..."
-	@cd e2e/testdata_full && go mod tidy && go run deploy.go -r $(OPT)
+	@cd e2e/full && go mod tidy && go run deploy.go -r $(OPT)
 
 # Generate and deploy large CloudFormation template for testing S3 upload functionality (>51200 bytes)
 # S3 bucket is automatically deleted after stack creation
 testgen_large_template:
 	@echo "Setting up large CloudFormation template test stack..."
-	@cd e2e/testdata_s3_template_cfn && go mod tidy && go run main.go $(OPT)
+	@cd e2e/s3_template_cfn && go mod tidy && go run main.go $(OPT)
 
 # Generate and deploy CDK dependency test stacks for testing complex dependency graphs
 testgen_dependency:
 	@echo "Setting up CDK dependency test stacks..."
-	@cd e2e/testdata_dependency && go mod tidy && go run deploy.go $(OPT)
+	@cd e2e/dependency && go mod tidy && go run deploy.go $(OPT)
 
 # Generate and deploy CDK dependency test stacks with RETAIN resources
 testgen_dependency_retain:
 	@echo "Setting up CDK dependency test stacks with RETAIN resources..."
-	@cd e2e/testdata_dependency && go mod tidy && go run deploy.go -r $(OPT)
+	@cd e2e/dependency && go mod tidy && go run deploy.go -r $(OPT)
 
 # Generate and deploy preprocessor test stacks for Lambda VPC detachment
 testgen_preprocessor:
 	@echo "Setting up preprocessor test stacks for Lambda VPC detachment..."
-	@cd e2e/testdata_preprocessor && go mod tidy && go run deploy.go $(OPT)
+	@cd e2e/preprocessor && go mod tidy && go run deploy.go $(OPT)
 
 # Generate and deploy deletion protection test stacks
 testgen_deletion_protection:
 	@echo "Setting up deletion protection test stacks..."
-	@cd e2e/testdata_deletion_protection && go mod tidy && go run deploy.go $(OPT)
+	@cd e2e/deletion_protection && go mod tidy && go run deploy.go $(OPT)
 
 # Generate and deploy deletion protection test stacks without stack TerminationProtection
 testgen_deletion_protection_no_tp:
 	@echo "Setting up deletion protection test stacks without stack TerminationProtection..."
-	@cd e2e/testdata_deletion_protection && go mod tidy && go run deploy.go -t $(OPT)
+	@cd e2e/deletion_protection && go mod tidy && go run deploy.go -t $(OPT)
 
 # Help for test stack generation
 testgen_help:
