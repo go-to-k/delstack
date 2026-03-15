@@ -1,4 +1,4 @@
-module github.com/go-to-k/delstack/testdata_deletion_protection
+module github.com/go-to-k/delstack/e2e/testdata_deletion_protection
 
 go 1.24.0
 

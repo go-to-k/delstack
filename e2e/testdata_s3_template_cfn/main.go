@@ -27,11 +27,17 @@ func main() {
 
 	// Parse command line arguments
 	profile := ""
+	stage := ""
 	args := os.Args[1:]
 	for i := 0; i < len(args); i++ {
 		if args[i] == "-p" || args[i] == "--profile" {
 			if i+1 < len(args) {
 				profile = args[i+1]
+				i++
+			}
+		} else if args[i] == "-s" || args[i] == "--stage" {
+			if i+1 < len(args) {
+				stage = args[i+1]
 				i++
 			}
 		}
@@ -42,7 +48,12 @@ func main() {
 	randomNum := r.Intn(10000)
 	randomSuffix := fmt.Sprintf("%04d", randomNum)
 
-	stackName := fmt.Sprintf("delstack-test-large-template-%s", randomSuffix)
+	var stackName string
+	if stage != "" {
+		stackName = stage
+	} else {
+		stackName = fmt.Sprintf("delstack-large-template-%s", randomSuffix)
+	}
 
 	// Check if template exists
 	if _, err := os.Stat(templateFile); err == nil {

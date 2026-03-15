@@ -20,7 +20,7 @@ TEST_COV_RESULT := "$$(go test -race -cover -v ./... -coverpkg=./... -coverprofi
 
 FAIL_CHECK := "^[^\s\t]*FAIL[^\s\t]*$$"
 
-.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_deletion_protection testgen_deletion_protection_no_tp testgen_help
+.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_deletion_protection testgen_deletion_protection_no_tp testgen_help e2e_full e2e_full_retain e2e_large_template e2e_dependency e2e_dependency_retain e2e_preprocessor e2e_deletion_protection e2e_deletion_protection_no_tp e2e_help
 
 test_diff:
 	@! echo $(TEST_DIFF_RESULT) | $(COLORIZE_PASS) | $(COLORIZE_FAIL) | tee /dev/stderr | grep $(FAIL_CHECK) > /dev/null
@@ -62,43 +62,43 @@ clean:
 # Run test stack generator with full resources
 testgen_full:
 	@echo "Running test stack generator with full resources..."
-	@cd testdata_full && go mod tidy && go run deploy.go $(OPT)
+	@cd e2e/testdata_full && go mod tidy && go run deploy.go $(OPT)
 
 # Run test stack generator for all RETAIN resources to test \`-f\` option
 testgen_full_retain:
 	@echo "Running test stack generator for all RETAIN resources..."
-	@cd testdata_full && go mod tidy && go run deploy.go -r $(OPT)
+	@cd e2e/testdata_full && go mod tidy && go run deploy.go -r $(OPT)
 
 # Generate and deploy large CloudFormation template for testing S3 upload functionality (>51200 bytes)
 # S3 bucket is automatically deleted after stack creation
 testgen_large_template:
 	@echo "Setting up large CloudFormation template test stack..."
-	@cd testdata_s3_template_cfn && go mod tidy && go run main.go $(OPT)
+	@cd e2e/testdata_s3_template_cfn && go mod tidy && go run main.go $(OPT)
 
 # Generate and deploy CDK dependency test stacks for testing complex dependency graphs
 testgen_dependency:
 	@echo "Setting up CDK dependency test stacks..."
-	@cd testdata_dependency && go mod tidy && go run deploy.go $(OPT)
+	@cd e2e/testdata_dependency && go mod tidy && go run deploy.go $(OPT)
 
 # Generate and deploy CDK dependency test stacks with RETAIN resources
 testgen_dependency_retain:
 	@echo "Setting up CDK dependency test stacks with RETAIN resources..."
-	@cd testdata_dependency && go mod tidy && go run deploy.go -r $(OPT)
+	@cd e2e/testdata_dependency && go mod tidy && go run deploy.go -r $(OPT)
 
 # Generate and deploy preprocessor test stacks for Lambda VPC detachment
 testgen_preprocessor:
 	@echo "Setting up preprocessor test stacks for Lambda VPC detachment..."
-	@cd testdata_preprocessor && go mod tidy && go run deploy.go $(OPT)
+	@cd e2e/testdata_preprocessor && go mod tidy && go run deploy.go $(OPT)
 
 # Generate and deploy deletion protection test stacks
 testgen_deletion_protection:
 	@echo "Setting up deletion protection test stacks..."
-	@cd testdata_deletion_protection && go mod tidy && go run deploy.go $(OPT)
+	@cd e2e/testdata_deletion_protection && go mod tidy && go run deploy.go $(OPT)
 
 # Generate and deploy deletion protection test stacks without stack TerminationProtection
 testgen_deletion_protection_no_tp:
 	@echo "Setting up deletion protection test stacks without stack TerminationProtection..."
-	@cd testdata_deletion_protection && go mod tidy && go run deploy.go -t $(OPT)
+	@cd e2e/testdata_deletion_protection && go mod tidy && go run deploy.go -t $(OPT)
 
 # Help for test stack generation
 testgen_help:
@@ -136,3 +136,77 @@ testgen_help:
 	@echo "  make testgen_deletion_protection_no_tp"
 	@echo "  make testgen_deletion_protection_no_tp OPT=\"-s my-stage\""
 	@echo "  make testgen_deletion_protection_no_tp OPT=\"-p my-profile\""
+
+# E2E test commands (testgen + delstack run)
+# ==================================
+
+E2E_RANDOM = $(shell awk 'BEGIN{srand(); printf "%04d", int(rand()*10000)}')
+
+# Run full resource E2E test (deploy + delete)
+e2e_full: STAGE = e2e-full-$(E2E_RANDOM)
+e2e_full:
+	@$(MAKE) testgen_full OPT="-s $(STAGE) $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE) $(OPT)"
+
+# Run full resource E2E test with RETAIN resources (deploy + force delete)
+e2e_full_retain: STAGE = e2e-full-$(E2E_RANDOM)
+e2e_full_retain:
+	@$(MAKE) testgen_full_retain OPT="-s $(STAGE) $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE) -f $(OPT)"
+
+# Run large template E2E test (deploy + force delete)
+e2e_large_template: STAGE = e2e-large-tpl-$(E2E_RANDOM)
+e2e_large_template:
+	@$(MAKE) testgen_large_template OPT="-s $(STAGE) $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE) -f $(OPT)"
+
+# Run dependency graph E2E test (deploy 6 stacks + delete all)
+e2e_dependency: STAGE = e2e-dependency-$(E2E_RANDOM)
+e2e_dependency:
+	@$(MAKE) testgen_dependency OPT="-s $(STAGE) $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE)-Stack-A -s $(STAGE)-Stack-B -s $(STAGE)-Stack-C -s $(STAGE)-Stack-D -s $(STAGE)-Stack-E -s $(STAGE)-Stack-F $(OPT)"
+
+# Run dependency graph E2E test with RETAIN resources (deploy + force delete)
+e2e_dependency_retain: STAGE = e2e-dependency-$(E2E_RANDOM)
+e2e_dependency_retain:
+	@$(MAKE) testgen_dependency_retain OPT="-s $(STAGE) $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE)-Stack-A -s $(STAGE)-Stack-B -s $(STAGE)-Stack-C -s $(STAGE)-Stack-D -s $(STAGE)-Stack-E -s $(STAGE)-Stack-F -f $(OPT)"
+
+# Run preprocessor E2E test (deploy + delete)
+e2e_preprocessor: STAGE = e2e-preprocessor-$(E2E_RANDOM)
+e2e_preprocessor:
+	@$(MAKE) testgen_preprocessor OPT="-s $(STAGE) $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE) $(OPT)"
+
+# Run deletion protection E2E test (deploy + force delete)
+e2e_deletion_protection: STAGE = e2e-dp-$(E2E_RANDOM)
+e2e_deletion_protection:
+	@$(MAKE) testgen_deletion_protection OPT="-s $(STAGE) $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE) -f $(OPT)"
+
+# Run deletion protection E2E test without TerminationProtection (deploy + force delete)
+e2e_deletion_protection_no_tp: STAGE = e2e-dp-$(E2E_RANDOM)
+e2e_deletion_protection_no_tp:
+	@$(MAKE) testgen_deletion_protection_no_tp OPT="-s $(STAGE) $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE) -f $(OPT)"
+
+# Help for E2E test targets
+e2e_help:
+	@echo "E2E test targets (testgen + delstack run):"
+	@echo "  e2e_full                    - Deploy full resources and delete with delstack"
+	@echo "  e2e_full_retain             - Deploy full RETAIN resources and force delete"
+	@echo "  e2e_large_template          - Deploy large CFn template and force delete"
+	@echo "  e2e_dependency              - Deploy 6 dependency stacks and delete all"
+	@echo "  e2e_dependency_retain       - Deploy 6 dependency stacks with RETAIN and force delete"
+	@echo "  e2e_preprocessor            - Deploy preprocessor stacks and delete"
+	@echo "  e2e_deletion_protection     - Deploy deletion protection stacks and force delete"
+	@echo "  e2e_deletion_protection_no_tp - Deploy deletion protection stacks (no TP) and force delete"
+	@echo ""
+	@echo "Options:"
+	@echo "  STAGE=<name>  - Override default stage name (default: auto-generated with random suffix)"
+	@echo "  OPT=\"-p <profile>\"  - Pass additional options (e.g., AWS profile)"
+	@echo ""
+	@echo "Example usage:"
+	@echo "  make e2e_full"
+	@echo "  make e2e_full STAGE=my-stage"
+	@echo "  make e2e_full STAGE=my-stage OPT=\"-p my-profile\""

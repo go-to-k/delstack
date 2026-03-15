@@ -59,7 +59,7 @@ This script creates 6 CloudFormation stacks (A, B, C, D, E, F) with the dependen
 - S3 objects for testing deletion
 
 ```bash
-go run testdata_dependency/deploy.go -s <stage> [-p <profile>]
+go run e2e/testdata_dependency/deploy.go -s <stage> [-p <profile>]
 ```
 
 ### Options
