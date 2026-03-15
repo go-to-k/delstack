@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2.4.1](https://github.com/go-to-k/delstack/compare/v2.4.0...v2.4.1) - 2026-03-15
+- docs: add testgen_deletion_protection_no_tp to CONTRIBUTING.md by @go-to-k in https://github.com/go-to-k/delstack/pull/584
+- chore(client): change retry logic for S3 client by @go-to-k in https://github.com/go-to-k/delstack/pull/586
+
 ## [v2.4.0](https://github.com/go-to-k/delstack/compare/v2.3.1...v2.4.0) - 2026-03-14
 - docs: add comparison with CloudFormation FORCE_DELETE_STACK by @go-to-k in https://github.com/go-to-k/delstack/pull/578
 - docs: use markdownlint instead of editorconfig by @go-to-k in https://github.com/go-to-k/delstack/pull/580
