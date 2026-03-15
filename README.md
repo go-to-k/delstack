@@ -117,7 +117,7 @@ Among the resources in the stack, the following are not resources that fail duri
 ## How to use
 
   ```bash
-  delstack [-s <stackName>] [-p <profile>] [-r <region>] [-i|--interactive] [-f|--force] [-n <concurrencyNumber>]
+  delstack [-s <stackName>] [-p <profile>] [-r <region>] [-i|--interactive] [-f|--force] [-y|--yes] [-n <concurrencyNumber>]
   ```
 
 - -s, --stackName: optional
@@ -136,6 +136,8 @@ Among the resources in the stack, the following are not resources that fail duri
   - Interactive Mode
 - -f, --force: optional
   - Force Mode to delete stacks including resources with **deletion policy `Retain`/`RetainExceptOnCreate`**, resources with **deletion protection**, and stacks with **TerminationProtection**
+- -y, --yes: optional
+  - Skip confirmation prompts (e.g., TerminationProtection disable confirmation)
 - -n, --concurrencyNumber: optional(default: unlimited)
   - Specify the number of parallel stack deletions. Default is unlimited (delete all stacks in parallel).
 
@@ -257,6 +259,7 @@ jobs:
           stack-name: YourStack
           # stack-name: YourStack1, YourStack2, YourStack3 # To delete multiple stacks (deleted in parallel by default)
           force: true # Force Mode to delete stacks including resources with the deletion policy Retain or RetainExceptOnCreate (default: false)
+          yes: true # Skip confirmation prompts (default: false)
           concurrency-number: 4 # Number of parallel stack deletions (default: unlimited)
           region: us-east-1
 ```

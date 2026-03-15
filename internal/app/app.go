@@ -24,6 +24,7 @@ type App struct {
 	Region            string
 	InteractiveMode   bool
 	ForceMode         bool
+	YesMode           bool
 	ConcurrencyNumber int
 }
 
@@ -67,6 +68,13 @@ func NewApp(version string) *App {
 				Usage:       "Force Mode to delete stacks including resources with deletion policy Retain/RetainExceptOnCreate, resources with deletion protection, and stacks with TerminationProtection",
 				Destination: &app.ForceMode,
 			},
+			&cli.BoolFlag{
+				Name:        "yes",
+				Aliases:     []string{"y"},
+				Value:       false,
+				Usage:       "Skip confirmation prompts",
+				Destination: &app.YesMode,
+			},
 			&cli.IntFlag{
 				Name:        "concurrencyNumber",
 				Aliases:     []string{"n"},
@@ -102,6 +110,8 @@ func (a *App) getAction() func(c *cli.Context) error {
 			errMsg := fmt.Sprintln("You must specify a positive number for the -n option.")
 			return fmt.Errorf("InvalidOptionError: %v", errMsg)
 		}
+
+		io.AutoYes = a.YesMode
 
 		config, err := client.LoadAWSConfig(c.Context, a.Region, a.Profile)
 		if err != nil {
