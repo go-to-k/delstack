@@ -19,7 +19,7 @@ This script creates a CloudFormation stack containing:
 - Nested stack with VPC-attached Lambda functions (both IPv6 enabled and disabled)
 
 ```bash
-go run e2e/testdata_preprocessor/deploy.go -s <stage> [-p <profile>]
+go run e2e/preprocessor/deploy.go -s <stage> [-p <profile>]
 ```
 
 ### Options

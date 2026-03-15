@@ -1,4 +1,4 @@
-module github.com/go-to-k/delstack/e2e/testdata_s3_template_cfn
+module github.com/go-to-k/delstack/e2e/s3_template_cfn
 
 go 1.23.0
 

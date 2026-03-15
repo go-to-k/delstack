@@ -1,4 +1,4 @@
-module github.com/go-to-k/delstack/e2e/testdata_dependency
+module github.com/go-to-k/delstack/e2e/dependency
 
 go 1.23.0
 

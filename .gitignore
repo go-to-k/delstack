@@ -26,6 +26,6 @@ cover.html
 /delstack
 test_root_output.yaml
 testfiles/
-e2e/testdata_s3_template_cfn/large-template.yaml
+e2e/s3_template_cfn/large-template.yaml
 
 main
