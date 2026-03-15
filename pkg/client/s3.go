@@ -59,7 +59,8 @@ func NewS3(client *s3.Client, directoryBucketsFlag bool) *S3 {
 			strings.Contains(err.Error(), "EOF") ||
 			strings.Contains(err.Error(), "Please try again") ||
 			strings.Contains(err.Error(), "connection reset by peer") ||
-			strings.Contains(err.Error(), "no such host")
+			// ERR [stackname]: Failed to delete: [resource bucketname] operation error S3: ListObjectVersions, https response error StatusCode: 0, RequestID: , HostID: , request send failed, Get "https://bucketname.s3.us-east-1.amazonaws.com/?versions=": dial tcp: lookup bucketname.s3.us-east-1.amazonaws.com: no such host
+			strings.Contains(err.Error(), "StatusCode: 0")
 	}
 	retryer := NewRetryer(retryable, SleepTimeSecForS3)
 
