@@ -188,7 +188,7 @@ e2e_deletion_protection:
 e2e_deletion_protection_no_tp: STAGE = e2e-dp-$(E2E_RANDOM)
 e2e_deletion_protection_no_tp:
 	@$(MAKE) testgen_deletion_protection_no_tp OPT="-s $(STAGE) $(OPT)"
-	@$(MAKE) run OPT="-s $(STAGE) -f -y $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE) -f $(OPT)"
 
 # Help for E2E test targets
 e2e_help:
