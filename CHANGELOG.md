@@ -12,6 +12,10 @@
 - test: move testdata_* into e2e/ directory and add combined targets by @go-to-k in https://github.com/go-to-k/delstack/pull/587
 - feat: add -y/--yes option to skip confirmation prompts by @go-to-k in https://github.com/go-to-k/delstack/pull/589
 
+## [v2.5.0](https://github.com/go-to-k/delstack/compare/v2.4.1...v2.5.0) - 2026-03-15
+- test: move testdata_* into e2e/ directory and add combined targets by @go-to-k in https://github.com/go-to-k/delstack/pull/587
+- feat: add -y/--yes option to skip confirmation prompts by @go-to-k in https://github.com/go-to-k/delstack/pull/589
+
 ## [v2.4.1](https://github.com/go-to-k/delstack/compare/v2.4.0...v2.4.1) - 2026-03-15
 - docs: add testgen_deletion_protection_no_tp to CONTRIBUTING.md by @go-to-k in https://github.com/go-to-k/delstack/pull/584
 - chore(client): change retry logic for S3 client by @go-to-k in https://github.com/go-to-k/delstack/pull/586
