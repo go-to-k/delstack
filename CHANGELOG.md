@@ -4,10 +4,6 @@
 - test: move testdata_* into e2e/ directory and add combined targets by @go-to-k in https://github.com/go-to-k/delstack/pull/587
 - feat: add -y/--yes option to skip confirmation prompts by @go-to-k in https://github.com/go-to-k/delstack/pull/589
 
-## [v2.5.0](https://github.com/go-to-k/delstack/compare/v2.4.1...v2.5.0) - 2026-03-15
-- test: move testdata_* into e2e/ directory and add combined targets by @go-to-k in https://github.com/go-to-k/delstack/pull/587
-- feat: add -y/--yes option to skip confirmation prompts by @go-to-k in https://github.com/go-to-k/delstack/pull/589
-
 ## [v2.4.1](https://github.com/go-to-k/delstack/compare/v2.4.0...v2.4.1) - 2026-03-15
 - docs: add testgen_deletion_protection_no_tp to CONTRIBUTING.md by @go-to-k in https://github.com/go-to-k/delstack/pull/584
 - chore(client): change retry logic for S3 client by @go-to-k in https://github.com/go-to-k/delstack/pull/586
@@ -17,16 +13,6 @@
 - docs: use markdownlint instead of editorconfig by @go-to-k in https://github.com/go-to-k/delstack/pull/580
 - feat: check and disable resource deletion protection before stack deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/581
 - feat: display and force-delete TerminationProtection stacks with -f flag by @go-to-k in https://github.com/go-to-k/delstack/pull/582
-
-## [v2.4.0](https://github.com/go-to-k/delstack/compare/v2.3.1...v2.4.0) - 2026-03-14
-- docs: add comparison with CloudFormation FORCE_DELETE_STACK by @go-to-k in https://github.com/go-to-k/delstack/pull/578
-- docs: use markdownlint instead of editorconfig by @go-to-k in https://github.com/go-to-k/delstack/pull/580
-- feat: check and disable resource deletion protection before stack deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/581
-- feat: display and force-delete TerminationProtection stacks with -f flag by @go-to-k in https://github.com/go-to-k/delstack/pull/582
-
-## [v2.3.1](https://github.com/go-to-k/delstack/compare/v2.3.0...v2.3.1) - 2026-03-13
-- test: add S3 bucket and query execution to Athena E2E test by @go-to-k in https://github.com/go-to-k/delstack/pull/573
-- fix: support AWS::CloudFormation::CustomResource type for force deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/575
 
 ## [v2.3.1](https://github.com/go-to-k/delstack/compare/v2.3.0...v2.3.1) - 2026-03-13
 - test: add S3 bucket and query execution to Athena E2E test by @go-to-k in https://github.com/go-to-k/delstack/pull/573
@@ -41,14 +27,6 @@
 
 ## [v2.2.2](https://github.com/go-to-k/delstack/compare/v2.2.1...v2.2.2) - 2026-03-12
 - fix: exclude DELETE_COMPLETE resources from FilterResourcesByType by @go-to-k in https://github.com/go-to-k/delstack/pull/564
-
-## [v2.2.2](https://github.com/go-to-k/delstack/compare/v2.2.1...v2.2.2) - 2026-03-12
-- fix: exclude DELETE_COMPLETE resources from FilterResourcesByType by @go-to-k in https://github.com/go-to-k/delstack/pull/564
-
-## [v2.2.1](https://github.com/go-to-k/delstack/compare/v2.2.0...v2.2.1) - 2026-03-12
-- refactor: add CompositePreprocessor for preprocessors by @go-to-k in https://github.com/go-to-k/delstack/pull/559
-- test: add ec2 test in client by @go-to-k in https://github.com/go-to-k/delstack/pull/561
-- docs: Reorganize README to add Pre-deletion Processing section by @go-to-k in https://github.com/go-to-k/delstack/pull/562
 
 ## [v2.2.1](https://github.com/go-to-k/delstack/compare/v2.2.0...v2.2.1) - 2026-03-12
 - refactor: add CompositePreprocessor for preprocessors by @go-to-k in https://github.com/go-to-k/delstack/pull/559
