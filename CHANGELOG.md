@@ -1,5 +1,10 @@
 # Changelog
 
+## [v2.5.1](https://github.com/go-to-k/delstack/compare/v2.5.0...v2.5.1) - 2026-03-15
+- docs: move gif in README.md by @go-to-k in https://github.com/go-to-k/delstack/pull/597
+- docs: improve README structure and clarity by @go-to-k in https://github.com/go-to-k/delstack/pull/599
+- test: remove testdata_ prefix from e2e directories by @go-to-k in https://github.com/go-to-k/delstack/pull/600
+
 ## [v2.5.0](https://github.com/go-to-k/delstack/compare/v2.4.1...v2.5.0) - 2026-03-15
 - test: move testdata_* into e2e/ directory and add combined targets by @go-to-k in https://github.com/go-to-k/delstack/pull/587
 - feat: add -y/--yes option to skip confirmation prompts by @go-to-k in https://github.com/go-to-k/delstack/pull/589
