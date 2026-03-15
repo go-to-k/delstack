@@ -1,4 +1,4 @@
-module github.com/go-to-k/delstack/testdata_full
+module github.com/go-to-k/delstack/e2e/testdata_full
 
 go 1.24
 

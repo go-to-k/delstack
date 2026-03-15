@@ -71,7 +71,7 @@ func main() {
 		// Generate a random number using current time as seed
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		randomNum := r.Intn(10000)
-		options.Stage = fmt.Sprintf("delstack-test-%04d", randomNum)
+		options.Stage = fmt.Sprintf("delstack-full-%04d", randomNum)
 	}
 
 	service := NewDeployStackService(ctx, options)
@@ -172,7 +172,7 @@ func parseArgs() Options {
 
 func NewDeployStackService(ctx context.Context, options Options) *DeployStackService {
 	cfnPjPrefix := options.Stage
-	cfnStackName := fmt.Sprintf("%s-Test-Full", cfnPjPrefix)
+	cfnStackName := cfnPjPrefix
 
 	profileOption := ""
 	if options.Profile != "" {

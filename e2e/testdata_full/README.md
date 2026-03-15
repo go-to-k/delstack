@@ -24,7 +24,7 @@ This script creates a CloudFormation stack containing various resources that typ
 - And more
 
 ```bash
-go run testdata_full/deploy.go -s <stage> [-p <profile>]
+go run e2e/testdata_full/deploy.go -s <stage> [-p <profile>]
 ```
 
 ### Options

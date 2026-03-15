@@ -21,7 +21,7 @@ This script creates a CloudFormation stack (with **TerminationProtection enabled
 - VPC with public subnet (shared by EC2, RDS, and ELBv2)
 
 ```bash
-go run testdata_deletion_protection/deploy.go -s <stage> [-p <profile>] [-t]
+go run e2e/testdata_deletion_protection/deploy.go -s <stage> [-p <profile>] [-t]
 ```
 
 ### Options
