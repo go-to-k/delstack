@@ -8,75 +8,21 @@ The description in **English** is available on the following blog page. -> [Blog
 
 ## What is
 
-Tool to force delete the **entire** AWS CloudFormation stack, even if it contains resources that **fail to delete** by the CloudFormation delete operation.
+A CLI tool for deleting AWS CloudFormation stacks. Handles everything from routine deletions to stacks containing resources that fail to delete. Unlike CloudFormation's built-in `FORCE_DELETE_STACK` which leaves failed resources behind, **delstack** actually cleans them up with **no orphaned resources**.
+
+Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless Framework**, and any IaC tool using CloudFormation.
 
 ![delstack](https://github.com/user-attachments/assets/4f02526d-536c-4a23-81fd-10484902133f)
 
-CloudFormation has a built-in force delete option (`FORCE_DELETE_STACK`), but it just removes the stack and **leaves the failed resources behind** in your account. **delstack** actually cleans them up. It empties S3 buckets, removes ECR images, and more, then deletes the stack cleanly with **no orphaned resources**.
+## Features
 
-**Works with stacks created by any tool**: Not just raw CloudFormation, but also stacks deployed via **AWS CDK**, **AWS Amplify**, **AWS SAM**, **Serverless Framework**, and other Infrastructure as Code tools that use CloudFormation under the hood.
-
-You can delete multiple stacks **in parallel with automatic dependency resolution**, select stacks **interactively** in the UI, and force delete resources with **`Retain` or `RetainExceptOnCreate` deletion policies**. If any resources have **deletion protection** enabled (EC2, RDS, Cognito, etc.), the tool **reports them and aborts** without attempting deletion. With the `-f` option, it **automatically disables** the protection and proceeds with deletion. Stacks with **TerminationProtection** enabled can also be force-deleted with `-f`.
-
-**Pre-deletion Processing**: delstack automatically performs processing before CloudFormation deletion starts to optimize and prepare for stack deletion.
-
-## Resource Types that can be forced to delete
-
-Among the resources that **fail in the normal CloudFormation stack deletion**, this tool supports the following resources.
-
-If you want to delete the unsupported resources, please create an issue at [GitHub](https://github.com/go-to-k/delstack/issues).
-
-All resources that do not fail normal deletion can be deleted as is.
-
-|  RESOURCE TYPE  |  DETAILS  |
-| ---- | ---- |
-|  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled**.  |
-|  AWS::S3Express::DirectoryBucket  |  S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty.  |
-|  AWS::S3Tables::TableBucket  |  S3 Table Buckets, including buckets with any namespaces or tables.  |
-|  AWS::S3Tables::Namespace  |  S3 Table Namespaces, including namespaces with any tables.  |
-|  AWS::S3Vectors::VectorBucket  |  S3 Vector Buckets, including buckets with any indexes.  |
-|  AWS::IAM::Group  |  IAM Groups, including groups **with IAM users from outside the stack.** In that case, this tool detaches the IAM users and then deletes the IAM group (but not the IAM users themselves).  |
-|  AWS::ECR::Repository  |  ECR Repositories, including repositories that contain images and where **the `EmptyOnDelete` is not true.**  |
-|  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
-|  AWS::Athena::WorkGroup  |  Athena WorkGroups, including workgroups containing **named queries or prepared statements**.  |
-|  AWS::CloudFormation::Stack  |  **Nested Child Stacks** that failed to delete. If any of the other resources are included in the child stack, **they too will be deleted**.  |
-|  AWS::CloudFormation::CustomResource  |  Custom Resources (AWS::CloudFormation::CustomResource), including resources that **do not return a SUCCESS status.**  |
-|  Custom::Xxx  |  Custom Resources (Custom::Xxx), including resources that **do not return a SUCCESS status.**  |
-
-- This tool can be used even for stacks that do not contain any of the above targets for forced deletion.
-  - So **all stack deletions can basically be done with this tool!!**
-- If there are resources other than those listed above that result in DELETE_FAILED, the deletion will fail.
-- **"Termination Protection" stacks will not be deleted** without `-f`. With `-f`, TerminationProtection is automatically disabled before deletion (with a confirmation prompt).
-- Deletion of resources that fail to be deleted because they are used by other stack resources, i.e., **resources that are referenced (depended on) from outside the stack, is not supported**. Only forced deletion of resources that can be completed only within the stack is supported.
-
-## Pre-deletion Processing
-
-This tool automatically performs the following processing **before CloudFormation deletion starts**.
-
-### Deletion Protection Check
-
-Checks for resource-level deletion protection before attempting stack deletion.
-
-**Without `-f` option**: If any resources have deletion protection enabled, the tool reports them and aborts without attempting deletion.
-
-**With `-f` option**: Deletion protection is automatically disabled via AWS API before deletion proceeds.
-
-|  RESOURCE TYPE  |
-| ---- |
-|  AWS::EC2::Instance  |
-|  AWS::RDS::DBInstance  |
-|  AWS::RDS::DBCluster  |
-|  AWS::Cognito::UserPool  |
-|  AWS::Logs::LogGroup  |
-|  AWS::ElasticLoadBalancingV2::LoadBalancer  |
-
-### Resource Preparation
-
-Among the resources in the stack, the following are not resources that fail during normal deletion, but are processed in advance to prepare for smooth deletion.
-
-|  RESOURCE TYPE  |  DETAILS  |
-| ---- | ---- |
-|  AWS::Lambda::Function  |  Automatically detaches VPC configurations from Lambda functions and deletes their ENIs in parallel, **eliminating ENI cleanup wait time**. All Lambda functions within a stack (including nested stacks) are processed in parallel for maximum performance.  |
+- **Force delete undeletable resources**: Empties S3 buckets, removes ECR images, cleans Backup vaults, and [more](#resource-types-that-can-be-forced-to-delete)
+- **Parallel deletion with dependency resolution**: Deletes multiple stacks with maximum parallelism while respecting inter-stack dependencies
+- **Interactive stack selection**: Search and select stacks in a TUI with case-insensitive filtering
+- **Deletion protection handling**: Detects resource-level protection (EC2, RDS, Cognito, etc.) and optionally disables it with `-f`
+- **Pre-deletion optimization**: Detaches Lambda VPC configurations in parallel to eliminate ENI cleanup wait time
+- **Retain policy override**: Force deletes resources with `Retain` or `RetainExceptOnCreate` deletion policies via `-f`
+- **GitHub Actions support**: Available as a [GitHub Action](#github-actions) for CI/CD stack cleanup
 
 ## Install
 
@@ -141,11 +87,63 @@ Among the resources in the stack, the following are not resources that fail duri
 - -n, --concurrencyNumber: optional(default: unlimited)
   - Specify the number of parallel stack deletions. Default is unlimited (delete all stacks in parallel).
 
+## Resource Types that can be forced to delete
+
+This tool supports force deletion of the following resource types that cause `DELETE_FAILED` in normal CloudFormation stack deletion. All other resources are deleted normally, so you can use this tool for any stack.
+
+If you need support for additional resource types, please create an issue at [GitHub](https://github.com/go-to-k/delstack/issues).
+
+|  RESOURCE TYPE  |  DETAILS  |
+| ---- | ---- |
+|  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled**.  |
+|  AWS::S3Express::DirectoryBucket  |  S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty.  |
+|  AWS::S3Tables::TableBucket  |  S3 Table Buckets, including buckets with any namespaces or tables.  |
+|  AWS::S3Tables::Namespace  |  S3 Table Namespaces, including namespaces with any tables.  |
+|  AWS::S3Vectors::VectorBucket  |  S3 Vector Buckets, including buckets with any indexes.  |
+|  AWS::IAM::Group  |  IAM Groups, including groups **with IAM users from outside the stack.** In that case, this tool detaches the IAM users and then deletes the IAM group (but not the IAM users themselves).  |
+|  AWS::ECR::Repository  |  ECR Repositories, including repositories that contain images and where **the `EmptyOnDelete` is not true.**  |
+|  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
+|  AWS::Athena::WorkGroup  |  Athena WorkGroups, including workgroups containing **named queries or prepared statements**.  |
+|  AWS::CloudFormation::Stack  |  **Nested Child Stacks** that failed to delete. If any of the other resources are included in the child stack, **they too will be deleted**.  |
+|  AWS::CloudFormation::CustomResource  |  Custom Resources (AWS::CloudFormation::CustomResource), including resources that **do not return a SUCCESS status.**  |
+|  Custom::Xxx  |  Custom Resources (Custom::Xxx), including resources that **do not return a SUCCESS status.**  |
+
+> **Note**: If there are resources other than those listed above that result in DELETE_FAILED, the deletion will fail. Resources that are **referenced by stacks outside the deletion targets** are not supported for force deletion. However, if all dependent stacks are included in the deletion targets, they are [deleted in the correct dependency order automatically](#parallel-stack-deletion-with-automatic-dependency-resolution).
+
+## Pre-deletion Processing
+
+This tool automatically performs the following processing **before CloudFormation deletion starts**.
+
+### Deletion Protection Check
+
+Checks for resource-level deletion protection before attempting stack deletion.
+
+**Without `-f` option**: If any resources have deletion protection enabled, the tool reports them and aborts without attempting deletion.
+
+**With `-f` option**: Deletion protection is automatically disabled before deletion proceeds.
+
+|  RESOURCE TYPE  |
+| ---- |
+|  AWS::EC2::Instance  |
+|  AWS::RDS::DBInstance  |
+|  AWS::RDS::DBCluster  |
+|  AWS::Cognito::UserPool  |
+|  AWS::Logs::LogGroup  |
+|  AWS::ElasticLoadBalancingV2::LoadBalancer  |
+
+### Performance Optimization
+
+The following resources do not fail during normal deletion, but are optimized in advance to improve deletion speed.
+
+|  RESOURCE TYPE  |  DETAILS  |
+| ---- | ---- |
+|  AWS::Lambda::Function  |  Automatically detaches VPC configurations from Lambda functions and deletes their ENIs in parallel, **eliminating ENI cleanup wait time**. All Lambda functions within a stack (including nested stacks) are processed in parallel for maximum performance.  |
+
 ## Interactive Mode
 
 ### StackName Selection
 
-If you do not specify a stack name in command options in the interactive mode (`-i, --interactive`), you can search stack names in a **case-insensitive** and select a stack.
+If you do not specify a stack name in command options in the interactive mode (`-i, --interactive`), you can search stack names **case-insensitively** and select a stack.
 
 It can be **empty**.
 
@@ -176,7 +174,11 @@ Also, **"Termination Protection"** stacks will not be displayed without `-f`. Wi
 
 ## Force Mode
 
-If you specify the `-f, --force` option, stacks including resources with **the deletion policy `Retain` or `RetainExceptOnCreate`** will be deleted. Additionally, if any resources have **deletion protection** enabled (EC2, RDS, Cognito, etc.), the protection is **automatically disabled** before deletion. Stacks with **TerminationProtection** enabled are also supported: after a confirmation prompt, the protection is disabled and the stack is deleted.
+The `-f, --force` option enables deletion of stacks that would otherwise be blocked:
+
+- **Retain/RetainExceptOnCreate deletion policies**: Resources with these policies are force deleted instead of being retained
+- **Resource-level deletion protection** (EC2, RDS, Cognito, etc.): Protection is automatically disabled before deletion
+- **Stack TerminationProtection**: After a confirmation prompt, protection is disabled and the stack is deleted
 
 ```bash
 delstack -f -s dev-goto-01-TestStack
