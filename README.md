@@ -15,7 +15,7 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 - **Force delete undeletable resources**: Automatically cleans up resources blocking deletion, such as non-empty S3 buckets, and [more resource types](#resource-types-that-can-be-forced-to-delete)
 - **Parallel deletion with dependency resolution**: Deletes multiple stacks with maximum parallelism while respecting inter-stack dependencies
 - **Interactive stack selection**: Search and select stacks in a TUI with case-insensitive filtering
-- **Deletion protection handling**: Detects resource-level protection (EC2, RDS, Cognito, etc.) and optionally disables it with `-f`
+- **Deletion protection handling**: Detects resource-level protection (EC2, RDS, Cognito, etc.) and stack TerminationProtection. With `-f`, automatically disables them before deletion
 - **Pre-deletion optimization**: Detaches Lambda VPC configurations in parallel to eliminate ENI cleanup wait time
 - **Retain policy override**: Force deletes resources with `Retain` or `RetainExceptOnCreate` deletion policies via `-f`
 - **GitHub Actions support**: Available as a [GitHub Actions](#github-actions) workflow for CI/CD stack cleanup
