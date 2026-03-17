@@ -2,10 +2,6 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/go-to-k/delstack)](https://goreportcard.com/report/github.com/go-to-k/delstack) ![GitHub](https://img.shields.io/github/license/go-to-k/delstack) ![GitHub](https://img.shields.io/github/v/release/go-to-k/delstack) [![ci](https://github.com/go-to-k/delstack/actions/workflows/ci.yml/badge.svg)](https://github.com/go-to-k/delstack/actions/workflows/ci.yml)
 
-The description in **Japanese** is available on the following blog page. -> [Blog](https://go-to-k.hatenablog.com/entry/delstack)
-
-The description in **English** is available on the following blog page. -> [Blog](https://dev.to/aws-builders/a-cli-tool-to-force-delete-cloudformation-stacks-3808)
-
 ## What is
 
 A CLI tool for deleting AWS CloudFormation stacks. Handles everything from routine deletions to stacks containing resources that fail to delete. Unlike CloudFormation's built-in `FORCE_DELETE_STACK` which leaves failed resources behind, **delstack** actually cleans them up with **no orphaned resources**.
@@ -22,7 +18,7 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 - **Deletion protection handling**: Detects resource-level protection (EC2, RDS, Cognito, etc.) and optionally disables it with `-f`
 - **Pre-deletion optimization**: Detaches Lambda VPC configurations in parallel to eliminate ENI cleanup wait time
 - **Retain policy override**: Force deletes resources with `Retain` or `RetainExceptOnCreate` deletion policies via `-f`
-- **GitHub Actions support**: Available as a [GitHub Action](#github-actions) for CI/CD stack cleanup
+- **GitHub Actions support**: Available as a [GitHub Actions](#github-actions) workflow for CI/CD stack cleanup
 
 ## Install
 
@@ -52,7 +48,7 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 
 - Binary
   - [Releases](https://github.com/go-to-k/delstack/releases)
-- Git Clone and install(for developers)
+- Git Clone and install (for developers)
 
   ```bash
   git clone https://github.com/go-to-k/delstack.git
@@ -68,9 +64,9 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 
 - -s, --stackName: optional
   - CloudFormation stack name
-    - Must be specified in **not** interactive mode
-    - Otherwise you can specify it in the interactive mode
-  - **Multiple specifications are possible.**
+    - Required in non-interactive mode
+    - In interactive mode, you can select stacks from the UI instead
+  - **Multiple stack names can be specified.**
     - `delstack -s test1 -s test2`
     - **Multiple stacks are deleted in parallel by default, taking dependencies between stacks into account.**
     - You can limit the number of parallel deletions with the `-n` option (e.g., `delstack -s test1 -s test2 -s test3 -n 2`).
@@ -95,8 +91,8 @@ If you need support for additional resource types, please create an issue at [Gi
 
 |  RESOURCE TYPE  |  DETAILS  |
 | ---- | ---- |
-|  AWS::S3::Bucket  |  S3 Buckets, including buckets with **Non-empty or Versioning enabled**.  |
-|  AWS::S3Express::DirectoryBucket  |  S3 Directory Buckets for S3 Express One Zone, including buckets with Non-empty.  |
+|  AWS::S3::Bucket  |  S3 Buckets, including **non-empty buckets or buckets with Versioning enabled**.  |
+|  AWS::S3Express::DirectoryBucket  |  S3 Directory Buckets for S3 Express One Zone, including non-empty buckets.  |
 |  AWS::S3Tables::TableBucket  |  S3 Table Buckets, including buckets with any namespaces or tables.  |
 |  AWS::S3Tables::Namespace  |  S3 Table Namespaces, including namespaces with any tables.  |
 |  AWS::S3Vectors::VectorBucket  |  S3 Vector Buckets, including buckets with any indexes.  |
@@ -141,11 +137,11 @@ The following resources do not fail during normal deletion, but are optimized in
 
 ## Interactive Mode
 
-### StackName Selection
+### Stack Name Selection
 
-If you do not specify a stack name in command options in the interactive mode (`-i, --interactive`), you can search stack names **case-insensitively** and select a stack.
+When using interactive mode (`-i, --interactive`) without specifying stack names, you can search stack names **case-insensitively** and select stacks.
 
-It can be **empty**.
+The filter keyword can be **empty**.
 
 ```bash
 ❯ delstack -i
@@ -164,13 +160,11 @@ Nested child stacks, XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) status stacks an
   [ ]  dev-goto-01-TestStack
 ```
 
-In addition, **child stacks of nested stacks are not displayed**. This is because it is unlikely that there are cases where only child stacks of nested stacks are deleted without deleting the parent stack, and also because it is possible that the parent stack may be buried in the stack list if there are child stacks, or that the child stacks may be accidentally deleted.
+### Stacks excluded from interactive selection
 
-However, **the `-s` command option allows deletion of CHILD stacks by specifying their names**, so please use this option if you want.
-
-And stacks with **the XXX_IN_PROGRESS(e.g. ROLLBACK_IN_PROGRESS) CloudFormation status** are not displayed, because multiple CloudFormation operations should not be duplicated at the same time.
-
-Also, **"Termination Protection"** stacks will not be displayed without `-f`. With `-f`, they are displayed with a **`*` prefix marker** indicating TerminationProtection is enabled.
+- **Nested child stacks**: Parent stacks should generally be deleted as a whole. If you need to delete a child stack directly, specify its name with the `-s` option instead of using interactive mode.
+- **`XXX_IN_PROGRESS` stacks** (e.g. `ROLLBACK_IN_PROGRESS`): Multiple CloudFormation operations should not run on the same stack simultaneously.
+- **TerminationProtection stacks**: Not displayed without `-f`. With `-f`, they appear with a **`*` prefix marker**.
 
 ## Force Mode
 
