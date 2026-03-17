@@ -231,8 +231,7 @@ Deletion order (reverse dependencies):
 
 ## GitHub Actions
 
-You can use delstack with parameters **"stack-name", "region", and "concurrency-number"** in GitHub Actions Workflow.
-To delete multiple stacks, specify stack names separated by commas.
+You can use delstack in GitHub Actions Workflow. To delete multiple stacks, specify stack names separated by commas.
 
 > **Note**: The `yes` option defaults to `true` in GitHub Actions because CI/CD environments cannot handle interactive prompts. Set `yes: false` only if you want the action to abort when a confirmation prompt would appear (e.g., TerminationProtection disable confirmation).
 
