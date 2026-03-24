@@ -12,8 +12,7 @@ import (
 
 func NewLambdaEdge(scope constructs.Construct) {
 	bucket := awss3.NewBucket(scope, jsii.String("OriginBucket"), &awss3.BucketProps{
-		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
-		AutoDeleteObjects: jsii.Bool(true),
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 
 	edgeFn := awscloudfront.NewFunction(scope, jsii.String("EdgeFn"), &awscloudfront.FunctionProps{
