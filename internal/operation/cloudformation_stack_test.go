@@ -3507,6 +3507,66 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "remove deletion policy successfully for delete failed",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusDeleteFailed,
+						},
+					},
+					nil,
+				)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "remove deletion policy successfully for rollback failed",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusRollbackFailed,
+						},
+					},
+					nil,
+				)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "remove deletion policy successfully for update rollback failed",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("test")).Return(
+					[]types.Stack{
+						{
+							StackName:   aws.String("test"),
+							StackStatus: types.StackStatusUpdateRollbackFailed,
+						},
+					},
+					nil,
+				)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
 			name: "remove deletion policy failure for list stack resources error",
 			args: args{
 				ctx:       context.Background(),
