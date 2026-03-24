@@ -32,8 +32,10 @@ const (
 var _ IOperator = (*LambdaFunctionOperator)(nil)
 
 type LambdaFunctionOperator struct {
-	client        client.ILambda
-	resources     []*types.StackResourceSummary
+	client    client.ILambda
+	resources []*types.StackResourceSummary
+	// retryInterval and retryTimeout are stored as fields (rather than using constants
+	// directly) so that tests can override them to avoid waiting 60 minutes.
 	retryInterval time.Duration
 	retryTimeout  time.Duration
 }
