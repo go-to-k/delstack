@@ -20,6 +20,7 @@ e2e/
   preprocessor/          E2E test environment for preprocessor testing
   deletion_protection/   E2E test environment for deletion protection testing
   s3_template_cfn/       E2E test environment for large CloudFormation template testing
+  lambda_edge/           E2E test environment for Lambda@Edge replica cleanup testing
 ```
 
 ### Package Dependency Rules
