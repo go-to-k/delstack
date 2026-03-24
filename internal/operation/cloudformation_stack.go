@@ -398,6 +398,19 @@ func (o *CloudFormationStackOperator) isExceptedByStackStatus(stackStatus types.
 	return false
 }
 
+func (o *CloudFormationStackOperator) isUpdatableStackStatus(stackStatus types.StackStatus) bool {
+	switch stackStatus {
+	case types.StackStatusCreateComplete,
+		types.StackStatusUpdateComplete,
+		types.StackStatusUpdateRollbackComplete,
+		types.StackStatusImportComplete,
+		types.StackStatusImportRollbackComplete:
+		return true
+	default:
+		return false
+	}
+}
+
 func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, stackName *string) error {
 	stacks, err := o.client.DescribeStacks(ctx, stackName)
 	if err != nil {
@@ -409,8 +422,8 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 
 	stack := &stacks[0]
 
-	// If the stack is in the ROLLBACK_COMPLETE state, it is not possible to update the stack.
-	if stack.StackStatus == types.StackStatusRollbackComplete {
+	if !o.isUpdatableStackStatus(stack.StackStatus) {
+		io.Logger.Warn().Msgf("[%v]: Skipping DeletionPolicy removal because the stack is in %v state and cannot be updated. Resources with Retain DeletionPolicy may not be cleaned up.", *stackName, stack.StackStatus)
 		return nil
 	}
 
