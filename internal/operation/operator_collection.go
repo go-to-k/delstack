@@ -156,7 +156,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.EcrRepository, "ECR Repositories, including repositories that contain images and where the `EmptyOnDelete` is not true."},
 		{resourcetype.BackupVault, "Backup Vaults, including vaults containing recovery points."},
 		{resourcetype.AthenaWorkGroup, "Athena WorkGroups, including workgroups containing named queries or prepared statements."},
-		{resourcetype.LambdaFunction, "Lambda Functions, including Lambda@Edge functions with replicas still being cleaned up by AWS. Waits up to 60 minutes for AWS to finish removing edge replicas."},
+		{resourcetype.LambdaFunction, "Lambda Functions, including Lambda@Edge functions with replicas still being cleaned up by AWS. Waits for AWS to finish removing edge replicas."},
 		{resourcetype.CloudformationStack, "Nested Child Stacks that failed to delete."},
 		{resourcetype.CloudformationCustomResource, "Custom Resources (AWS::CloudFormation::CustomResource), including resources that do not return a SUCCESS status."},
 		{"Custom::Xxx", "Custom Resources (Custom::Xxx), including resources that do not return a SUCCESS status."},
