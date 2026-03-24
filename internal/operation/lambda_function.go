@@ -118,7 +118,10 @@ func (o *LambdaFunctionOperator) DeleteLambdaFunction(ctx context.Context, funct
 		}
 	}
 
-	return fmt.Errorf("timed out waiting for Lambda@Edge replicas to be cleaned up for function %s after %v", *functionName, o.retryTimeout)
+	return &client.ClientError{
+		ResourceName: functionName,
+		Err:          fmt.Errorf("timed out waiting for Lambda@Edge replicas to be cleaned up after %v", o.retryTimeout),
+	}
 }
 
 func isReplicatedFunctionError(err error) bool {
