@@ -422,6 +422,8 @@ func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, 
 
 	stack := &stacks[0]
 
+	// Stacks in non-updatable states (e.g. DELETE_FAILED, ROLLBACK_COMPLETE) cannot be updated,
+	// so skip DeletionPolicy removal.
 	if !o.isUpdatableStackStatus(stack.StackStatus) {
 		io.Logger.Warn().Msgf("[%v]: Skipping DeletionPolicy removal because the stack is in %v state and cannot be updated. Resources with Retain DeletionPolicy may not be cleaned up.", *stackName, stack.StackStatus)
 		return nil
