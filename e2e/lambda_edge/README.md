@@ -22,7 +22,7 @@ npm install -g aws-cdk@latest
 
 This script creates a CloudFormation stack containing:
 
-- S3 bucket as CloudFront origin (auto-delete enabled)
+- S3 bucket as CloudFront origin
 - CloudFront distribution with Lambda@Edge function (origin-response)
 - Lambda@Edge function (Node.js)
 
