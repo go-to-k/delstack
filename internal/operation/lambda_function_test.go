@@ -115,19 +115,6 @@ func TestLambdaFunctionOperator_DeleteLambdaFunction(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "delete lambda@edge function failure with timeout",
-			args: args{
-				ctx:          context.Background(),
-				functionName: aws.String("test-edge-function"),
-			},
-			prepareMockFn: func(m *client.MockILambda) {
-				m.EXPECT().CheckLambdaFunctionExists(gomock.Any(), aws.String("test-edge-function")).Return(true, nil)
-				m.EXPECT().DeleteFunction(gomock.Any(), aws.String("test-edge-function")).Return(fmt.Errorf("Lambda was unable to delete because it is a replicated function")).AnyTimes()
-			},
-			want:    fmt.Errorf("[resource test-edge-function] timed out waiting for Lambda@Edge replicas to be cleaned up after 1s"),
-			wantErr: true,
-		},
-		{
 			name: "delete lambda@edge function failure with context cancelled during retry",
 			args: args{
 				ctx: func() context.Context {
@@ -154,7 +141,6 @@ func TestLambdaFunctionOperator_DeleteLambdaFunction(t *testing.T) {
 
 			lambdaFunctionOperator := NewLambdaFunctionOperator(lambdaMock)
 			lambdaFunctionOperator.retryInterval = 10 * time.Millisecond
-			lambdaFunctionOperator.retryTimeout = 1 * time.Second
 
 			err := lambdaFunctionOperator.DeleteLambdaFunction(tt.args.ctx, tt.args.functionName)
 			if (err != nil) != tt.wantErr {

@@ -2,7 +2,6 @@ package operation
 
 import (
 	"context"
-	"fmt"
 	"runtime"
 	"strings"
 	"time"
@@ -16,7 +15,6 @@ import (
 
 const (
 	lambdaEdgeRetryInterval = 30 * time.Second
-	lambdaEdgeRetryTimeout  = 60 * time.Minute
 )
 
 // LambdaFunctionOperator handles deletion of Lambda functions that fail to delete due to
@@ -34,10 +32,9 @@ var _ IOperator = (*LambdaFunctionOperator)(nil)
 type LambdaFunctionOperator struct {
 	client    client.ILambda
 	resources []*types.StackResourceSummary
-	// retryInterval and retryTimeout are stored as fields (rather than using constants
-	// directly) so that tests can override them to avoid waiting 60 minutes.
+	// retryInterval is stored as a field (rather than using the constant directly)
+	// so that tests can override it to avoid long waits.
 	retryInterval time.Duration
-	retryTimeout  time.Duration
 }
 
 func NewLambdaFunctionOperator(client client.ILambda) *LambdaFunctionOperator {
@@ -45,7 +42,6 @@ func NewLambdaFunctionOperator(client client.ILambda) *LambdaFunctionOperator {
 		client:        client,
 		resources:     []*types.StackResourceSummary{},
 		retryInterval: lambdaEdgeRetryInterval,
-		retryTimeout:  lambdaEdgeRetryTimeout,
 	}
 }
 
@@ -94,10 +90,9 @@ func (o *LambdaFunctionOperator) DeleteLambdaFunction(ctx context.Context, funct
 		return err
 	}
 
-	io.Logger.Info().Msgf("Lambda@Edge function %s has replicas that are still being cleaned up. This may take up to 60 minutes.", *functionName)
+	io.Logger.Info().Msgf("Lambda@Edge function %s has replicas that are still being cleaned up. Waiting for AWS to finish removing edge replicas.", *functionName)
 
-	deadline := time.Now().Add(o.retryTimeout)
-	for time.Now().Before(deadline) {
+	for {
 		select {
 		case <-ctx.Done():
 			return &client.ClientError{
@@ -116,11 +111,6 @@ func (o *LambdaFunctionOperator) DeleteLambdaFunction(ctx context.Context, funct
 		if !o.isReplicatedFunctionError(err) {
 			return err
 		}
-	}
-
-	return &client.ClientError{
-		ResourceName: functionName,
-		Err:          fmt.Errorf("timed out waiting for Lambda@Edge replicas to be cleaned up after %v", o.retryTimeout),
 	}
 }
 

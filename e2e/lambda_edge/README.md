@@ -7,7 +7,7 @@ This directory contains a tool for creating a test environment specifically for 
 This test environment is separated from `e2e/full/` for the following reasons:
 
 - **Deployment time**: CloudFront distribution creation takes 3-5 minutes, significantly slower than other resources
-- **Deletion wait time**: Lambda@Edge replicas take ~15-20 minutes to be cleaned up by AWS after CloudFront distribution deletion. The operator retries deletion every 30 seconds for up to 60 minutes
+- **Deletion wait time**: Lambda@Edge replicas take ~15-20 minutes to be cleaned up by AWS after CloudFront distribution deletion. The operator retries deletion every 30 seconds until replicas are removed
 - **Region constraint**: Lambda@Edge requires `us-east-1`, which may differ from other test environments
 
 Including this in the full E2E test would make the entire test suite significantly slower.
@@ -59,7 +59,7 @@ The operator will:
 1. Attempt to delete the Lambda function after CloudFormation's initial deletion fails
 2. Detect the "replicated function" error from Lambda@Edge
 3. Log a message about waiting for replica cleanup
-4. Retry deletion every 30 seconds until successful (timeout: 60 minutes)
+4. Retry deletion every 30 seconds until successful
 
 ### Notes
 
