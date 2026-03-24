@@ -90,7 +90,7 @@ func (o *LambdaFunctionOperator) DeleteLambdaFunction(ctx context.Context, funct
 		return nil
 	}
 
-	if !isReplicatedFunctionError(err) {
+	if !o.isReplicatedFunctionError(err) {
 		return err
 	}
 
@@ -113,7 +113,7 @@ func (o *LambdaFunctionOperator) DeleteLambdaFunction(ctx context.Context, funct
 			return nil
 		}
 
-		if !isReplicatedFunctionError(err) {
+		if !o.isReplicatedFunctionError(err) {
 			return err
 		}
 	}
@@ -124,6 +124,6 @@ func (o *LambdaFunctionOperator) DeleteLambdaFunction(ctx context.Context, funct
 	}
 }
 
-func isReplicatedFunctionError(err error) bool {
+func (o *LambdaFunctionOperator) isReplicatedFunctionError(err error) bool {
 	return strings.Contains(err.Error(), "replicated function")
 }
