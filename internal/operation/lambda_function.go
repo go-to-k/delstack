@@ -92,7 +92,7 @@ func (o *LambdaFunctionOperator) DeleteLambdaFunction(ctx context.Context, funct
 		return err
 	}
 
-	io.Logger.Info().Msgf("Lambda@Edge function %s has replicas that are still being cleaned up. Retrying deletion every %v (timeout: %v).", *functionName, o.retryInterval, o.retryTimeout)
+	io.Logger.Info().Msgf("Lambda@Edge function %s has replicas that are still being cleaned up. This may take up to 60 minutes.", *functionName)
 
 	deadline := time.Now().Add(o.retryTimeout)
 	for time.Now().Before(deadline) {
