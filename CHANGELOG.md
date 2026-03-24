@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.5.1](https://github.com/go-to-k/delstack/compare/v2.5.0...v2.5.1) - 2026-03-24
+- docs: move gif in README.md by @go-to-k in https://github.com/go-to-k/delstack/pull/597
+- docs: improve README structure and clarity by @go-to-k in https://github.com/go-to-k/delstack/pull/599
+- test: remove testdata_ prefix from e2e directories by @go-to-k in https://github.com/go-to-k/delstack/pull/600
+- docs: improve Features description in README.md by @go-to-k in https://github.com/go-to-k/delstack/pull/601
+- docs: improve README clarity and structure by @go-to-k in https://github.com/go-to-k/delstack/pull/602
+- docs: remove incomplete parameter list from GitHub Actions section by @go-to-k in https://github.com/go-to-k/delstack/pull/603
+- docs: add stack TerminationProtection to Features section by @go-to-k in https://github.com/go-to-k/delstack/pull/604
+- fix: skip DeletionPolicy removal for non-updatable stack statuses by @go-to-k in https://github.com/go-to-k/delstack/pull/607
+- feat: support Lambda@Edge function deletion with replica cleanup retry by @go-to-k in https://github.com/go-to-k/delstack/pull/606
+
 ## [v2.5.0](https://github.com/go-to-k/delstack/compare/v2.4.1...v2.5.0) - 2026-03-15
 - test: move testdata_* into e2e/ directory and add combined targets by @go-to-k in https://github.com/go-to-k/delstack/pull/587
 - feat: add -y/--yes option to skip confirmation prompts by @go-to-k in https://github.com/go-to-k/delstack/pull/589
