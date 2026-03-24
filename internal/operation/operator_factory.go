@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3tables"
 	"github.com/aws/aws-sdk-go-v2/service/s3vectors"
@@ -171,6 +172,21 @@ func (f *OperatorFactory) CreateAthenaWorkGroupOperator() *AthenaWorkGroupOperat
 	return NewAthenaWorkGroupOperator(
 		client.NewAthena(
 			sdkAthenaClient,
+		),
+	)
+}
+
+func (f *OperatorFactory) CreateLambdaFunctionOperator() *LambdaFunctionOperator {
+	sdkLambdaClient := lambda.NewFromConfig(f.config, func(o *lambda.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+	sdkLambdaWaiter := lambda.NewFunctionUpdatedV2Waiter(sdkLambdaClient)
+
+	return NewLambdaFunctionOperator(
+		client.NewLambdaClient(
+			sdkLambdaClient,
+			sdkLambdaWaiter,
 		),
 	)
 }

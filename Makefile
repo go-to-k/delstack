@@ -20,7 +20,7 @@ TEST_COV_RESULT := "$$(go test -race -cover -v ./... -coverpkg=./... -coverprofi
 
 FAIL_CHECK := "^[^\s\t]*FAIL[^\s\t]*$$"
 
-.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_deletion_protection testgen_deletion_protection_no_tp testgen_help e2e_full e2e_full_retain e2e_large_template e2e_dependency e2e_dependency_retain e2e_preprocessor e2e_deletion_protection e2e_deletion_protection_no_tp e2e_help
+.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_lambda_edge testgen_deletion_protection testgen_deletion_protection_no_tp testgen_help e2e_full e2e_full_retain e2e_large_template e2e_dependency e2e_dependency_retain e2e_preprocessor e2e_lambda_edge e2e_deletion_protection e2e_deletion_protection_no_tp e2e_help
 
 test_diff:
 	@! echo $(TEST_DIFF_RESULT) | $(COLORIZE_PASS) | $(COLORIZE_FAIL) | tee /dev/stderr | grep $(FAIL_CHECK) > /dev/null
@@ -85,6 +85,11 @@ testgen_dependency_retain:
 	@echo "Setting up CDK dependency test stacks with RETAIN resources..."
 	@cd e2e/dependency && go mod tidy && go run deploy.go -r $(OPT)
 
+# Generate and deploy Lambda@Edge test stacks
+testgen_lambda_edge:
+	@echo "Setting up Lambda@Edge test stacks..."
+	@cd e2e/lambda_edge && go mod tidy && go run deploy.go $(OPT)
+
 # Generate and deploy preprocessor test stacks for Lambda VPC detachment
 testgen_preprocessor:
 	@echo "Setting up preprocessor test stacks for Lambda VPC detachment..."
@@ -108,6 +113,7 @@ testgen_help:
 	@echo "  testgen_large_template      - Generate and deploy large CFn template (>51KB), S3 bucket auto-deleted"
 	@echo "  testgen_dependency          - Generate and deploy CDK dependency test stacks for complex dependency graphs"
 	@echo "  testgen_dependency_retain   - Generate and deploy CDK dependency test stacks with RETAIN resources"
+	@echo "  testgen_lambda_edge         - Generate and deploy Lambda@Edge test stacks"
 	@echo "  testgen_preprocessor        - Generate and deploy preprocessor test stacks for Lambda VPC detachment"
 	@echo "  testgen_deletion_protection       - Generate and deploy deletion protection test stacks"
 	@echo "  testgen_deletion_protection_no_tp - Generate and deploy deletion protection test stacks without stack TP"
@@ -127,6 +133,8 @@ testgen_help:
 	@echo "  make testgen_dependency_retain"
 	@echo "  make testgen_dependency_retain OPT=\"-s my-stage\""
 	@echo "  make testgen_dependency_retain OPT=\"-p my-profile\""
+	@echo "  make testgen_lambda_edge"
+	@echo "  make testgen_lambda_edge OPT=\"-s my-stage\""
 	@echo "  make testgen_preprocessor"
 	@echo "  make testgen_preprocessor OPT=\"-s my-stage\""
 	@echo "  make testgen_preprocessor OPT=\"-p my-profile\""
@@ -172,6 +180,12 @@ e2e_dependency_retain:
 	@$(MAKE) testgen_dependency_retain OPT="-s $(STAGE) $(OPT)"
 	@$(MAKE) run OPT="-s $(STAGE)-Stack-A -s $(STAGE)-Stack-B -s $(STAGE)-Stack-C -s $(STAGE)-Stack-D -s $(STAGE)-Stack-E -s $(STAGE)-Stack-F -f $(OPT)"
 
+# Run Lambda@Edge E2E test (deploy + delete)
+e2e_lambda_edge: STAGE = e2e-lambda-edge-$(E2E_RANDOM)
+e2e_lambda_edge:
+	@$(MAKE) testgen_lambda_edge OPT="-s $(STAGE) $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE) $(OPT)"
+
 # Run preprocessor E2E test (deploy + delete)
 e2e_preprocessor: STAGE = e2e-preprocessor-$(E2E_RANDOM)
 e2e_preprocessor:
@@ -198,6 +212,7 @@ e2e_help:
 	@echo "  e2e_large_template          - Deploy large CFn template and force delete"
 	@echo "  e2e_dependency              - Deploy 6 dependency stacks and delete all"
 	@echo "  e2e_dependency_retain       - Deploy 6 dependency stacks with RETAIN and force delete"
+	@echo "  e2e_lambda_edge             - Deploy Lambda@Edge stacks and delete (takes ~20 min)"
 	@echo "  e2e_preprocessor            - Deploy preprocessor stacks and delete"
 	@echo "  e2e_deletion_protection     - Deploy deletion protection stacks and force delete"
 	@echo "  e2e_deletion_protection_no_tp - Deploy deletion protection stacks (no TP) and force delete"

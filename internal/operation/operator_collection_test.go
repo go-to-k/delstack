@@ -35,6 +35,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		ecrRepositoryOperatorResourcesLength       int
 		backupVaultOperatorResourcesLength         int
 		athenaWorkGroupOperatorResourcesLength     int
+		lambdaFunctionOperatorResourcesLength      int
 		cloudformationStackOperatorResourcesLength int
 		customOperatorResourcesLength              int
 	}
@@ -113,19 +114,25 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId11"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("Custom::CustomResource"),
+						ResourceType:       aws.String("AWS::Lambda::Function"),
 						PhysicalResourceId: aws.String("PhysicalResourceId11"),
 					},
 					{
 						LogicalResourceId:  aws.String("LogicalResourceId12"),
 						ResourceStatus:     "DELETE_FAILED",
-						ResourceType:       aws.String("AWS::CloudFormation::CustomResource"),
+						ResourceType:       aws.String("Custom::CustomResource"),
 						PhysicalResourceId: aws.String("PhysicalResourceId12"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId13"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::CloudFormation::CustomResource"),
+						PhysicalResourceId: aws.String("PhysicalResourceId13"),
 					},
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                   12,
+				logicalResourceIdsLength:                   13,
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   1,
@@ -136,6 +143,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       1,
 				backupVaultOperatorResourcesLength:         1,
 				athenaWorkGroupOperatorResourcesLength:     1,
+				lambdaFunctionOperatorResourcesLength:      1,
 				cloudformationStackOperatorResourcesLength: 1,
 				customOperatorResourcesLength:              2,
 			},
@@ -172,6 +180,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 1,
 				customOperatorResourcesLength:              0,
 			},
@@ -220,6 +229,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 2,
 				customOperatorResourcesLength:              0,
 			},
@@ -256,6 +266,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 0,
 				customOperatorResourcesLength:              0,
 			},
@@ -304,6 +315,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 0,
 				customOperatorResourcesLength:              0,
 			},
@@ -340,6 +352,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 1,
 				customOperatorResourcesLength:              0,
 			},
@@ -388,6 +401,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 2,
 				customOperatorResourcesLength:              0,
 			},
@@ -411,6 +425,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			ecrRepositoryOperatorResourcesLength := 0
 			backupVaultOperatorResourcesLength := 0
 			athenaWorkGroupOperatorResourcesLength := 0
+			lambdaFunctionOperatorResourcesLength := 0
 			cloudformationStackOperatorResourcesLength := 0
 			customOperatorResourcesLength := 0
 
@@ -436,6 +451,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					backupVaultOperatorResourcesLength += operator.GetResourcesLength()
 				case *AthenaWorkGroupOperator:
 					athenaWorkGroupOperatorResourcesLength += operator.GetResourcesLength()
+				case *LambdaFunctionOperator:
+					lambdaFunctionOperatorResourcesLength += operator.GetResourcesLength()
 				case *CloudFormationStackOperator:
 					cloudformationStackOperatorResourcesLength += operator.GetResourcesLength()
 				case *CustomOperator:
@@ -456,6 +473,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       ecrRepositoryOperatorResourcesLength,
 				backupVaultOperatorResourcesLength:         backupVaultOperatorResourcesLength,
 				athenaWorkGroupOperatorResourcesLength:     athenaWorkGroupOperatorResourcesLength,
+				lambdaFunctionOperatorResourcesLength:      lambdaFunctionOperatorResourcesLength,
 				cloudformationStackOperatorResourcesLength: cloudformationStackOperatorResourcesLength,
 				customOperatorResourcesLength:              customOperatorResourcesLength,
 			}
@@ -613,6 +631,15 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 				ctx:       context.Background(),
 				stackName: aws.String("test"),
 				resource:  "AWS::Athena::WorkGroup",
+			},
+			want: true,
+		},
+		{
+			name: "Lambda Function",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				resource:  "AWS::Lambda::Function",
 			},
 			want: true,
 		},

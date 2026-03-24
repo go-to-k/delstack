@@ -20,6 +20,7 @@ e2e/
   preprocessor/          E2E test environment for preprocessor testing
   deletion_protection/   E2E test environment for deletion protection testing
   s3_template_cfn/       E2E test environment for large CloudFormation template testing
+  lambda_edge/           E2E test environment for Lambda@Edge replica cleanup testing
 ```
 
 ### Package Dependency Rules
@@ -151,6 +152,7 @@ When creating a new `e2e/<name>/` directory, add a `cdk/.gitignore` that exclude
 - `make testgen_dependency`: Deploy CDK dependency test stacks for complex dependency graph testing
 - `make testgen_dependency_retain`: Deploy CDK dependency test stacks with RETAIN resources
 - `make testgen_preprocessor`: Deploy preprocessor test stacks for Lambda VPC detachment testing
+- `make testgen_lambda_edge`: Deploy Lambda@Edge test stacks for replica cleanup retry testing
 - `make testgen_deletion_protection`: Deploy deletion protection test stacks for resource-level protection check/disable testing
 - `make testgen_deletion_protection_no_tp`: Deploy deletion protection test stacks without TerminationProtection (for testing resource-level protection only)
 - `make testgen_help`: Show help for all test stack generation targets
@@ -165,6 +167,7 @@ These targets deploy test stacks and then run `delstack` to delete them in a sin
 - `make e2e_dependency`: Deploy 6 dependency stacks and delete all
 - `make e2e_dependency_retain`: Deploy 6 dependency stacks with RETAIN and force delete
 - `make e2e_preprocessor`: Deploy preprocessor stacks and delete
+- `make e2e_lambda_edge`: Deploy Lambda@Edge stacks and delete (takes ~20 min due to replica cleanup)
 - `make e2e_deletion_protection`: Deploy deletion protection stacks and force delete
 - `make e2e_deletion_protection_no_tp`: Deploy deletion protection stacks (no TP) and force delete
 - `make e2e_help`: Show help for all E2E test targets
