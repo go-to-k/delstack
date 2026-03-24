@@ -16,7 +16,7 @@ const (
 	CustomResource               = "Custom::"
 )
 
-// For Preprocessors to filter resources by type
+// For Force Deletion and Preprocessors
 const (
 	LambdaFunction = "AWS::Lambda::Function"
 )
@@ -41,6 +41,7 @@ var ResourceTypes = []string{
 	EcrRepository,
 	BackupVault,
 	AthenaWorkGroup,
+	LambdaFunction,
 	CloudformationStack,
 	CloudformationCustomResource,
 	CustomResource,

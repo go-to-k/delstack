@@ -238,3 +238,229 @@ func TestLambdaClient_UpdateFunctionConfiguration(t *testing.T) {
 		})
 	}
 }
+
+func TestLambdaClient_DeleteFunction(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	type args struct {
+		ctx                context.Context
+		functionName       *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "delete function successfully",
+			args: args{
+				ctx:          context.Background(),
+				functionName: aws.String("test-function"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteFunctionMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &lambda.DeleteFunctionOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "delete function failure",
+			args: args{
+				ctx:          context.Background(),
+				functionName: aws.String("test-function"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteFunctionErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &lambda.DeleteFunctionOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteFunctionError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("us-east-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := lambda.NewFromConfig(cfg)
+			waiter := lambda.NewFunctionUpdatedV2Waiter(client)
+			lambdaClient := NewLambdaClient(client, waiter)
+
+			err = lambdaClient.DeleteFunction(tt.args.ctx, tt.args.functionName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				var clientErr *ClientError
+				if !errors.As(err, &clientErr) {
+					t.Errorf("expected ClientError, got = %#v", err)
+				}
+				if clientErr == nil || *clientErr.ResourceName != *tt.args.functionName {
+					t.Errorf("ClientError ResourceName = %#v, want %#v", clientErr, tt.args.functionName)
+				}
+			}
+		})
+	}
+}
+
+func TestLambdaClient_CheckLambdaFunctionExists(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	type args struct {
+		ctx                context.Context
+		functionName       *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	type want struct {
+		exists bool
+		err    error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "check function exists successfully",
+			args: args{
+				ctx:          context.Background(),
+				functionName: aws.String("test-function"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"GetFunctionExistsMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &lambda.GetFunctionOutput{
+										Configuration: &types.FunctionConfiguration{
+											FunctionName: aws.String("test-function"),
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: true,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "check function not exists successfully",
+			args: args{
+				ctx:          context.Background(),
+				functionName: aws.String("test-function"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"GetFunctionNotExistsMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &lambda.GetFunctionOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("Function not found")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: false,
+				err:    nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "check function exists failure",
+			args: args{
+				ctx:          context.Background(),
+				functionName: aws.String("test-function"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"GetFunctionErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &lambda.GetFunctionOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("GetFunctionError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				exists: false,
+				err: &ClientError{
+					ResourceName: aws.String("test-function"),
+					Err:          fmt.Errorf("operation error Lambda: GetFunction, GetFunctionError"),
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("us-east-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := lambda.NewFromConfig(cfg)
+			waiter := lambda.NewFunctionUpdatedV2Waiter(client)
+			lambdaClient := NewLambdaClient(client, waiter)
+
+			output, err := lambdaClient.CheckLambdaFunctionExists(tt.args.ctx, tt.args.functionName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want.err)
+				return
+			}
+			if output != tt.want.exists {
+				t.Errorf("output = %#v, want %#v", output, tt.want.exists)
+			}
+		})
+	}
+}

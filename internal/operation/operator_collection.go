@@ -51,6 +51,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
 	athenaWorkGroupOperator := c.operatorFactory.CreateAthenaWorkGroupOperator()
+	lambdaFunctionOperator := c.operatorFactory.CreateLambdaFunctionOperator()
 	cloudformationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator()
 	customOperator := c.operatorFactory.CreateCustomOperator()
 
@@ -83,6 +84,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				backupVaultOperator.AddResource(&resource)
 			case resourcetype.AthenaWorkGroup:
 				athenaWorkGroupOperator.AddResource(&resource)
+			case resourcetype.LambdaFunction:
+				lambdaFunctionOperator.AddResource(&resource)
 			case resourcetype.CloudformationStack:
 				cloudformationStackOperator.AddResource(&resource)
 			case resourcetype.CloudformationCustomResource:
@@ -104,6 +107,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, ecrRepositoryOperator)
 	c.operators = append(c.operators, backupVaultOperator)
 	c.operators = append(c.operators, athenaWorkGroupOperator)
+	c.operators = append(c.operators, lambdaFunctionOperator)
 	c.operators = append(c.operators, cloudformationStackOperator)
 	c.operators = append(c.operators, customOperator)
 }
@@ -152,6 +156,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.EcrRepository, "ECR Repositories, including repositories that contain images and where the `EmptyOnDelete` is not true."},
 		{resourcetype.BackupVault, "Backup Vaults, including vaults containing recovery points."},
 		{resourcetype.AthenaWorkGroup, "Athena WorkGroups, including workgroups containing named queries or prepared statements."},
+		{resourcetype.LambdaFunction, "Lambda Functions, including Lambda@Edge functions with replicas still being cleaned up (retries for up to 60 minutes)."},
 		{resourcetype.CloudformationStack, "Nested Child Stacks that failed to delete."},
 		{resourcetype.CloudformationCustomResource, "Custom Resources (AWS::CloudFormation::CustomResource), including resources that do not return a SUCCESS status."},
 		{"Custom::Xxx", "Custom Resources (Custom::Xxx), including resources that do not return a SUCCESS status."},

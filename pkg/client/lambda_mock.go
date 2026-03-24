@@ -40,6 +40,35 @@ func (m *MockILambda) EXPECT() *MockILambdaMockRecorder {
 	return m.recorder
 }
 
+// CheckLambdaFunctionExists mocks base method.
+func (m *MockILambda) CheckLambdaFunctionExists(ctx context.Context, functionName *string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckLambdaFunctionExists", ctx, functionName)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckLambdaFunctionExists indicates an expected call of CheckLambdaFunctionExists.
+func (mr *MockILambdaMockRecorder) CheckLambdaFunctionExists(ctx, functionName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckLambdaFunctionExists", reflect.TypeOf((*MockILambda)(nil).CheckLambdaFunctionExists), ctx, functionName)
+}
+
+// DeleteFunction mocks base method.
+func (m *MockILambda) DeleteFunction(ctx context.Context, functionName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteFunction", ctx, functionName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteFunction indicates an expected call of DeleteFunction.
+func (mr *MockILambdaMockRecorder) DeleteFunction(ctx, functionName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFunction", reflect.TypeOf((*MockILambda)(nil).DeleteFunction), ctx, functionName)
+}
+
 // GetFunction mocks base method.
 func (m *MockILambda) GetFunction(ctx context.Context, functionName *string) (*lambda.GetFunctionOutput, error) {
 	m.ctrl.T.Helper()

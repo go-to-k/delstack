@@ -14,6 +14,8 @@ const LambdaFunctionUpdatedWaitNanoSecTime = time.Duration(300000000000) // 5 mi
 type ILambda interface {
 	GetFunction(ctx context.Context, functionName *string) (*lambda.GetFunctionOutput, error)
 	UpdateFunctionConfiguration(ctx context.Context, input *lambda.UpdateFunctionConfigurationInput) error
+	DeleteFunction(ctx context.Context, functionName *string) error
+	CheckLambdaFunctionExists(ctx context.Context, functionName *string) (bool, error)
 }
 
 var _ ILambda = (*LambdaClient)(nil)
@@ -60,6 +62,35 @@ func (c *LambdaClient) UpdateFunctionConfiguration(ctx context.Context, input *l
 	}
 
 	return nil
+}
+
+func (c *LambdaClient) DeleteFunction(ctx context.Context, functionName *string) error {
+	_, err := c.client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
+		FunctionName: functionName,
+	})
+	if err != nil {
+		return &ClientError{
+			ResourceName: functionName,
+			Err:          err,
+		}
+	}
+	return nil
+}
+
+func (c *LambdaClient) CheckLambdaFunctionExists(ctx context.Context, functionName *string) (bool, error) {
+	_, err := c.client.GetFunction(ctx, &lambda.GetFunctionInput{
+		FunctionName: functionName,
+	})
+	if err != nil {
+		if strings.Contains(err.Error(), "Function not found") {
+			return false, nil
+		}
+		return false, &ClientError{
+			ResourceName: functionName,
+			Err:          err,
+		}
+	}
+	return true, nil
 }
 
 func (c *LambdaClient) waitForFunctionUpdated(ctx context.Context, functionName *string) error {
