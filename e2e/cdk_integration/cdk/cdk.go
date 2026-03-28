@@ -16,12 +16,17 @@ import (
 //
 // Each stack has a non-empty S3 bucket to test force deletion.
 
-func NewBaseStack(scope constructs.Construct, id string, props *awscdk.StackProps, pjPrefix string) awscdk.Stack {
+func NewBaseStack(scope constructs.Construct, id string, props *awscdk.StackProps, pjPrefix string, isRetain bool) awscdk.Stack {
 	stack := awscdk.NewStack(scope, &id, props)
+
+	removalPolicy := awscdk.RemovalPolicy_DESTROY
+	if isRetain {
+		removalPolicy = awscdk.RemovalPolicy_RETAIN
+	}
 
 	bucket := awss3.NewBucket(stack, jsii.String("BaseBucket"), &awss3.BucketProps{
 		BucketName:    jsii.String(pjPrefix + "-base-bucket"),
-		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
+		RemovalPolicy: removalPolicy,
 	})
 
 	awscdk.NewCfnOutput(stack, jsii.String("ExportFromBase"), &awscdk.CfnOutputProps{
@@ -32,14 +37,19 @@ func NewBaseStack(scope constructs.Construct, id string, props *awscdk.StackProp
 	return stack
 }
 
-func NewAppStack(scope constructs.Construct, id string, props *awscdk.StackProps, pjPrefix string) awscdk.Stack {
+func NewAppStack(scope constructs.Construct, id string, props *awscdk.StackProps, pjPrefix string, isRetain bool) awscdk.Stack {
 	stack := awscdk.NewStack(scope, &id, props)
 
 	importedArn := awscdk.Fn_ImportValue(jsii.String(pjPrefix + "-ExportFromBase"))
 
+	removalPolicy := awscdk.RemovalPolicy_DESTROY
+	if isRetain {
+		removalPolicy = awscdk.RemovalPolicy_RETAIN
+	}
+
 	bucket := awss3.NewBucket(stack, jsii.String("AppBucket"), &awss3.BucketProps{
 		BucketName:    jsii.String(pjPrefix + "-app-bucket"),
-		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
+		RemovalPolicy: removalPolicy,
 	})
 	awscdk.Tags_Of(bucket).Add(jsii.String("DependsOn"), importedArn, nil)
 
@@ -56,15 +66,21 @@ func main() {
 		pjPrefix = "delstack-cdk-e2e"
 	}
 
+	retainMode := app.Node().TryGetContext(jsii.String("RETAIN_MODE")).(string)
+	var isRetain bool
+	if retainMode == "true" {
+		isRetain = true
+	}
+
 	baseStack := NewBaseStack(app, pjPrefix+"-BaseStack", &awscdk.StackProps{
 		Env:       env(),
 		StackName: jsii.String(pjPrefix + "-BaseStack"),
-	}, pjPrefix)
+	}, pjPrefix, isRetain)
 
 	appStack := NewAppStack(app, pjPrefix+"-AppStack", &awscdk.StackProps{
 		Env:       env(),
 		StackName: jsii.String(pjPrefix + "-AppStack"),
-	}, pjPrefix)
+	}, pjPrefix, isRetain)
 	appStack.AddDependency(baseStack, jsii.String("AppStack depends on BaseStack"))
 
 	app.Synth(nil)

@@ -19,6 +19,7 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 - **Pre-deletion optimization**: Detaches Lambda VPC configurations in parallel to eliminate ENI cleanup wait time
 - **Retain policy override**: Force deletes resources with `Retain` or `RetainExceptOnCreate` deletion policies via `-f`
 - **GitHub Actions support**: Available as a [GitHub Actions](#github-actions) workflow for CI/CD stack cleanup
+- **[CDK integration](#cdk-integration)**: Run `delstack cdk` in a CDK app directory to synthesize, discover all stacks (including cross-region), and delete them with dependency resolution
 
 ## Install
 
