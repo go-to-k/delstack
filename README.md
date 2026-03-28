@@ -83,6 +83,57 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 - -n, --concurrencyNumber: optional(default: unlimited)
   - Specify the number of parallel stack deletions. Default is unlimited (delete all stacks in parallel).
 
+## CDK Integration
+
+Delete stacks directly from a CDK app directory. Synthesizes the CDK app, detects all stacks (including their regions), and deletes them with dependency resolution.
+
+**Requires**: [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) installed (unless using `-a`).
+
+  ```bash
+  delstack cdk [-a <cdkOutPath>] [-c <key=value>] [-s <stackName>] [-p <profile>] [-i] [-f] [-y] [-n <concurrencyNumber>]
+  ```
+
+### Examples
+
+  ```bash
+  # Synthesize and delete all stacks in the CDK app
+  delstack cdk
+
+  # With CDK context values
+  delstack cdk -c env=dev -c feature=true
+
+  # Use an existing cdk.out directory (skip synthesis)
+  delstack cdk -a ./cdk.out
+
+  # Delete a specific stack (region auto-resolved from manifest)
+  delstack cdk -s MyStack
+
+  # Interactive stack selection (shows region info)
+  delstack cdk -i
+
+  # Force delete with confirmation skip
+  delstack cdk -f -y
+  ```
+
+### CDK-specific options
+
+- -a, --app: optional
+  - Path to an existing `cdk.out` directory. When specified, `cdk synth` is skipped and the manifest is read directly.
+- -c, --context: optional (repeatable)
+  - CDK context values in `key=value` format, passed to `cdk synth -c key=value`.
+
+All [global options](#how-to-use) (`-s`, `-p`, `-r`, `-i`, `-f`, `-y`, `-n`) also work with the `cdk` subcommand.
+
+### Cross-region deletion
+
+When the CDK app deploys stacks to multiple regions (e.g., `us-east-1` for CloudFront + `ap-northeast-1` for the main app), `delstack cdk` automatically:
+
+1. Detects each stack's region from the Cloud Assembly manifest (`environment` field)
+2. Groups stacks by region and creates separate AWS sessions
+3. Resolves cross-region dependencies and deletes in the correct order
+
+For environment-agnostic stacks (`unknown-region` in the manifest), the region from `-r` or the default AWS configuration is used.
+
 ## Resource Types that can be forced to delete
 
 This tool supports force deletion of the following resource types that cause `DELETE_FAILED` in normal CloudFormation stack deletion. All other resources are deleted normally, so you can use this tool for any stack.

@@ -7,6 +7,7 @@ cmd/
   delstack/       CLI entrypoint
 internal/
   app/            Application layer (stack deletion orchestration)
+  cdk/            CDK integration (synthesis, manifest parsing)
   operation/      Operators for force-deleting specific resource types
   preprocessor/   Pre-deletion processing (e.g., Lambda VPC detachment)
   resourcetype/   Resource type constants
@@ -17,6 +18,7 @@ pkg/
 e2e/
   full/                  E2E test environment for full resources (CDK + deploy script)
   dependency/            E2E test environment for dependency graph testing
+  cdk_integration/       E2E test environment for `delstack cdk` subcommand testing
   preprocessor/          E2E test environment for preprocessor testing
   deletion_protection/   E2E test environment for deletion protection testing
   s3_template_cfn/       E2E test environment for large CloudFormation template testing
@@ -155,6 +157,7 @@ When creating a new `e2e/<name>/` directory, add a `cdk/.gitignore` that exclude
 - `make testgen_lambda_edge`: Deploy Lambda@Edge test stacks for replica cleanup retry testing
 - `make testgen_deletion_protection`: Deploy deletion protection test stacks for resource-level protection check/disable testing
 - `make testgen_deletion_protection_no_tp`: Deploy deletion protection test stacks without TerminationProtection (for testing resource-level protection only)
+- `make testgen_cdk_integration`: Deploy CDK integration test stacks for `delstack cdk` subcommand testing
 - `make testgen_help`: Show help for all test stack generation targets
 
 ### E2E Combined Targets (testgen + delstack run)
@@ -170,6 +173,7 @@ These targets deploy test stacks and then run `delstack` to delete them in a sin
 - `make e2e_lambda_edge`: Deploy Lambda@Edge stacks and delete (takes ~20 min due to replica cleanup)
 - `make e2e_deletion_protection`: Deploy deletion protection stacks and force delete
 - `make e2e_deletion_protection_no_tp`: Deploy deletion protection stacks (no TP) and force delete
+- `make e2e_cdk_integration`: Deploy CDK stacks and delete with `delstack cdk`
 - `make e2e_help`: Show help for all E2E test targets
 
 Options:

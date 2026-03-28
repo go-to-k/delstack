@@ -1,0 +1,100 @@
+package cdk
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+type StackInfo struct {
+	StackName    string
+	Region       string
+	Account      string
+	Dependencies []string
+}
+
+type manifest struct {
+	Artifacts map[string]artifact `json:"artifacts"`
+}
+
+type artifact struct {
+	Type        string           `json:"type"`
+	Environment string           `json:"environment"`
+	Properties  artifactProps    `json:"properties"`
+	Dependencies []string        `json:"dependencies"`
+	DisplayName string           `json:"displayName"`
+}
+
+type artifactProps struct {
+	TemplateFile string `json:"templateFile"`
+}
+
+func ParseManifest(cdkOutDir string) ([]StackInfo, error) {
+	manifestPath := filepath.Join(cdkOutDir, "manifest.json")
+
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read manifest.json: %w", err)
+	}
+
+	var m manifest
+	if err := json.Unmarshal(data, &m); err != nil {
+		return nil, fmt.Errorf("failed to parse manifest.json: %w", err)
+	}
+
+	// Build a set of stack artifact keys for dependency filtering
+	stackArtifactKeys := make(map[string]string) // artifact key -> stack name
+	for key, art := range m.Artifacts {
+		if art.Type != "aws:cloudformation:stack" {
+			continue
+		}
+		name := art.DisplayName
+		if name == "" {
+			name = key
+		}
+		stackArtifactKeys[key] = name
+	}
+
+	var stacks []StackInfo
+	for key, art := range m.Artifacts {
+		if art.Type != "aws:cloudformation:stack" {
+			continue
+		}
+
+		name := art.DisplayName
+		if name == "" {
+			name = key
+		}
+
+		account, region := parseEnvironment(art.Environment)
+
+		// Filter dependencies: only include other stack artifacts (exclude .assets etc.)
+		var deps []string
+		for _, dep := range art.Dependencies {
+			if depName, ok := stackArtifactKeys[dep]; ok {
+				deps = append(deps, depName)
+			}
+		}
+
+		stacks = append(stacks, StackInfo{
+			StackName:    name,
+			Region:       region,
+			Account:      account,
+			Dependencies: deps,
+		})
+	}
+
+	return stacks, nil
+}
+
+func parseEnvironment(env string) (account, region string) {
+	// Format: "aws://ACCOUNT/REGION"
+	env = strings.TrimPrefix(env, "aws://")
+	parts := strings.SplitN(env, "/", 2)
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return "unknown-account", "unknown-region"
+}

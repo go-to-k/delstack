@@ -26,11 +26,16 @@ type App struct {
 	ForceMode         bool
 	YesMode           bool
 	ConcurrencyNumber int
+
+	// CDK subcommand fields
+	CdkAppPath     string
+	CdkContexts    *cli.StringSlice
 }
 
 func NewApp(version string) *App {
 	app := App{}
 	app.StackNames = cli.NewStringSlice()
+	app.CdkContexts = cli.NewStringSlice()
 
 	app.Cli = &cli.App{
 		Name:  "delstack",
@@ -81,6 +86,27 @@ func NewApp(version string) *App {
 				Value:       UnspecifiedConcurrencyNumber,
 				Usage:       "Specify the number of parallel stack deletions. Default is unlimited (delete all stacks in parallel).",
 				Destination: &app.ConcurrencyNumber,
+			},
+		},
+		Commands: []*cli.Command{
+			{
+				Name:  "cdk",
+				Usage: "Delete stacks from a CDK app by synthesizing or reading an existing cdk.out",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:        "app",
+						Aliases:     []string{"a"},
+						Usage:       "Path to an existing cdk.out directory (skips synthesis)",
+						Destination: &app.CdkAppPath,
+					},
+					&cli.StringSliceFlag{
+						Name:        "context",
+						Aliases:     []string{"c"},
+						Usage:       "CDK context values in key=value format (repeatable)",
+						Destination: app.CdkContexts,
+					},
+				},
+				Action: app.getCdkAction(),
 			},
 		},
 	}

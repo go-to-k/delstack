@@ -20,7 +20,7 @@ TEST_COV_RESULT := "$$(go test -race -cover -v ./... -coverpkg=./... -coverprofi
 
 FAIL_CHECK := "^[^\s\t]*FAIL[^\s\t]*$$"
 
-.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_lambda_edge testgen_deletion_protection testgen_deletion_protection_no_tp testgen_help e2e_full e2e_full_retain e2e_large_template e2e_dependency e2e_dependency_retain e2e_preprocessor e2e_lambda_edge e2e_deletion_protection e2e_deletion_protection_no_tp e2e_help
+.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_lambda_edge testgen_deletion_protection testgen_deletion_protection_no_tp testgen_cdk_integration testgen_help e2e_full e2e_full_retain e2e_large_template e2e_dependency e2e_dependency_retain e2e_preprocessor e2e_lambda_edge e2e_deletion_protection e2e_deletion_protection_no_tp e2e_cdk_integration e2e_help
 
 test_diff:
 	@! echo $(TEST_DIFF_RESULT) | $(COLORIZE_PASS) | $(COLORIZE_FAIL) | tee /dev/stderr | grep $(FAIL_CHECK) > /dev/null
@@ -105,6 +105,11 @@ testgen_deletion_protection_no_tp:
 	@echo "Setting up deletion protection test stacks without stack TerminationProtection..."
 	@cd e2e/deletion_protection && go mod tidy && go run deploy.go -t $(OPT)
 
+# Generate and deploy CDK integration test stacks for `delstack cdk` subcommand
+testgen_cdk_integration:
+	@echo "Setting up CDK integration test stacks..."
+	@cd e2e/cdk_integration && go mod tidy && go run deploy.go $(OPT)
+
 # Help for test stack generation
 testgen_help:
 	@echo "Test stack generation targets:"
@@ -144,6 +149,9 @@ testgen_help:
 	@echo "  make testgen_deletion_protection_no_tp"
 	@echo "  make testgen_deletion_protection_no_tp OPT=\"-s my-stage\""
 	@echo "  make testgen_deletion_protection_no_tp OPT=\"-p my-profile\""
+	@echo "  make testgen_cdk_integration"
+	@echo "  make testgen_cdk_integration OPT=\"-s my-stage\""
+	@echo "  make testgen_cdk_integration OPT=\"-p my-profile\""
 
 # E2E test commands (testgen + delstack run)
 # ==================================
@@ -204,6 +212,12 @@ e2e_deletion_protection_no_tp:
 	@$(MAKE) testgen_deletion_protection_no_tp OPT="-s $(STAGE) $(OPT)"
 	@$(MAKE) run OPT="-s $(STAGE) -f $(OPT)"
 
+# Run CDK integration E2E test (deploy + delstack cdk)
+e2e_cdk_integration: STAGE = e2e-cdk-$(E2E_RANDOM)
+e2e_cdk_integration:
+	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) $(OPT)"
+	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -f -y $(OPT)
+
 # Help for E2E test targets
 e2e_help:
 	@echo "E2E test targets (testgen + delstack run):"
@@ -216,6 +230,7 @@ e2e_help:
 	@echo "  e2e_preprocessor            - Deploy preprocessor stacks and delete"
 	@echo "  e2e_deletion_protection     - Deploy deletion protection stacks and force delete"
 	@echo "  e2e_deletion_protection_no_tp - Deploy deletion protection stacks (no TP) and force delete"
+	@echo "  e2e_cdk_integration          - Deploy CDK stacks and delete with 'delstack cdk'"
 	@echo ""
 	@echo "Options:"
 	@echo "  STAGE=<name>  - Override default stage name (default: auto-generated with random suffix)"
