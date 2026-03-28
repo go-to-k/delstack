@@ -207,7 +207,6 @@ func (a *App) deleteCdkStacks(ctx context.Context, stacks []cdk.StackInfo) error
 		// Simple case: delete all regions in parallel
 		var eg errgroup.Group
 		for _, region := range regions {
-			region := region
 			regionStackInfos := regionStacks[region]
 			eg.Go(func() error {
 				return a.deleteStacksInRegion(ctx, region, regionStackInfos)
