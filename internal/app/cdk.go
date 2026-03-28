@@ -13,6 +13,7 @@ import (
 	"github.com/go-to-k/delstack/internal/operation"
 	"github.com/go-to-k/delstack/pkg/client"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/sync/errgroup"
 )
 
 func (a *App) getCdkAction() func(c *cli.Context) error {
@@ -203,14 +204,16 @@ func (a *App) deleteCdkStacks(ctx context.Context, stacks []cdk.StackInfo) error
 	}
 
 	if !hasCrossRegionDeps {
-		// Simple case: delete each region independently
+		// Simple case: delete all regions in parallel
+		var eg errgroup.Group
 		for _, region := range regions {
+			region := region
 			regionStackInfos := regionStacks[region]
-			if err := a.deleteStacksInRegion(ctx, region, regionStackInfos); err != nil {
-				return err
-			}
+			eg.Go(func() error {
+				return a.deleteStacksInRegion(ctx, region, regionStackInfos)
+			})
 		}
-		return nil
+		return eg.Wait()
 	}
 
 	// Complex case: cross-region dependencies
