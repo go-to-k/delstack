@@ -411,6 +411,14 @@ func (o *CloudFormationStackOperator) isUpdatableStackStatus(stackStatus types.S
 	}
 }
 
+func (o *CloudFormationStackOperator) StackExists(ctx context.Context, stackName *string) (bool, error) {
+	stacks, err := o.client.DescribeStacks(ctx, stackName)
+	if err != nil {
+		return false, err
+	}
+	return len(stacks) > 0, nil
+}
+
 func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, stackName *string) error {
 	stacks, err := o.client.DescribeStacks(ctx, stackName)
 	if err != nil {

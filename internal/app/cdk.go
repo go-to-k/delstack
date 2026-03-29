@@ -6,8 +6,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/internal/cdk"
 	"github.com/go-to-k/delstack/internal/io"
+	"github.com/go-to-k/delstack/internal/operation"
 	"github.com/go-to-k/delstack/pkg/client"
 	"github.com/urfave/cli/v2"
 )
@@ -65,8 +67,18 @@ func (a *App) getCdkAction() func(c *cli.Context) error {
 			return nil
 		}
 
-		// Step 5: Show confirmation
-		if !a.showCdkConfirmation(selectedStacks) {
+		// Step 5: Filter out stacks that don't exist in AWS
+		existingStacks, err := a.filterExistingStacks(c.Context, selectedStacks)
+		if err != nil {
+			return err
+		}
+		if len(existingStacks) == 0 {
+			io.Logger.Info().Msg("No deployed stacks found.")
+			return nil
+		}
+
+		// Step 6: Show confirmation
+		if !a.showCdkConfirmation(existingStacks) {
 			io.Logger.Info().Msg("Canceled.")
 			return nil
 		}
@@ -74,6 +86,37 @@ func (a *App) getCdkAction() func(c *cli.Context) error {
 		// Step 6: Group by region and delete
 		return a.deleteCdkStacks(c.Context, selectedStacks)
 	}
+}
+
+func (a *App) filterExistingStacks(ctx context.Context, stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
+	// Group by region to create one operator per region
+	configCache := make(map[string]*operation.CloudFormationStackOperator)
+
+	var existing []cdk.StackInfo
+	for _, s := range stacks {
+		op, ok := configCache[s.Region]
+		if !ok {
+			cfg, err := client.LoadAWSConfig(ctx, s.Region, a.Profile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load AWS config for region %s: %w", s.Region, err)
+			}
+			factory := operation.NewOperatorFactory(cfg, a.ForceMode)
+			op = factory.CreateCloudFormationStackOperator()
+			configCache[s.Region] = op
+		}
+
+		exists, err := op.StackExists(ctx, aws.String(s.StackName))
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			existing = append(existing, s)
+		} else {
+			io.Logger.Info().Msgf("Stack %s not found in %s, skipping.", s.StackName, s.Region)
+		}
+	}
+
+	return existing, nil
 }
 
 func (a *App) resolveDefaultRegion(ctx context.Context) (string, error) {
