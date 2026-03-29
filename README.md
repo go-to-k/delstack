@@ -84,7 +84,7 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 - -n, --concurrencyNumber: optional(default: unlimited)
   - Specify the number of parallel stack deletions. Default is unlimited (delete all stacks in parallel).
 
-## CDK Integration
+### CDK Integration
 
   ```bash
   delstack cdk [-s <stackName>] [-a <cdkOutPath>] [-c <key=value>] [-p <profile>] [-i] [-f] [-y] [-n <concurrencyNumber>]
@@ -94,9 +94,8 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
   - Path to an existing `cdk.out` directory. When specified, `npx cdk synth` is skipped and the manifest is read directly.
 - -c, --context: optional (repeatable)
   - CDK context values in `key=value` format, passed to `npx cdk synth -c key=value`.
-- All [global options](#how-to-use) (`-s`, `-p`, `-r`, `-i`, `-f`, `-y`, `-n`) also work with the `cdk` subcommand.
-
-**Requires**: [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) installed (unless using `-a`).
+- All global options (`-s`, `-p`, `-r`, `-i`, `-f`, `-y`, `-n`) also work with the `cdk` subcommand.
+- **Requires**: [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) installed (unless using `-a`).
 
   ```bash
   delstack cdk                         # Synthesize and delete all stacks
@@ -107,7 +106,7 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
   delstack cdk -f -y                   # Force delete, skip confirmation
   ```
 
-For details on cross-region deletion and CDK Stage support, see [CDK Integration Details](#cdk-integration-details).
+For details on cross-region deletion, see [CDK Integration Details](#cdk-integration-details).
 
 ## Resource Types that can be forced to delete
 
@@ -270,10 +269,6 @@ When the CDK app deploys stacks to multiple regions (e.g., `us-east-1` for Cloud
 4. Deletes independent regions in parallel
 
 For environment-agnostic stacks (`unknown-region` in the manifest), the region from `-r` or the default AWS configuration is used.
-
-### CDK Stage support
-
-CDK [Stages](https://docs.aws.amazon.com/cdk/v2/guide/stages.html) place stacks inside nested Cloud Assemblies (`assembly-*/`). `delstack cdk` recursively parses these nested manifests to discover all stacks.
 
 ## GitHub Actions
 

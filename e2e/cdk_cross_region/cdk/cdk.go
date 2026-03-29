@@ -11,10 +11,10 @@ import (
 
 // E2E test for `delstack cdk` cross-region deletion with 4 stacks.
 //
-// Pattern A: AddDependency (explicit CFn Export/Import)
-//   EdgeStackA (us-east-1, Export: ExportFromEdgeA) -- S3 Bucket
-//   MainStackA (ap-northeast-1, Import: ExportFromEdgeA) -- S3 Bucket
-//   Dependency via AddDependency + Fn::ImportValue
+// Pattern A: AddDependency (explicit manifest dependency)
+//   EdgeStackA (us-east-1) -- S3 Bucket
+//   MainStackA (ap-northeast-1) -- S3 Bucket
+//   Dependency via AddDependency (no CFn Export/Import — not supported cross-region)
 //
 // Pattern B: crossRegionReferences (SSM parameter-backed)
 //   EdgeStackB (us-east-1) -- S3 Bucket
@@ -26,7 +26,7 @@ import (
 // 2. Delete MainStacks first (dependents), then EdgeStacks
 // 3. Handle cross-region AWS sessions
 
-// Pattern A: Export/Import with AddDependency
+// Pattern A: AddDependency only (manifest-level dependency, no CFn reference)
 
 func NewEdgeStackA(scope constructs.Construct, id string, props *awscdk.StackProps, pjPrefix string, isRetain bool) awscdk.Stack {
 	stack := awscdk.NewStack(scope, &id, props)
@@ -36,14 +36,9 @@ func NewEdgeStackA(scope constructs.Construct, id string, props *awscdk.StackPro
 		removalPolicy = awscdk.RemovalPolicy_RETAIN
 	}
 
-	bucket := awss3.NewBucket(stack, jsii.String("EdgeBucketA"), &awss3.BucketProps{
+	awss3.NewBucket(stack, jsii.String("EdgeBucketA"), &awss3.BucketProps{
 		BucketName:    jsii.String(pjPrefix + "-edge-a-bucket"),
 		RemovalPolicy: removalPolicy,
-	})
-
-	awscdk.NewCfnOutput(stack, jsii.String("ExportFromEdgeA"), &awscdk.CfnOutputProps{
-		Value:      bucket.BucketArn(),
-		ExportName: jsii.String(pjPrefix + "-ExportFromEdgeA"),
 	})
 
 	return stack
@@ -57,13 +52,10 @@ func NewMainStackA(scope constructs.Construct, id string, props *awscdk.StackPro
 		removalPolicy = awscdk.RemovalPolicy_RETAIN
 	}
 
-	importedArn := awscdk.Fn_ImportValue(jsii.String(pjPrefix + "-ExportFromEdgeA"))
-
-	bucket := awss3.NewBucket(stack, jsii.String("MainBucketA"), &awss3.BucketProps{
+	awss3.NewBucket(stack, jsii.String("MainBucketA"), &awss3.BucketProps{
 		BucketName:    jsii.String(pjPrefix + "-main-a-bucket"),
 		RemovalPolicy: removalPolicy,
 	})
-	awscdk.Tags_Of(bucket).Add(jsii.String("DependsOn"), importedArn, nil)
 
 	return stack
 }
