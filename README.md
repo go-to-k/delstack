@@ -86,8 +86,6 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 
 ### CDK Integration
 
-![delstack for CDK](https://github.com/user-attachments/assets/5cd3eb1e-2384-439a-bf0c-79d1908f32d1)
-
   ```bash
   delstack cdk [-s <stackName>] [-a <cdkOutPath>] [-c <key=value>] [-p <profile>] [-i] [-f] [-y] [-n <concurrencyNumber>]
   ```
@@ -260,6 +258,8 @@ Deletion order (reverse dependencies):
 ## CDK Integration Details
 
 The `delstack cdk` subcommand synthesizes a CDK app (or reads an existing `cdk.out`) and deletes all discovered stacks. It parses the Cloud Assembly manifest to determine stack names, regions, and dependencies.
+
+![delstack for CDK](https://github.com/user-attachments/assets/5cd3eb1e-2384-439a-bf0c-79d1908f32d1)
 
 ### Cross-region deletion
 
