@@ -92,6 +92,7 @@ func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.
 			readyByRegion[s.Region] = append(readyByRegion[s.Region], s)
 		}
 
+		var eg errgroup.Group
 		for region, regionStacks := range readyByRegion {
 			config, ok := configCache[region]
 			if !ok {
@@ -111,9 +112,12 @@ func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.
 				stackNames[i] = s.StackName
 			}
 
-			if err := deleter.DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory); err != nil {
-				return err
-			}
+			eg.Go(func() error {
+				return deleter.DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory)
+			})
+		}
+		if err := eg.Wait(); err != nil {
+			return err
 		}
 
 		for _, s := range ready {
