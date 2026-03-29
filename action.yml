@@ -78,7 +78,7 @@ runs:
               stacks="${stacks}-s ${stack} "
             done
           fi
-          delstack cdk $cdk_app $cdk_context $stacks $force $yes $concurrency
+          delstack cdk $stacks $cdk_app $cdk_context $force $yes $concurrency
         elif [ -n "${{ inputs.stack-name }}" ]; then
           stacks=""
           for stack in $(echo ${{ inputs.stack-name }} | tr ',' ' '); do

@@ -86,13 +86,18 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 
 ## CDK Integration
 
-Delete stacks directly from a CDK app directory. Synthesizes the CDK app, detects all stacks (including their regions), and deletes them with dependency resolution.
-
-**Requires**: [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) installed (unless using `-a`).
+Delete stacks directly from a CDK app directory. **Requires**: [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) installed (unless using `-a`).
 
   ```bash
-  delstack cdk [-a <cdkOutPath>] [-c <key=value>] [-s <stackName>] [-p <profile>] [-i] [-f] [-y] [-n <concurrencyNumber>]
+  delstack cdk [-s <stackName>] [-a <cdkOutPath>] [-c <key=value>] [-p <profile>] [-i] [-f] [-y] [-n <concurrencyNumber>]
   ```
+
+- -a, --app: optional
+  - Path to an existing `cdk.out` directory. When specified, `npx cdk synth` is skipped and the manifest is read directly.
+- -c, --context: optional (repeatable)
+  - CDK context values in `key=value` format, passed to `npx cdk synth -c key=value`.
+
+All [global options](#how-to-use) (`-s`, `-p`, `-r`, `-i`, `-f`, `-y`, `-n`) also work with the `cdk` subcommand.
 
 ### Examples
 
@@ -116,15 +121,6 @@ Delete stacks directly from a CDK app directory. Synthesizes the CDK app, detect
   delstack cdk -f -y
   ```
 
-### CDK-specific options
-
-- -a, --app: optional
-  - Path to an existing `cdk.out` directory. When specified, `cdk synth` is skipped and the manifest is read directly.
-- -c, --context: optional (repeatable)
-  - CDK context values in `key=value` format, passed to `cdk synth -c key=value`.
-
-All [global options](#how-to-use) (`-s`, `-p`, `-r`, `-i`, `-f`, `-y`, `-n`) also work with the `cdk` subcommand.
-
 ### Cross-region deletion
 
 When the CDK app deploys stacks to multiple regions (e.g., `us-east-1` for CloudFront + `ap-northeast-1` for the main app), `delstack cdk` automatically:
@@ -132,6 +128,7 @@ When the CDK app deploys stacks to multiple regions (e.g., `us-east-1` for Cloud
 1. Detects each stack's region from the Cloud Assembly manifest (`environment` field)
 2. Groups stacks by region and creates separate AWS sessions
 3. Resolves cross-region dependencies and deletes in the correct order
+4. Deletes independent regions in parallel
 
 For environment-agnostic stacks (`unknown-region` in the manifest), the region from `-r` or the default AWS configuration is used.
 

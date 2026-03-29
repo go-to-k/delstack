@@ -65,7 +65,11 @@ func main() {
 		profileOption = fmt.Sprintf("--profile %s", options.Profile)
 	}
 
-	deployCmd := fmt.Sprintf("cd cdk && npx cdk deploy --all -c PJ_PREFIX=%s --require-approval never %s", options.Stage, profileOption)
+	retainMode := "false"
+	if options.RetainMode {
+		retainMode = "true"
+	}
+	deployCmd := fmt.Sprintf("cd cdk && npx cdk deploy --all -c PJ_PREFIX=%s -c RETAIN_MODE=%s --require-approval never %s", options.Stage, retainMode, profileOption)
 	cmd := exec.Command("bash", "-c", deployCmd)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -111,8 +115,9 @@ func main() {
 }
 
 type Options struct {
-	Profile string
-	Stage   string
+	Profile    string
+	Stage      string
+	RetainMode bool
 }
 
 func parseArgs() Options {
@@ -124,6 +129,8 @@ func parseArgs() Options {
 		} else if os.Args[i] == "-s" && i+1 < len(os.Args) {
 			options.Stage = os.Args[i+1]
 			i++
+		} else if os.Args[i] == "-r" {
+			options.RetainMode = true
 		}
 	}
 	return options

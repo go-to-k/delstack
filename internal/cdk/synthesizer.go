@@ -32,7 +32,7 @@ func (s *Synthesizer) Synth(ctx context.Context, contextValues []string) error {
 		args = append(args, "-c", cv)
 	}
 
-	cmd := exec.CommandContext(ctx, "cdk", args...)
+	cmd := exec.CommandContext(ctx, "npx", append([]string{"cdk"}, args...)...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

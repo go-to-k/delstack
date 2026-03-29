@@ -4,20 +4,19 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/internal/cdk"
 	"github.com/go-to-k/delstack/internal/io"
-	"github.com/go-to-k/delstack/internal/operation"
 	"github.com/go-to-k/delstack/pkg/client"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/sync/errgroup"
 )
 
 func (a *App) getCdkAction() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
+		if a.InteractiveMode && len(a.StackNames.Value()) != 0 {
+			return fmt.Errorf("InvalidOptionError: Stack names (-s) cannot be specified when using Interactive Mode (-i).")
+		}
 		if a.ConcurrencyNumber < UnspecifiedConcurrencyNumber {
 			return fmt.Errorf("InvalidOptionError: You must specify a positive number for the -n option.")
 		}
@@ -92,7 +91,6 @@ func (a *App) selectCdkStacks(stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
 	specifiedNames := a.StackNames.Value()
 
 	if len(specifiedNames) > 0 {
-		// Filter by -s flag
 		nameSet := make(map[string]struct{})
 		for _, name := range specifiedNames {
 			nameSet[name] = struct{}{}
@@ -120,12 +118,10 @@ func (a *App) selectCdkStacks(stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
 		return a.selectCdkStacksInteractively(stacks)
 	}
 
-	// Default: all stacks
 	return stacks, nil
 }
 
 func (a *App) selectCdkStacksInteractively(stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
-	// Build display names with region info
 	displayNames := make([]string, len(stacks))
 	for i, s := range stacks {
 		displayNames[i] = fmt.Sprintf("%s (%s)", s.StackName, s.Region)
@@ -140,7 +136,6 @@ func (a *App) selectCdkStacksInteractively(stacks []cdk.StackInfo) ([]cdk.StackI
 		return nil, nil
 	}
 
-	// Map selected display names back to StackInfo
 	selectedSet := make(map[string]struct{})
 	for _, name := range selectedNames {
 		selectedSet[name] = struct{}{}
@@ -164,155 +159,4 @@ func (a *App) showCdkConfirmation(stacks []cdk.StackInfo) bool {
 	fmt.Fprintln(os.Stderr)
 
 	return io.GetYesNo("Are you sure you want to delete these stacks?")
-}
-
-func (a *App) deleteCdkStacks(ctx context.Context, stacks []cdk.StackInfo) error {
-	// Group stacks by region
-	regionStacks := make(map[string][]cdk.StackInfo)
-	for _, s := range stacks {
-		regionStacks[s.Region] = append(regionStacks[s.Region], s)
-	}
-
-	// Sort regions for deterministic processing
-	var regions []string
-	for region := range regionStacks {
-		regions = append(regions, region)
-	}
-	sort.Strings(regions)
-
-	// Build cross-region dependency graph
-	// stackName -> StackInfo for quick lookup
-	stackMap := make(map[string]cdk.StackInfo)
-	for _, s := range stacks {
-		stackMap[s.StackName] = s
-	}
-
-	// Check if there are cross-region dependencies
-	hasCrossRegionDeps := false
-	for _, s := range stacks {
-		for _, dep := range s.Dependencies {
-			if depStack, ok := stackMap[dep]; ok {
-				if depStack.Region != s.Region {
-					hasCrossRegionDeps = true
-					break
-				}
-			}
-		}
-		if hasCrossRegionDeps {
-			break
-		}
-	}
-
-	if !hasCrossRegionDeps {
-		// Simple case: delete all regions in parallel
-		var eg errgroup.Group
-		for _, region := range regions {
-			regionStackInfos := regionStacks[region]
-			eg.Go(func() error {
-				return a.deleteStacksInRegion(ctx, region, regionStackInfos)
-			})
-		}
-		return eg.Wait()
-	}
-
-	// Complex case: cross-region dependencies
-	// Use topological ordering across all stacks
-	return a.deleteStacksWithCrossRegionDeps(ctx, stacks, stackMap)
-}
-
-func (a *App) deleteStacksInRegion(ctx context.Context, region string, stacks []cdk.StackInfo) error {
-	io.Logger.Info().Msgf("Deleting %d stack(s) in %s...", len(stacks), region)
-
-	config, err := client.LoadAWSConfig(ctx, region, a.Profile)
-	if err != nil {
-		return fmt.Errorf("failed to load AWS config for region %s: %w", region, err)
-	}
-
-	operatorFactory := operation.NewOperatorFactory(config, a.ForceMode)
-	deleter := NewStackDeleter(a.ForceMode, a.ConcurrencyNumber)
-
-	stackNames := make([]string, len(stacks))
-	for i, s := range stacks {
-		stackNames[i] = s.StackName
-	}
-
-	return deleter.DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory)
-}
-
-func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.StackInfo, stackMap map[string]cdk.StackInfo) error {
-	io.Logger.Info().Msg("Cross-region dependencies detected. Deleting stacks in dependency order...")
-
-	// Build reverse in-degree (how many stacks depend on each stack)
-	reverseInDegree := make(map[string]int)
-	dependents := make(map[string][]string) // stack -> stacks that depend on it
-
-	for _, s := range stacks {
-		if _, ok := reverseInDegree[s.StackName]; !ok {
-			reverseInDegree[s.StackName] = 0
-		}
-		for _, dep := range s.Dependencies {
-			if _, ok := stackMap[dep]; ok {
-				reverseInDegree[dep]++
-				dependents[s.StackName] = append(dependents[s.StackName], dep)
-			}
-		}
-	}
-
-	// Process stacks in topological order (delete dependents first)
-	deleted := make(map[string]bool)
-	configCache := make(map[string]aws.Config)
-
-	for len(deleted) < len(stacks) {
-		// Find stacks with reverse in-degree 0
-		var ready []cdk.StackInfo
-		for _, s := range stacks {
-			if !deleted[s.StackName] && reverseInDegree[s.StackName] == 0 {
-				ready = append(ready, s)
-			}
-		}
-
-		if len(ready) == 0 {
-			return fmt.Errorf("circular dependency detected among remaining stacks")
-		}
-
-		// Group ready stacks by region and delete in parallel per region
-		readyByRegion := make(map[string][]cdk.StackInfo)
-		for _, s := range ready {
-			readyByRegion[s.Region] = append(readyByRegion[s.Region], s)
-		}
-
-		for region, regionStacks := range readyByRegion {
-			config, ok := configCache[region]
-			if !ok {
-				var err error
-				config, err = client.LoadAWSConfig(ctx, region, a.Profile)
-				if err != nil {
-					return fmt.Errorf("failed to load AWS config for region %s: %w", region, err)
-				}
-				configCache[region] = config
-			}
-
-			operatorFactory := operation.NewOperatorFactory(config, a.ForceMode)
-			deleter := NewStackDeleter(a.ForceMode, a.ConcurrencyNumber)
-
-			stackNames := make([]string, len(regionStacks))
-			for i, s := range regionStacks {
-				stackNames[i] = s.StackName
-			}
-
-			if err := deleter.DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory); err != nil {
-				return err
-			}
-		}
-
-		// Mark as deleted and update in-degrees
-		for _, s := range ready {
-			deleted[s.StackName] = true
-			for _, dep := range dependents[s.StackName] {
-				reverseInDegree[dep]--
-			}
-		}
-	}
-
-	return nil
 }

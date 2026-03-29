@@ -110,10 +110,20 @@ testgen_cdk_integration:
 	@echo "Setting up CDK integration test stacks..."
 	@cd e2e/cdk_integration && go mod tidy && go run deploy.go $(OPT)
 
+# Generate and deploy CDK integration test stacks with RETAIN resources
+testgen_cdk_integration_retain:
+	@echo "Setting up CDK integration test stacks with RETAIN resources..."
+	@cd e2e/cdk_integration && go mod tidy && go run deploy.go -r $(OPT)
+
 # Generate and deploy CDK cross-region test stacks for `delstack cdk` cross-region deletion
 testgen_cdk_cross_region:
 	@echo "Setting up CDK cross-region test stacks..."
 	@cd e2e/cdk_cross_region && go mod tidy && go run deploy.go $(OPT)
+
+# Generate and deploy CDK cross-region test stacks with RETAIN resources
+testgen_cdk_cross_region_retain:
+	@echo "Setting up CDK cross-region test stacks with RETAIN resources..."
+	@cd e2e/cdk_cross_region && go mod tidy && go run deploy.go -r $(OPT)
 
 # Help for test stack generation
 testgen_help:
@@ -233,7 +243,13 @@ e2e_cdk_integration_retain:
 e2e_cdk_cross_region: STAGE = e2e-cdk-xr-$(E2E_RANDOM)
 e2e_cdk_cross_region:
 	@$(MAKE) testgen_cdk_cross_region OPT="-s $(STAGE) $(OPT)"
-	@cd e2e/cdk_cross_region/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -f -y $(OPT)
+	@cd e2e/cdk_cross_region/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=false -f -y $(OPT)
+
+# Run CDK cross-region E2E test with RETAIN resources (deploy + force delete)
+e2e_cdk_cross_region_retain: STAGE = e2e-cdk-xr-$(E2E_RANDOM)
+e2e_cdk_cross_region_retain:
+	@$(MAKE) testgen_cdk_cross_region_retain OPT="-s $(STAGE) $(OPT)"
+	@cd e2e/cdk_cross_region/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=true -f -y $(OPT)
 
 # Help for E2E test targets
 e2e_help:
