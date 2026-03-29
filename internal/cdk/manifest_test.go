@@ -1,6 +1,7 @@
 package cdk
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -232,6 +233,140 @@ func TestParseManifest_FileNotFound(t *testing.T) {
 	_, err := ParseManifest(dir)
 	if err == nil {
 		t.Fatal("expected error for missing manifest.json")
+	}
+}
+
+func TestParseManifest_NestedAssembly_Stage(t *testing.T) {
+	dir := t.TempDir()
+
+	// Top-level manifest with a nested cloud assembly (CDK Stage)
+	topManifest := `{
+  "version": "52.0.0",
+  "artifacts": {
+    "assembly-MyStage": {
+      "type": "cdk:cloud-assembly",
+      "properties": { "directoryName": "assembly-MyStage" }
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": { "file": "tree.json" }
+    }
+  }
+}`
+	writeManifest(t, dir, topManifest)
+
+	// Nested assembly manifest with stacks
+	nestedDir := filepath.Join(dir, "assembly-MyStage")
+	if err := os.MkdirAll(nestedDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	nestedManifest := `{
+  "version": "52.0.0",
+  "artifacts": {
+    "MyStage-StackA.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": { "file": "MyStage-StackA.assets.json" }
+    },
+    "MyStage-StackA": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://123456789012/us-east-1",
+      "dependencies": ["MyStage-StackA.assets"],
+      "displayName": "MyStage/StackA"
+    },
+    "MyStage-StackB": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://123456789012/ap-northeast-1",
+      "dependencies": ["MyStage-StackA"],
+      "displayName": "MyStage/StackB"
+    }
+  }
+}`
+	writeManifest(t, nestedDir, nestedManifest)
+
+	stacks, err := ParseManifest(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(stacks) != 2 {
+		t.Fatalf("expected 2 stacks, got %d", len(stacks))
+	}
+
+	stackMap := make(map[string]StackInfo)
+	for _, s := range stacks {
+		stackMap[s.StackName] = s
+	}
+
+	stackA, ok := stackMap["MyStage/StackA"]
+	if !ok {
+		t.Fatal("MyStage/StackA not found")
+	}
+	if stackA.Region != "us-east-1" {
+		t.Errorf("expected region us-east-1, got %s", stackA.Region)
+	}
+	if len(stackA.Dependencies) != 0 {
+		t.Errorf("expected 0 deps for StackA, got %v", stackA.Dependencies)
+	}
+
+	stackB, ok := stackMap["MyStage/StackB"]
+	if !ok {
+		t.Fatal("MyStage/StackB not found")
+	}
+	if stackB.Region != "ap-northeast-1" {
+		t.Errorf("expected region ap-northeast-1, got %s", stackB.Region)
+	}
+	if len(stackB.Dependencies) != 1 || stackB.Dependencies[0] != "MyStage/StackA" {
+		t.Errorf("expected StackB to depend on MyStage/StackA, got %v", stackB.Dependencies)
+	}
+}
+
+func TestParseManifest_MultipleStages(t *testing.T) {
+	dir := t.TempDir()
+
+	topManifest := `{
+  "version": "52.0.0",
+  "artifacts": {
+    "assembly-Stage1": {
+      "type": "cdk:cloud-assembly",
+      "properties": { "directoryName": "assembly-Stage1" }
+    },
+    "assembly-Stage2": {
+      "type": "cdk:cloud-assembly",
+      "properties": { "directoryName": "assembly-Stage2" }
+    }
+  }
+}`
+	writeManifest(t, dir, topManifest)
+
+	for _, stage := range []struct {
+		dir    string
+		name   string
+		region string
+	}{
+		{"assembly-Stage1", "Stage1/Stack", "us-east-1"},
+		{"assembly-Stage2", "Stage2/Stack", "eu-west-1"},
+	} {
+		nestedDir := filepath.Join(dir, stage.dir)
+		os.MkdirAll(nestedDir, 0755)
+		writeManifest(t, nestedDir, fmt.Sprintf(`{
+  "version": "52.0.0",
+  "artifacts": {
+    "%s": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://123456789012/%s",
+      "displayName": "%s"
+    }
+  }
+}`, stage.name, stage.region, stage.name))
+	}
+
+	stacks, err := ParseManifest(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(stacks) != 2 {
+		t.Fatalf("expected 2 stacks, got %d", len(stacks))
 	}
 }
 

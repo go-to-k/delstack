@@ -125,6 +125,11 @@ testgen_cdk_cross_region_retain:
 	@echo "Setting up CDK cross-region test stacks with RETAIN resources..."
 	@cd e2e/cdk_cross_region && go mod tidy && go run deploy.go -r $(OPT)
 
+# Generate and deploy CDK Stage test stacks for `delstack cdk` with CDK Stages
+testgen_cdk_stage:
+	@echo "Setting up CDK Stage test stacks..."
+	@cd e2e/cdk_stage && go mod tidy && go run deploy.go $(OPT)
+
 # Help for test stack generation
 testgen_help:
 	@echo "Test stack generation targets:"
@@ -250,6 +255,12 @@ e2e_cdk_cross_region_retain: STAGE = e2e-cdk-xr-$(E2E_RANDOM)
 e2e_cdk_cross_region_retain:
 	@$(MAKE) testgen_cdk_cross_region_retain OPT="-s $(STAGE) $(OPT)"
 	@cd e2e/cdk_cross_region/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=true -f -y $(OPT)
+
+# Run CDK Stage E2E test (deploy + delstack cdk)
+e2e_cdk_stage: STAGE = e2e-cdk-stg-$(E2E_RANDOM)
+e2e_cdk_stage:
+	@$(MAKE) testgen_cdk_stage OPT="-s $(STAGE) $(OPT)"
+	@cd e2e/cdk_stage/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -f -y $(OPT)
 
 # Help for E2E test targets
 e2e_help:

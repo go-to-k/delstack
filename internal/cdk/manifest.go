@@ -20,19 +20,26 @@ type manifest struct {
 }
 
 type artifact struct {
-	Type        string           `json:"type"`
-	Environment string           `json:"environment"`
-	Properties  artifactProps    `json:"properties"`
-	Dependencies []string        `json:"dependencies"`
-	DisplayName string           `json:"displayName"`
+	Type         string        `json:"type"`
+	Environment  string        `json:"environment"`
+	Properties   artifactProps `json:"properties"`
+	Dependencies []string      `json:"dependencies"`
+	DisplayName  string        `json:"displayName"`
 }
 
 type artifactProps struct {
-	TemplateFile string `json:"templateFile"`
+	TemplateFile  string `json:"templateFile"`
+	DirectoryName string `json:"directoryName"`
 }
 
+// ParseManifest parses a Cloud Assembly manifest.json and returns all stacks,
+// including stacks inside nested assemblies (CDK Stages).
 func ParseManifest(cdkOutDir string) ([]StackInfo, error) {
-	manifestPath := filepath.Join(cdkOutDir, "manifest.json")
+	return parseManifestRecursive(cdkOutDir)
+}
+
+func parseManifestRecursive(dir string) ([]StackInfo, error) {
+	manifestPath := filepath.Join(dir, "manifest.json")
 
 	data, err := os.ReadFile(manifestPath)
 	if err != nil {
@@ -59,31 +66,43 @@ func ParseManifest(cdkOutDir string) ([]StackInfo, error) {
 
 	var stacks []StackInfo
 	for key, art := range m.Artifacts {
-		if art.Type != "aws:cloudformation:stack" {
-			continue
-		}
-
-		name := art.DisplayName
-		if name == "" {
-			name = key
-		}
-
-		account, region := parseEnvironment(art.Environment)
-
-		// Filter dependencies: only include other stack artifacts (exclude .assets etc.)
-		var deps []string
-		for _, dep := range art.Dependencies {
-			if depName, ok := stackArtifactKeys[dep]; ok {
-				deps = append(deps, depName)
+		switch art.Type {
+		case "aws:cloudformation:stack":
+			name := art.DisplayName
+			if name == "" {
+				name = key
 			}
-		}
 
-		stacks = append(stacks, StackInfo{
-			StackName:    name,
-			Region:       region,
-			Account:      account,
-			Dependencies: deps,
-		})
+			account, region := parseEnvironment(art.Environment)
+
+			// Filter dependencies: only include other stack artifacts (exclude .assets etc.)
+			var deps []string
+			for _, dep := range art.Dependencies {
+				if depName, ok := stackArtifactKeys[dep]; ok {
+					deps = append(deps, depName)
+				}
+			}
+
+			stacks = append(stacks, StackInfo{
+				StackName:    name,
+				Region:       region,
+				Account:      account,
+				Dependencies: deps,
+			})
+
+		case "cdk:cloud-assembly":
+			// Nested assembly (CDK Stage) — recurse into subdirectory
+			nestedDir := art.Properties.DirectoryName
+			if nestedDir == "" {
+				continue
+			}
+			nestedPath := filepath.Join(dir, nestedDir)
+			nestedStacks, err := parseManifestRecursive(nestedPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse nested assembly %s: %w", nestedDir, err)
+			}
+			stacks = append(stacks, nestedStacks...)
+		}
 	}
 
 	return stacks, nil
