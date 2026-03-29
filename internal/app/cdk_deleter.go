@@ -119,6 +119,9 @@ func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.
 	startDeletion := func(stackName string) {
 		defer wg.Done()
 
+		// Acquire semaphore inside goroutine to avoid blocking the main goroutine.
+		// This ensures completion messages from other stacks are processed immediately,
+		// even when waiting for concurrency limit.
 		if err := sem.Acquire(deleteCtx, 1); err != nil {
 			select {
 			case errorChan <- err:
@@ -153,6 +156,7 @@ func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.
 		}
 	}
 
+	// Ensure cleanup on all exit paths (success, error, cancellation)
 	defer func() {
 		wg.Wait()
 		close(completionChan)
