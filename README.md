@@ -314,6 +314,40 @@ jobs:
           region: us-east-1
 ```
 
+### CDK mode
+
+To delete stacks from a CDK app, set `cdk: true`. The action will run `cdk synth` and delete all discovered stacks. You can also pass CDK context values and specify an existing `cdk.out` directory.
+
+```yaml
+jobs:
+  delstack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
+          aws-region: us-east-1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install CDK
+        run: npm install -g aws-cdk
+      - name: Delete CDK stacks
+        uses: go-to-k/delstack@main
+        with:
+          cdk: true
+          # cdk-app: ./cdk.out           # Use existing cdk.out (skip synthesis)
+          # cdk-context: env=dev,foo=bar  # CDK context values (comma separated)
+          force: true
+          # yes: true  # default: true in GitHub Actions
+```
+
+### Raw commands
+
 You can also run raw commands after installing the delstack binary.
 
 ```yaml

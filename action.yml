@@ -23,6 +23,16 @@ inputs:
   concurrency-number:
     description: "Number of parallel stack deletions (default: unlimited)"
     required: false
+  cdk:
+    description: "Enable CDK mode: synthesize or read cdk.out and delete all stacks"
+    default: false
+    required: false
+  cdk-app:
+    description: "Path to an existing cdk.out directory (skips synthesis). Only used when cdk is true."
+    required: false
+  cdk-context:
+    description: "CDK context values (comma separated key=value pairs). Only used when cdk is true."
+    required: false
 runs:
   using: "composite"
   steps:
@@ -39,22 +49,40 @@ runs:
           sudo mv delstack /usr/local/bin/
           rm ${FILENAME}
         fi        
-        if [ -n "${{ inputs.stack-name }}" ]; then
+        force=""
+        if [ "${{ inputs.force }}" = "true" ]; then
+          force="-f"
+        fi
+        yes=""
+        if [ "${{ inputs.yes }}" = "true" ]; then
+          yes="-y"
+        fi
+        concurrency=""
+        if [ -n "${{ inputs.concurrency-number }}" ]; then
+          concurrency="-n ${{ inputs.concurrency-number }}"
+        fi
+        if [ "${{ inputs.cdk }}" = "true" ]; then
+          cdk_app=""
+          if [ -n "${{ inputs.cdk-app }}" ]; then
+            cdk_app="-a ${{ inputs.cdk-app }}"
+          fi
+          cdk_context=""
+          if [ -n "${{ inputs.cdk-context }}" ]; then
+            for ctx in $(echo "${{ inputs.cdk-context }}" | tr ',' ' '); do
+              cdk_context="${cdk_context}-c ${ctx} "
+            done
+          fi
+          stacks=""
+          if [ -n "${{ inputs.stack-name }}" ]; then
+            for stack in $(echo ${{ inputs.stack-name }} | tr ',' ' '); do
+              stacks="${stacks}-s ${stack} "
+            done
+          fi
+          delstack cdk $cdk_app $cdk_context $stacks $force $yes $concurrency
+        elif [ -n "${{ inputs.stack-name }}" ]; then
           stacks=""
           for stack in $(echo ${{ inputs.stack-name }} | tr ',' ' '); do
             stacks="${stacks}-s ${stack} "
           done
-          force=""
-          if [ "${{ inputs.force }}" = "true" ]; then
-            force="-f"
-          fi
-          yes=""
-          if [ "${{ inputs.yes }}" = "true" ]; then
-            yes="-y"
-          fi
-          concurrency=""
-          if [ -n "${{ inputs.concurrency-number }}" ]; then
-            concurrency="-n ${{ inputs.concurrency-number }}"
-          fi
           delstack -r ${{ inputs.region }} $stacks $force $yes $concurrency
         fi
