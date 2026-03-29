@@ -270,12 +270,14 @@ func TestParseManifest_NestedAssembly_Stage(t *testing.T) {
     "MyStage-StackA": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://123456789012/us-east-1",
+      "properties": { "stackName": "my-stage-stack-a" },
       "dependencies": ["MyStage-StackA.assets"],
       "displayName": "MyStage/StackA"
     },
     "MyStage-StackB": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://123456789012/ap-northeast-1",
+      "properties": { "stackName": "my-stage-stack-b" },
       "dependencies": ["MyStage-StackA"],
       "displayName": "MyStage/StackB"
     }
@@ -297,9 +299,9 @@ func TestParseManifest_NestedAssembly_Stage(t *testing.T) {
 		stackMap[s.StackName] = s
 	}
 
-	stackA, ok := stackMap["MyStage/StackA"]
+	stackA, ok := stackMap["my-stage-stack-a"]
 	if !ok {
-		t.Fatal("MyStage/StackA not found")
+		t.Fatal("my-stage-stack-a not found")
 	}
 	if stackA.Region != "us-east-1" {
 		t.Errorf("expected region us-east-1, got %s", stackA.Region)
@@ -308,15 +310,15 @@ func TestParseManifest_NestedAssembly_Stage(t *testing.T) {
 		t.Errorf("expected 0 deps for StackA, got %v", stackA.Dependencies)
 	}
 
-	stackB, ok := stackMap["MyStage/StackB"]
+	stackB, ok := stackMap["my-stage-stack-b"]
 	if !ok {
-		t.Fatal("MyStage/StackB not found")
+		t.Fatal("my-stage-stack-b not found")
 	}
 	if stackB.Region != "ap-northeast-1" {
 		t.Errorf("expected region ap-northeast-1, got %s", stackB.Region)
 	}
-	if len(stackB.Dependencies) != 1 || stackB.Dependencies[0] != "MyStage/StackA" {
-		t.Errorf("expected StackB to depend on MyStage/StackA, got %v", stackB.Dependencies)
+	if len(stackB.Dependencies) != 1 || stackB.Dependencies[0] != "my-stage-stack-a" {
+		t.Errorf("expected StackB to depend on my-stage-stack-a, got %v", stackB.Dependencies)
 	}
 }
 

@@ -58,7 +58,7 @@ func main() {
 		profileOption = fmt.Sprintf("--profile %s", options.Profile)
 	}
 
-	deployCmd := fmt.Sprintf("cd cdk && npx cdk deploy --all -c PJ_PREFIX=%s --require-approval never %s", options.Stage, profileOption)
+	deployCmd := fmt.Sprintf("cd cdk && npx cdk deploy 'MyStage1/*' 'MyStage2/*' -c PJ_PREFIX=%s --require-approval never %s", options.Stage, profileOption)
 	cmd := exec.Command("bash", "-c", deployCmd)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

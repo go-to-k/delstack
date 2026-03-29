@@ -30,6 +30,7 @@ type artifact struct {
 type artifactProps struct {
 	TemplateFile  string `json:"templateFile"`
 	DirectoryName string `json:"directoryName"`
+	StackName     string `json:"stackName"`
 }
 
 // ParseManifest parses a Cloud Assembly manifest.json and returns all stacks,
@@ -57,21 +58,14 @@ func parseManifestRecursive(dir string) ([]StackInfo, error) {
 		if art.Type != "aws:cloudformation:stack" {
 			continue
 		}
-		name := art.DisplayName
-		if name == "" {
-			name = key
-		}
-		stackArtifactKeys[key] = name
+		stackArtifactKeys[key] = resolveStackName(key, art)
 	}
 
 	var stacks []StackInfo
 	for key, art := range m.Artifacts {
 		switch art.Type {
 		case "aws:cloudformation:stack":
-			name := art.DisplayName
-			if name == "" {
-				name = key
-			}
+			name := resolveStackName(key, art)
 
 			account, region := parseEnvironment(art.Environment)
 
@@ -106,6 +100,18 @@ func parseManifestRecursive(dir string) ([]StackInfo, error) {
 	}
 
 	return stacks, nil
+}
+
+// resolveStackName returns the CloudFormation stack name.
+// Priority: properties.stackName > displayName > artifact key
+func resolveStackName(artifactKey string, art artifact) string {
+	if art.Properties.StackName != "" {
+		return art.Properties.StackName
+	}
+	if art.DisplayName != "" {
+		return art.DisplayName
+	}
+	return artifactKey
 }
 
 func parseEnvironment(env string) (account, region string) {
