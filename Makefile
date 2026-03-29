@@ -177,6 +177,12 @@ testgen_help:
 	@echo "  make testgen_cdk_integration"
 	@echo "  make testgen_cdk_integration OPT=\"-s my-stage\""
 	@echo "  make testgen_cdk_integration OPT=\"-p my-profile\""
+	@echo "  make testgen_cdk_integration_retain"
+	@echo "  make testgen_cdk_cross_region"
+	@echo "  make testgen_cdk_cross_region OPT=\"-s my-stage\""
+	@echo "  make testgen_cdk_cross_region_retain"
+	@echo "  make testgen_cdk_stage"
+	@echo "  make testgen_cdk_stage OPT=\"-s my-stage\""
 
 # E2E test commands (testgen + delstack run)
 # ==================================
@@ -293,3 +299,6 @@ e2e_help:
 	@echo "  make e2e_full"
 	@echo "  make e2e_full STAGE=my-stage"
 	@echo "  make e2e_full STAGE=my-stage OPT=\"-p my-profile\""
+	@echo "  make e2e_cdk_integration"
+	@echo "  make e2e_cdk_cross_region"
+	@echo "  make e2e_cdk_stage"
