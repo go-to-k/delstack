@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
+	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/internal/cdk"
@@ -10,6 +12,7 @@ import (
 	"github.com/go-to-k/delstack/internal/operation"
 	"github.com/go-to-k/delstack/pkg/client"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 )
 
 func (a *App) deleteCdkStacks(ctx context.Context, stacks []cdk.StackInfo) error {
@@ -54,16 +57,22 @@ func (a *App) deleteStacksInRegion(ctx context.Context, region string, stacks []
 	return deleter.DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory)
 }
 
+// deleteStacksWithCrossRegionDeps deletes stacks with cross-region dependencies
+// using dynamic scheduling: as soon as a stack is deleted, dependent stacks
+// become eligible immediately (without waiting for the entire level to complete).
 func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.StackInfo, stackMap map[string]cdk.StackInfo) error {
 	io.Logger.Info().Msg("Cross-region dependencies detected. Deleting stacks in dependency order...")
 
-	reverseInDegree := make(map[string]int)
-	dependents := make(map[string][]string)
+	totalStackCount := len(stacks)
+
+	// Build reverse in-degree and dependents map
+	reverseInDegree := make(map[string]int, totalStackCount)
+	dependents := make(map[string][]string) // stack -> stacks that depend on it (i.e. stacks that become unblocked when this stack is deleted)
 
 	for _, s := range stacks {
-		if _, ok := reverseInDegree[s.StackName]; !ok {
-			reverseInDegree[s.StackName] = 0
-		}
+		reverseInDegree[s.StackName] = 0
+	}
+	for _, s := range stacks {
 		for _, dep := range s.Dependencies {
 			if _, ok := stackMap[dep]; ok {
 				reverseInDegree[dep]++
@@ -72,58 +81,103 @@ func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.
 		}
 	}
 
-	deleted := make(map[string]bool)
+	// Build per-region config and operatorFactory cache
 	configCache := make(map[string]aws.Config)
+	factoryCache := make(map[string]*operation.OperatorFactory)
+	for _, s := range stacks {
+		if _, ok := configCache[s.Region]; ok {
+			continue
+		}
+		cfg, err := client.LoadAWSConfig(ctx, s.Region, a.Profile)
+		if err != nil {
+			return fmt.Errorf("failed to load AWS config for region %s: %w", s.Region, err)
+		}
+		configCache[s.Region] = cfg
+		factoryCache[s.Region] = operation.NewOperatorFactory(cfg, a.ForceMode)
+	}
 
-	for len(deleted) < len(stacks) {
-		var ready []cdk.StackInfo
-		for _, s := range stacks {
-			if !deleted[s.StackName] && reverseInDegree[s.StackName] == 0 {
-				ready = append(ready, s)
+	// Dynamic scheduling with channels (same pattern as deleteStacksDynamically)
+	completionChan := make(chan string, totalStackCount)
+	errorChan := make(chan error)
+
+	var deletedCount int
+	var deletedStacks []string
+
+	var weight int64
+	if a.ConcurrencyNumber == UnspecifiedConcurrencyNumber {
+		weight = int64(totalStackCount)
+	} else {
+		weight = min(int64(a.ConcurrencyNumber), int64(totalStackCount))
+	}
+	sem := semaphore.NewWeighted(weight)
+
+	deleteCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	var wg sync.WaitGroup
+
+	startDeletion := func(stackName string) {
+		defer wg.Done()
+
+		if err := sem.Acquire(deleteCtx, 1); err != nil {
+			select {
+			case errorChan <- err:
+			default:
 			}
+			return
 		}
+		defer sem.Release(1)
 
-		if len(ready) == 0 {
-			return fmt.Errorf("circular dependency detected among remaining stacks")
-		}
+		s := stackMap[stackName]
+		config := configCache[s.Region]
+		operatorFactory := factoryCache[s.Region]
 
-		readyByRegion := make(map[string][]cdk.StackInfo)
-		for _, s := range ready {
-			readyByRegion[s.Region] = append(readyByRegion[s.Region], s)
-		}
-
-		var eg errgroup.Group
-		for region, regionStacks := range readyByRegion {
-			config, ok := configCache[region]
-			if !ok {
-				var err error
-				config, err = client.LoadAWSConfig(ctx, region, a.Profile)
-				if err != nil {
-					return fmt.Errorf("failed to load AWS config for region %s: %w", region, err)
-				}
-				configCache[region] = config
+		deleter := NewStackDeleter(a.ForceMode, a.ConcurrencyNumber)
+		if err := deleter.deleteSingleStack(deleteCtx, stackName, config, operatorFactory, true); err != nil {
+			select {
+			case errorChan <- err:
+			default:
 			}
-
-			operatorFactory := operation.NewOperatorFactory(config, a.ForceMode)
-			deleter := NewStackDeleter(a.ForceMode, a.ConcurrencyNumber)
-
-			stackNames := make([]string, len(regionStacks))
-			for i, s := range regionStacks {
-				stackNames[i] = s.StackName
-			}
-
-			eg.Go(func() error {
-				return deleter.DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory)
-			})
+			cancel()
+			return
 		}
-		if err := eg.Wait(); err != nil {
+
+		completionChan <- stackName
+	}
+
+	// Start initial deletions for stacks with reverse in-degree 0
+	for _, s := range stacks {
+		if reverseInDegree[s.StackName] == 0 {
+			wg.Add(1)
+			go startDeletion(s.StackName)
+		}
+	}
+
+	defer func() {
+		wg.Wait()
+		close(completionChan)
+		close(errorChan)
+	}()
+
+	for deletedCount < totalStackCount {
+		select {
+		case <-deleteCtx.Done():
+			return deleteCtx.Err()
+
+		case err := <-errorChan:
 			return err
-		}
 
-		for _, s := range ready {
-			deleted[s.StackName] = true
-			for _, dep := range dependents[s.StackName] {
-				reverseInDegree[dep]--
+		case deletedStackName := <-completionChan:
+			deletedCount++
+			deletedStacks = append(deletedStacks, deletedStackName)
+			io.Logger.Info().Msgf("Progress: %d/%d stacks deleted [%s]", deletedCount, totalStackCount, strings.Join(deletedStacks, ", "))
+
+			for _, depStack := range dependents[deletedStackName] {
+				reverseInDegree[depStack]--
+				if reverseInDegree[depStack] == 0 {
+					wg.Add(1)
+					go startDeletion(depStack)
+				}
 			}
 		}
 	}
