@@ -12,8 +12,8 @@ import (
 // E2E test for `delstack cdk` cross-region deletion with 4 stacks.
 //
 // Pattern A: AddDependency (explicit manifest dependency)
-//   EdgeStackA (us-east-1) -- S3 Bucket
-//   MainStackA (ap-northeast-1) -- S3 Bucket
+//   EdgeStackA (ap-northeast-1) -- S3 Bucket
+//   MainStackA (us-east-1) -- S3 Bucket
 //   Dependency via AddDependency (no CFn Export/Import — not supported cross-region)
 //
 // Pattern B: crossRegionReferences (SSM parameter-backed)
@@ -122,19 +122,19 @@ func main() {
 		Region:  jsii.String("ap-northeast-1"),
 	}
 
-	// Pattern A: AddDependency + Export/Import
+	// Pattern A: AddDependency (EdgeA in ap-northeast-1, MainA in us-east-1)
 	edgeStackA := NewEdgeStackA(app, pjPrefix+"-EdgeStackA", &awscdk.StackProps{
-		Env:       usEast1Env,
+		Env:       apNortheast1Env,
 		StackName: jsii.String(pjPrefix + "-EdgeStackA"),
 	}, pjPrefix, isRetain)
 
 	mainStackA := NewMainStackA(app, pjPrefix+"-MainStackA", &awscdk.StackProps{
-		Env:       apNortheast1Env,
+		Env:       usEast1Env,
 		StackName: jsii.String(pjPrefix + "-MainStackA"),
 	}, pjPrefix, isRetain)
 	mainStackA.AddDependency(edgeStackA, jsii.String("MainStackA depends on EdgeStackA"))
 
-	// Pattern B: crossRegionReferences (SSM-backed)
+	// Pattern B: crossRegionReferences (EdgeB in us-east-1, MainB in ap-northeast-1)
 	edgeStackB, edgeBucketB := NewEdgeStackB(app, pjPrefix+"-EdgeStackB", &awscdk.StackProps{
 		Env:                   usEast1Env,
 		StackName:             jsii.String(pjPrefix + "-EdgeStackB"),
