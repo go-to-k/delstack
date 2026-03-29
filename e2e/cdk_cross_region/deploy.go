@@ -84,8 +84,10 @@ func main() {
 		region string
 	}
 	buckets := []bucketRegion{
-		{name: options.Stage + "-edge-bucket", region: "us-east-1"},
-		{name: options.Stage + "-main-bucket", region: "ap-northeast-1"},
+		{name: options.Stage + "-edge-a-bucket", region: "us-east-1"},
+		{name: options.Stage + "-main-a-bucket", region: "ap-northeast-1"},
+		{name: options.Stage + "-edge-b-bucket", region: "us-east-1"},
+		{name: options.Stage + "-main-b-bucket", region: "ap-northeast-1"},
 	}
 
 	for _, b := range buckets {

@@ -1,14 +1,25 @@
 # Delstack Test Environment - CDK Cross-Region
 
-This directory contains a test environment for the `delstack cdk` subcommand's cross-region deletion capability. It uses CDK's `crossRegionReferences` feature to create stacks in different regions with cross-region SSM parameter-backed references.
+This directory contains a test environment for the `delstack cdk` subcommand's cross-region deletion capability. It tests two different cross-region dependency patterns with 4 stacks total.
 
 ## Stack Structure
 
-```text
-EdgeStack (us-east-1)        -- S3 Bucket (non-empty)
-MainStack (ap-northeast-1)   -- S3 Bucket (non-empty), tagged with EdgeStack bucket ARN via crossRegionReferences
+### Pattern A: AddDependency + Export/Import
 
-Dependency: MainStack -> EdgeStack (cross-region)
+```text
+EdgeStackA (us-east-1)        -- S3 Bucket, Export: ExportFromEdgeA
+MainStackA (ap-northeast-1)   -- S3 Bucket, Import: ExportFromEdgeA
+
+Dependency: MainStackA -> EdgeStackA (via AddDependency + Fn::ImportValue)
+```
+
+### Pattern B: crossRegionReferences (SSM-backed)
+
+```text
+EdgeStackB (us-east-1)        -- S3 Bucket
+MainStackB (ap-northeast-1)   -- S3 Bucket, references EdgeStackB bucket ARN
+
+Dependency: MainStackB -> EdgeStackB (auto-resolved by CDK via SSM parameters)
 ```
 
 ## Test Workflow
@@ -32,31 +43,19 @@ cd e2e/cdk_cross_region/cdk
 delstack cdk -c PJ_PREFIX=<stage> -c RETAIN_MODE=false -f -y
 ```
 
-For RETAIN mode:
-
-```bash
-delstack cdk -c PJ_PREFIX=<stage> -c RETAIN_MODE=true -f -y
-```
-
 ### Expected behavior
 
-1. `delstack cdk` runs `npx cdk synth --quiet -c PJ_PREFIX=<stage>`
-2. Parses `cdk.out/manifest.json` to discover 2 stacks in different regions
-3. Detects cross-region dependency (MainStack depends on EdgeStack)
-4. Deletes MainStack (ap-northeast-1) first, then EdgeStack (us-east-1)
-5. Creates separate AWS sessions for each region
+1. Parses `cdk.out/manifest.json` to discover 4 stacks in 2 regions
+2. Detects cross-region dependencies for both patterns
+3. Deletes MainStackA and MainStackB first (ap-northeast-1)
+4. Deletes EdgeStackA and EdgeStackB after (us-east-1)
 
 ### Using the Makefile
 
 ```bash
-make testgen_cdk_cross_region
-make testgen_cdk_cross_region OPT="-s my-stage -p my-profile"
-
-# Combined deploy + delete
 make e2e_cdk_cross_region
 make e2e_cdk_cross_region OPT="-p my-profile"
 
 # With RETAIN resources
 make e2e_cdk_cross_region_retain
-make e2e_cdk_cross_region_retain OPT="-p my-profile"
 ```

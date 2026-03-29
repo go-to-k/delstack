@@ -9,20 +9,26 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-// E2E test for `delstack cdk` cross-region deletion.
+// E2E test for `delstack cdk` cross-region deletion with 4 stacks.
 //
-// Creates 2 stacks in different regions with dependency:
-//   EdgeStack (us-east-1, Export: ExportFromEdge) -- S3 Bucket
-//   MainStack (ap-northeast-1, depends on EdgeStack via crossRegionReferences) -- S3 Bucket
+// Pattern A: AddDependency (explicit CFn Export/Import)
+//   EdgeStackA (us-east-1, Export: ExportFromEdgeA) -- S3 Bucket
+//   MainStackA (ap-northeast-1, Import: ExportFromEdgeA) -- S3 Bucket
+//   Dependency via AddDependency + Fn::ImportValue
 //
-// Uses CDK's crossRegionReferences feature to create cross-region SSM parameter-backed references.
+// Pattern B: crossRegionReferences (SSM parameter-backed)
+//   EdgeStackB (us-east-1) -- S3 Bucket
+//   MainStackB (ap-northeast-1, references EdgeStackB bucket ARN via crossRegionReferences) -- S3 Bucket
+//   Dependency auto-resolved by CDK via SSM parameters
 //
-// delstack cdk must:
-// 1. Detect regions from manifest.json
-// 2. Delete MainStack first (dependent), then EdgeStack
+// delstack cdk must handle both patterns:
+// 1. Detect regions and dependencies from manifest.json
+// 2. Delete MainStacks first (dependents), then EdgeStacks
 // 3. Handle cross-region AWS sessions
 
-func NewEdgeStack(scope constructs.Construct, id string, props *awscdk.StackProps, pjPrefix string, isRetain bool) (awscdk.Stack, awss3.Bucket) {
+// Pattern A: Export/Import with AddDependency
+
+func NewEdgeStackA(scope constructs.Construct, id string, props *awscdk.StackProps, pjPrefix string, isRetain bool) awscdk.Stack {
 	stack := awscdk.NewStack(scope, &id, props)
 
 	removalPolicy := awscdk.RemovalPolicy_DESTROY
@@ -30,15 +36,57 @@ func NewEdgeStack(scope constructs.Construct, id string, props *awscdk.StackProp
 		removalPolicy = awscdk.RemovalPolicy_RETAIN
 	}
 
-	bucket := awss3.NewBucket(stack, jsii.String("EdgeBucket"), &awss3.BucketProps{
-		BucketName:    jsii.String(pjPrefix + "-edge-bucket"),
+	bucket := awss3.NewBucket(stack, jsii.String("EdgeBucketA"), &awss3.BucketProps{
+		BucketName:    jsii.String(pjPrefix + "-edge-a-bucket"),
+		RemovalPolicy: removalPolicy,
+	})
+
+	awscdk.NewCfnOutput(stack, jsii.String("ExportFromEdgeA"), &awscdk.CfnOutputProps{
+		Value:      bucket.BucketArn(),
+		ExportName: jsii.String(pjPrefix + "-ExportFromEdgeA"),
+	})
+
+	return stack
+}
+
+func NewMainStackA(scope constructs.Construct, id string, props *awscdk.StackProps, pjPrefix string, isRetain bool) awscdk.Stack {
+	stack := awscdk.NewStack(scope, &id, props)
+
+	removalPolicy := awscdk.RemovalPolicy_DESTROY
+	if isRetain {
+		removalPolicy = awscdk.RemovalPolicy_RETAIN
+	}
+
+	importedArn := awscdk.Fn_ImportValue(jsii.String(pjPrefix + "-ExportFromEdgeA"))
+
+	bucket := awss3.NewBucket(stack, jsii.String("MainBucketA"), &awss3.BucketProps{
+		BucketName:    jsii.String(pjPrefix + "-main-a-bucket"),
+		RemovalPolicy: removalPolicy,
+	})
+	awscdk.Tags_Of(bucket).Add(jsii.String("DependsOn"), importedArn, nil)
+
+	return stack
+}
+
+// Pattern B: crossRegionReferences (SSM-backed)
+
+func NewEdgeStackB(scope constructs.Construct, id string, props *awscdk.StackProps, pjPrefix string, isRetain bool) (awscdk.Stack, awss3.Bucket) {
+	stack := awscdk.NewStack(scope, &id, props)
+
+	removalPolicy := awscdk.RemovalPolicy_DESTROY
+	if isRetain {
+		removalPolicy = awscdk.RemovalPolicy_RETAIN
+	}
+
+	bucket := awss3.NewBucket(stack, jsii.String("EdgeBucketB"), &awss3.BucketProps{
+		BucketName:    jsii.String(pjPrefix + "-edge-b-bucket"),
 		RemovalPolicy: removalPolicy,
 	})
 
 	return stack, bucket
 }
 
-func NewMainStack(scope constructs.Construct, id string, props *awscdk.StackProps, pjPrefix string, isRetain bool, edgeBucketArn *string) awscdk.Stack {
+func NewMainStackB(scope constructs.Construct, id string, props *awscdk.StackProps, pjPrefix string, isRetain bool, edgeBucketArn *string) awscdk.Stack {
 	stack := awscdk.NewStack(scope, &id, props)
 
 	removalPolicy := awscdk.RemovalPolicy_DESTROY
@@ -46,13 +94,10 @@ func NewMainStack(scope constructs.Construct, id string, props *awscdk.StackProp
 		removalPolicy = awscdk.RemovalPolicy_RETAIN
 	}
 
-	bucket := awss3.NewBucket(stack, jsii.String("MainBucket"), &awss3.BucketProps{
-		BucketName:    jsii.String(pjPrefix + "-main-bucket"),
+	bucket := awss3.NewBucket(stack, jsii.String("MainBucketB"), &awss3.BucketProps{
+		BucketName:    jsii.String(pjPrefix + "-main-b-bucket"),
 		RemovalPolicy: removalPolicy,
 	})
-
-	// Use cross-region reference: tag with the EdgeStack bucket ARN
-	// CDK's crossRegionReferences uses SSM parameters to pass values across regions
 	awscdk.Tags_Of(bucket).Add(jsii.String("EdgeBucketArn"), edgeBucketArn, nil)
 
 	return stack
@@ -76,24 +121,41 @@ func main() {
 
 	account := os.Getenv("CDK_DEFAULT_ACCOUNT")
 
-	edgeStack, edgeBucket := NewEdgeStack(app, pjPrefix+"-EdgeStack", &awscdk.StackProps{
-		Env: &awscdk.Environment{
-			Account: jsii.String(account),
-			Region:  jsii.String("us-east-1"),
-		},
-		StackName:             jsii.String(pjPrefix + "-EdgeStack"),
+	usEast1Env := &awscdk.Environment{
+		Account: jsii.String(account),
+		Region:  jsii.String("us-east-1"),
+	}
+	apNortheast1Env := &awscdk.Environment{
+		Account: jsii.String(account),
+		Region:  jsii.String("ap-northeast-1"),
+	}
+
+	// Pattern A: AddDependency + Export/Import
+	edgeStackA := NewEdgeStackA(app, pjPrefix+"-EdgeStackA", &awscdk.StackProps{
+		Env:       usEast1Env,
+		StackName: jsii.String(pjPrefix + "-EdgeStackA"),
+	}, pjPrefix, isRetain)
+
+	mainStackA := NewMainStackA(app, pjPrefix+"-MainStackA", &awscdk.StackProps{
+		Env:       apNortheast1Env,
+		StackName: jsii.String(pjPrefix + "-MainStackA"),
+	}, pjPrefix, isRetain)
+	mainStackA.AddDependency(edgeStackA, jsii.String("MainStackA depends on EdgeStackA"))
+
+	// Pattern B: crossRegionReferences (SSM-backed)
+	edgeStackB, edgeBucketB := NewEdgeStackB(app, pjPrefix+"-EdgeStackB", &awscdk.StackProps{
+		Env:                   usEast1Env,
+		StackName:             jsii.String(pjPrefix + "-EdgeStackB"),
 		CrossRegionReferences: jsii.Bool(true),
 	}, pjPrefix, isRetain)
 
-	mainStack := NewMainStack(app, pjPrefix+"-MainStack", &awscdk.StackProps{
-		Env: &awscdk.Environment{
-			Account: jsii.String(account),
-			Region:  jsii.String("ap-northeast-1"),
-		},
-		StackName:             jsii.String(pjPrefix + "-MainStack"),
+	mainStackB := NewMainStackB(app, pjPrefix+"-MainStackB", &awscdk.StackProps{
+		Env:                   apNortheast1Env,
+		StackName:             jsii.String(pjPrefix + "-MainStackB"),
 		CrossRegionReferences: jsii.Bool(true),
-	}, pjPrefix, isRetain, edgeBucket.BucketArn())
-	mainStack.AddDependency(edgeStack, jsii.String("MainStack depends on EdgeStack"))
+	}, pjPrefix, isRetain, edgeBucketB.BucketArn())
+	_ = mainStackB
+	_ = edgeStackB
 
 	app.Synth(nil)
 }
