@@ -86,8 +86,6 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 
 ## CDK Integration
 
-Delete stacks directly from a CDK app directory. **Requires**: [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) installed (unless using `-a`).
-
   ```bash
   delstack cdk [-s <stackName>] [-a <cdkOutPath>] [-c <key=value>] [-p <profile>] [-i] [-f] [-y] [-n <concurrencyNumber>]
   ```
@@ -96,41 +94,20 @@ Delete stacks directly from a CDK app directory. **Requires**: [AWS CDK CLI](htt
   - Path to an existing `cdk.out` directory. When specified, `npx cdk synth` is skipped and the manifest is read directly.
 - -c, --context: optional (repeatable)
   - CDK context values in `key=value` format, passed to `npx cdk synth -c key=value`.
+- All [global options](#how-to-use) (`-s`, `-p`, `-r`, `-i`, `-f`, `-y`, `-n`) also work with the `cdk` subcommand.
 
-All [global options](#how-to-use) (`-s`, `-p`, `-r`, `-i`, `-f`, `-y`, `-n`) also work with the `cdk` subcommand.
-
-### Examples
+**Requires**: [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) installed (unless using `-a`).
 
   ```bash
-  # Synthesize and delete all stacks in the CDK app
-  delstack cdk
-
-  # With CDK context values
-  delstack cdk -c env=dev -c feature=true
-
-  # Use an existing cdk.out directory (skip synthesis)
-  delstack cdk -a ./cdk.out
-
-  # Delete a specific stack (region auto-resolved from manifest)
-  delstack cdk -s MyStack
-
-  # Interactive stack selection (shows region info)
-  delstack cdk -i
-
-  # Force delete with confirmation skip
-  delstack cdk -f -y
+  delstack cdk                         # Synthesize and delete all stacks
+  delstack cdk -c env=dev              # With CDK context
+  delstack cdk -a ./cdk.out            # Use existing cdk.out (skip synthesis)
+  delstack cdk -s MyStack              # Delete specific stack
+  delstack cdk -i                      # Interactive selection
+  delstack cdk -f -y                   # Force delete, skip confirmation
   ```
 
-### Cross-region deletion
-
-When the CDK app deploys stacks to multiple regions (e.g., `us-east-1` for CloudFront + `ap-northeast-1` for the main app), `delstack cdk` automatically:
-
-1. Detects each stack's region from the Cloud Assembly manifest (`environment` field)
-2. Groups stacks by region and creates separate AWS sessions
-3. Resolves cross-region dependencies and deletes in the correct order
-4. Deletes independent regions in parallel
-
-For environment-agnostic stacks (`unknown-region` in the manifest), the region from `-r` or the default AWS configuration is used.
+For details on cross-region deletion and CDK Stage support, see [CDK Integration Details](#cdk-integration-details).
 
 ## Resource Types that can be forced to delete
 
@@ -278,6 +255,25 @@ Deletion order (reverse dependencies):
 - **Circular Dependencies**: Detected before deletion starts, with the dependency cycle path reported
 - **External References**: If a target stack's export is imported by a non-target stack, deletion is prevented with a detailed error message
 - **Partial Failures**: If any stack fails to delete, all remaining deletions are cancelled
+
+## CDK Integration Details
+
+The `delstack cdk` subcommand synthesizes a CDK app (or reads an existing `cdk.out`) and deletes all discovered stacks. It parses the Cloud Assembly manifest to determine stack names, regions, and dependencies.
+
+### Cross-region deletion
+
+When the CDK app deploys stacks to multiple regions (e.g., `us-east-1` for CloudFront + `ap-northeast-1` for the main app), `delstack cdk` automatically:
+
+1. Detects each stack's region from the Cloud Assembly manifest (`environment` field)
+2. Groups stacks by region and creates separate AWS sessions
+3. Resolves cross-region dependencies and deletes in the correct order
+4. Deletes independent regions in parallel
+
+For environment-agnostic stacks (`unknown-region` in the manifest), the region from `-r` or the default AWS configuration is used.
+
+### CDK Stage support
+
+CDK [Stages](https://docs.aws.amazon.com/cdk/v2/guide/stages.html) place stacks inside nested Cloud Assemblies (`assembly-*/`). `delstack cdk` recursively parses these nested manifests to discover all stacks.
 
 ## GitHub Actions
 
