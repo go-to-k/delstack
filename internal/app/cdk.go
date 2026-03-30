@@ -11,98 +11,121 @@ import (
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/internal/operation"
 	"github.com/go-to-k/delstack/pkg/client"
-	"github.com/urfave/cli/v2"
 )
 
-func (a *App) getCdkAction() func(c *cli.Context) error {
-	return func(c *cli.Context) error {
-		if a.InteractiveMode && len(a.StackNames.Value()) != 0 {
-			return fmt.Errorf("InvalidOptionError: Stack names (-s) cannot be specified when using Interactive Mode (-i)")
-		}
-		if a.ConcurrencyNumber < UnspecifiedConcurrencyNumber {
-			return fmt.Errorf("InvalidOptionError: You must specify a positive number for the -n option")
-		}
+type CdkAction struct {
+	stackNames        []string
+	profile           string
+	region            string
+	interactiveMode   bool
+	forceMode         bool
+	yesMode           bool
+	concurrencyNumber int
+	appPath           string
+	contexts          []string
+}
 
-		io.AutoYes = a.YesMode
-
-		// Step 1: Synthesize or read existing cdk.out
-		cdkOutDir := cdk.DefaultCdkOutDir
-		if a.CdkAppPath != "" {
-			cdkOutDir = a.CdkAppPath
-		} else {
-			synthesizer := cdk.NewSynthesizer()
-			if err := synthesizer.Synth(c.Context, a.CdkContexts.Value()); err != nil {
-				return err
-			}
-		}
-
-		// Step 2: Parse manifest
-		stacks, err := cdk.ParseManifest(cdkOutDir)
-		if err != nil {
-			return err
-		}
-		if len(stacks) == 0 {
-			io.Logger.Info().Msg("No stacks found in CDK app.")
-			return nil
-		}
-
-		// Step 3: Resolve unknown regions
-		defaultRegion, err := a.resolveDefaultRegion(c.Context)
-		if err != nil {
-			return err
-		}
-		for i := range stacks {
-			if stacks[i].Region == "unknown-region" || stacks[i].Region == "" {
-				stacks[i].Region = defaultRegion
-			}
-		}
-
-		// Step 4: Filter stacks by -s or -i
-		selectedStacks, err := a.selectCdkStacks(stacks)
-		if err != nil {
-			return err
-		}
-		if len(selectedStacks) == 0 {
-			io.Logger.Info().Msg("No stacks selected.")
-			return nil
-		}
-
-		// Step 5: Filter out stacks that don't exist in AWS
-		existingStacks, err := a.filterExistingStacks(c.Context, selectedStacks)
-		if err != nil {
-			return err
-		}
-		if len(existingStacks) == 0 {
-			io.Logger.Info().Msg("No deployed stacks found.")
-			return nil
-		}
-
-		// Step 6: Show confirmation
-		if !a.showCdkConfirmation(existingStacks) {
-			io.Logger.Info().Msg("Canceled.")
-			return nil
-		}
-
-		// Step 6: Group by region and delete
-		return a.deleteCdkStacks(c.Context, selectedStacks)
+func NewCdkAction(stackNames []string, profile, region string, interactiveMode, forceMode, yesMode bool, concurrencyNumber int, appPath string, contexts []string) *CdkAction {
+	return &CdkAction{
+		stackNames:        stackNames,
+		profile:           profile,
+		region:            region,
+		interactiveMode:   interactiveMode,
+		forceMode:         forceMode,
+		yesMode:           yesMode,
+		concurrencyNumber: concurrencyNumber,
+		appPath:           appPath,
+		contexts:          contexts,
 	}
 }
 
-func (a *App) filterExistingStacks(ctx context.Context, stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
+func (a *CdkAction) Run(ctx context.Context) error {
+	if a.interactiveMode && len(a.stackNames) != 0 {
+		return fmt.Errorf("InvalidOptionError: Stack names (-s) cannot be specified when using Interactive Mode (-i)")
+	}
+	if a.concurrencyNumber < UnspecifiedConcurrencyNumber {
+		return fmt.Errorf("InvalidOptionError: You must specify a positive number for the -n option")
+	}
+
+	io.AutoYes = a.yesMode
+
+	// Step 1: Synthesize or read existing cdk.out
+	cdkOutDir := cdk.DefaultCdkOutDir
+	if a.appPath != "" {
+		cdkOutDir = a.appPath
+	} else {
+		synthesizer := cdk.NewSynthesizer()
+		if err := synthesizer.Synth(ctx, a.contexts); err != nil {
+			return err
+		}
+	}
+
+	// Step 2: Parse manifest
+	stacks, err := cdk.ParseManifest(cdkOutDir)
+	if err != nil {
+		return err
+	}
+	if len(stacks) == 0 {
+		io.Logger.Info().Msg("No stacks found in CDK app.")
+		return nil
+	}
+
+	// Step 3: Resolve unknown regions
+	defaultRegion, err := a.resolveDefaultRegion(ctx)
+	if err != nil {
+		return err
+	}
+	for i := range stacks {
+		if stacks[i].Region == "unknown-region" || stacks[i].Region == "" {
+			stacks[i].Region = defaultRegion
+		}
+	}
+
+	// Step 4: Filter stacks by -s or -i
+	selectedStacks, err := a.selectCdkStacks(stacks)
+	if err != nil {
+		return err
+	}
+	if len(selectedStacks) == 0 {
+		io.Logger.Info().Msg("No stacks selected.")
+		return nil
+	}
+
+	// Step 5: Filter out stacks that don't exist in AWS
+	existingStacks, err := a.filterExistingStacks(ctx, selectedStacks)
+	if err != nil {
+		return err
+	}
+	if len(existingStacks) == 0 {
+		io.Logger.Info().Msg("No deployed stacks found.")
+		return nil
+	}
+
+	// Step 6: Show confirmation
+	if !a.showCdkConfirmation(existingStacks) {
+		io.Logger.Info().Msg("Canceled.")
+		return nil
+	}
+
+	// Step 7: Group by region and delete
+	return NewCdkDeleter(a.profile, a.forceMode, a.concurrencyNumber).DeleteStacks(ctx, existingStacks)
+}
+
+func (a *CdkAction) filterExistingStacks(ctx context.Context, stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
 	// Group by region to create one operator per region
-	configCache := make(map[string]*operation.CloudFormationStackOperator)
+	operatorCache := make(map[string]*operation.CloudFormationStackOperator)
 
 	var existing []cdk.StackInfo
 	for _, s := range stacks {
-		op, ok := configCache[s.Region]
+		op, ok := operatorCache[s.Region]
 		if !ok {
-			cfg, err := client.LoadAWSConfig(ctx, s.Region, a.Profile)
+			cfg, err := client.LoadAWSConfig(ctx, s.Region, a.profile)
 			if err != nil {
 				return nil, fmt.Errorf("failed to load AWS config for region %s: %w", s.Region, err)
 			}
-			factory := operation.NewOperatorFactory(cfg, a.ForceMode)
+			factory := operation.NewOperatorFactory(cfg, a.forceMode)
 			op = factory.CreateCloudFormationStackOperator()
-			configCache[s.Region] = op
+			operatorCache[s.Region] = op
 		}
 
 		exists, err := op.StackExists(ctx, aws.String(s.StackName))
@@ -119,23 +142,21 @@ func (a *App) filterExistingStacks(ctx context.Context, stacks []cdk.StackInfo) 
 	return existing, nil
 }
 
-func (a *App) resolveDefaultRegion(ctx context.Context) (string, error) {
-	if a.Region != "" {
-		return a.Region, nil
+func (a *CdkAction) resolveDefaultRegion(ctx context.Context) (string, error) {
+	if a.region != "" {
+		return a.region, nil
 	}
-	cfg, err := client.LoadAWSConfig(ctx, "", a.Profile)
+	cfg, err := client.LoadAWSConfig(ctx, "", a.profile)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve default region: %w", err)
 	}
 	return cfg.Region, nil
 }
 
-func (a *App) selectCdkStacks(stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
-	specifiedNames := a.StackNames.Value()
-
-	if len(specifiedNames) > 0 {
+func (a *CdkAction) selectCdkStacks(stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
+	if len(a.stackNames) > 0 {
 		nameSet := make(map[string]struct{})
-		for _, name := range specifiedNames {
+		for _, name := range a.stackNames {
 			nameSet[name] = struct{}{}
 		}
 
@@ -157,14 +178,14 @@ func (a *App) selectCdkStacks(stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
 		return selected, nil
 	}
 
-	if a.InteractiveMode {
+	if a.interactiveMode {
 		return a.selectCdkStacksInteractively(stacks)
 	}
 
 	return stacks, nil
 }
 
-func (a *App) selectCdkStacksInteractively(stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
+func (a *CdkAction) selectCdkStacksInteractively(stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
 	displayNames := make([]string, len(stacks))
 	for i, s := range stacks {
 		displayNames[i] = fmt.Sprintf("%s (%s)", s.StackName, s.Region)
@@ -194,7 +215,7 @@ func (a *App) selectCdkStacksInteractively(stacks []cdk.StackInfo) ([]cdk.StackI
 	return selected, nil
 }
 
-func (a *App) showCdkConfirmation(stacks []cdk.StackInfo) bool {
+func (a *CdkAction) showCdkConfirmation(stacks []cdk.StackInfo) bool {
 	fmt.Fprintf(os.Stderr, "The following stacks will be deleted:\n")
 	for _, s := range stacks {
 		fmt.Fprintf(os.Stderr, "  - %s (%s)\n", s.StackName, s.Region)

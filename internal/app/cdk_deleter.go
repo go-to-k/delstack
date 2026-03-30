@@ -15,16 +15,30 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-func (a *App) deleteCdkStacks(ctx context.Context, stacks []cdk.StackInfo) error {
-	regionStacks, regions := groupByRegion(stacks)
+type CdkDeleter struct {
+	profile           string
+	forceMode         bool
+	concurrencyNumber int
+}
+
+func NewCdkDeleter(profile string, forceMode bool, concurrencyNumber int) *CdkDeleter {
+	return &CdkDeleter{
+		profile:           profile,
+		forceMode:         forceMode,
+		concurrencyNumber: concurrencyNumber,
+	}
+}
+
+func (d *CdkDeleter) DeleteStacks(ctx context.Context, stacks []cdk.StackInfo) error {
+	regionStacks, regions := d.groupByRegion(stacks)
 
 	stackMap := make(map[string]cdk.StackInfo)
 	for _, s := range stacks {
 		stackMap[s.StackName] = s
 	}
 
-	if hasCrossRegionDependencies(stacks, stackMap) {
-		return a.deleteStacksWithCrossRegionDeps(ctx, stacks, stackMap)
+	if d.hasCrossRegionDependencies(stacks, stackMap) {
+		return d.deleteStacksWithCrossRegionDeps(ctx, stacks, stackMap)
 	}
 
 	// No cross-region deps: delete all regions in parallel
@@ -32,35 +46,34 @@ func (a *App) deleteCdkStacks(ctx context.Context, stacks []cdk.StackInfo) error
 	for _, region := range regions {
 		regionStackInfos := regionStacks[region]
 		eg.Go(func() error {
-			return a.deleteStacksInRegion(ctx, region, regionStackInfos)
+			return d.deleteStacksInRegion(ctx, region, regionStackInfos)
 		})
 	}
 	return eg.Wait()
 }
 
-func (a *App) deleteStacksInRegion(ctx context.Context, region string, stacks []cdk.StackInfo) error {
+func (d *CdkDeleter) deleteStacksInRegion(ctx context.Context, region string, stacks []cdk.StackInfo) error {
 	io.Logger.Info().Msgf("Deleting %d stack(s) in %s...", len(stacks), region)
 
-	config, err := client.LoadAWSConfig(ctx, region, a.Profile)
+	config, err := client.LoadAWSConfig(ctx, region, d.profile)
 	if err != nil {
 		return fmt.Errorf("failed to load AWS config for region %s: %w", region, err)
 	}
 
-	operatorFactory := operation.NewOperatorFactory(config, a.ForceMode)
-	deleter := NewStackDeleter(a.ForceMode, a.ConcurrencyNumber)
+	operatorFactory := operation.NewOperatorFactory(config, d.forceMode)
 
 	stackNames := make([]string, len(stacks))
 	for i, s := range stacks {
 		stackNames[i] = s.StackName
 	}
 
-	return deleter.DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory)
+	return NewStackDeleter(d.forceMode, d.concurrencyNumber).DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory)
 }
 
 // deleteStacksWithCrossRegionDeps deletes stacks with cross-region dependencies
 // using dynamic scheduling: as soon as a stack is deleted, dependent stacks
 // become eligible immediately (without waiting for the entire level to complete).
-func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.StackInfo, stackMap map[string]cdk.StackInfo) error {
+func (d *CdkDeleter) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.StackInfo, stackMap map[string]cdk.StackInfo) error {
 	io.Logger.Info().Msg("Cross-region dependencies detected. Deleting stacks in dependency order...")
 
 	totalStackCount := len(stacks)
@@ -88,12 +101,12 @@ func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.
 		if _, ok := configCache[s.Region]; ok {
 			continue
 		}
-		cfg, err := client.LoadAWSConfig(ctx, s.Region, a.Profile)
+		cfg, err := client.LoadAWSConfig(ctx, s.Region, d.profile)
 		if err != nil {
 			return fmt.Errorf("failed to load AWS config for region %s: %w", s.Region, err)
 		}
 		configCache[s.Region] = cfg
-		factoryCache[s.Region] = operation.NewOperatorFactory(cfg, a.ForceMode)
+		factoryCache[s.Region] = operation.NewOperatorFactory(cfg, d.forceMode)
 	}
 
 	// Dynamic scheduling with channels (same pattern as deleteStacksDynamically)
@@ -104,10 +117,10 @@ func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.
 	var deletedStacks []string
 
 	var weight int64
-	if a.ConcurrencyNumber == UnspecifiedConcurrencyNumber {
+	if d.concurrencyNumber == UnspecifiedConcurrencyNumber {
 		weight = int64(totalStackCount)
 	} else {
-		weight = min(int64(a.ConcurrencyNumber), int64(totalStackCount))
+		weight = min(int64(d.concurrencyNumber), int64(totalStackCount))
 	}
 	sem := semaphore.NewWeighted(weight)
 
@@ -135,8 +148,7 @@ func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.
 		config := configCache[s.Region]
 		operatorFactory := factoryCache[s.Region]
 
-		deleter := NewStackDeleter(a.ForceMode, a.ConcurrencyNumber)
-		if err := deleter.deleteSingleStack(deleteCtx, stackName, config, operatorFactory, true); err != nil {
+		if err := NewStackDeleter(d.forceMode, d.concurrencyNumber).deleteSingleStack(deleteCtx, stackName, config, operatorFactory, true); err != nil {
 			select {
 			case errorChan <- err:
 			default:
@@ -189,7 +201,7 @@ func (a *App) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks []cdk.
 	return nil
 }
 
-func groupByRegion(stacks []cdk.StackInfo) (map[string][]cdk.StackInfo, []string) {
+func (d *CdkDeleter) groupByRegion(stacks []cdk.StackInfo) (map[string][]cdk.StackInfo, []string) {
 	regionStacks := make(map[string][]cdk.StackInfo)
 	for _, s := range stacks {
 		regionStacks[s.Region] = append(regionStacks[s.Region], s)
@@ -202,7 +214,7 @@ func groupByRegion(stacks []cdk.StackInfo) (map[string][]cdk.StackInfo, []string
 	return regionStacks, regions
 }
 
-func hasCrossRegionDependencies(stacks []cdk.StackInfo, stackMap map[string]cdk.StackInfo) bool {
+func (d *CdkDeleter) hasCrossRegionDependencies(stacks []cdk.StackInfo, stackMap map[string]cdk.StackInfo) bool {
 	for _, s := range stacks {
 		for _, dep := range s.Dependencies {
 			if depStack, ok := stackMap[dep]; ok {
