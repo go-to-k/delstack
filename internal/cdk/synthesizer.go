@@ -22,12 +22,17 @@ func NewSynthesizer() *Synthesizer {
 	}
 }
 
-func (s *Synthesizer) Synth(ctx context.Context, contextValues []string) error {
-	if _, err := os.Stat(cdkJsonFile); os.IsNotExist(err) {
-		return fmt.Errorf("cdk.json not found in current directory")
+func (s *Synthesizer) Synth(ctx context.Context, contextValues []string, appCommand string) error {
+	if appCommand == "" {
+		if _, err := os.Stat(cdkJsonFile); os.IsNotExist(err) {
+			return fmt.Errorf("cdk.json not found in current directory")
+		}
 	}
 
 	args := []string{"synth", "--quiet"}
+	if appCommand != "" {
+		args = append(args, "--app", appCommand)
+	}
 	for _, cv := range contextValues {
 		args = append(args, "-c", cv)
 	}

@@ -90,7 +90,7 @@ func NewApp(version string) *App {
 					&cli.StringFlag{
 						Name:        "app",
 						Aliases:     []string{"a"},
-						Usage:       "Path to an existing cdk.out directory (skips synthesis)",
+						Usage:       "CDK app command or path to cdk.out directory (e.g. 'npx ts-node bin/app.ts' or './cdk.out')",
 						Destination: &app.CdkAppPath,
 					},
 					&cli.StringSliceFlag{

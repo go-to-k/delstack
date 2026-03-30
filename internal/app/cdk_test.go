@@ -129,3 +129,61 @@ func TestCdkAction_StackNameNotInManifest(t *testing.T) {
 		t.Errorf("expected 'stacks not found' error, got %q", err.Error())
 	}
 }
+
+func TestCdkAction_AppPathDirectory(t *testing.T) {
+	io.NewLogger(false)
+
+	// -a with a directory path should read manifest directly (no synth)
+	tmpDir := t.TempDir()
+	manifest := `{"version": "52.0.0", "artifacts": {"Tree": {"type": "cdk:tree", "properties": {"file": "tree.json"}}}}`
+	err := os.WriteFile(filepath.Join(tmpDir, "manifest.json"), []byte(manifest), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	action := NewCdkAction(nil, "", "", false, false, true, 0, tmpDir, nil)
+	err = action.Run(context.Background())
+	// No stacks in manifest, should return nil (no error, just "No stacks found")
+	if err != nil {
+		t.Errorf("expected nil error for directory appPath, got %q", err.Error())
+	}
+}
+
+func TestCdkAction_AppPathCommand(t *testing.T) {
+	io.NewLogger(false)
+
+	// -a with a non-directory string should be treated as an app command
+	// This will fail because "echo hello" won't produce a valid cdk.out,
+	// but it verifies the command path is taken (not the directory path)
+	action := NewCdkAction(nil, "", "", false, false, true, 0, "echo hello", nil)
+	err := action.Run(context.Background())
+	if err == nil {
+		t.Fatal("expected error for command appPath (no valid cdk.out produced)")
+	}
+	// Should fail at cdk synth or manifest parsing, not at "cdk.json not found"
+	if containsString(err.Error(), "cdk.json not found") {
+		t.Errorf("should not check cdk.json when appPath is a command, got %q", err.Error())
+	}
+}
+
+func TestIsDirectory(t *testing.T) {
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "file.txt")
+	err := os.WriteFile(tmpFile, []byte("test"), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !isDirectory(tmpDir) {
+		t.Errorf("expected true for directory")
+	}
+	if isDirectory(tmpFile) {
+		t.Errorf("expected false for file")
+	}
+	if isDirectory("/nonexistent/path") {
+		t.Errorf("expected false for nonexistent path")
+	}
+	if isDirectory("npx ts-node bin/app.ts") {
+		t.Errorf("expected false for command string")
+	}
+}

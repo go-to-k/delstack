@@ -52,10 +52,19 @@ func (a *CdkAction) Run(ctx context.Context) error {
 	// Step 1: Synthesize or read existing cdk.out
 	cdkOutDir := cdk.DefaultCdkOutDir
 	if a.appPath != "" {
-		cdkOutDir = a.appPath
+		if isDirectory(a.appPath) {
+			// -a points to an existing cdk.out directory, skip synthesis
+			cdkOutDir = a.appPath
+		} else {
+			// -a is an app command (e.g. "npx ts-node bin/app.ts"), run cdk synth --app
+			synthesizer := cdk.NewSynthesizer()
+			if err := synthesizer.Synth(ctx, a.contexts, a.appPath); err != nil {
+				return err
+			}
+		}
 	} else {
 		synthesizer := cdk.NewSynthesizer()
-		if err := synthesizer.Synth(ctx, a.contexts); err != nil {
+		if err := synthesizer.Synth(ctx, a.contexts, ""); err != nil {
 			return err
 		}
 	}
@@ -223,4 +232,12 @@ func (a *CdkAction) showCdkConfirmation(stacks []cdk.StackInfo) bool {
 	fmt.Fprintln(os.Stderr)
 
 	return io.GetYesNo("Are you sure you want to delete these stacks?")
+}
+
+func isDirectory(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
 }

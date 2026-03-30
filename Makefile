@@ -125,6 +125,11 @@ testgen_cdk_cross_region_retain:
 	@echo "Setting up CDK cross-region test stacks with RETAIN resources..."
 	@cd e2e/cdk_cross_region && go mod tidy && go run deploy.go -r $(OPT)
 
+# Generate and deploy CDK app option test stack for `delstack cdk -a` testing
+testgen_cdk_app_option:
+	@echo "Setting up CDK app option test stack..."
+	@cd e2e/cdk_app_option && go mod tidy && go run deploy.go $(OPT)
+
 # Generate and deploy CDK Stage test stacks for `delstack cdk` with CDK Stages
 testgen_cdk_stage:
 	@echo "Setting up CDK Stage test stacks..."
@@ -146,6 +151,7 @@ testgen_help:
 	@echo "  testgen_cdk_integration_retain    - Generate and deploy CDK integration test stacks with RETAIN"
 	@echo "  testgen_cdk_cross_region          - Generate and deploy CDK cross-region test stacks"
 	@echo "  testgen_cdk_cross_region_retain   - Generate and deploy CDK cross-region test stacks with RETAIN"
+	@echo "  testgen_cdk_app_option            - Generate and deploy CDK app option test stack"
 	@echo "  testgen_cdk_stage                 - Generate and deploy CDK Stage test stacks"
 	@echo ""
 	@echo "Example usage:"
@@ -245,31 +251,43 @@ e2e_deletion_protection_no_tp:
 
 # Run CDK integration E2E test (deploy + delstack cdk)
 e2e_cdk_integration: STAGE = e2e-cdk-$(E2E_RANDOM)
-e2e_cdk_integration:
+e2e_cdk_integration: build
 	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) $(OPT)"
 	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=false -f -y $(OPT)
 
 # Run CDK integration E2E test with RETAIN resources (deploy + force delete)
 e2e_cdk_integration_retain: STAGE = e2e-cdk-$(E2E_RANDOM)
-e2e_cdk_integration_retain:
+e2e_cdk_integration_retain: build
 	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) -r $(OPT)"
 	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=true -f -y $(OPT)
 
+# Run CDK --app option E2E test (both directory and command)
+# Deploys 1 stack, deletes via -a (cdk.out directory), redeploys, deletes via -a (app command)
+e2e_cdk_app_option: STAGE = e2e-cdk-appopt-$(E2E_RANDOM)
+e2e_cdk_app_option: build
+	@$(MAKE) testgen_cdk_app_option OPT="-s $(STAGE) $(OPT)"
+	@echo "=== Test 1: -a with cdk.out directory ==="
+	@cd e2e/cdk_app_option/cdk && ../../../delstack cdk -a cdk.out -s $(STAGE)-AppOptStack -f -y $(OPT)
+	@echo "=== Test 2: -a with app command (redeploy first) ==="
+	@cd e2e/cdk_app_option && go run deploy.go -s $(STAGE) $(OPT)
+	@cd e2e/cdk_app_option/cdk && rm -rf cdk.out
+	@cd e2e/cdk_app_option/cdk && ../../../delstack cdk -a "go mod download && go run cdk.go" -c PJ_PREFIX=$(STAGE) -s $(STAGE)-AppOptStack -f -y $(OPT)
+
 # Run CDK cross-region E2E test (deploy + delstack cdk)
 e2e_cdk_cross_region: STAGE = e2e-cdk-xr-$(E2E_RANDOM)
-e2e_cdk_cross_region:
+e2e_cdk_cross_region: build
 	@$(MAKE) testgen_cdk_cross_region OPT="-s $(STAGE) $(OPT)"
 	@cd e2e/cdk_cross_region/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=false -f -y $(OPT)
 
 # Run CDK cross-region E2E test with RETAIN resources (deploy + force delete)
 e2e_cdk_cross_region_retain: STAGE = e2e-cdk-xr-$(E2E_RANDOM)
-e2e_cdk_cross_region_retain:
+e2e_cdk_cross_region_retain: build
 	@$(MAKE) testgen_cdk_cross_region_retain OPT="-s $(STAGE) $(OPT)"
 	@cd e2e/cdk_cross_region/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=true -f -y $(OPT)
 
 # Run CDK Stage E2E test (deploy + delstack cdk)
 e2e_cdk_stage: STAGE = e2e-cdk-stg-$(E2E_RANDOM)
-e2e_cdk_stage:
+e2e_cdk_stage: build
 	@$(MAKE) testgen_cdk_stage OPT="-s $(STAGE) $(OPT)"
 	@cd e2e/cdk_stage/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -f -y $(OPT)
 
@@ -289,6 +307,7 @@ e2e_help:
 	@echo "  e2e_cdk_integration_retain   - Deploy CDK stacks with RETAIN and force delete"
 	@echo "  e2e_cdk_cross_region         - Deploy CDK cross-region stacks and delete"
 	@echo "  e2e_cdk_cross_region_retain  - Deploy CDK cross-region stacks with RETAIN and force delete"
+	@echo "  e2e_cdk_app_option           - Deploy CDK stack and test --app with directory and command"
 	@echo "  e2e_cdk_stage                - Deploy CDK Stage stacks and delete"
 	@echo ""
 	@echo "Options:"
