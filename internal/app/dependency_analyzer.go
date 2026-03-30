@@ -6,14 +6,14 @@ import (
 	"github.com/go-to-k/delstack/internal/operation"
 )
 
-// DependencyAnalyzer builds a dependency graph for CloudFormation stacks.
-type DependencyAnalyzer interface {
+// IDependencyAnalyzer builds a dependency graph for CloudFormation stacks.
+type IDependencyAnalyzer interface {
 	Analyze(ctx context.Context, stackNames []string, operatorFactory *operation.OperatorFactory) (*operation.StackDependencyGraph, error)
 }
 
-type DefaultDependencyAnalyzer struct{}
+type DependencyAnalyzer struct{}
 
-func (a *DefaultDependencyAnalyzer) Analyze(ctx context.Context, stackNames []string, operatorFactory *operation.OperatorFactory) (*operation.StackDependencyGraph, error) {
+func (a *DependencyAnalyzer) Analyze(ctx context.Context, stackNames []string, operatorFactory *operation.OperatorFactory) (*operation.StackDependencyGraph, error) {
 	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator()
 	return cloudformationStackOperator.BuildDependencyGraph(ctx, stackNames)
 }

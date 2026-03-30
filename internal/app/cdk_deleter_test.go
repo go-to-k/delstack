@@ -12,7 +12,7 @@ import (
 	"github.com/go-to-k/delstack/internal/operation"
 )
 
-// mockConfigLoader implements ConfigLoader for testing.
+// mockConfigLoader implements IConfigLoader for testing.
 type mockConfigLoader struct {
 	err error
 }
@@ -35,7 +35,7 @@ func (a *passThroughAnalyzer) Analyze(_ context.Context, stackNames []string, _ 
 	return buildGraph(deps), nil
 }
 
-func newTestCdkDeleter(executor StackExecutor) *CdkDeleter {
+func newTestCdkDeleter(executor IStackExecutor) *CdkDeleter {
 	if executor == nil {
 		executor = &mockStackExecutor{}
 	}

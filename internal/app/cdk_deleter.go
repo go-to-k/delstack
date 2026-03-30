@@ -18,9 +18,9 @@ type CdkDeleter struct {
 	profile           string
 	forceMode         bool
 	concurrencyNumber int
-	configLoader      ConfigLoader
-	analyzer          DependencyAnalyzer
-	executor          StackExecutor
+	configLoader      IConfigLoader
+	analyzer          IDependencyAnalyzer
+	executor          IStackExecutor
 }
 
 func NewCdkDeleter(profile string, forceMode bool, concurrencyNumber int) *CdkDeleter {
@@ -28,9 +28,9 @@ func NewCdkDeleter(profile string, forceMode bool, concurrencyNumber int) *CdkDe
 		profile:           profile,
 		forceMode:         forceMode,
 		concurrencyNumber: concurrencyNumber,
-		configLoader:      &DefaultConfigLoader{},
-		analyzer:          &DefaultDependencyAnalyzer{},
-		executor:          &DefaultStackExecutor{},
+		configLoader:      &ConfigLoader{},
+		analyzer:          &DependencyAnalyzer{},
+		executor:          &StackExecutor{},
 	}
 }
 

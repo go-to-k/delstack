@@ -15,16 +15,16 @@ import (
 type StackDeleter struct {
 	forceMode         bool
 	concurrencyNumber int
-	analyzer          DependencyAnalyzer
-	executor          StackExecutor
+	analyzer          IDependencyAnalyzer
+	executor          IStackExecutor
 }
 
 func NewStackDeleter(forceMode bool, concurrencyNumber int) *StackDeleter {
 	return &StackDeleter{
 		forceMode:         forceMode,
 		concurrencyNumber: concurrencyNumber,
-		analyzer:          &DefaultDependencyAnalyzer{},
-		executor:          &DefaultStackExecutor{},
+		analyzer:          &DependencyAnalyzer{},
+		executor:          &StackExecutor{},
 	}
 }
 

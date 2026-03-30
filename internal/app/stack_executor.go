@@ -10,14 +10,14 @@ import (
 	"github.com/go-to-k/delstack/internal/preprocessor"
 )
 
-// StackExecutor executes the deletion of a single CloudFormation stack.
-type StackExecutor interface {
+// IStackExecutor executes the deletion of a single CloudFormation stack.
+type IStackExecutor interface {
 	Execute(ctx context.Context, stack string, config aws.Config, operatorFactory *operation.OperatorFactory, forceMode bool, isRootStack bool) error
 }
 
-type DefaultStackExecutor struct{}
+type StackExecutor struct{}
 
-func (e *DefaultStackExecutor) Execute(
+func (e *StackExecutor) Execute(
 	ctx context.Context,
 	stack string,
 	config aws.Config,

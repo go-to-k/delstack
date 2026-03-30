@@ -7,13 +7,13 @@ import (
 	"github.com/go-to-k/delstack/pkg/client"
 )
 
-// ConfigLoader loads AWS SDK configuration for a given region and profile.
-type ConfigLoader interface {
+// IConfigLoader loads AWS SDK configuration for a given region and profile.
+type IConfigLoader interface {
 	LoadConfig(ctx context.Context, region, profile string) (aws.Config, error)
 }
 
-type DefaultConfigLoader struct{}
+type ConfigLoader struct{}
 
-func (l *DefaultConfigLoader) LoadConfig(ctx context.Context, region, profile string) (aws.Config, error) {
+func (l *ConfigLoader) LoadConfig(ctx context.Context, region, profile string) (aws.Config, error) {
 	return client.LoadAWSConfig(ctx, region, profile)
 }
