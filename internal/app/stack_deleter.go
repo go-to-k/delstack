@@ -9,19 +9,22 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/internal/operation"
-	"github.com/go-to-k/delstack/internal/preprocessor"
 	"golang.org/x/sync/semaphore"
 )
 
 type StackDeleter struct {
 	forceMode         bool
 	concurrencyNumber int
+	analyzer          IDependencyAnalyzer
+	executor          IStackExecutor
 }
 
-func NewStackDeleter(forceMode bool, concurrencyNumber int) *StackDeleter {
+func NewStackDeleter(forceMode bool, concurrencyNumber int, analyzer IDependencyAnalyzer, executor IStackExecutor) *StackDeleter {
 	return &StackDeleter{
 		forceMode:         forceMode,
 		concurrencyNumber: concurrencyNumber,
+		analyzer:          analyzer,
+		executor:          executor,
 	}
 }
 
@@ -31,10 +34,8 @@ func (d *StackDeleter) DeleteStacksConcurrently(
 	config aws.Config,
 	operatorFactory *operation.OperatorFactory,
 ) error {
-	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator()
-
 	io.Logger.Info().Msg("Analyzing stack dependencies...")
-	graph, err := cloudformationStackOperator.BuildDependencyGraph(ctx, stackNames)
+	graph, err := d.analyzer.Analyze(ctx, stackNames, operatorFactory)
 	if err != nil {
 		return fmt.Errorf("DependencyAnalysisError: failed to build dependency graph: %w", err)
 	}
@@ -59,7 +60,6 @@ func (d *StackDeleter) deleteStacksDynamically(
 	config aws.Config,
 	operatorFactory *operation.OperatorFactory,
 ) error {
-	// Calculate reverse in-degree: how many stacks depend on this stack
 	dependencies := graph.GetDependencies()
 	allStacks := graph.GetAllStacks()
 	totalStackCount := len(allStacks)
@@ -109,7 +109,7 @@ func (d *StackDeleter) deleteStacksDynamically(
 		}
 		defer sem.Release(1)
 
-		if err := d.deleteSingleStack(deleteCtx, stackName, config, operatorFactory, true); err != nil {
+		if err := d.executor.Execute(deleteCtx, stackName, config, operatorFactory, d.forceMode, true); err != nil {
 			select {
 			case errorChan <- err:
 			default:
@@ -160,37 +160,5 @@ func (d *StackDeleter) deleteStacksDynamically(
 		}
 	}
 
-	return nil
-}
-
-func (d *StackDeleter) deleteSingleStack(
-	ctx context.Context,
-	stack string,
-	config aws.Config,
-	operatorFactory *operation.OperatorFactory,
-	isRootStack bool,
-) error {
-	operatorCollection := operation.NewOperatorCollection(config, operatorFactory)
-	operatorManager := operation.NewOperatorManager(operatorCollection)
-	cloudformationStackOperator := operatorFactory.CreateCloudFormationStackOperator()
-
-	io.Logger.Info().Msgf("[%v]: Start deletion. Please wait a few minutes...", stack)
-
-	if d.forceMode {
-		if err := cloudformationStackOperator.RemoveDeletionPolicy(ctx, aws.String(stack)); err != nil {
-			return fmt.Errorf("[%v]: Failed to remove deletion policy: %w", stack, err)
-		}
-	}
-
-	pp := preprocessor.NewRecursivePreprocessorFromConfig(config, d.forceMode)
-	if err := pp.PreprocessRecursively(ctx, aws.String(stack)); err != nil {
-		return fmt.Errorf("[%v]: %w", stack, err)
-	}
-
-	if err := cloudformationStackOperator.DeleteCloudFormationStack(ctx, aws.String(stack), isRootStack, operatorManager); err != nil {
-		return fmt.Errorf("[%v]: Failed to delete: %w", stack, err)
-	}
-
-	io.Logger.Info().Msgf("[%v]: Successfully deleted!!", stack)
 	return nil
 }
