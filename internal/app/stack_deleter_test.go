@@ -37,7 +37,7 @@ func newTestStackDeleter(
 		buildDependencyGraph: func(_ context.Context, _ []string, _ *operation.OperatorFactory) (*operation.StackDependencyGraph, error) {
 			return graph, nil
 		},
-		deleteSingleStackFunc: deleteFn,
+		deleteSingleStack: deleteFn,
 	}
 }
 
@@ -161,7 +161,7 @@ func TestStackDeleter_DeleteStacksConcurrently_BuildGraphError(t *testing.T) {
 		buildDependencyGraph: func(_ context.Context, _ []string, _ *operation.OperatorFactory) (*operation.StackDependencyGraph, error) {
 			return nil, fmt.Errorf("graph error")
 		},
-		deleteSingleStackFunc: defaultDeleteSingleStack,
+		deleteSingleStack: defaultDeleteSingleStack,
 	}
 
 	err := d.DeleteStacksConcurrently(context.Background(), []string{"Stack"}, aws.Config{}, nil)
@@ -231,7 +231,7 @@ func TestStackDeleter_DeleteStacksConcurrently_Concurrency(t *testing.T) {
 		buildDependencyGraph: func(_ context.Context, _ []string, _ *operation.OperatorFactory) (*operation.StackDependencyGraph, error) {
 			return graph, nil
 		},
-		deleteSingleStackFunc: func(_ context.Context, stack string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
+		deleteSingleStack: func(_ context.Context, stack string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
 			mu.Lock()
 			currentConcurrent++
 			if currentConcurrent > maxConcurrent {

@@ -14,18 +14,18 @@ import (
 )
 
 type StackDeleter struct {
-	forceMode             bool
-	concurrencyNumber     int
-	buildDependencyGraph  func(ctx context.Context, stackNames []string, operatorFactory *operation.OperatorFactory) (*operation.StackDependencyGraph, error)
-	deleteSingleStackFunc func(ctx context.Context, stack string, config aws.Config, operatorFactory *operation.OperatorFactory, forceMode bool, isRootStack bool) error
+	forceMode            bool
+	concurrencyNumber    int
+	buildDependencyGraph func(ctx context.Context, stackNames []string, operatorFactory *operation.OperatorFactory) (*operation.StackDependencyGraph, error)
+	deleteSingleStack    func(ctx context.Context, stack string, config aws.Config, operatorFactory *operation.OperatorFactory, forceMode bool, isRootStack bool) error
 }
 
 func NewStackDeleter(forceMode bool, concurrencyNumber int) *StackDeleter {
 	return &StackDeleter{
-		forceMode:             forceMode,
-		concurrencyNumber:     concurrencyNumber,
-		buildDependencyGraph:  defaultBuildDependencyGraph,
-		deleteSingleStackFunc: defaultDeleteSingleStack,
+		forceMode:            forceMode,
+		concurrencyNumber:    concurrencyNumber,
+		buildDependencyGraph: defaultBuildDependencyGraph,
+		deleteSingleStack:    defaultDeleteSingleStack,
 	}
 }
 
@@ -149,7 +149,7 @@ func (d *StackDeleter) deleteStacksDynamically(
 		}
 		defer sem.Release(1)
 
-		if err := d.deleteSingleStackFunc(deleteCtx, stackName, config, operatorFactory, d.forceMode, true); err != nil {
+		if err := d.deleteSingleStack(deleteCtx, stackName, config, operatorFactory, d.forceMode, true); err != nil {
 			select {
 			case errorChan <- err:
 			default:

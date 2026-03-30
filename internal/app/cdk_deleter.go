@@ -16,12 +16,12 @@ import (
 )
 
 type CdkDeleter struct {
-	profile               string
-	forceMode             bool
-	concurrencyNumber     int
-	loadConfig            func(ctx context.Context, region, profile string) (aws.Config, error)
-	deleteStacksFunc      func(ctx context.Context, stackNames []string, config aws.Config, operatorFactory *operation.OperatorFactory, forceMode bool, concurrencyNumber int) error
-	deleteSingleStackFunc func(ctx context.Context, stack string, config aws.Config, operatorFactory *operation.OperatorFactory, forceMode bool, isRootStack bool) error
+	profile                  string
+	forceMode                bool
+	concurrencyNumber        int
+	loadConfig               func(ctx context.Context, region, profile string) (aws.Config, error)
+	deleteStacksConcurrently func(ctx context.Context, stackNames []string, config aws.Config, operatorFactory *operation.OperatorFactory, forceMode bool, concurrencyNumber int) error
+	deleteSingleStack        func(ctx context.Context, stack string, config aws.Config, operatorFactory *operation.OperatorFactory, forceMode bool, isRootStack bool) error
 }
 
 func NewCdkDeleter(profile string, forceMode bool, concurrencyNumber int) *CdkDeleter {
@@ -30,10 +30,10 @@ func NewCdkDeleter(profile string, forceMode bool, concurrencyNumber int) *CdkDe
 		forceMode:         forceMode,
 		concurrencyNumber: concurrencyNumber,
 		loadConfig:        client.LoadAWSConfig,
-		deleteStacksFunc: func(ctx context.Context, stackNames []string, config aws.Config, operatorFactory *operation.OperatorFactory, forceMode bool, concurrencyNumber int) error {
+		deleteStacksConcurrently: func(ctx context.Context, stackNames []string, config aws.Config, operatorFactory *operation.OperatorFactory, forceMode bool, concurrencyNumber int) error {
 			return NewStackDeleter(forceMode, concurrencyNumber).DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory)
 		},
-		deleteSingleStackFunc: defaultDeleteSingleStack,
+		deleteSingleStack: defaultDeleteSingleStack,
 	}
 }
 
@@ -75,7 +75,7 @@ func (d *CdkDeleter) deleteStacksInRegion(ctx context.Context, region string, st
 		stackNames[i] = s.StackName
 	}
 
-	return d.deleteStacksFunc(ctx, stackNames, config, operatorFactory, d.forceMode, d.concurrencyNumber)
+	return d.deleteStacksConcurrently(ctx, stackNames, config, operatorFactory, d.forceMode, d.concurrencyNumber)
 }
 
 // deleteStacksWithCrossRegionDeps deletes stacks with cross-region dependencies
@@ -156,7 +156,7 @@ func (d *CdkDeleter) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks
 		config := configCache[s.Region]
 		operatorFactory := factoryCache[s.Region]
 
-		if err := d.deleteSingleStackFunc(deleteCtx, stackName, config, operatorFactory, d.forceMode, true); err != nil {
+		if err := d.deleteSingleStack(deleteCtx, stackName, config, operatorFactory, d.forceMode, true); err != nil {
 			select {
 			case errorChan <- err:
 			default:

@@ -33,8 +33,8 @@ func newTestCdkDeleter(
 		loadConfig: func(_ context.Context, _, _ string) (aws.Config, error) {
 			return aws.Config{Region: "mock-region"}, nil
 		},
-		deleteStacksFunc:      deleteStacksFn,
-		deleteSingleStackFunc: deleteSingleFn,
+		deleteStacksConcurrently: deleteStacksFn,
+		deleteSingleStack:        deleteSingleFn,
 	}
 }
 
@@ -145,10 +145,10 @@ func TestCdkDeleter_DeleteStacks_LoadConfigError(t *testing.T) {
 		loadConfig: func(_ context.Context, _, _ string) (aws.Config, error) {
 			return aws.Config{}, fmt.Errorf("config error")
 		},
-		deleteStacksFunc: func(_ context.Context, _ []string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ int) error {
+		deleteStacksConcurrently: func(_ context.Context, _ []string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ int) error {
 			return nil
 		},
-		deleteSingleStackFunc: func(_ context.Context, _ string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
+		deleteSingleStack: func(_ context.Context, _ string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
 			return nil
 		},
 	}
