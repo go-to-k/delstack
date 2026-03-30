@@ -19,6 +19,7 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 - **Pre-deletion optimization**: Detaches Lambda VPC configurations in parallel to eliminate ENI cleanup wait time
 - **Retain policy override**: Force deletes resources with `Retain` or `RetainExceptOnCreate` deletion policies via `-f`
 - **GitHub Actions support**: Available as a [GitHub Actions](#github-actions) workflow for CI/CD stack cleanup
+- **[CDK integration](#cdk-integration)**: Run `delstack cdk` in a CDK app directory to synthesize, discover all stacks (including cross-region), and delete them with dependency resolution
 
 ## Install
 
@@ -82,6 +83,30 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
   - Skip confirmation prompts (e.g., TerminationProtection disable confirmation)
 - -n, --concurrencyNumber: optional(default: unlimited)
   - Specify the number of parallel stack deletions. Default is unlimited (delete all stacks in parallel).
+
+### CDK Integration
+
+  ```bash
+  delstack cdk [-s <stackName>] [-a <cdkOutPath>] [-c <key=value>] [-p <profile>] [-i] [-f] [-y] [-n <concurrencyNumber>]
+  ```
+
+- -a, --app: optional
+  - Path to an existing `cdk.out` directory. When specified, `npx cdk synth` is skipped and the manifest is read directly.
+- -c, --context: optional (repeatable)
+  - CDK context values in `key=value` format, passed to `npx cdk synth -c key=value`.
+- All global options (`-s`, `-p`, `-r`, `-i`, `-f`, `-y`, `-n`) also work with the `cdk` subcommand.
+- **Requires**: [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) installed (unless using `-a`).
+
+  ```bash
+  delstack cdk                         # Synthesize and delete all stacks
+  delstack cdk -c env=dev              # With CDK context
+  delstack cdk -a ./cdk.out            # Use existing cdk.out (skip synthesis)
+  delstack cdk -s MyStack              # Delete specific stack
+  delstack cdk -i                      # Interactive selection
+  delstack cdk -f -y                   # Force delete, skip confirmation
+  ```
+
+For details on cross-region deletion, see [CDK Integration Details](#cdk-integration-details).
 
 ## Resource Types that can be forced to delete
 
@@ -230,6 +255,23 @@ Deletion order (reverse dependencies):
 - **External References**: If a target stack's export is imported by a non-target stack, deletion is prevented with a detailed error message
 - **Partial Failures**: If any stack fails to delete, all remaining deletions are cancelled
 
+## CDK Integration Details
+
+The `delstack cdk` subcommand synthesizes a CDK app (or reads an existing `cdk.out`) and deletes all discovered stacks. It parses the Cloud Assembly manifest to determine stack names, regions, and dependencies.
+
+![delstack for CDK](https://github.com/user-attachments/assets/5cd3eb1e-2384-439a-bf0c-79d1908f32d1)
+
+### Cross-region deletion
+
+When the CDK app deploys stacks to multiple regions (e.g., `us-east-1` for CloudFront + `ap-northeast-1` for the main app), `delstack cdk` automatically:
+
+1. Detects each stack's region from the Cloud Assembly manifest (`environment` field)
+2. Groups stacks by region and creates separate AWS sessions
+3. Resolves cross-region dependencies and deletes in the correct order
+4. Deletes independent regions in parallel
+
+For environment-agnostic stacks (`unknown-region` in the manifest), the region from `-r` or the default AWS configuration is used.
+
 ## GitHub Actions
 
 You can use delstack in GitHub Actions Workflow. To delete multiple stacks, specify stack names separated by commas.
@@ -261,6 +303,40 @@ jobs:
           concurrency-number: 4 # Number of parallel stack deletions (default: unlimited)
           region: us-east-1
 ```
+
+### CDK mode
+
+To delete stacks from a CDK app, set `cdk: true`. The action will run `cdk synth` and delete all discovered stacks. You can also pass CDK context values and specify an existing `cdk.out` directory.
+
+```yaml
+jobs:
+  delstack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
+          aws-region: us-east-1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install CDK
+        run: npm install -g aws-cdk
+      - name: Delete CDK stacks
+        uses: go-to-k/delstack@main
+        with:
+          cdk: true
+          # cdk-app: ./cdk.out           # Use existing cdk.out (skip synthesis)
+          # cdk-context: env=dev,foo=bar  # CDK context values (comma separated)
+          force: true
+          # yes: true  # default: true in GitHub Actions
+```
+
+### Raw commands
 
 You can also run raw commands after installing the delstack binary.
 

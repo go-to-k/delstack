@@ -20,7 +20,7 @@ TEST_COV_RESULT := "$$(go test -race -cover -v ./... -coverpkg=./... -coverprofi
 
 FAIL_CHECK := "^[^\s\t]*FAIL[^\s\t]*$$"
 
-.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_lambda_edge testgen_deletion_protection testgen_deletion_protection_no_tp testgen_help e2e_full e2e_full_retain e2e_large_template e2e_dependency e2e_dependency_retain e2e_preprocessor e2e_lambda_edge e2e_deletion_protection e2e_deletion_protection_no_tp e2e_help
+.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_lambda_edge testgen_deletion_protection testgen_deletion_protection_no_tp testgen_cdk_integration testgen_help e2e_full e2e_full_retain e2e_large_template e2e_dependency e2e_dependency_retain e2e_preprocessor e2e_lambda_edge e2e_deletion_protection e2e_deletion_protection_no_tp e2e_cdk_integration e2e_help
 
 test_diff:
 	@! echo $(TEST_DIFF_RESULT) | $(COLORIZE_PASS) | $(COLORIZE_FAIL) | tee /dev/stderr | grep $(FAIL_CHECK) > /dev/null
@@ -105,6 +105,31 @@ testgen_deletion_protection_no_tp:
 	@echo "Setting up deletion protection test stacks without stack TerminationProtection..."
 	@cd e2e/deletion_protection && go mod tidy && go run deploy.go -t $(OPT)
 
+# Generate and deploy CDK integration test stacks for `delstack cdk` subcommand
+testgen_cdk_integration:
+	@echo "Setting up CDK integration test stacks..."
+	@cd e2e/cdk_integration && go mod tidy && go run deploy.go $(OPT)
+
+# Generate and deploy CDK integration test stacks with RETAIN resources
+testgen_cdk_integration_retain:
+	@echo "Setting up CDK integration test stacks with RETAIN resources..."
+	@cd e2e/cdk_integration && go mod tidy && go run deploy.go -r $(OPT)
+
+# Generate and deploy CDK cross-region test stacks for `delstack cdk` cross-region deletion
+testgen_cdk_cross_region:
+	@echo "Setting up CDK cross-region test stacks..."
+	@cd e2e/cdk_cross_region && go mod tidy && go run deploy.go $(OPT)
+
+# Generate and deploy CDK cross-region test stacks with RETAIN resources
+testgen_cdk_cross_region_retain:
+	@echo "Setting up CDK cross-region test stacks with RETAIN resources..."
+	@cd e2e/cdk_cross_region && go mod tidy && go run deploy.go -r $(OPT)
+
+# Generate and deploy CDK Stage test stacks for `delstack cdk` with CDK Stages
+testgen_cdk_stage:
+	@echo "Setting up CDK Stage test stacks..."
+	@cd e2e/cdk_stage && go mod tidy && go run deploy.go $(OPT)
+
 # Help for test stack generation
 testgen_help:
 	@echo "Test stack generation targets:"
@@ -117,6 +142,11 @@ testgen_help:
 	@echo "  testgen_preprocessor        - Generate and deploy preprocessor test stacks for Lambda VPC detachment"
 	@echo "  testgen_deletion_protection       - Generate and deploy deletion protection test stacks"
 	@echo "  testgen_deletion_protection_no_tp - Generate and deploy deletion protection test stacks without stack TP"
+	@echo "  testgen_cdk_integration           - Generate and deploy CDK integration test stacks"
+	@echo "  testgen_cdk_integration_retain    - Generate and deploy CDK integration test stacks with RETAIN"
+	@echo "  testgen_cdk_cross_region          - Generate and deploy CDK cross-region test stacks"
+	@echo "  testgen_cdk_cross_region_retain   - Generate and deploy CDK cross-region test stacks with RETAIN"
+	@echo "  testgen_cdk_stage                 - Generate and deploy CDK Stage test stacks"
 	@echo ""
 	@echo "Example usage:"
 	@echo "  make testgen_full"
@@ -144,6 +174,15 @@ testgen_help:
 	@echo "  make testgen_deletion_protection_no_tp"
 	@echo "  make testgen_deletion_protection_no_tp OPT=\"-s my-stage\""
 	@echo "  make testgen_deletion_protection_no_tp OPT=\"-p my-profile\""
+	@echo "  make testgen_cdk_integration"
+	@echo "  make testgen_cdk_integration OPT=\"-s my-stage\""
+	@echo "  make testgen_cdk_integration OPT=\"-p my-profile\""
+	@echo "  make testgen_cdk_integration_retain"
+	@echo "  make testgen_cdk_cross_region"
+	@echo "  make testgen_cdk_cross_region OPT=\"-s my-stage\""
+	@echo "  make testgen_cdk_cross_region_retain"
+	@echo "  make testgen_cdk_stage"
+	@echo "  make testgen_cdk_stage OPT=\"-s my-stage\""
 
 # E2E test commands (testgen + delstack run)
 # ==================================
@@ -204,6 +243,36 @@ e2e_deletion_protection_no_tp:
 	@$(MAKE) testgen_deletion_protection_no_tp OPT="-s $(STAGE) $(OPT)"
 	@$(MAKE) run OPT="-s $(STAGE) -f $(OPT)"
 
+# Run CDK integration E2E test (deploy + delstack cdk)
+e2e_cdk_integration: STAGE = e2e-cdk-$(E2E_RANDOM)
+e2e_cdk_integration:
+	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) $(OPT)"
+	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=false -f -y $(OPT)
+
+# Run CDK integration E2E test with RETAIN resources (deploy + force delete)
+e2e_cdk_integration_retain: STAGE = e2e-cdk-$(E2E_RANDOM)
+e2e_cdk_integration_retain:
+	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) -r $(OPT)"
+	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=true -f -y $(OPT)
+
+# Run CDK cross-region E2E test (deploy + delstack cdk)
+e2e_cdk_cross_region: STAGE = e2e-cdk-xr-$(E2E_RANDOM)
+e2e_cdk_cross_region:
+	@$(MAKE) testgen_cdk_cross_region OPT="-s $(STAGE) $(OPT)"
+	@cd e2e/cdk_cross_region/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=false -f -y $(OPT)
+
+# Run CDK cross-region E2E test with RETAIN resources (deploy + force delete)
+e2e_cdk_cross_region_retain: STAGE = e2e-cdk-xr-$(E2E_RANDOM)
+e2e_cdk_cross_region_retain:
+	@$(MAKE) testgen_cdk_cross_region_retain OPT="-s $(STAGE) $(OPT)"
+	@cd e2e/cdk_cross_region/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=true -f -y $(OPT)
+
+# Run CDK Stage E2E test (deploy + delstack cdk)
+e2e_cdk_stage: STAGE = e2e-cdk-stg-$(E2E_RANDOM)
+e2e_cdk_stage:
+	@$(MAKE) testgen_cdk_stage OPT="-s $(STAGE) $(OPT)"
+	@cd e2e/cdk_stage/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -f -y $(OPT)
+
 # Help for E2E test targets
 e2e_help:
 	@echo "E2E test targets (testgen + delstack run):"
@@ -216,6 +285,11 @@ e2e_help:
 	@echo "  e2e_preprocessor            - Deploy preprocessor stacks and delete"
 	@echo "  e2e_deletion_protection     - Deploy deletion protection stacks and force delete"
 	@echo "  e2e_deletion_protection_no_tp - Deploy deletion protection stacks (no TP) and force delete"
+	@echo "  e2e_cdk_integration          - Deploy CDK stacks and delete with 'delstack cdk'"
+	@echo "  e2e_cdk_integration_retain   - Deploy CDK stacks with RETAIN and force delete"
+	@echo "  e2e_cdk_cross_region         - Deploy CDK cross-region stacks and delete"
+	@echo "  e2e_cdk_cross_region_retain  - Deploy CDK cross-region stacks with RETAIN and force delete"
+	@echo "  e2e_cdk_stage                - Deploy CDK Stage stacks and delete"
 	@echo ""
 	@echo "Options:"
 	@echo "  STAGE=<name>  - Override default stage name (default: auto-generated with random suffix)"
@@ -225,3 +299,6 @@ e2e_help:
 	@echo "  make e2e_full"
 	@echo "  make e2e_full STAGE=my-stage"
 	@echo "  make e2e_full STAGE=my-stage OPT=\"-p my-profile\""
+	@echo "  make e2e_cdk_integration"
+	@echo "  make e2e_cdk_cross_region"
+	@echo "  make e2e_cdk_stage"
