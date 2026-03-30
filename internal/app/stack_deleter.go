@@ -202,14 +202,3 @@ func (d *StackDeleter) deleteStacksDynamically(
 
 	return nil
 }
-
-// deleteSingleStack is kept as a method for CdkDeleter's stackDeleterIface compatibility.
-func (d *StackDeleter) deleteSingleStack(
-	ctx context.Context,
-	stack string,
-	config aws.Config,
-	operatorFactory *operation.OperatorFactory,
-	isRootStack bool,
-) error {
-	return d.deleteSingleStackFunc(ctx, stack, config, operatorFactory, d.forceMode, isRootStack)
-}
