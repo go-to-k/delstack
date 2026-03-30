@@ -259,7 +259,7 @@ Deletion order (reverse dependencies):
 
 The `delstack cdk` subcommand synthesizes a CDK app (or reads an existing `cdk.out`) and deletes all discovered stacks. It parses the Cloud Assembly manifest to determine stack names, regions, and dependencies.
 
-![delstack for CDK](https://github.com/user-attachments/assets/5428a088-7298-4ff5-bc6a-0cc61a45de29)
+![delstack for CDK](https://github.com/user-attachments/assets/d4e79fa9-c1bd-4950-b235-09f45434bd1b)
 
 ### Cross-region deletion
 
