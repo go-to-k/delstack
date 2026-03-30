@@ -14,7 +14,17 @@ import (
 // mockGraph builds a StackDependencyGraph from a simple dependency map.
 // deps: stackName -> list of stacks it depends on (i.e. must be deleted before this stack)
 func mockGraph(deps map[string][]string) *operation.StackDependencyGraph {
-	return operation.NewStackDependencyGraphForTest(deps)
+	stackNames := make([]string, 0, len(deps))
+	for name := range deps {
+		stackNames = append(stackNames, name)
+	}
+	graph := operation.NewStackDependencyGraph(stackNames)
+	for from, toList := range deps {
+		for _, to := range toList {
+			graph.AddDependency(from, to)
+		}
+	}
+	return graph
 }
 
 func newTestStackDeleter(
