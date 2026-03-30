@@ -11,9 +11,31 @@ import (
 	"github.com/go-to-k/delstack/internal/operation"
 )
 
-// mockGraph builds a StackDependencyGraph from a simple dependency map.
-// deps: stackName -> list of stacks it depends on (i.e. must be deleted before this stack)
-func mockGraph(deps map[string][]string) *operation.StackDependencyGraph {
+// mockDependencyAnalyzer returns a pre-built graph.
+type mockDependencyAnalyzer struct {
+	graph *operation.StackDependencyGraph
+	err   error
+}
+
+func (m *mockDependencyAnalyzer) Analyze(_ context.Context, _ []string, _ *operation.OperatorFactory) (*operation.StackDependencyGraph, error) {
+	return m.graph, m.err
+}
+
+// mockStackExecutor records deletions.
+type mockStackExecutor struct {
+	mu      sync.Mutex
+	deleted []string
+	err     error
+}
+
+func (m *mockStackExecutor) Execute(_ context.Context, stack string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
+	m.mu.Lock()
+	m.deleted = append(m.deleted, stack)
+	m.mu.Unlock()
+	return m.err
+}
+
+func buildGraph(deps map[string][]string) *operation.StackDependencyGraph {
 	stackNames := make([]string, 0, len(deps))
 	for name := range deps {
 		stackNames = append(stackNames, name)
@@ -27,121 +49,80 @@ func mockGraph(deps map[string][]string) *operation.StackDependencyGraph {
 	return graph
 }
 
-func newTestStackDeleter(
-	graph *operation.StackDependencyGraph,
-	deleteFn func(ctx context.Context, stack string, config aws.Config, operatorFactory *operation.OperatorFactory, forceMode bool, isRootStack bool) error,
-) *StackDeleter {
-	return &StackDeleter{
-		forceMode:         false,
-		concurrencyNumber: UnspecifiedConcurrencyNumber,
-		buildDependencyGraph: func(_ context.Context, _ []string, _ *operation.OperatorFactory) (*operation.StackDependencyGraph, error) {
-			return graph, nil
-		},
-		deleteSingleStack: deleteFn,
-	}
-}
-
 func TestStackDeleter_DeleteStacksConcurrently_IndependentStacks(t *testing.T) {
 	io.NewLogger(false)
 
-	var mu sync.Mutex
-	var deleted []string
+	executor := &mockStackExecutor{}
+	d := &StackDeleter{
+		forceMode:         false,
+		concurrencyNumber: UnspecifiedConcurrencyNumber,
+		analyzer:          &mockDependencyAnalyzer{graph: buildGraph(map[string][]string{"A": {}, "B": {}, "C": {}})},
+		executor:          executor,
+	}
 
-	graph := mockGraph(map[string][]string{
-		"StackA": {},
-		"StackB": {},
-		"StackC": {},
-	})
-
-	d := newTestStackDeleter(graph, func(_ context.Context, stack string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
-		mu.Lock()
-		deleted = append(deleted, stack)
-		mu.Unlock()
-		return nil
-	})
-
-	err := d.DeleteStacksConcurrently(context.Background(), []string{"StackA", "StackB", "StackC"}, aws.Config{}, nil)
+	err := d.DeleteStacksConcurrently(context.Background(), []string{"A", "B", "C"}, aws.Config{}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(deleted) != 3 {
-		t.Errorf("expected 3 stacks deleted, got %d: %v", len(deleted), deleted)
+	if len(executor.deleted) != 3 {
+		t.Errorf("expected 3 stacks deleted, got %d: %v", len(executor.deleted), executor.deleted)
 	}
 }
 
 func TestStackDeleter_DeleteStacksConcurrently_DependencyOrder(t *testing.T) {
 	io.NewLogger(false)
 
-	var mu sync.Mutex
-	var deleted []string
-
-	// B depends on A (B must be deleted before A)
-	graph := mockGraph(map[string][]string{
-		"A": {},
-		"B": {"A"},
-	})
-
-	d := newTestStackDeleter(graph, func(_ context.Context, stack string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
-		mu.Lock()
-		deleted = append(deleted, stack)
-		mu.Unlock()
-		return nil
-	})
+	executor := &mockStackExecutor{}
+	d := &StackDeleter{
+		forceMode:         false,
+		concurrencyNumber: UnspecifiedConcurrencyNumber,
+		analyzer:          &mockDependencyAnalyzer{graph: buildGraph(map[string][]string{"A": {}, "B": {"A"}})},
+		executor:          executor,
+	}
 
 	err := d.DeleteStacksConcurrently(context.Background(), []string{"A", "B"}, aws.Config{}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(deleted) != 2 {
-		t.Fatalf("expected 2 stacks deleted, got %d: %v", len(deleted), deleted)
+	if len(executor.deleted) != 2 {
+		t.Fatalf("expected 2 stacks deleted, got %d: %v", len(executor.deleted), executor.deleted)
 	}
-	if deleted[0] != "B" {
-		t.Errorf("expected B deleted first, got %s", deleted[0])
+	if executor.deleted[0] != "B" {
+		t.Errorf("expected B deleted first, got %s", executor.deleted[0])
 	}
-	if deleted[1] != "A" {
-		t.Errorf("expected A deleted second, got %s", deleted[1])
+	if executor.deleted[1] != "A" {
+		t.Errorf("expected A deleted second, got %s", executor.deleted[1])
 	}
 }
 
 func TestStackDeleter_DeleteStacksConcurrently_ComplexDeps(t *testing.T) {
 	io.NewLogger(false)
 
-	var mu sync.Mutex
-	var deleted []string
-
-	// F -> C, D, E; C -> A; D -> A; E -> B
-	graph := mockGraph(map[string][]string{
-		"A": {},
-		"B": {},
-		"C": {"A"},
-		"D": {"A"},
-		"E": {"B"},
-		"F": {"C", "D", "E"},
-	})
-
-	d := newTestStackDeleter(graph, func(_ context.Context, stack string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
-		mu.Lock()
-		deleted = append(deleted, stack)
-		mu.Unlock()
-		return nil
-	})
+	executor := &mockStackExecutor{}
+	d := &StackDeleter{
+		forceMode:         false,
+		concurrencyNumber: UnspecifiedConcurrencyNumber,
+		analyzer: &mockDependencyAnalyzer{graph: buildGraph(map[string][]string{
+			"A": {}, "B": {}, "C": {"A"}, "D": {"A"}, "E": {"B"}, "F": {"C", "D", "E"},
+		})},
+		executor: executor,
+	}
 
 	err := d.DeleteStacksConcurrently(context.Background(), []string{"A", "B", "C", "D", "E", "F"}, aws.Config{}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(deleted) != 6 {
-		t.Fatalf("expected 6 stacks deleted, got %d: %v", len(deleted), deleted)
+	if len(executor.deleted) != 6 {
+		t.Fatalf("expected 6 stacks deleted, got %d: %v", len(executor.deleted), executor.deleted)
 	}
 
-	// Verify ordering constraints
 	indexOf := make(map[string]int)
-	for i, s := range deleted {
+	for i, s := range executor.deleted {
 		indexOf[s] = i
 	}
 	assertBefore := func(a, b string) {
 		if indexOf[a] >= indexOf[b] {
-			t.Errorf("expected %s before %s, got order: %v", a, b, deleted)
+			t.Errorf("expected %s before %s, got order: %v", a, b, executor.deleted)
 		}
 	}
 	assertBefore("F", "C")
@@ -158,10 +139,8 @@ func TestStackDeleter_DeleteStacksConcurrently_BuildGraphError(t *testing.T) {
 	d := &StackDeleter{
 		forceMode:         false,
 		concurrencyNumber: 0,
-		buildDependencyGraph: func(_ context.Context, _ []string, _ *operation.OperatorFactory) (*operation.StackDependencyGraph, error) {
-			return nil, fmt.Errorf("graph error")
-		},
-		deleteSingleStack: defaultDeleteSingleStack,
+		analyzer:          &mockDependencyAnalyzer{err: fmt.Errorf("graph error")},
+		executor:          &mockStackExecutor{},
 	}
 
 	err := d.DeleteStacksConcurrently(context.Background(), []string{"Stack"}, aws.Config{}, nil)
@@ -176,14 +155,12 @@ func TestStackDeleter_DeleteStacksConcurrently_BuildGraphError(t *testing.T) {
 func TestStackDeleter_DeleteStacksConcurrently_CircularDependency(t *testing.T) {
 	io.NewLogger(false)
 
-	graph := mockGraph(map[string][]string{
-		"A": {"B"},
-		"B": {"A"},
-	})
-
-	d := newTestStackDeleter(graph, func(_ context.Context, _ string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
-		return nil
-	})
+	d := &StackDeleter{
+		forceMode:         false,
+		concurrencyNumber: UnspecifiedConcurrencyNumber,
+		analyzer:          &mockDependencyAnalyzer{graph: buildGraph(map[string][]string{"A": {"B"}, "B": {"A"}})},
+		executor:          &mockStackExecutor{},
+	}
 
 	err := d.DeleteStacksConcurrently(context.Background(), []string{"A", "B"}, aws.Config{}, nil)
 	if err == nil {
@@ -197,13 +174,12 @@ func TestStackDeleter_DeleteStacksConcurrently_CircularDependency(t *testing.T) 
 func TestStackDeleter_DeleteStacksConcurrently_DeletionError(t *testing.T) {
 	io.NewLogger(false)
 
-	graph := mockGraph(map[string][]string{
-		"Stack": {},
-	})
-
-	d := newTestStackDeleter(graph, func(_ context.Context, _ string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
-		return fmt.Errorf("deletion failed")
-	})
+	d := &StackDeleter{
+		forceMode:         false,
+		concurrencyNumber: UnspecifiedConcurrencyNumber,
+		analyzer:          &mockDependencyAnalyzer{graph: buildGraph(map[string][]string{"Stack": {}})},
+		executor:          &mockStackExecutor{err: fmt.Errorf("deletion failed")},
+	}
 
 	err := d.DeleteStacksConcurrently(context.Background(), []string{"Stack"}, aws.Config{}, nil)
 	if err == nil {
@@ -219,32 +195,18 @@ func TestStackDeleter_DeleteStacksConcurrently_Concurrency(t *testing.T) {
 	currentConcurrent := 0
 	var deleted []string
 
-	graph := mockGraph(map[string][]string{
-		"A": {},
-		"B": {},
-		"C": {},
-	})
-
 	d := &StackDeleter{
 		forceMode:         false,
-		concurrencyNumber: 1, // limit to 1
-		buildDependencyGraph: func(_ context.Context, _ []string, _ *operation.OperatorFactory) (*operation.StackDependencyGraph, error) {
-			return graph, nil
-		},
-		deleteSingleStack: func(_ context.Context, stack string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
-			mu.Lock()
-			currentConcurrent++
-			if currentConcurrent > maxConcurrent {
-				maxConcurrent = currentConcurrent
-			}
-			mu.Unlock()
-
-			mu.Lock()
-			currentConcurrent--
-			deleted = append(deleted, stack)
-			mu.Unlock()
-			return nil
-		},
+		concurrencyNumber: 1,
+		analyzer:          &mockDependencyAnalyzer{graph: buildGraph(map[string][]string{"A": {}, "B": {}, "C": {}})},
+		executor:          &mockStackExecutor{},
+	}
+	// Override executor with concurrency tracking
+	d.executor = &concurrencyTrackingExecutor{
+		mu:                &mu,
+		maxConcurrent:     &maxConcurrent,
+		currentConcurrent: &currentConcurrent,
+		deleted:           &deleted,
 	}
 
 	err := d.DeleteStacksConcurrently(context.Background(), []string{"A", "B", "C"}, aws.Config{}, nil)
@@ -257,4 +219,26 @@ func TestStackDeleter_DeleteStacksConcurrently_Concurrency(t *testing.T) {
 	if maxConcurrent > 1 {
 		t.Errorf("expected max concurrency 1, got %d", maxConcurrent)
 	}
+}
+
+type concurrencyTrackingExecutor struct {
+	mu                *sync.Mutex
+	maxConcurrent     *int
+	currentConcurrent *int
+	deleted           *[]string
+}
+
+func (e *concurrencyTrackingExecutor) Execute(_ context.Context, stack string, _ aws.Config, _ *operation.OperatorFactory, _ bool, _ bool) error {
+	e.mu.Lock()
+	*e.currentConcurrent++
+	if *e.currentConcurrent > *e.maxConcurrent {
+		*e.maxConcurrent = *e.currentConcurrent
+	}
+	e.mu.Unlock()
+
+	e.mu.Lock()
+	*e.currentConcurrent--
+	*e.deleted = append(*e.deleted, stack)
+	e.mu.Unlock()
+	return nil
 }
