@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2.8.0](https://github.com/go-to-k/delstack/compare/v2.7.0...v2.8.0) - 2026-03-30
+- test: handle missing RETAIN_MODE context gracefully in e2e CDK apps by @go-to-k in https://github.com/go-to-k/delstack/pull/619
+- feat: support glob patterns for -s stack name filtering by @go-to-k in https://github.com/go-to-k/delstack/pull/621
+
 ## [v2.7.0](https://github.com/go-to-k/delstack/compare/v2.6.1...v2.7.0) - 2026-03-30
 - feat: add `cdk` subcommand for CDK app integration by @go-to-k in https://github.com/go-to-k/delstack/pull/612
 - refactor: separate CLI layer from action logic in internal/app by @go-to-k in https://github.com/go-to-k/delstack/pull/614
