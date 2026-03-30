@@ -72,12 +72,7 @@ func (d *CdkDeleter) deleteStacksInRegion(ctx context.Context, region string, st
 		stackNames[i] = s.StackName
 	}
 
-	deleter := &StackDeleter{
-		forceMode:         d.forceMode,
-		concurrencyNumber: d.concurrencyNumber,
-		analyzer:          d.analyzer,
-		executor:          d.executor,
-	}
+	deleter := NewStackDeleter(d.forceMode, d.concurrencyNumber, d.analyzer, d.executor)
 	return deleter.DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory)
 }
 

@@ -90,7 +90,7 @@ func (a *RootAction) Run(ctx context.Context) error {
 		}
 		io.Logger.Info().Msgf("The stacks will be removed concurrently, taking into account dependencies. (concurrency: %d)", concurrency)
 	}
-	if err := NewStackDeleter(a.forceMode, a.concurrencyNumber).DeleteStacksConcurrently(ctx, sortedStackNames, config, operatorFactory); err != nil {
+	if err := NewStackDeleter(a.forceMode, a.concurrencyNumber, &DependencyAnalyzer{}, &StackExecutor{}).DeleteStacksConcurrently(ctx, sortedStackNames, config, operatorFactory); err != nil {
 		return err
 	}
 	return nil

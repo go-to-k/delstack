@@ -19,12 +19,12 @@ type StackDeleter struct {
 	executor          IStackExecutor
 }
 
-func NewStackDeleter(forceMode bool, concurrencyNumber int) *StackDeleter {
+func NewStackDeleter(forceMode bool, concurrencyNumber int, analyzer IDependencyAnalyzer, executor IStackExecutor) *StackDeleter {
 	return &StackDeleter{
 		forceMode:         forceMode,
 		concurrencyNumber: concurrencyNumber,
-		analyzer:          &DependencyAnalyzer{},
-		executor:          &StackExecutor{},
+		analyzer:          analyzer,
+		executor:          executor,
 	}
 }
 
