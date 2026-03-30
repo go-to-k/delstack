@@ -174,16 +174,23 @@ func TestIsDirectory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !isDirectory(tmpDir) {
-		t.Errorf("expected true for directory")
+	tests := []struct {
+		name    string
+		appPath string
+		want    bool
+	}{
+		{"directory", tmpDir, true},
+		{"file", tmpFile, false},
+		{"nonexistent path", "/nonexistent/path", false},
+		{"command string", "npx ts-node bin/app.ts", false},
 	}
-	if isDirectory(tmpFile) {
-		t.Errorf("expected false for file")
-	}
-	if isDirectory("/nonexistent/path") {
-		t.Errorf("expected false for nonexistent path")
-	}
-	if isDirectory("npx ts-node bin/app.ts") {
-		t.Errorf("expected false for command string")
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &CdkAction{appPath: tt.appPath}
+			if got := a.isDirectory(); got != tt.want {
+				t.Errorf("isDirectory() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
