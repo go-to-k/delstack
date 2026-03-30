@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.7.0](https://github.com/go-to-k/delstack/compare/v2.6.1...v2.7.0) - 2026-03-30
+- feat: add `cdk` subcommand for CDK app integration by @go-to-k in https://github.com/go-to-k/delstack/pull/612
+- refactor: separate CLI layer from action logic in internal/app by @go-to-k in https://github.com/go-to-k/delstack/pull/614
+- test: add unit tests for CdkDeleter logic by @go-to-k in https://github.com/go-to-k/delstack/pull/615
+- refactor: introduce DI interfaces for StackDeleter/CdkDeleter with unit tests by @go-to-k in https://github.com/go-to-k/delstack/pull/616
+- feat: support --app with both directory path and app command by @go-to-k in https://github.com/go-to-k/delstack/pull/617
+
 ## [v2.6.1](https://github.com/go-to-k/delstack/compare/v2.6.0...v2.6.1) - 2026-03-24
 - chore: remove timeout from Lambda@Edge retry by @go-to-k in https://github.com/go-to-k/delstack/pull/609
 
