@@ -1,11 +1,182 @@
 package app
 
 import (
+	"context"
+	"fmt"
+	"sync"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/go-to-k/delstack/internal/cdk"
 	"github.com/go-to-k/delstack/internal/io"
+	"github.com/go-to-k/delstack/internal/operation"
 )
+
+// mockStackDeleter records which stacks were deleted and in what order.
+type mockStackDeleter struct {
+	mu             sync.Mutex
+	deletedStacks  []string
+	concurrentlyFn func(ctx context.Context, stackNames []string, config aws.Config, operatorFactory *operation.OperatorFactory) error
+	singleFn       func(ctx context.Context, stack string, config aws.Config, operatorFactory *operation.OperatorFactory, isRootStack bool) error
+}
+
+func (m *mockStackDeleter) DeleteStacksConcurrently(ctx context.Context, stackNames []string, config aws.Config, operatorFactory *operation.OperatorFactory) error {
+	m.mu.Lock()
+	m.deletedStacks = append(m.deletedStacks, stackNames...)
+	m.mu.Unlock()
+	if m.concurrentlyFn != nil {
+		return m.concurrentlyFn(ctx, stackNames, config, operatorFactory)
+	}
+	return nil
+}
+
+func (m *mockStackDeleter) deleteSingleStack(ctx context.Context, stack string, config aws.Config, operatorFactory *operation.OperatorFactory, isRootStack bool) error {
+	m.mu.Lock()
+	m.deletedStacks = append(m.deletedStacks, stack)
+	m.mu.Unlock()
+	if m.singleFn != nil {
+		return m.singleFn(ctx, stack, config, operatorFactory, isRootStack)
+	}
+	return nil
+}
+
+func newTestCdkDeleter(mock *mockStackDeleter) *CdkDeleter {
+	return &CdkDeleter{
+		profile:           "test",
+		forceMode:         false,
+		concurrencyNumber: 0,
+		loadConfig: func(_ context.Context, _, _ string) (aws.Config, error) {
+			return aws.Config{Region: "mock-region"}, nil
+		},
+		stackDeleterFunc: func(_ bool, _ int) stackDeleterIface { //nolint:revive // unused params for mock
+			return mock
+		},
+	}
+}
+
+func TestCdkDeleter_DeleteStacks_SingleRegion(t *testing.T) {
+	io.NewLogger(false)
+
+	mock := &mockStackDeleter{}
+	d := newTestCdkDeleter(mock)
+
+	stacks := []cdk.StackInfo{
+		{StackName: "StackA", Region: "us-east-1"},
+		{StackName: "StackB", Region: "us-east-1"},
+	}
+
+	err := d.DeleteStacks(context.Background(), stacks)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(mock.deletedStacks) != 2 {
+		t.Errorf("expected 2 stacks deleted, got %d: %v", len(mock.deletedStacks), mock.deletedStacks)
+	}
+}
+
+func TestCdkDeleter_DeleteStacks_MultiRegionNoDeps(t *testing.T) {
+	io.NewLogger(false)
+
+	mock := &mockStackDeleter{}
+	d := newTestCdkDeleter(mock)
+
+	stacks := []cdk.StackInfo{
+		{StackName: "StackA", Region: "us-east-1"},
+		{StackName: "StackB", Region: "ap-northeast-1"},
+	}
+
+	err := d.DeleteStacks(context.Background(), stacks)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(mock.deletedStacks) != 2 {
+		t.Errorf("expected 2 stacks deleted, got %d: %v", len(mock.deletedStacks), mock.deletedStacks)
+	}
+}
+
+func TestCdkDeleter_DeleteStacks_CrossRegionDeps(t *testing.T) {
+	io.NewLogger(false)
+
+	var mu sync.Mutex
+	var deletionOrder []string
+
+	mock := &mockStackDeleter{
+		singleFn: func(_ context.Context, stack string, _ aws.Config, _ *operation.OperatorFactory, _ bool) error {
+			mu.Lock()
+			deletionOrder = append(deletionOrder, stack)
+			mu.Unlock()
+			return nil
+		},
+	}
+	d := newTestCdkDeleter(mock)
+
+	stacks := []cdk.StackInfo{
+		{StackName: "Edge", Region: "us-east-1"},
+		{StackName: "Main", Region: "ap-northeast-1", Dependencies: []string{"Edge"}},
+	}
+
+	err := d.DeleteStacks(context.Background(), stacks)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(deletionOrder) != 2 {
+		t.Fatalf("expected 2 stacks deleted, got %d: %v", len(deletionOrder), deletionOrder)
+	}
+	if deletionOrder[0] != "Main" {
+		t.Errorf("expected Main to be deleted first, got %s", deletionOrder[0])
+	}
+	if deletionOrder[1] != "Edge" {
+		t.Errorf("expected Edge to be deleted second, got %s", deletionOrder[1])
+	}
+}
+
+func TestCdkDeleter_DeleteStacks_LoadConfigError(t *testing.T) {
+	io.NewLogger(false)
+
+	d := &CdkDeleter{
+		profile:           "test",
+		forceMode:         false,
+		concurrencyNumber: 0,
+		loadConfig: func(_ context.Context, _, _ string) (aws.Config, error) {
+			return aws.Config{}, fmt.Errorf("config error")
+		},
+		stackDeleterFunc: func(_ bool, _ int) stackDeleterIface { //nolint:revive // unused params for mock
+			return &mockStackDeleter{}
+		},
+	}
+
+	stacks := []cdk.StackInfo{
+		{StackName: "StackA", Region: "us-east-1"},
+	}
+
+	err := d.DeleteStacks(context.Background(), stacks)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestCdkDeleter_DeleteStacks_DeletionError(t *testing.T) {
+	io.NewLogger(false)
+
+	mock := &mockStackDeleter{
+		concurrentlyFn: func(_ context.Context, _ []string, _ aws.Config, _ *operation.OperatorFactory) error {
+			return fmt.Errorf("deletion failed")
+		},
+	}
+	d := newTestCdkDeleter(mock)
+
+	stacks := []cdk.StackInfo{
+		{StackName: "StackA", Region: "us-east-1"},
+	}
+
+	err := d.DeleteStacks(context.Background(), stacks)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
 
 func TestCdkDeleter_groupByRegion(t *testing.T) {
 	io.NewLogger(false)
@@ -15,7 +186,7 @@ func TestCdkDeleter_groupByRegion(t *testing.T) {
 		name            string
 		stacks          []cdk.StackInfo
 		wantRegionCount int
-		wantRegions     map[string]int // region -> stack count
+		wantRegions     map[string]int
 	}{
 		{
 			name:            "single region",
