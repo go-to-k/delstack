@@ -66,9 +66,8 @@ func main() {
 		pjPrefix = "delstack-cdk-e2e"
 	}
 
-	retainMode := app.Node().TryGetContext(jsii.String("RETAIN_MODE")).(string)
 	var isRetain bool
-	if retainMode == "true" {
+	if retainMode, ok := app.Node().TryGetContext(jsii.String("RETAIN_MODE")).(string); ok && retainMode == "true" {
 		isRetain = true
 	}
 
