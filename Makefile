@@ -261,7 +261,6 @@ e2e_cdk_app_option: STAGE = e2e-cdk-app-$(E2E_RANDOM)
 e2e_cdk_app_option:
 	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) $(OPT)"
 	@echo "=== Test 1: -a with cdk.out directory ==="
-	@cd e2e/cdk_integration/cdk && npx cdk synth --quiet -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=false
 	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -a cdk.out -s $(STAGE)-AppStack -f -y $(OPT)
 	@echo "=== Test 2: -a with app command ==="
 	@cd e2e/cdk_integration/cdk && rm -rf cdk.out
