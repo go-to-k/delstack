@@ -349,7 +349,9 @@ func TestParseManifest_MultipleStages(t *testing.T) {
 		{"assembly-Stage2", "Stage2/Stack", "eu-west-1"},
 	} {
 		nestedDir := filepath.Join(dir, stage.dir)
-		os.MkdirAll(nestedDir, 0755)
+		if err := os.MkdirAll(nestedDir, 0755); err != nil {
+			t.Fatal(err)
+		}
 		writeManifest(t, nestedDir, fmt.Sprintf(`{
   "version": "52.0.0",
   "artifacts": {
@@ -414,7 +416,7 @@ func TestParseEnvironment(t *testing.T) {
 
 func writeManifest(t *testing.T, dir, content string) {
 	t.Helper()
-	err := os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(content), 0644)
+	err := os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(content), 0600)
 	if err != nil {
 		t.Fatalf("failed to write manifest.json: %v", err)
 	}

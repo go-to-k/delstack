@@ -17,10 +17,10 @@ import (
 func (a *App) getCdkAction() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		if a.InteractiveMode && len(a.StackNames.Value()) != 0 {
-			return fmt.Errorf("InvalidOptionError: Stack names (-s) cannot be specified when using Interactive Mode (-i).")
+			return fmt.Errorf("InvalidOptionError: Stack names (-s) cannot be specified when using Interactive Mode (-i)")
 		}
 		if a.ConcurrencyNumber < UnspecifiedConcurrencyNumber {
-			return fmt.Errorf("InvalidOptionError: You must specify a positive number for the -n option.")
+			return fmt.Errorf("InvalidOptionError: You must specify a positive number for the -n option")
 		}
 
 		io.AutoYes = a.YesMode

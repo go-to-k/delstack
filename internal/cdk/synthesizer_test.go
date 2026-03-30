@@ -8,15 +8,17 @@ import (
 )
 
 func TestSynth_NoCdkJson(t *testing.T) {
-	// Change to temp dir without cdk.json
 	original, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(original)
+	defer func() { _ = os.Chdir(original) }()
 
 	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
+	err = os.Chdir(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	s := NewSynthesizer()
 	err = s.Synth(context.Background(), nil)
@@ -29,26 +31,26 @@ func TestSynth_NoCdkJson(t *testing.T) {
 }
 
 func TestSynth_CdkNotInstalled(t *testing.T) {
-	// Change to temp dir with cdk.json but no cdk CLI
 	original, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(original)
+	defer func() { _ = os.Chdir(original) }()
 
 	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
-
-	// Create a cdk.json
-	err = os.WriteFile(filepath.Join(tmpDir, "cdk.json"), []byte(`{"app":"echo hello"}`), 0644)
+	err = os.Chdir(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Set PATH to empty to ensure cdk command is not found
+	err = os.WriteFile(filepath.Join(tmpDir, "cdk.json"), []byte(`{"app":"echo hello"}`), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	originalPath := os.Getenv("PATH")
-	os.Setenv("PATH", "")
-	defer os.Setenv("PATH", originalPath)
+	t.Setenv("PATH", "")
+	defer t.Setenv("PATH", originalPath)
 
 	s := NewSynthesizer()
 	err = s.Synth(context.Background(), nil)

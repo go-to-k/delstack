@@ -28,8 +28,8 @@ type App struct {
 	ConcurrencyNumber int
 
 	// CDK subcommand fields
-	CdkAppPath     string
-	CdkContexts    *cli.StringSlice
+	CdkAppPath  string
+	CdkContexts *cli.StringSlice
 }
 
 func NewApp(version string) *App {
