@@ -19,6 +19,14 @@ type CdkDeleter struct {
 	profile           string
 	forceMode         bool
 	concurrencyNumber int
+	loadConfig        func(ctx context.Context, region, profile string) (aws.Config, error)
+	stackDeleterFunc  func(forceMode bool, concurrencyNumber int) stackDeleterIface
+}
+
+// stackDeleterIface abstracts StackDeleter for testing.
+type stackDeleterIface interface {
+	DeleteStacksConcurrently(ctx context.Context, stackNames []string, config aws.Config, operatorFactory *operation.OperatorFactory) error
+	deleteSingleStack(ctx context.Context, stack string, config aws.Config, operatorFactory *operation.OperatorFactory, isRootStack bool) error
 }
 
 func NewCdkDeleter(profile string, forceMode bool, concurrencyNumber int) *CdkDeleter {
@@ -26,6 +34,10 @@ func NewCdkDeleter(profile string, forceMode bool, concurrencyNumber int) *CdkDe
 		profile:           profile,
 		forceMode:         forceMode,
 		concurrencyNumber: concurrencyNumber,
+		loadConfig:        client.LoadAWSConfig,
+		stackDeleterFunc: func(forceMode bool, concurrencyNumber int) stackDeleterIface {
+			return NewStackDeleter(forceMode, concurrencyNumber)
+		},
 	}
 }
 
@@ -55,7 +67,7 @@ func (d *CdkDeleter) DeleteStacks(ctx context.Context, stacks []cdk.StackInfo) e
 func (d *CdkDeleter) deleteStacksInRegion(ctx context.Context, region string, stacks []cdk.StackInfo) error {
 	io.Logger.Info().Msgf("Deleting %d stack(s) in %s...", len(stacks), region)
 
-	config, err := client.LoadAWSConfig(ctx, region, d.profile)
+	config, err := d.loadConfig(ctx, region, d.profile)
 	if err != nil {
 		return fmt.Errorf("failed to load AWS config for region %s: %w", region, err)
 	}
@@ -67,7 +79,7 @@ func (d *CdkDeleter) deleteStacksInRegion(ctx context.Context, region string, st
 		stackNames[i] = s.StackName
 	}
 
-	return NewStackDeleter(d.forceMode, d.concurrencyNumber).DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory)
+	return d.stackDeleterFunc(d.forceMode, d.concurrencyNumber).DeleteStacksConcurrently(ctx, stackNames, config, operatorFactory)
 }
 
 // deleteStacksWithCrossRegionDeps deletes stacks with cross-region dependencies
@@ -101,7 +113,7 @@ func (d *CdkDeleter) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks
 		if _, ok := configCache[s.Region]; ok {
 			continue
 		}
-		cfg, err := client.LoadAWSConfig(ctx, s.Region, d.profile)
+		cfg, err := d.loadConfig(ctx, s.Region, d.profile)
 		if err != nil {
 			return fmt.Errorf("failed to load AWS config for region %s: %w", s.Region, err)
 		}
@@ -148,7 +160,7 @@ func (d *CdkDeleter) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks
 		config := configCache[s.Region]
 		operatorFactory := factoryCache[s.Region]
 
-		if err := NewStackDeleter(d.forceMode, d.concurrencyNumber).deleteSingleStack(deleteCtx, stackName, config, operatorFactory, true); err != nil {
+		if err := d.stackDeleterFunc(d.forceMode, d.concurrencyNumber).deleteSingleStack(deleteCtx, stackName, config, operatorFactory, true); err != nil {
 			select {
 			case errorChan <- err:
 			default:
