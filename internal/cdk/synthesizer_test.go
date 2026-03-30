@@ -21,7 +21,7 @@ func TestSynth_NoCdkJson(t *testing.T) {
 	}
 
 	s := NewSynthesizer()
-	err = s.Synth(context.Background(), nil)
+	err = s.Synth(context.Background(), nil, "")
 	if err == nil {
 		t.Fatal("expected error when cdk.json is missing")
 	}
@@ -53,7 +53,7 @@ func TestSynth_CdkNotInstalled(t *testing.T) {
 	defer t.Setenv("PATH", originalPath)
 
 	s := NewSynthesizer()
-	err = s.Synth(context.Background(), nil)
+	err = s.Synth(context.Background(), nil, "")
 	if err == nil {
 		t.Fatal("expected error when cdk is not installed")
 	}

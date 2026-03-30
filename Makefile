@@ -255,6 +255,18 @@ e2e_cdk_integration_retain:
 	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) -r $(OPT)"
 	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=true -f -y $(OPT)
 
+# Run CDK integration E2E test with --app option (both directory and command)
+# Deploys 2 stacks, deletes AppStack via -a (cdk.out directory), then BaseStack via -a (app command)
+e2e_cdk_app_option: STAGE = e2e-cdk-app-$(E2E_RANDOM)
+e2e_cdk_app_option:
+	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) $(OPT)"
+	@echo "=== Test 1: -a with cdk.out directory ==="
+	@cd e2e/cdk_integration/cdk && npx cdk synth --quiet -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=false
+	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -a cdk.out -s $(STAGE)-AppStack -f -y $(OPT)
+	@echo "=== Test 2: -a with app command ==="
+	@cd e2e/cdk_integration/cdk && rm -rf cdk.out
+	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -a "go mod download && go run cdk.go" -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=false -s $(STAGE)-BaseStack -f -y $(OPT)
+
 # Run CDK cross-region E2E test (deploy + delstack cdk)
 e2e_cdk_cross_region: STAGE = e2e-cdk-xr-$(E2E_RANDOM)
 e2e_cdk_cross_region:
