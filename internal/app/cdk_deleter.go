@@ -91,7 +91,7 @@ func (d *CdkDeleter) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks
 
 	// Build reverse in-degree and dependents map
 	reverseInDegree := make(map[string]int, totalStackCount)
-	dependents := make(map[string][]string)
+	dependents := make(map[string][]string) // stack -> stacks that depend on it (i.e. stacks that become unblocked when this stack is deleted)
 
 	for _, s := range stacks {
 		reverseInDegree[s.StackName] = 0
