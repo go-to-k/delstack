@@ -105,9 +105,9 @@ func TestCdkStackSelector_matchByPatterns(t *testing.T) {
 			wantNames: nil,
 		},
 		{
-			name:    "invalid glob pattern",
+			name:     "invalid glob pattern",
 			patterns: []string{"[invalid"},
-			wantErr: true,
+			wantErr:  true,
 		},
 		{
 			name:      "no duplicate when exact and glob both match",
