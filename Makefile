@@ -250,13 +250,13 @@ e2e_deletion_protection_no_tp:
 
 # Run CDK integration E2E test (deploy + delstack cdk)
 e2e_cdk_integration: STAGE = e2e-cdk-$(E2E_RANDOM)
-e2e_cdk_integration:
+e2e_cdk_integration: build
 	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) $(OPT)"
 	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=false -f -y $(OPT)
 
 # Run CDK integration E2E test with RETAIN resources (deploy + force delete)
 e2e_cdk_integration_retain: STAGE = e2e-cdk-$(E2E_RANDOM)
-e2e_cdk_integration_retain:
+e2e_cdk_integration_retain: build
 	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) -r $(OPT)"
 	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=true -f -y $(OPT)
 
@@ -274,19 +274,19 @@ e2e_cdk_app_option: build
 
 # Run CDK cross-region E2E test (deploy + delstack cdk)
 e2e_cdk_cross_region: STAGE = e2e-cdk-xr-$(E2E_RANDOM)
-e2e_cdk_cross_region:
+e2e_cdk_cross_region: build
 	@$(MAKE) testgen_cdk_cross_region OPT="-s $(STAGE) $(OPT)"
 	@cd e2e/cdk_cross_region/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=false -f -y $(OPT)
 
 # Run CDK cross-region E2E test with RETAIN resources (deploy + force delete)
 e2e_cdk_cross_region_retain: STAGE = e2e-cdk-xr-$(E2E_RANDOM)
-e2e_cdk_cross_region_retain:
+e2e_cdk_cross_region_retain: build
 	@$(MAKE) testgen_cdk_cross_region_retain OPT="-s $(STAGE) $(OPT)"
 	@cd e2e/cdk_cross_region/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=true -f -y $(OPT)
 
 # Run CDK Stage E2E test (deploy + delstack cdk)
 e2e_cdk_stage: STAGE = e2e-cdk-stg-$(E2E_RANDOM)
-e2e_cdk_stage:
+e2e_cdk_stage: build
 	@$(MAKE) testgen_cdk_stage OPT="-s $(STAGE) $(OPT)"
 	@cd e2e/cdk_stage/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -f -y $(OPT)
 
