@@ -125,6 +125,11 @@ testgen_cdk_cross_region_retain:
 	@echo "Setting up CDK cross-region test stacks with RETAIN resources..."
 	@cd e2e/cdk_cross_region && go mod tidy && go run deploy.go -r $(OPT)
 
+# Generate and deploy CDK app option test stack for `delstack cdk -a` testing
+testgen_cdk_app_option:
+	@echo "Setting up CDK app option test stack..."
+	@cd e2e/cdk_app_option && go mod tidy && go run deploy.go $(OPT)
+
 # Generate and deploy CDK Stage test stacks for `delstack cdk` with CDK Stages
 testgen_cdk_stage:
 	@echo "Setting up CDK Stage test stacks..."
@@ -255,16 +260,17 @@ e2e_cdk_integration_retain:
 	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) -r $(OPT)"
 	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=true -f -y $(OPT)
 
-# Run CDK integration E2E test with --app option (both directory and command)
-# Deploys 2 stacks, deletes AppStack via -a (cdk.out directory), then BaseStack via -a (app command)
-e2e_cdk_app_option: STAGE = e2e-cdk-app-$(E2E_RANDOM)
-e2e_cdk_app_option:
-	@$(MAKE) testgen_cdk_integration OPT="-s $(STAGE) $(OPT)"
+# Run CDK --app option E2E test (both directory and command)
+# Deploys 1 stack, deletes via -a (cdk.out directory), redeploys, deletes via -a (app command)
+e2e_cdk_app_option: STAGE = e2e-cdk-appopt-$(E2E_RANDOM)
+e2e_cdk_app_option: build
+	@$(MAKE) testgen_cdk_app_option OPT="-s $(STAGE) $(OPT)"
 	@echo "=== Test 1: -a with cdk.out directory ==="
-	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -a cdk.out -s $(STAGE)-AppStack -f -y $(OPT)
-	@echo "=== Test 2: -a with app command ==="
-	@cd e2e/cdk_integration/cdk && rm -rf cdk.out
-	@cd e2e/cdk_integration/cdk && ../../../delstack cdk -a "go mod download && go run cdk.go" -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=false -s $(STAGE)-BaseStack -f -y $(OPT)
+	@cd e2e/cdk_app_option/cdk && ../../../delstack cdk -a cdk.out -s $(STAGE)-AppOptStack -f -y $(OPT)
+	@echo "=== Test 2: -a with app command (redeploy first) ==="
+	@cd e2e/cdk_app_option && go run deploy.go -s $(STAGE) $(OPT)
+	@cd e2e/cdk_app_option/cdk && rm -rf cdk.out
+	@cd e2e/cdk_app_option/cdk && ../../../delstack cdk -a "go mod download && go run cdk.go" -c PJ_PREFIX=$(STAGE) -s $(STAGE)-AppOptStack -f -y $(OPT)
 
 # Run CDK cross-region E2E test (deploy + delstack cdk)
 e2e_cdk_cross_region: STAGE = e2e-cdk-xr-$(E2E_RANDOM)
