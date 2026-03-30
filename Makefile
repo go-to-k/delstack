@@ -130,6 +130,11 @@ testgen_cdk_app_option:
 	@echo "Setting up CDK app option test stack..."
 	@cd e2e/cdk_app_option && go mod tidy && go run deploy.go $(OPT)
 
+# Generate and deploy CDK glob pattern test stacks for `delstack cdk -s` with glob patterns
+testgen_cdk_glob:
+	@echo "Setting up CDK glob pattern test stacks..."
+	@cd e2e/cdk_glob && go mod tidy && go run deploy.go $(OPT)
+
 # Generate and deploy CDK Stage test stacks for `delstack cdk` with CDK Stages
 testgen_cdk_stage:
 	@echo "Setting up CDK Stage test stacks..."
@@ -152,6 +157,7 @@ testgen_help:
 	@echo "  testgen_cdk_cross_region          - Generate and deploy CDK cross-region test stacks"
 	@echo "  testgen_cdk_cross_region_retain   - Generate and deploy CDK cross-region test stacks with RETAIN"
 	@echo "  testgen_cdk_app_option            - Generate and deploy CDK app option test stack"
+	@echo "  testgen_cdk_glob                  - Generate and deploy CDK glob pattern test stacks"
 	@echo "  testgen_cdk_stage                 - Generate and deploy CDK Stage test stacks"
 	@echo ""
 	@echo "Example usage:"
@@ -285,6 +291,17 @@ e2e_cdk_cross_region_retain: build
 	@$(MAKE) testgen_cdk_cross_region_retain OPT="-s $(STAGE) $(OPT)"
 	@cd e2e/cdk_cross_region/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -c RETAIN_MODE=true -f -y $(OPT)
 
+# Run CDK glob pattern E2E test (deploy 3 stacks, delete 2 with glob, then delete remaining)
+e2e_cdk_glob: STAGE = e2e-cdk-glob-$(E2E_RANDOM)
+e2e_cdk_glob: build
+	@$(MAKE) testgen_cdk_glob OPT="-s $(STAGE) $(OPT)"
+	@echo "=== Test 1: Delete Api* top-level stacks with glob pattern ==="
+	@cd e2e/cdk_glob/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -s "$(STAGE)-Api*" -f -y $(OPT)
+	@echo "=== Test 2: Delete Staged* stacks (inside Stage) with glob pattern ==="
+	@cd e2e/cdk_glob/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -s "$(STAGE)-Staged*" -f -y $(OPT)
+	@echo "=== Test 3: Delete remaining WebStack by exact name ==="
+	@cd e2e/cdk_glob/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -s $(STAGE)-WebStack -f -y $(OPT)
+
 # Run CDK Stage E2E test (deploy + delstack cdk)
 e2e_cdk_stage: STAGE = e2e-cdk-stg-$(E2E_RANDOM)
 e2e_cdk_stage: build
@@ -308,6 +325,7 @@ e2e_help:
 	@echo "  e2e_cdk_cross_region         - Deploy CDK cross-region stacks and delete"
 	@echo "  e2e_cdk_cross_region_retain  - Deploy CDK cross-region stacks with RETAIN and force delete"
 	@echo "  e2e_cdk_app_option           - Deploy CDK stack and test --app with directory and command"
+	@echo "  e2e_cdk_glob                 - Deploy CDK stacks and test -s with glob patterns"
 	@echo "  e2e_cdk_stage                - Deploy CDK Stage stacks and delete"
 	@echo ""
 	@echo "Options:"
