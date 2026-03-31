@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/go-to-k/delstack/internal/cdk"
 	"github.com/go-to-k/delstack/internal/io"
@@ -43,7 +44,7 @@ func (a *CdkAction) Run(ctx context.Context) error {
 		return fmt.Errorf("InvalidOptionError: You must specify a positive number for the -n option")
 	}
 
-	io.AutoYes = a.yesMode || a.forceMode
+	io.AutoYes = a.yesMode
 
 	// Step 1: Synthesize or read existing cdk.out
 	cdkOutDir := cdk.DefaultCdkOutDir
@@ -75,8 +76,8 @@ func (a *CdkAction) Run(ctx context.Context) error {
 		return nil
 	}
 
-	// Step 3: Resolve regions, select stacks, verify existence
-	selector := NewCdkStackSelector(a.stackNames, a.interactiveMode)
+	// Step 3: Resolve regions, check existence/TP, select stacks
+	selector := NewCdkStackSelector(a.stackNames, a.interactiveMode, a.forceMode)
 	resolver := NewCdkStackResolver(selector, a.profile, a.region, a.forceMode)
 	targetStacks, err := resolver.Resolve(ctx, stacks)
 	if err != nil {
@@ -86,14 +87,53 @@ func (a *CdkAction) Run(ctx context.Context) error {
 		return nil
 	}
 
-	// Step 4: Show confirmation
+	// Step 4: Handle TerminationProtection stacks
+	tpStacks := filterTPStacks(targetStacks)
+	if len(tpStacks) > 0 {
+		if !a.forceMode {
+			return fmt.Errorf("TerminationProtectionError: %s", joinStackNames(tpStacks))
+		}
+		if !a.showTPConfirmation(tpStacks) {
+			io.Logger.Info().Msg("Canceled.")
+			return nil
+		}
+	}
+
+	// Step 5: Show confirmation
 	if !a.showCdkConfirmation(targetStacks) {
 		io.Logger.Info().Msg("Canceled.")
 		return nil
 	}
 
-	// Step 5: Delete stacks
+	// Step 6: Delete stacks
 	return NewCdkDeleter(a.profile, a.forceMode, a.concurrencyNumber).DeleteStacks(ctx, targetStacks)
+}
+
+func filterTPStacks(stacks []cdk.StackInfo) []cdk.StackInfo {
+	var tp []cdk.StackInfo
+	for _, s := range stacks {
+		if s.TerminationProtection {
+			tp = append(tp, s)
+		}
+	}
+	return tp
+}
+
+func joinStackNames(stacks []cdk.StackInfo) string {
+	names := make([]string, len(stacks))
+	for i, s := range stacks {
+		names[i] = s.StackName
+	}
+	return strings.Join(names, ", ")
+}
+
+func (a *CdkAction) showTPConfirmation(tpStacks []cdk.StackInfo) bool {
+	fmt.Fprintf(os.Stderr, "The following stacks have TerminationProtection enabled:\n")
+	for _, s := range tpStacks {
+		fmt.Fprintf(os.Stderr, "  - %s (%s)\n", s.StackName, s.Region)
+	}
+	fmt.Fprintf(os.Stderr, "\nTerminationProtection will be disabled before deletion.\n")
+	return io.GetYesNo("Do you want to proceed?")
 }
 
 func (a *CdkAction) showCdkConfirmation(stacks []cdk.StackInfo) bool {

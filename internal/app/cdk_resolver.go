@@ -11,6 +11,7 @@ import (
 type CdkStackResolver struct {
 	selector         *CdkStackSelector
 	region           string
+	forceMode        bool
 	configLoader     IConfigLoader
 	existenceChecker IStackExistenceChecker
 }
@@ -19,21 +20,44 @@ func NewCdkStackResolver(selector *CdkStackSelector, profile, region string, for
 	return &CdkStackResolver{
 		selector:         selector,
 		region:           region,
+		forceMode:        forceMode,
 		configLoader:     &ConfigLoader{},
 		existenceChecker: NewStackExistenceChecker(profile, forceMode),
 	}
 }
 
 // Resolve takes raw stacks from the CDK manifest and returns the final list
-// of stacks to delete: regions resolved, filtered by pattern/interactive selection,
-// and verified to exist in AWS.
+// of stacks to delete: regions resolved, checked for existence and TP status,
+// filtered by pattern/interactive selection.
 func (r *CdkStackResolver) Resolve(ctx context.Context, stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
 	// Resolve unknown regions
 	if err := r.resolveRegions(ctx, stacks); err != nil {
 		return nil, err
 	}
 
-	// Filter stacks by -s or -i
+	if r.selector.interactiveMode {
+		// Interactive mode: check existence/TP first so the selector can display TP info
+		existing, err := r.filterAndAnnotate(ctx, stacks)
+		if err != nil {
+			return nil, err
+		}
+		if len(existing) == 0 {
+			io.Logger.Info().Msg("No deployed stacks found.")
+			return nil, nil
+		}
+
+		selected, err := r.selector.Select(existing)
+		if err != nil {
+			return nil, err
+		}
+		if len(selected) == 0 {
+			io.Logger.Info().Msg("No stacks selected.")
+			return nil, nil
+		}
+		return selected, nil
+	}
+
+	// Non-interactive mode: select first (pattern match against manifest), then check existence
 	selected, err := r.selector.Select(stacks)
 	if err != nil {
 		return nil, err
@@ -43,8 +67,7 @@ func (r *CdkStackResolver) Resolve(ctx context.Context, stacks []cdk.StackInfo) 
 		return nil, nil
 	}
 
-	// Filter out stacks that don't exist in AWS
-	existing, err := r.filterExisting(ctx, selected)
+	existing, err := r.filterAndAnnotate(ctx, selected)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +76,25 @@ func (r *CdkStackResolver) Resolve(ctx context.Context, stacks []cdk.StackInfo) 
 		return nil, nil
 	}
 
+	return existing, nil
+}
+
+// filterAndAnnotate checks each stack's existence and TerminationProtection status.
+// Returns only existing stacks with TP status annotated.
+func (r *CdkStackResolver) filterAndAnnotate(ctx context.Context, stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
+	var existing []cdk.StackInfo
+	for _, s := range stacks {
+		result, err := r.existenceChecker.Check(ctx, s.Region, s.StackName)
+		if err != nil {
+			return nil, err
+		}
+		if !result.Exists {
+			io.Logger.Info().Msgf("Stack %s not found in %s, skipping.", s.StackName, s.Region)
+			continue
+		}
+		s.TerminationProtection = result.TerminationProtection
+		existing = append(existing, s)
+	}
 	return existing, nil
 }
 
@@ -78,21 +120,4 @@ func (r *CdkStackResolver) resolveDefaultRegion(ctx context.Context) (string, er
 		return "", fmt.Errorf("failed to resolve default region: %w", err)
 	}
 	return cfg.Region, nil
-}
-
-func (r *CdkStackResolver) filterExisting(ctx context.Context, stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
-	var existing []cdk.StackInfo
-	for _, s := range stacks {
-		exists, err := r.existenceChecker.Exists(ctx, s.Region, s.StackName)
-		if err != nil {
-			return nil, err
-		}
-		if exists {
-			existing = append(existing, s)
-		} else {
-			io.Logger.Info().Msgf("Stack %s not found in %s, skipping.", s.StackName, s.Region)
-		}
-	}
-
-	return existing, nil
 }

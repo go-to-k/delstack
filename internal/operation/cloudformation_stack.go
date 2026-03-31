@@ -48,6 +48,12 @@ type S3UploadResult struct {
 	Key         *string
 }
 
+// StackCheckResult holds the result of checking a stack's existence and properties.
+type StackCheckResult struct {
+	Exists                bool
+	TerminationProtection bool
+}
+
 const TerminationProtectionMarker = "* "
 
 type CloudFormationStackOperator struct {
@@ -417,6 +423,18 @@ func (o *CloudFormationStackOperator) StackExists(ctx context.Context, stackName
 		return false, err
 	}
 	return len(stacks) > 0, nil
+}
+
+func (o *CloudFormationStackOperator) CheckStack(ctx context.Context, stackName *string) (StackCheckResult, error) {
+	stacks, err := o.client.DescribeStacks(ctx, stackName)
+	if err != nil {
+		return StackCheckResult{}, err
+	}
+	if len(stacks) == 0 {
+		return StackCheckResult{Exists: false}, nil
+	}
+	tp := stacks[0].EnableTerminationProtection != nil && *stacks[0].EnableTerminationProtection
+	return StackCheckResult{Exists: true, TerminationProtection: tp}, nil
 }
 
 func (o *CloudFormationStackOperator) RemoveDeletionPolicy(ctx context.Context, stackName *string) error {

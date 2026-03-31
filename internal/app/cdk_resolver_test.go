@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-to-k/delstack/internal/cdk"
 	"github.com/go-to-k/delstack/internal/io"
+	"github.com/go-to-k/delstack/internal/operation"
 )
 
 type mockExistenceChecker struct {
@@ -14,15 +15,15 @@ type mockExistenceChecker struct {
 	err            error
 }
 
-func (m *mockExistenceChecker) Exists(_ context.Context, _, stackName string) (bool, error) {
+func (m *mockExistenceChecker) Check(_ context.Context, _, stackName string) (operation.StackCheckResult, error) {
 	if m.err != nil {
-		return false, m.err
+		return operation.StackCheckResult{}, m.err
 	}
-	return m.existingStacks[stackName], nil
+	return operation.StackCheckResult{Exists: m.existingStacks[stackName]}, nil
 }
 
 func newTestResolver(patterns []string, existingStacks map[string]bool) *CdkStackResolver {
-	selector := NewCdkStackSelector(patterns, false)
+	selector := NewCdkStackSelector(patterns, false, false)
 	return &CdkStackResolver{
 		selector:         selector,
 		region:           "us-east-1",
@@ -205,7 +206,7 @@ func TestCdkStackResolver_ResolveDefaultRegion(t *testing.T) {
 	})
 }
 
-func TestCdkStackResolver_FilterExisting(t *testing.T) {
+func TestCdkStackResolver_FilterAndAnnotate(t *testing.T) {
 	io.NewLogger(false)
 
 	t.Run("filters out non-existing stacks", func(t *testing.T) {
@@ -219,7 +220,7 @@ func TestCdkStackResolver_FilterExisting(t *testing.T) {
 			{StackName: "StackB", Region: "us-east-1"},
 			{StackName: "StackC", Region: "us-east-1"},
 		}
-		result, err := resolver.filterExisting(context.Background(), stacks)
+		result, err := resolver.filterAndAnnotate(context.Background(), stacks)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -238,7 +239,7 @@ func TestCdkStackResolver_FilterExisting(t *testing.T) {
 		stacks := []cdk.StackInfo{
 			{StackName: "StackA", Region: "us-east-1"},
 		}
-		_, err := resolver.filterExisting(context.Background(), stacks)
+		_, err := resolver.filterAndAnnotate(context.Background(), stacks)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}

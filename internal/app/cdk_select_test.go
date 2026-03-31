@@ -118,7 +118,7 @@ func TestCdkStackSelector_matchByPatterns(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewCdkStackSelector(tt.patterns, false)
+			s := NewCdkStackSelector(tt.patterns, false, false)
 			selected, unmatched, err := s.matchByPatterns(allStacks)
 			if tt.wantErr {
 				if err == nil {
