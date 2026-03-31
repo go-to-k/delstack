@@ -91,14 +91,15 @@ func TestCdkStackConfirmer_ConfirmDeletion(t *testing.T) {
 	})
 }
 
-func TestFilterTPStacks(t *testing.T) {
+func TestCdkStackConfirmer_filterTPStacks(t *testing.T) {
+	confirmer := NewCdkStackConfirmer(false)
 	stacks := []cdk.StackInfo{
 		{StackName: "TPStack", Region: "us-east-1", TerminationProtection: true},
 		{StackName: "NormalStack", Region: "us-east-1", TerminationProtection: false},
 		{StackName: "TPStack2", Region: "ap-northeast-1", TerminationProtection: true},
 	}
 
-	tp := filterTPStacks(stacks)
+	tp := confirmer.filterTPStacks(stacks)
 	if len(tp) != 2 {
 		t.Fatalf("expected 2 TP stacks, got %d", len(tp))
 	}
@@ -107,23 +108,25 @@ func TestFilterTPStacks(t *testing.T) {
 	}
 }
 
-func TestJoinStackNames(t *testing.T) {
+func TestCdkStackConfirmer_joinStackNames(t *testing.T) {
+	confirmer := NewCdkStackConfirmer(false)
+
 	t.Run("single stack", func(t *testing.T) {
 		stacks := []cdk.StackInfo{{StackName: "StackA"}}
-		if got := joinStackNames(stacks); got != "StackA" {
+		if got := confirmer.joinStackNames(stacks); got != "StackA" {
 			t.Errorf("got %q, want %q", got, "StackA")
 		}
 	})
 
 	t.Run("multiple stacks", func(t *testing.T) {
 		stacks := []cdk.StackInfo{{StackName: "StackA"}, {StackName: "StackB"}, {StackName: "StackC"}}
-		if got := joinStackNames(stacks); got != "StackA, StackB, StackC" {
+		if got := confirmer.joinStackNames(stacks); got != "StackA, StackB, StackC" {
 			t.Errorf("got %q, want %q", got, "StackA, StackB, StackC")
 		}
 	})
 
 	t.Run("empty stacks", func(t *testing.T) {
-		if got := joinStackNames([]cdk.StackInfo{}); got != "" {
+		if got := confirmer.joinStackNames([]cdk.StackInfo{}); got != "" {
 			t.Errorf("got %q, want empty string", got)
 		}
 	})

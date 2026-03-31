@@ -21,13 +21,13 @@ func NewCdkStackConfirmer(forceMode bool) *CdkStackConfirmer {
 // Returns an error if TP stacks are found without forceMode.
 // Returns false if the user cancels the TP confirmation prompt.
 func (c *CdkStackConfirmer) ConfirmTPStacks(stacks []cdk.StackInfo) (bool, error) {
-	tpStacks := filterTPStacks(stacks)
+	tpStacks := c.filterTPStacks(stacks)
 	if len(tpStacks) == 0 {
 		return true, nil
 	}
 
 	if !c.forceMode {
-		return false, fmt.Errorf("TerminationProtectionError: %s", joinStackNames(tpStacks))
+		return false, fmt.Errorf("TerminationProtectionError: %s", c.joinStackNames(tpStacks))
 	}
 
 	return c.showTPConfirmation(tpStacks), nil
@@ -53,7 +53,7 @@ func (c *CdkStackConfirmer) showTPConfirmation(tpStacks []cdk.StackInfo) bool {
 	return io.GetYesNo("Do you want to proceed?")
 }
 
-func filterTPStacks(stacks []cdk.StackInfo) []cdk.StackInfo {
+func (c *CdkStackConfirmer) filterTPStacks(stacks []cdk.StackInfo) []cdk.StackInfo {
 	var tp []cdk.StackInfo
 	for _, s := range stacks {
 		if s.TerminationProtection {
@@ -63,7 +63,7 @@ func filterTPStacks(stacks []cdk.StackInfo) []cdk.StackInfo {
 	return tp
 }
 
-func joinStackNames(stacks []cdk.StackInfo) string {
+func (c *CdkStackConfirmer) joinStackNames(stacks []cdk.StackInfo) string {
 	names := make([]string, len(stacks))
 	for i, s := range stacks {
 		names[i] = s.StackName
