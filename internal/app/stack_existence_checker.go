@@ -11,7 +11,7 @@ import (
 
 // IStackExistenceChecker checks whether a stack exists in AWS.
 type IStackExistenceChecker interface {
-	Exists(ctx context.Context, region, stackName string) (bool, error)
+	Check(ctx context.Context, region, stackName string) (operation.StackCheckResult, error)
 }
 
 type StackExistenceChecker struct {
@@ -29,17 +29,17 @@ func NewStackExistenceChecker(profile string, forceMode bool) *StackExistenceChe
 	}
 }
 
-func (c *StackExistenceChecker) Exists(ctx context.Context, region, stackName string) (bool, error) {
+func (c *StackExistenceChecker) Check(ctx context.Context, region, stackName string) (operation.StackCheckResult, error) {
 	op, ok := c.operatorCache[region]
 	if !ok {
 		cfg, err := client.LoadAWSConfig(ctx, region, c.profile)
 		if err != nil {
-			return false, fmt.Errorf("failed to load AWS config for region %s: %w", region, err)
+			return operation.StackCheckResult{}, fmt.Errorf("failed to load AWS config for region %s: %w", region, err)
 		}
 		factory := operation.NewOperatorFactory(cfg, c.forceMode)
 		op = factory.CreateCloudFormationStackOperator()
 		c.operatorCache[region] = op
 	}
 
-	return op.StackExists(ctx, aws.String(stackName))
+	return op.CheckStack(ctx, aws.String(stackName))
 }

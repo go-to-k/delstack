@@ -75,8 +75,8 @@ func (a *CdkAction) Run(ctx context.Context) error {
 		return nil
 	}
 
-	// Step 3: Resolve regions, select stacks, verify existence
-	selector := NewCdkStackSelector(a.stackNames, a.interactiveMode)
+	// Step 3: Resolve regions, check existence/TP, select stacks
+	selector := NewCdkStackSelector(a.stackNames, a.interactiveMode, a.forceMode)
 	resolver := NewCdkStackResolver(selector, a.profile, a.region, a.forceMode)
 	targetStacks, err := resolver.Resolve(ctx, stacks)
 	if err != nil {
@@ -86,24 +86,19 @@ func (a *CdkAction) Run(ctx context.Context) error {
 		return nil
 	}
 
-	// Step 4: Show confirmation
-	if !a.showCdkConfirmation(targetStacks) {
+	// Step 4: Confirm TerminationProtection and deletion
+	confirmer := NewCdkStackConfirmer(a.forceMode, a.interactiveMode)
+	ok, err := confirmer.Confirm(targetStacks)
+	if err != nil {
+		return err
+	}
+	if !ok {
 		io.Logger.Info().Msg("Canceled.")
 		return nil
 	}
 
 	// Step 5: Delete stacks
 	return NewCdkDeleter(a.profile, a.forceMode, a.concurrencyNumber).DeleteStacks(ctx, targetStacks)
-}
-
-func (a *CdkAction) showCdkConfirmation(stacks []cdk.StackInfo) bool {
-	fmt.Fprintf(os.Stderr, "The following stacks will be deleted:\n")
-	for _, s := range stacks {
-		fmt.Fprintf(os.Stderr, "  - %s (%s)\n", s.StackName, s.Region)
-	}
-	fmt.Fprintln(os.Stderr)
-
-	return io.GetYesNo("Are you sure you want to delete these stacks?")
 }
 
 func (a *CdkAction) isDirectory() bool {

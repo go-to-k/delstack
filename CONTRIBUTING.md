@@ -164,6 +164,7 @@ When creating a new `e2e/<name>/` directory, add a `cdk/.gitignore` that exclude
 - `make testgen_cdk_cross_region`: Deploy CDK cross-region test stacks (us-east-1 + ap-northeast-1) with `crossRegionReferences`
 - `make testgen_cdk_cross_region_retain`: Deploy CDK cross-region test stacks with RETAIN resources
 - `make testgen_cdk_stage`: Deploy CDK Stage test stacks (nested Cloud Assemblies)
+- `make testgen_cdk_termination_protection`: Deploy CDK TerminationProtection test stacks
 - `make testgen_help`: Show help for all test stack generation targets
 
 ### E2E Combined Targets (testgen + delstack run)
@@ -184,6 +185,7 @@ These targets deploy test stacks and then run `delstack` to delete them in a sin
 - `make e2e_cdk_cross_region`: Deploy CDK cross-region stacks and delete with `delstack cdk`
 - `make e2e_cdk_cross_region_retain`: Deploy CDK cross-region stacks with RETAIN and force delete
 - `make e2e_cdk_stage`: Deploy CDK Stage stacks and delete with `delstack cdk`
+- `make e2e_cdk_termination_protection`: Deploy CDK TerminationProtection stacks and force delete with `delstack cdk`
 - `make e2e_help`: Show help for all E2E test targets
 
 Options:

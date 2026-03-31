@@ -140,6 +140,11 @@ testgen_cdk_stage:
 	@echo "Setting up CDK Stage test stacks..."
 	@cd e2e/cdk_stage && go mod tidy && go run deploy.go $(OPT)
 
+# Generate and deploy CDK TerminationProtection test stacks for `delstack cdk -f`
+testgen_cdk_termination_protection:
+	@echo "Setting up CDK TerminationProtection test stacks..."
+	@cd e2e/cdk_termination_protection && go mod tidy && go run deploy.go $(OPT)
+
 # Help for test stack generation
 testgen_help:
 	@echo "Test stack generation targets:"
@@ -159,6 +164,7 @@ testgen_help:
 	@echo "  testgen_cdk_app_option            - Generate and deploy CDK app option test stack"
 	@echo "  testgen_cdk_glob                  - Generate and deploy CDK glob pattern test stacks"
 	@echo "  testgen_cdk_stage                 - Generate and deploy CDK Stage test stacks"
+	@echo "  testgen_cdk_termination_protection - Generate and deploy CDK TerminationProtection test stacks"
 	@echo ""
 	@echo "Example usage:"
 	@echo "  make testgen_full"
@@ -195,6 +201,8 @@ testgen_help:
 	@echo "  make testgen_cdk_cross_region_retain"
 	@echo "  make testgen_cdk_stage"
 	@echo "  make testgen_cdk_stage OPT=\"-s my-stage\""
+	@echo "  make testgen_cdk_termination_protection"
+	@echo "  make testgen_cdk_termination_protection OPT=\"-s my-stage\""
 
 # E2E test commands (testgen + delstack run)
 # ==================================
@@ -308,6 +316,12 @@ e2e_cdk_stage: build
 	@$(MAKE) testgen_cdk_stage OPT="-s $(STAGE) $(OPT)"
 	@cd e2e/cdk_stage/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -f -y $(OPT)
 
+# Run CDK TerminationProtection E2E test (deploy + delstack cdk -f)
+e2e_cdk_termination_protection: STAGE = e2e-cdk-tp-$(E2E_RANDOM)
+e2e_cdk_termination_protection: build
+	@$(MAKE) testgen_cdk_termination_protection OPT="-s $(STAGE) $(OPT)"
+	@cd e2e/cdk_termination_protection/cdk && ../../../delstack cdk -c PJ_PREFIX=$(STAGE) -f -y $(OPT)
+
 # Help for E2E test targets
 e2e_help:
 	@echo "E2E test targets (testgen + delstack run):"
@@ -327,6 +341,7 @@ e2e_help:
 	@echo "  e2e_cdk_app_option           - Deploy CDK stack and test --app with directory and command"
 	@echo "  e2e_cdk_glob                 - Deploy CDK stacks and test -s with glob patterns"
 	@echo "  e2e_cdk_stage                - Deploy CDK Stage stacks and delete"
+	@echo "  e2e_cdk_termination_protection - Deploy CDK TP stacks and force delete"
 	@echo ""
 	@echo "Options:"
 	@echo "  STAGE=<name>  - Override default stage name (default: auto-generated with random suffix)"
@@ -339,3 +354,4 @@ e2e_help:
 	@echo "  make e2e_cdk_integration"
 	@echo "  make e2e_cdk_cross_region"
 	@echo "  make e2e_cdk_stage"
+	@echo "  make e2e_cdk_termination_protection"

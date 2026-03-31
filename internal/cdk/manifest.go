@@ -9,10 +9,11 @@ import (
 )
 
 type StackInfo struct {
-	StackName    string
-	Region       string
-	Account      string
-	Dependencies []string
+	StackName              string
+	Region                 string
+	Account                string
+	Dependencies           []string
+	TerminationProtection  bool
 }
 
 type manifest struct {

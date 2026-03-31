@@ -7,17 +7,20 @@ import (
 
 	"github.com/go-to-k/delstack/internal/cdk"
 	"github.com/go-to-k/delstack/internal/io"
+	"github.com/go-to-k/delstack/internal/operation"
 )
 
 type CdkStackSelector struct {
 	stackNames      []string
 	interactiveMode bool
+	forceMode       bool
 }
 
-func NewCdkStackSelector(stackNames []string, interactiveMode bool) *CdkStackSelector {
+func NewCdkStackSelector(stackNames []string, interactiveMode, forceMode bool) *CdkStackSelector {
 	return &CdkStackSelector{
 		stackNames:      stackNames,
 		interactiveMode: interactiveMode,
+		forceMode:       forceMode,
 	}
 }
 
@@ -101,12 +104,32 @@ func (s *CdkStackSelector) matchByPatterns(stacks []cdk.StackInfo) ([]cdk.StackI
 }
 
 func (s *CdkStackSelector) selectInteractively(stacks []cdk.StackInfo) ([]cdk.StackInfo, error) {
-	displayNames := make([]string, len(stacks))
-	for i, st := range stacks {
-		displayNames[i] = fmt.Sprintf("%s (%s)", st.StackName, st.Region)
+	// Build display names and filter out TP stacks without forceMode
+	var displayStacks []cdk.StackInfo
+	var displayNames []string
+	for _, st := range stacks {
+		if st.TerminationProtection && !s.forceMode {
+			continue
+		}
+		displayStacks = append(displayStacks, st)
+		name := fmt.Sprintf("%s (%s)", st.StackName, st.Region)
+		if st.TerminationProtection {
+			name = operation.TerminationProtectionMarker + name
+		}
+		displayNames = append(displayNames, name)
+	}
+
+	if len(displayStacks) == 0 {
+		return nil, nil
 	}
 
 	label := []string{"Select stacks to delete."}
+	if s.forceMode {
+		label = append(label, "(* = TerminationProtection)")
+	} else {
+		label = append(label, "EnableTerminationProtection stacks are not displayed.")
+	}
+
 	selectedNames, continuation, err := io.GetCheckboxes(label, displayNames, false)
 	if err != nil {
 		return nil, err
@@ -121,7 +144,7 @@ func (s *CdkStackSelector) selectInteractively(stacks []cdk.StackInfo) ([]cdk.St
 	}
 
 	var selected []cdk.StackInfo
-	for i, st := range stacks {
+	for i, st := range displayStacks {
 		if _, ok := selectedSet[displayNames[i]]; ok {
 			selected = append(selected, st)
 		}

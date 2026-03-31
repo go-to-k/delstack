@@ -3178,7 +3178,7 @@ func TestCloudFormationStackOperator_ListStacksFilteredByKeyword(t *testing.T) {
 	}
 }
 
-func TestCloudFormationStackOperator_StackExists(t *testing.T) {
+func TestCloudFormationStackOperator_CheckStack(t *testing.T) {
 	io.NewLogger(false)
 
 	type args struct {
@@ -3190,27 +3190,70 @@ func TestCloudFormationStackOperator_StackExists(t *testing.T) {
 		name                        string
 		args                        args
 		prepareMockCloudFormationFn func(m *client.MockICloudFormation)
-		want                        bool
+		want                        StackCheckResult
 		wantErr                     bool
 	}{
 		{
-			name: "stack exists",
+			name: "stack exists without TerminationProtection",
 			args: args{
 				ctx:       context.Background(),
-				stackName: aws.String("ExistingStack"),
+				stackName: aws.String("NormalStack"),
 			},
 			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
-				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("ExistingStack")).Return(
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("NormalStack")).Return(
 					[]types.Stack{
 						{
-							StackName:   aws.String("ExistingStack"),
-							StackStatus: types.StackStatusCreateComplete,
+							StackName:                   aws.String("NormalStack"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							EnableTerminationProtection: aws.Bool(false),
 						},
 					},
 					nil,
 				)
 			},
-			want:    true,
+			want:    StackCheckResult{Exists: true, TerminationProtection: false},
+			wantErr: false,
+		},
+		{
+			name: "stack exists with TerminationProtection",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("ProtectedStack"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("ProtectedStack")).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("ProtectedStack"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							EnableTerminationProtection: aws.Bool(true),
+						},
+					},
+					nil,
+				)
+			},
+			want:    StackCheckResult{Exists: true, TerminationProtection: true},
+			wantErr: false,
+		},
+		{
+			name: "stack exists with nil EnableTerminationProtection",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("NilTPStack"),
+			},
+			prepareMockCloudFormationFn: func(m *client.MockICloudFormation) {
+				m.EXPECT().DescribeStacks(gomock.Any(), aws.String("NilTPStack")).Return(
+					[]types.Stack{
+						{
+							StackName:                   aws.String("NilTPStack"),
+							StackStatus:                 types.StackStatusCreateComplete,
+							EnableTerminationProtection: nil,
+						},
+					},
+					nil,
+				)
+			},
+			want:    StackCheckResult{Exists: true, TerminationProtection: false},
 			wantErr: false,
 		},
 		{
@@ -3225,7 +3268,7 @@ func TestCloudFormationStackOperator_StackExists(t *testing.T) {
 					nil,
 				)
 			},
-			want:    false,
+			want:    StackCheckResult{Exists: false},
 			wantErr: false,
 		},
 		{
@@ -3240,7 +3283,7 @@ func TestCloudFormationStackOperator_StackExists(t *testing.T) {
 					fmt.Errorf("DescribeStacksError"),
 				)
 			},
-			want:    false,
+			want:    StackCheckResult{},
 			wantErr: true,
 		},
 	}
@@ -3255,7 +3298,7 @@ func TestCloudFormationStackOperator_StackExists(t *testing.T) {
 
 			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{Region: "us-east-1"}, cloudformationMock, s3Mock)
 
-			got, err := cloudformationStackOperator.StackExists(tt.args.ctx, tt.args.stackName)
+			got, err := cloudformationStackOperator.CheckStack(tt.args.ctx, tt.args.stackName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
 				return
