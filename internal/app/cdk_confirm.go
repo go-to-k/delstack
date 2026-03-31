@@ -10,11 +10,12 @@ import (
 )
 
 type CdkStackConfirmer struct {
-	forceMode bool
+	forceMode       bool
+	interactiveMode bool
 }
 
-func NewCdkStackConfirmer(forceMode bool) *CdkStackConfirmer {
-	return &CdkStackConfirmer{forceMode: forceMode}
+func NewCdkStackConfirmer(forceMode, interactiveMode bool) *CdkStackConfirmer {
+	return &CdkStackConfirmer{forceMode: forceMode, interactiveMode: interactiveMode}
 }
 
 // Confirm runs the full confirmation flow: TP confirmation (if needed) then deletion confirmation.
@@ -29,7 +30,13 @@ func (c *CdkStackConfirmer) Confirm(stacks []cdk.StackInfo) (bool, error) {
 		return false, nil
 	}
 
-	return c.confirmDeletion(stacks), nil
+	if !c.interactiveMode {
+		if !c.confirmDeletion(stacks) {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 func (c *CdkStackConfirmer) confirmTPStacks(stacks []cdk.StackInfo) (bool, error) {

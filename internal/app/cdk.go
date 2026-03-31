@@ -87,7 +87,7 @@ func (a *CdkAction) Run(ctx context.Context) error {
 	}
 
 	// Step 4: Confirm TerminationProtection and deletion
-	confirmer := NewCdkStackConfirmer(a.forceMode)
+	confirmer := NewCdkStackConfirmer(a.forceMode, a.interactiveMode)
 	ok, err := confirmer.Confirm(targetStacks)
 	if err != nil {
 		return err

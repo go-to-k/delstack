@@ -13,11 +13,11 @@ func TestCdkStackConfirmer_Confirm(t *testing.T) {
 	tpStack := cdk.StackInfo{StackName: "TPStack", Region: "us-east-1", TerminationProtection: true}
 	normalStack := cdk.StackInfo{StackName: "NormalStack", Region: "us-east-1", TerminationProtection: false}
 
-	t.Run("no TP stacks with AutoYes returns true", func(t *testing.T) {
+	t.Run("non-interactive: no TP stacks with AutoYes returns true", func(t *testing.T) {
 		io.AutoYes = true
 		defer func() { io.AutoYes = false }()
 
-		confirmer := NewCdkStackConfirmer(false)
+		confirmer := NewCdkStackConfirmer(false, false)
 		ok, err := confirmer.Confirm([]cdk.StackInfo{normalStack})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -27,8 +27,8 @@ func TestCdkStackConfirmer_Confirm(t *testing.T) {
 		}
 	})
 
-	t.Run("TP stacks without forceMode returns error", func(t *testing.T) {
-		confirmer := NewCdkStackConfirmer(false)
+	t.Run("non-interactive: TP stacks without forceMode returns error", func(t *testing.T) {
+		confirmer := NewCdkStackConfirmer(false, false)
 		_, err := confirmer.Confirm([]cdk.StackInfo{tpStack, normalStack})
 		if err == nil {
 			t.Fatal("expected error, got nil")
@@ -38,11 +38,37 @@ func TestCdkStackConfirmer_Confirm(t *testing.T) {
 		}
 	})
 
-	t.Run("TP stacks with forceMode and AutoYes returns true", func(t *testing.T) {
+	t.Run("non-interactive: TP stacks with forceMode and AutoYes returns true", func(t *testing.T) {
 		io.AutoYes = true
 		defer func() { io.AutoYes = false }()
 
-		confirmer := NewCdkStackConfirmer(true)
+		confirmer := NewCdkStackConfirmer(true, false)
+		ok, err := confirmer.Confirm([]cdk.StackInfo{tpStack, normalStack})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !ok {
+			t.Error("expected true, got false")
+		}
+	})
+
+	t.Run("interactive: skips deletion confirmation", func(t *testing.T) {
+		// No AutoYes needed because deletion confirmation is skipped in interactive mode
+		confirmer := NewCdkStackConfirmer(false, true)
+		ok, err := confirmer.Confirm([]cdk.StackInfo{normalStack})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !ok {
+			t.Error("expected true, got false")
+		}
+	})
+
+	t.Run("interactive: TP stacks with forceMode and AutoYes returns true", func(t *testing.T) {
+		io.AutoYes = true
+		defer func() { io.AutoYes = false }()
+
+		confirmer := NewCdkStackConfirmer(true, true)
 		ok, err := confirmer.Confirm([]cdk.StackInfo{tpStack, normalStack})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -60,7 +86,7 @@ func TestCdkStackConfirmer_confirmTPStacks(t *testing.T) {
 	normalStack := cdk.StackInfo{StackName: "NormalStack", Region: "us-east-1", TerminationProtection: false}
 
 	t.Run("no TP stacks returns true", func(t *testing.T) {
-		confirmer := NewCdkStackConfirmer(false)
+		confirmer := NewCdkStackConfirmer(false, false)
 		ok, err := confirmer.confirmTPStacks([]cdk.StackInfo{normalStack})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -71,7 +97,7 @@ func TestCdkStackConfirmer_confirmTPStacks(t *testing.T) {
 	})
 
 	t.Run("empty stacks returns true", func(t *testing.T) {
-		confirmer := NewCdkStackConfirmer(false)
+		confirmer := NewCdkStackConfirmer(false, false)
 		ok, err := confirmer.confirmTPStacks([]cdk.StackInfo{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -82,7 +108,7 @@ func TestCdkStackConfirmer_confirmTPStacks(t *testing.T) {
 	})
 
 	t.Run("TP stacks without forceMode returns error", func(t *testing.T) {
-		confirmer := NewCdkStackConfirmer(false)
+		confirmer := NewCdkStackConfirmer(false, false)
 		_, err := confirmer.confirmTPStacks([]cdk.StackInfo{tpStack, normalStack})
 		if err == nil {
 			t.Fatal("expected error, got nil")
@@ -94,7 +120,7 @@ func TestCdkStackConfirmer_confirmTPStacks(t *testing.T) {
 
 	t.Run("multiple TP stacks without forceMode lists all names", func(t *testing.T) {
 		tp2 := cdk.StackInfo{StackName: "TPStack2", Region: "ap-northeast-1", TerminationProtection: true}
-		confirmer := NewCdkStackConfirmer(false)
+		confirmer := NewCdkStackConfirmer(false, false)
 		_, err := confirmer.confirmTPStacks([]cdk.StackInfo{tpStack, tp2})
 		if err == nil {
 			t.Fatal("expected error, got nil")
@@ -108,7 +134,7 @@ func TestCdkStackConfirmer_confirmTPStacks(t *testing.T) {
 		io.AutoYes = true
 		defer func() { io.AutoYes = false }()
 
-		confirmer := NewCdkStackConfirmer(true)
+		confirmer := NewCdkStackConfirmer(true, false)
 		ok, err := confirmer.confirmTPStacks([]cdk.StackInfo{tpStack, normalStack})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -126,7 +152,7 @@ func TestCdkStackConfirmer_confirmDeletion(t *testing.T) {
 		io.AutoYes = true
 		defer func() { io.AutoYes = false }()
 
-		confirmer := NewCdkStackConfirmer(false)
+		confirmer := NewCdkStackConfirmer(false, false)
 		stacks := []cdk.StackInfo{
 			{StackName: "StackA", Region: "us-east-1"},
 			{StackName: "StackB", Region: "ap-northeast-1"},
@@ -138,7 +164,7 @@ func TestCdkStackConfirmer_confirmDeletion(t *testing.T) {
 }
 
 func TestCdkStackConfirmer_filterTPStacks(t *testing.T) {
-	confirmer := NewCdkStackConfirmer(false)
+	confirmer := NewCdkStackConfirmer(false, false)
 	stacks := []cdk.StackInfo{
 		{StackName: "TPStack", Region: "us-east-1", TerminationProtection: true},
 		{StackName: "NormalStack", Region: "us-east-1", TerminationProtection: false},
@@ -155,7 +181,7 @@ func TestCdkStackConfirmer_filterTPStacks(t *testing.T) {
 }
 
 func TestCdkStackConfirmer_joinStackNames(t *testing.T) {
-	confirmer := NewCdkStackConfirmer(false)
+	confirmer := NewCdkStackConfirmer(false, false)
 
 	t.Run("single stack", func(t *testing.T) {
 		stacks := []cdk.StackInfo{{StackName: "StackA"}}
