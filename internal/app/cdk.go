@@ -43,7 +43,7 @@ func (a *CdkAction) Run(ctx context.Context) error {
 		return fmt.Errorf("InvalidOptionError: You must specify a positive number for the -n option")
 	}
 
-	io.AutoYes = a.yesMode
+	io.AutoYes = a.yesMode || a.forceMode
 
 	// Step 1: Synthesize or read existing cdk.out
 	cdkOutDir := cdk.DefaultCdkOutDir
