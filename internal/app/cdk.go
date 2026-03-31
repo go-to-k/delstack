@@ -88,16 +88,11 @@ func (a *CdkAction) Run(ctx context.Context) error {
 
 	// Step 4: Confirm TerminationProtection and deletion
 	confirmer := NewCdkStackConfirmer(a.forceMode)
-	ok, err := confirmer.ConfirmTPStacks(targetStacks)
+	ok, err := confirmer.Confirm(targetStacks)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		io.Logger.Info().Msg("Canceled.")
-		return nil
-	}
-
-	if !confirmer.ConfirmDeletion(targetStacks) {
 		io.Logger.Info().Msg("Canceled.")
 		return nil
 	}

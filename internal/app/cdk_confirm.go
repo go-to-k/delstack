@@ -17,10 +17,22 @@ func NewCdkStackConfirmer(forceMode bool) *CdkStackConfirmer {
 	return &CdkStackConfirmer{forceMode: forceMode}
 }
 
-// ConfirmTPStacks checks for TerminationProtection stacks and handles confirmation.
+// Confirm runs the full confirmation flow: TP confirmation (if needed) then deletion confirmation.
 // Returns an error if TP stacks are found without forceMode.
-// Returns false if the user cancels the TP confirmation prompt.
-func (c *CdkStackConfirmer) ConfirmTPStacks(stacks []cdk.StackInfo) (bool, error) {
+// Returns false if the user cancels any confirmation prompt.
+func (c *CdkStackConfirmer) Confirm(stacks []cdk.StackInfo) (bool, error) {
+	ok, err := c.confirmTPStacks(stacks)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, nil
+	}
+
+	return c.confirmDeletion(stacks), nil
+}
+
+func (c *CdkStackConfirmer) confirmTPStacks(stacks []cdk.StackInfo) (bool, error) {
 	tpStacks := c.filterTPStacks(stacks)
 	if len(tpStacks) == 0 {
 		return true, nil
@@ -33,8 +45,7 @@ func (c *CdkStackConfirmer) ConfirmTPStacks(stacks []cdk.StackInfo) (bool, error
 	return c.showTPConfirmation(tpStacks), nil
 }
 
-// ConfirmDeletion shows the final deletion confirmation prompt.
-func (c *CdkStackConfirmer) ConfirmDeletion(stacks []cdk.StackInfo) bool {
+func (c *CdkStackConfirmer) confirmDeletion(stacks []cdk.StackInfo) bool {
 	fmt.Fprintf(os.Stderr, "The following stacks will be deleted:\n")
 	for _, s := range stacks {
 		fmt.Fprintf(os.Stderr, "  - %s (%s)\n", s.StackName, s.Region)
