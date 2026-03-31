@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2.9.0](https://github.com/go-to-k/delstack/compare/v2.8.0...v2.9.0) - 2026-03-31
+- feat: add TerminationProtection awareness to cdk subcommand by @go-to-k in https://github.com/go-to-k/delstack/pull/622
+- style: fix gofmt alignment in StackInfo struct by @go-to-k in https://github.com/go-to-k/delstack/pull/624
+
 ## [v2.8.0](https://github.com/go-to-k/delstack/compare/v2.7.0...v2.8.0) - 2026-03-30
 - test: handle missing RETAIN_MODE context gracefully in e2e CDK apps by @go-to-k in https://github.com/go-to-k/delstack/pull/619
 - feat: support glob patterns for -s stack name filtering by @go-to-k in https://github.com/go-to-k/delstack/pull/621
