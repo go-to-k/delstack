@@ -420,7 +420,7 @@ func (s *DeployStackService) attachUserToGroup(stackName string) error {
 		}
 	}
 
-	// Create user if it doesn't exist
+	// Create user if it doesn't exist (outside of CFn to trigger DELETE_FAILED for IAM Group)
 	userName := "DelstackTestUser"
 
 	_, err = s.IamClient.CreateUser(s.Ctx, &iam.CreateUserInput{
