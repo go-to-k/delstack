@@ -59,17 +59,17 @@ func (o *IamUserOperator) DeleteIamUser(ctx context.Context, userName *string) e
 		return nil
 	}
 
-	eg, ctx := errgroup.WithContext(ctx)
+	eg, egCtx := errgroup.WithContext(ctx)
 
-	eg.Go(func() error { return o.client.DetachUserPolicies(ctx, userName) })
-	eg.Go(func() error { return o.client.DeleteUserInlinePolicies(ctx, userName) })
-	eg.Go(func() error { return o.client.DeactivateAndDeleteMFADevices(ctx, userName) })
-	eg.Go(func() error { return o.client.DeleteAccessKeys(ctx, userName) })
-	eg.Go(func() error { return o.client.DeleteLoginProfile(ctx, userName) })
-	eg.Go(func() error { return o.client.DeleteSigningCertificates(ctx, userName) })
-	eg.Go(func() error { return o.client.DeleteSSHPublicKeys(ctx, userName) })
-	eg.Go(func() error { return o.client.DeleteServiceSpecificCredentials(ctx, userName) })
-	eg.Go(func() error { return o.client.RemoveUserFromGroups(ctx, userName) })
+	eg.Go(func() error { return o.client.DetachUserPolicies(egCtx, userName) })
+	eg.Go(func() error { return o.client.DeleteUserInlinePolicies(egCtx, userName) })
+	eg.Go(func() error { return o.client.DeactivateAndDeleteMFADevices(egCtx, userName) })
+	eg.Go(func() error { return o.client.DeleteAccessKeys(egCtx, userName) })
+	eg.Go(func() error { return o.client.DeleteLoginProfile(egCtx, userName) })
+	eg.Go(func() error { return o.client.DeleteSigningCertificates(egCtx, userName) })
+	eg.Go(func() error { return o.client.DeleteSSHPublicKeys(egCtx, userName) })
+	eg.Go(func() error { return o.client.DeleteServiceSpecificCredentials(egCtx, userName) })
+	eg.Go(func() error { return o.client.RemoveUserFromGroups(egCtx, userName) })
 
 	if err := eg.Wait(); err != nil {
 		return err
