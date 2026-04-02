@@ -274,6 +274,12 @@ When the CDK app deploys stacks to multiple regions (e.g., `us-east-1` for Cloud
 
 For environment-agnostic stacks (`unknown-region` in the manifest), the region from `-r` or the default AWS configuration is used.
 
+### Interactive mode
+
+With `-i`, you can select which stacks to delete from all discovered stacks in the CDK app. Selected stacks are deleted in parallel with dependency resolution. Combined with `-f`, deletion protection and retain policies are automatically disabled before deletion:
+
+![delstack cdk interactive mode](https://github.com/user-attachments/assets/a440654d-109f-4ef1-a128-ea8905a4cfef)
+
 ## GitHub Actions
 
 You can use delstack in GitHub Actions Workflow. To delete multiple stacks, specify stack names separated by commas.
