@@ -137,9 +137,13 @@ Deploy a test CloudFormation stack with `make testgen_full`, then use `delstack`
 
 When adding a new target resource type, update:
 
-1. **`e2e/full/cdk/lib/resource/<resource>.go`** (new):CDK constructor `New<Resource>(scope)` that creates the resource in a state that blocks deletion (e.g., ECR with `EmptyOnDelete: false`)
+1. **`e2e/full/cdk/lib/resource/<resource>.go`** (new): CDK constructor `New<Resource>(scope)` that creates the resource in a state that blocks deletion (e.g., ECR with `EmptyOnDelete: false`)
 2. **`e2e/full/cdk/cdk.go`**: Call `resource.New<Resource>(stack, ...)` in `NewTestStack()`
 3. **`e2e/full/deploy.go`**: Populate data via SDK after CDK deployment to create a state that blocks deletion (e.g., upload objects to S3, push images to ECR)
+
+> **Important**: The goal of E2E tests is to reproduce the `DELETE_FAILED` state. If a dependency resource (e.g., access key, policy) is created inside the same CloudFormation stack via CDK, CloudFormation will resolve the dependency order and delete it successfully, so the stack deletion will NOT fail. To trigger `DELETE_FAILED`, dependency resources that block deletion must be created **outside of CloudFormation** (e.g., via SDK calls in `deploy.go`). CDK should only create the base resource itself (e.g., IAM User with no attachments), and `deploy.go` should attach the blocking dependencies via SDK after deployment.
+>
+> If a dependency cannot be feasibly reproduced outside of CloudFormation (e.g., MFA devices requiring TOTP code generation, FIDO/Passkey requiring physical devices), skip it in E2E tests and cover it with unit tests only.
 4. **`e2e/full/go.mod`**: Add required AWS SDK service dependencies
 5. **`e2e/full/cdk/go.mod`**: Add CDK construct dependencies if applicable
 6. **`e2e/full/README.md`**: Add to resource list
