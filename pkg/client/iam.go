@@ -688,7 +688,6 @@ func (i *Iam) RemoveUserFromGroups(ctx context.Context, userName *string) error 
 	return nil
 }
 
-
 func (i *Iam) DeleteUser(ctx context.Context, userName *string) error {
 	input := &iam.DeleteUserInput{
 		UserName: userName,
