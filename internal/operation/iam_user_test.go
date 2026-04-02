@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 	gomock "go.uber.org/mock/gomock"
@@ -17,18 +18,18 @@ import (
 */
 
 // expectAllDependencyRemovalsSucceed sets up mock expectations for all 9 parallel
-// dependency removal methods to succeed. Use AnyTimes() because with parallel execution,
+// dependency removal operations to succeed. Use AnyTimes() because with parallel execution,
 // when one method fails, other goroutines may or may not have been called.
 func expectAllDependencyRemovalsSucceed(m *client.MockIIam, userName *string) {
-	m.EXPECT().DetachUserPolicies(gomock.Any(), userName).Return(nil).AnyTimes()
-	m.EXPECT().DeleteUserInlinePolicies(gomock.Any(), userName).Return(nil).AnyTimes()
-	m.EXPECT().DeactivateAndDeleteMFADevices(gomock.Any(), userName).Return(nil).AnyTimes()
-	m.EXPECT().DeleteAccessKeys(gomock.Any(), userName).Return(nil).AnyTimes()
+	m.EXPECT().ListAttachedUserPolicies(gomock.Any(), userName, gomock.Nil()).Return([]types.AttachedPolicy{}, (*string)(nil), nil).AnyTimes()
+	m.EXPECT().ListUserPolicies(gomock.Any(), userName, gomock.Nil()).Return([]string{}, (*string)(nil), nil).AnyTimes()
+	m.EXPECT().ListMFADevices(gomock.Any(), userName, gomock.Nil()).Return([]types.MFADevice{}, (*string)(nil), nil).AnyTimes()
+	m.EXPECT().ListAccessKeys(gomock.Any(), userName, gomock.Nil()).Return([]types.AccessKeyMetadata{}, (*string)(nil), nil).AnyTimes()
 	m.EXPECT().DeleteLoginProfile(gomock.Any(), userName).Return(nil).AnyTimes()
-	m.EXPECT().DeleteSigningCertificates(gomock.Any(), userName).Return(nil).AnyTimes()
-	m.EXPECT().DeleteSSHPublicKeys(gomock.Any(), userName).Return(nil).AnyTimes()
-	m.EXPECT().DeleteServiceSpecificCredentials(gomock.Any(), userName).Return(nil).AnyTimes()
-	m.EXPECT().RemoveUserFromGroups(gomock.Any(), userName).Return(nil).AnyTimes()
+	m.EXPECT().ListSigningCertificates(gomock.Any(), userName, gomock.Nil()).Return([]types.SigningCertificate{}, (*string)(nil), nil).AnyTimes()
+	m.EXPECT().ListSSHPublicKeys(gomock.Any(), userName, gomock.Nil()).Return([]types.SSHPublicKeyMetadata{}, (*string)(nil), nil).AnyTimes()
+	m.EXPECT().ListServiceSpecificCredentials(gomock.Any(), userName).Return([]types.ServiceSpecificCredentialMetadata{}, nil).AnyTimes()
+	m.EXPECT().ListGroupsForUser(gomock.Any(), userName, gomock.Nil()).Return([]types.Group{}, (*string)(nil), nil).AnyTimes()
 }
 
 func TestIamUserOperator_DeleteIamUser(t *testing.T) {
@@ -61,6 +62,67 @@ func TestIamUserOperator_DeleteIamUser(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "delete user successfully with dependencies",
+			args: args{
+				ctx:      context.Background(),
+				userName: aws.String("test"),
+			},
+			prepareMockFn: func(m *client.MockIIam) {
+				m.EXPECT().CheckUserExists(gomock.Any(), aws.String("test")).Return(true, nil)
+
+				// Policies
+				m.EXPECT().ListAttachedUserPolicies(gomock.Any(), aws.String("test"), gomock.Nil()).Return(
+					[]types.AttachedPolicy{{PolicyArn: aws.String("arn:aws:iam::aws:policy/ReadOnlyAccess")}},
+					(*string)(nil), nil,
+				).AnyTimes()
+				m.EXPECT().DetachUserPolicy(gomock.Any(), aws.String("test"), aws.String("arn:aws:iam::aws:policy/ReadOnlyAccess")).Return(nil).AnyTimes()
+
+				// Inline policies
+				m.EXPECT().ListUserPolicies(gomock.Any(), aws.String("test"), gomock.Nil()).Return(
+					[]string{"InlinePolicy1"}, (*string)(nil), nil,
+				).AnyTimes()
+				m.EXPECT().DeleteUserPolicy(gomock.Any(), aws.String("test"), gomock.Any()).Return(nil).AnyTimes()
+
+				// MFA
+				m.EXPECT().ListMFADevices(gomock.Any(), aws.String("test"), gomock.Nil()).Return(
+					[]types.MFADevice{{SerialNumber: aws.String("arn:aws:iam::123456789012:mfa/test"), UserName: aws.String("test")}},
+					(*string)(nil), nil,
+				).AnyTimes()
+				m.EXPECT().DeactivateMFADevice(gomock.Any(), aws.String("test"), gomock.Any()).Return(nil).AnyTimes()
+				m.EXPECT().DeleteVirtualMFADevice(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+				// Access keys
+				m.EXPECT().ListAccessKeys(gomock.Any(), aws.String("test"), gomock.Nil()).Return(
+					[]types.AccessKeyMetadata{{AccessKeyId: aws.String("AKIAIOSFODNN7EXAMPLE")}},
+					(*string)(nil), nil,
+				).AnyTimes()
+				m.EXPECT().DeleteAccessKey(gomock.Any(), aws.String("test"), gomock.Any()).Return(nil).AnyTimes()
+
+				// Login profile
+				m.EXPECT().DeleteLoginProfile(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
+
+				// Signing certs
+				m.EXPECT().ListSigningCertificates(gomock.Any(), aws.String("test"), gomock.Nil()).Return([]types.SigningCertificate{}, (*string)(nil), nil).AnyTimes()
+
+				// SSH keys
+				m.EXPECT().ListSSHPublicKeys(gomock.Any(), aws.String("test"), gomock.Nil()).Return([]types.SSHPublicKeyMetadata{}, (*string)(nil), nil).AnyTimes()
+
+				// Service specific credentials
+				m.EXPECT().ListServiceSpecificCredentials(gomock.Any(), aws.String("test")).Return([]types.ServiceSpecificCredentialMetadata{}, nil).AnyTimes()
+
+				// Groups
+				m.EXPECT().ListGroupsForUser(gomock.Any(), aws.String("test"), gomock.Nil()).Return(
+					[]types.Group{{GroupName: aws.String("Group1")}},
+					(*string)(nil), nil,
+				).AnyTimes()
+				m.EXPECT().RemoveUserFromGroup(gomock.Any(), aws.String("Group1"), aws.String("test")).Return(nil).AnyTimes()
+
+				m.EXPECT().DeleteUser(gomock.Any(), aws.String("test")).Return(nil)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
 			name: "delete user failure for CheckUserExists errors",
 			args: args{
 				ctx:      context.Background(),
@@ -85,192 +147,24 @@ func TestIamUserOperator_DeleteIamUser(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete user failure for DetachUserPolicies errors",
+			name: "delete user failure for ListAttachedUserPolicies errors",
 			args: args{
 				ctx:      context.Background(),
 				userName: aws.String("test"),
 			},
 			prepareMockFn: func(m *client.MockIIam) {
 				m.EXPECT().CheckUserExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().DetachUserPolicies(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DetachUserPoliciesError"))
-				m.EXPECT().DeleteUserInlinePolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeactivateAndDeleteMFADevices(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteAccessKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
+				m.EXPECT().ListAttachedUserPolicies(gomock.Any(), aws.String("test"), gomock.Nil()).Return(nil, nil, fmt.Errorf("ListAttachedUserPoliciesError"))
+				m.EXPECT().ListUserPolicies(gomock.Any(), aws.String("test"), gomock.Nil()).Return([]string{}, (*string)(nil), nil).AnyTimes()
+				m.EXPECT().ListMFADevices(gomock.Any(), aws.String("test"), gomock.Nil()).Return([]types.MFADevice{}, (*string)(nil), nil).AnyTimes()
+				m.EXPECT().ListAccessKeys(gomock.Any(), aws.String("test"), gomock.Nil()).Return([]types.AccessKeyMetadata{}, (*string)(nil), nil).AnyTimes()
 				m.EXPECT().DeleteLoginProfile(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSigningCertificates(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSSHPublicKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteServiceSpecificCredentials(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().RemoveUserFromGroups(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
+				m.EXPECT().ListSigningCertificates(gomock.Any(), aws.String("test"), gomock.Nil()).Return([]types.SigningCertificate{}, (*string)(nil), nil).AnyTimes()
+				m.EXPECT().ListSSHPublicKeys(gomock.Any(), aws.String("test"), gomock.Nil()).Return([]types.SSHPublicKeyMetadata{}, (*string)(nil), nil).AnyTimes()
+				m.EXPECT().ListServiceSpecificCredentials(gomock.Any(), aws.String("test")).Return([]types.ServiceSpecificCredentialMetadata{}, nil).AnyTimes()
+				m.EXPECT().ListGroupsForUser(gomock.Any(), aws.String("test"), gomock.Nil()).Return([]types.Group{}, (*string)(nil), nil).AnyTimes()
 			},
-			want:    fmt.Errorf("DetachUserPoliciesError"),
-			wantErr: true,
-		},
-		{
-			name: "delete user failure for DeleteUserInlinePolicies errors",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-			},
-			prepareMockFn: func(m *client.MockIIam) {
-				m.EXPECT().CheckUserExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().DetachUserPolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteUserInlinePolicies(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteUserInlinePoliciesError"))
-				m.EXPECT().DeactivateAndDeleteMFADevices(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteAccessKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteLoginProfile(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSigningCertificates(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSSHPublicKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteServiceSpecificCredentials(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().RemoveUserFromGroups(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-			},
-			want:    fmt.Errorf("DeleteUserInlinePoliciesError"),
-			wantErr: true,
-		},
-		{
-			name: "delete user failure for DeactivateAndDeleteMFADevices errors",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-			},
-			prepareMockFn: func(m *client.MockIIam) {
-				m.EXPECT().CheckUserExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().DetachUserPolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteUserInlinePolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeactivateAndDeleteMFADevices(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeactivateAndDeleteMFADevicesError"))
-				m.EXPECT().DeleteAccessKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteLoginProfile(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSigningCertificates(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSSHPublicKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteServiceSpecificCredentials(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().RemoveUserFromGroups(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-			},
-			want:    fmt.Errorf("DeactivateAndDeleteMFADevicesError"),
-			wantErr: true,
-		},
-		{
-			name: "delete user failure for DeleteAccessKeys errors",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-			},
-			prepareMockFn: func(m *client.MockIIam) {
-				m.EXPECT().CheckUserExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().DetachUserPolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteUserInlinePolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeactivateAndDeleteMFADevices(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteAccessKeys(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteAccessKeysError"))
-				m.EXPECT().DeleteLoginProfile(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSigningCertificates(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSSHPublicKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteServiceSpecificCredentials(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().RemoveUserFromGroups(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-			},
-			want:    fmt.Errorf("DeleteAccessKeysError"),
-			wantErr: true,
-		},
-		{
-			name: "delete user failure for DeleteLoginProfile errors",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-			},
-			prepareMockFn: func(m *client.MockIIam) {
-				m.EXPECT().CheckUserExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().DetachUserPolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteUserInlinePolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeactivateAndDeleteMFADevices(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteAccessKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteLoginProfile(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteLoginProfileError"))
-				m.EXPECT().DeleteSigningCertificates(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSSHPublicKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteServiceSpecificCredentials(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().RemoveUserFromGroups(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-			},
-			want:    fmt.Errorf("DeleteLoginProfileError"),
-			wantErr: true,
-		},
-		{
-			name: "delete user failure for DeleteSigningCertificates errors",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-			},
-			prepareMockFn: func(m *client.MockIIam) {
-				m.EXPECT().CheckUserExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().DetachUserPolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteUserInlinePolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeactivateAndDeleteMFADevices(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteAccessKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteLoginProfile(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSigningCertificates(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteSigningCertificatesError"))
-				m.EXPECT().DeleteSSHPublicKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteServiceSpecificCredentials(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().RemoveUserFromGroups(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-			},
-			want:    fmt.Errorf("DeleteSigningCertificatesError"),
-			wantErr: true,
-		},
-		{
-			name: "delete user failure for DeleteSSHPublicKeys errors",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-			},
-			prepareMockFn: func(m *client.MockIIam) {
-				m.EXPECT().CheckUserExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().DetachUserPolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteUserInlinePolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeactivateAndDeleteMFADevices(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteAccessKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteLoginProfile(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSigningCertificates(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSSHPublicKeys(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteSSHPublicKeysError"))
-				m.EXPECT().DeleteServiceSpecificCredentials(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().RemoveUserFromGroups(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-			},
-			want:    fmt.Errorf("DeleteSSHPublicKeysError"),
-			wantErr: true,
-		},
-		{
-			name: "delete user failure for DeleteServiceSpecificCredentials errors",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-			},
-			prepareMockFn: func(m *client.MockIIam) {
-				m.EXPECT().CheckUserExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().DetachUserPolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteUserInlinePolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeactivateAndDeleteMFADevices(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteAccessKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteLoginProfile(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSigningCertificates(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSSHPublicKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteServiceSpecificCredentials(gomock.Any(), aws.String("test")).Return(fmt.Errorf("DeleteServiceSpecificCredentialsError"))
-				m.EXPECT().RemoveUserFromGroups(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-			},
-			want:    fmt.Errorf("DeleteServiceSpecificCredentialsError"),
-			wantErr: true,
-		},
-		{
-			name: "delete user failure for RemoveUserFromGroups errors",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-			},
-			prepareMockFn: func(m *client.MockIIam) {
-				m.EXPECT().CheckUserExists(gomock.Any(), aws.String("test")).Return(true, nil)
-				m.EXPECT().DetachUserPolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteUserInlinePolicies(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeactivateAndDeleteMFADevices(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteAccessKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteLoginProfile(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSigningCertificates(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteSSHPublicKeys(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().DeleteServiceSpecificCredentials(gomock.Any(), aws.String("test")).Return(nil).AnyTimes()
-				m.EXPECT().RemoveUserFromGroups(gomock.Any(), aws.String("test")).Return(fmt.Errorf("RemoveUserFromGroupsError"))
-			},
-			want:    fmt.Errorf("RemoveUserFromGroupsError"),
+			want:    fmt.Errorf("ListAttachedUserPoliciesError"),
 			wantErr: true,
 		},
 		{
@@ -292,10 +186,10 @@ func TestIamUserOperator_DeleteIamUser(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			iamUserMock := client.NewMockIIam(ctrl)
-			tt.prepareMockFn(iamUserMock)
+			iamMock := client.NewMockIIam(ctrl)
+			tt.prepareMockFn(iamMock)
 
-			iamUserOperator := NewIamUserOperator(iamUserMock)
+			iamUserOperator := NewIamUserOperator(iamMock)
 
 			err := iamUserOperator.DeleteIamUser(tt.args.ctx, tt.args.userName)
 			if (err != nil) != tt.wantErr {
@@ -353,10 +247,10 @@ func TestIamUserOperator_DeleteResourcesForIamUser(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			iamUserMock := client.NewMockIIam(ctrl)
-			tt.prepareMockFn(iamUserMock)
+			iamMock := client.NewMockIIam(ctrl)
+			tt.prepareMockFn(iamMock)
 
-			iamUserOperator := NewIamUserOperator(iamUserMock)
+			iamUserOperator := NewIamUserOperator(iamMock)
 			iamUserOperator.AddResource(&cfnTypes.StackResourceSummary{
 				LogicalResourceId:  aws.String("LogicalResourceId1"),
 				ResourceStatus:     "DELETE_FAILED",

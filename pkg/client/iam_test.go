@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	awsMiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -791,7 +790,7 @@ func TestIam_CheckUserExists(t *testing.T) {
 	}
 }
 
-func TestIam_DetachUserPolicies(t *testing.T) {
+func TestIam_ListAttachedUserPolicies(t *testing.T) {
 	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
@@ -799,63 +798,32 @@ func TestIam_DetachUserPolicies(t *testing.T) {
 		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
+	type want struct {
+		policies []types.AttachedPolicy
+		err      error
+	}
+
 	cases := []struct {
 		name    string
 		args    args
-		want    error
+		want    want
 		wantErr bool
 	}{
 		{
-			name: "detach user policies successfully",
+			name: "list attached user policies successfully",
 			args: args{
 				ctx:      context.Background(),
 				userName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DetachUserPoliciesMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								operationName := awsMiddleware.GetOperationName(ctx)
-								if operationName == "ListAttachedUserPolicies" {
-									return middleware.FinalizeOutput{
-										Result: &iam.ListAttachedUserPoliciesOutput{
-											AttachedPolicies: []types.AttachedPolicy{
-												{
-													PolicyArn:  aws.String("arn:aws:iam::policy/Policy1"),
-													PolicyName: aws.String("Policy1"),
-												},
-											},
-										},
-									}, middleware.Metadata{}, nil
-								}
-								if operationName == "DetachUserPolicy" {
-									return middleware.FinalizeOutput{
-										Result: &iam.DetachUserPolicyOutput{},
-									}, middleware.Metadata{}, nil
-								}
-								return middleware.FinalizeOutput{}, middleware.Metadata{}, nil
-							},
-						),
-						middleware.Before,
-					)
-				},
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "detach user policies with empty policies successfully",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-					return stack.Finalize.Add(
-						middleware.FinalizeMiddlewareFunc(
-							"DetachUserPoliciesEmptyMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"ListAttachedUserPoliciesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.ListAttachedUserPoliciesOutput{
-										AttachedPolicies: []types.AttachedPolicy{},
+										AttachedPolicies: []types.AttachedPolicy{
+											{PolicyArn: aws.String("arn:aws:iam::aws:policy/ReadOnlyAccess")},
+										},
 									},
 								}, middleware.Metadata{}, nil
 							},
@@ -864,19 +832,24 @@ func TestIam_DetachUserPolicies(t *testing.T) {
 					)
 				},
 			},
-			want:    nil,
+			want: want{
+				policies: []types.AttachedPolicy{
+					{PolicyArn: aws.String("arn:aws:iam::aws:policy/ReadOnlyAccess")},
+				},
+				err: nil,
+			},
 			wantErr: false,
 		},
 		{
-			name: "detach user policies failure",
+			name: "list attached user policies failure",
 			args: args{
 				ctx:      context.Background(),
 				userName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DetachUserPoliciesErrorMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"ListAttachedUserPoliciesErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.ListAttachedUserPoliciesOutput{},
 								}, middleware.Metadata{}, fmt.Errorf("ListAttachedUserPoliciesError")
@@ -886,9 +859,12 @@ func TestIam_DetachUserPolicies(t *testing.T) {
 					)
 				},
 			},
-			want: &ClientError{
-				ResourceName: aws.String("test"),
-				Err:          fmt.Errorf("operation error IAM: ListAttachedUserPolicies, ListAttachedUserPoliciesError"),
+			want: want{
+				policies: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error IAM: ListAttachedUserPolicies, ListAttachedUserPoliciesError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -908,23 +884,28 @@ func TestIam_DetachUserPolicies(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			err = iamClient.DetachUserPolicies(tt.args.ctx, tt.args.userName)
+			output, _, err := iamClient.ListAttachedUserPolicies(tt.args.ctx, tt.args.userName, nil)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
 			}
-			if tt.wantErr && err.Error() != tt.want.Error() {
-				t.Errorf("err = %#v, want %#v", err, tt.want)
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.policies) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.policies)
 			}
 		})
 	}
 }
 
-func TestIam_DeleteUserInlinePolicies(t *testing.T) {
+func TestIam_DetachUserPolicy(t *testing.T) {
 	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		userName           *string
+		policyArn          *string
 		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
@@ -935,52 +916,18 @@ func TestIam_DeleteUserInlinePolicies(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "delete user inline policies successfully",
+			name: "detach user policy successfully",
 			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
+				ctx:       context.Background(),
+				userName:  aws.String("test"),
+				policyArn: aws.String("arn:aws:iam::aws:policy/ReadOnlyAccess"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteUserInlinePoliciesMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								operationName := awsMiddleware.GetOperationName(ctx)
-								if operationName == "ListUserPolicies" {
-									return middleware.FinalizeOutput{
-										Result: &iam.ListUserPoliciesOutput{
-											PolicyNames: []string{"InlinePolicy1"},
-										},
-									}, middleware.Metadata{}, nil
-								}
-								if operationName == "DeleteUserPolicy" {
-									return middleware.FinalizeOutput{
-										Result: &iam.DeleteUserPolicyOutput{},
-									}, middleware.Metadata{}, nil
-								}
-								return middleware.FinalizeOutput{}, middleware.Metadata{}, nil
-							},
-						),
-						middleware.Before,
-					)
-				},
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "delete user inline policies with empty policies successfully",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-					return stack.Finalize.Add(
-						middleware.FinalizeMiddlewareFunc(
-							"DeleteUserInlinePoliciesEmptyMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"DetachUserPolicyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.ListUserPoliciesOutput{
-										PolicyNames: []string{},
-									},
+									Result: &iam.DetachUserPolicyOutput{},
 								}, middleware.Metadata{}, nil
 							},
 						),
@@ -992,15 +939,115 @@ func TestIam_DeleteUserInlinePolicies(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete user inline policies failure",
+			name: "detach user policy failure",
+			args: args{
+				ctx:       context.Background(),
+				userName:  aws.String("test"),
+				policyArn: aws.String("arn:aws:iam::aws:policy/ReadOnlyAccess"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DetachUserPolicyErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DetachUserPolicyOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DetachUserPolicyError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error IAM: DetachUserPolicy, DetachUserPolicyError"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			err = iamClient.DetachUserPolicy(tt.args.ctx, tt.args.userName, tt.args.policyArn)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestIam_ListUserPolicies(t *testing.T) {
+	SleepTimeSecForIam = 1
+	type args struct {
+		ctx                context.Context
+		userName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	type want struct {
+		policies []string
+		err      error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "list user policies successfully",
 			args: args{
 				ctx:      context.Background(),
 				userName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteUserInlinePoliciesErrorMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"ListUserPoliciesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListUserPoliciesOutput{
+										PolicyNames: []string{"InlinePolicy1"},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				policies: []string{"InlinePolicy1"},
+				err:      nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list user policies failure",
+			args: args{
+				ctx:      context.Background(),
+				userName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListUserPoliciesErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.ListUserPoliciesOutput{},
 								}, middleware.Metadata{}, fmt.Errorf("ListUserPoliciesError")
@@ -1010,9 +1057,12 @@ func TestIam_DeleteUserInlinePolicies(t *testing.T) {
 					)
 				},
 			},
-			want: &ClientError{
-				ResourceName: aws.String("test"),
-				Err:          fmt.Errorf("operation error IAM: ListUserPolicies, ListUserPoliciesError"),
+			want: want{
+				policies: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error IAM: ListUserPolicies, ListUserPoliciesError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -1032,23 +1082,28 @@ func TestIam_DeleteUserInlinePolicies(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			err = iamClient.DeleteUserInlinePolicies(tt.args.ctx, tt.args.userName)
+			output, _, err := iamClient.ListUserPolicies(tt.args.ctx, tt.args.userName, nil)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
 			}
-			if tt.wantErr && err.Error() != tt.want.Error() {
-				t.Errorf("err = %#v, want %#v", err, tt.want)
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.policies) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.policies)
 			}
 		})
 	}
 }
 
-func TestIam_DeactivateAndDeleteMFADevices(t *testing.T) {
+func TestIam_DeleteUserPolicy(t *testing.T) {
 	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		userName           *string
+		policyName         *string
 		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
@@ -1059,62 +1114,18 @@ func TestIam_DeactivateAndDeleteMFADevices(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "deactivate and delete mfa devices successfully",
+			name: "delete user policy successfully",
 			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
+				ctx:        context.Background(),
+				userName:   aws.String("test"),
+				policyName: aws.String("InlinePolicy1"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeactivateAndDeleteMFADevicesMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								operationName := awsMiddleware.GetOperationName(ctx)
-								if operationName == "ListMFADevices" {
-									return middleware.FinalizeOutput{
-										Result: &iam.ListMFADevicesOutput{
-											MFADevices: []types.MFADevice{
-												{
-													SerialNumber: aws.String("arn:aws:iam::123456789012:mfa/test"),
-													UserName:     aws.String("test"),
-												},
-											},
-										},
-									}, middleware.Metadata{}, nil
-								}
-								if operationName == "DeactivateMFADevice" {
-									return middleware.FinalizeOutput{
-										Result: &iam.DeactivateMFADeviceOutput{},
-									}, middleware.Metadata{}, nil
-								}
-								if operationName == "DeleteVirtualMFADevice" {
-									return middleware.FinalizeOutput{
-										Result: &iam.DeleteVirtualMFADeviceOutput{},
-									}, middleware.Metadata{}, nil
-								}
-								return middleware.FinalizeOutput{}, middleware.Metadata{}, nil
-							},
-						),
-						middleware.Before,
-					)
-				},
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "deactivate and delete mfa devices with empty devices successfully",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-					return stack.Finalize.Add(
-						middleware.FinalizeMiddlewareFunc(
-							"DeactivateAndDeleteMFADevicesEmptyMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"DeleteUserPolicyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.ListMFADevicesOutput{
-										MFADevices: []types.MFADevice{},
-									},
+									Result: &iam.DeleteUserPolicyOutput{},
 								}, middleware.Metadata{}, nil
 							},
 						),
@@ -1126,15 +1137,125 @@ func TestIam_DeactivateAndDeleteMFADevices(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "deactivate and delete mfa devices failure",
+			name: "delete user policy failure",
+			args: args{
+				ctx:        context.Background(),
+				userName:   aws.String("test"),
+				policyName: aws.String("InlinePolicy1"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteUserPolicyErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteUserPolicyOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteUserPolicyError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error IAM: DeleteUserPolicy, DeleteUserPolicyError"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			err = iamClient.DeleteUserPolicy(tt.args.ctx, tt.args.userName, tt.args.policyName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestIam_ListMFADevices(t *testing.T) {
+	SleepTimeSecForIam = 1
+	type args struct {
+		ctx                context.Context
+		userName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	type want struct {
+		devices []types.MFADevice
+		err     error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "list mfa devices successfully",
 			args: args{
 				ctx:      context.Background(),
 				userName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeactivateAndDeleteMFADevicesErrorMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"ListMFADevicesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListMFADevicesOutput{
+										MFADevices: []types.MFADevice{
+											{
+												SerialNumber: aws.String("arn:aws:iam::123456789012:mfa/test"),
+												UserName:     aws.String("test"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				devices: []types.MFADevice{
+					{
+						SerialNumber: aws.String("arn:aws:iam::123456789012:mfa/test"),
+						UserName:     aws.String("test"),
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list mfa devices failure",
+			args: args{
+				ctx:      context.Background(),
+				userName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListMFADevicesErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.ListMFADevicesOutput{},
 								}, middleware.Metadata{}, fmt.Errorf("ListMFADevicesError")
@@ -1144,9 +1265,12 @@ func TestIam_DeactivateAndDeleteMFADevices(t *testing.T) {
 					)
 				},
 			},
-			want: &ClientError{
-				ResourceName: aws.String("test"),
-				Err:          fmt.Errorf("operation error IAM: ListMFADevices, ListMFADevicesError"),
+			want: want{
+				devices: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error IAM: ListMFADevices, ListMFADevicesError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -1166,23 +1290,28 @@ func TestIam_DeactivateAndDeleteMFADevices(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			err = iamClient.DeactivateAndDeleteMFADevices(tt.args.ctx, tt.args.userName)
+			output, _, err := iamClient.ListMFADevices(tt.args.ctx, tt.args.userName, nil)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
 			}
-			if tt.wantErr && err.Error() != tt.want.Error() {
-				t.Errorf("err = %#v, want %#v", err, tt.want)
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.devices) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.devices)
 			}
 		})
 	}
 }
 
-func TestIam_DeleteAccessKeys(t *testing.T) {
+func TestIam_DeactivateMFADevice(t *testing.T) {
 	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		userName           *string
+		serialNumber       *string
 		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
@@ -1193,57 +1322,18 @@ func TestIam_DeleteAccessKeys(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "delete access keys successfully",
+			name: "deactivate mfa device successfully",
 			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
+				ctx:          context.Background(),
+				userName:     aws.String("test"),
+				serialNumber: aws.String("arn:aws:iam::123456789012:mfa/test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteAccessKeysMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								operationName := awsMiddleware.GetOperationName(ctx)
-								if operationName == "ListAccessKeys" {
-									return middleware.FinalizeOutput{
-										Result: &iam.ListAccessKeysOutput{
-											AccessKeyMetadata: []types.AccessKeyMetadata{
-												{
-													AccessKeyId: aws.String("AKIAIOSFODNN7EXAMPLE"),
-													UserName:    aws.String("test"),
-												},
-											},
-										},
-									}, middleware.Metadata{}, nil
-								}
-								if operationName == "DeleteAccessKey" {
-									return middleware.FinalizeOutput{
-										Result: &iam.DeleteAccessKeyOutput{},
-									}, middleware.Metadata{}, nil
-								}
-								return middleware.FinalizeOutput{}, middleware.Metadata{}, nil
-							},
-						),
-						middleware.Before,
-					)
-				},
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "delete access keys with empty keys successfully",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-					return stack.Finalize.Add(
-						middleware.FinalizeMiddlewareFunc(
-							"DeleteAccessKeysEmptyMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"DeactivateMFADeviceMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.ListAccessKeysOutput{
-										AccessKeyMetadata: []types.AccessKeyMetadata{},
-									},
+									Result: &iam.DeactivateMFADeviceOutput{},
 								}, middleware.Metadata{}, nil
 							},
 						),
@@ -1255,18 +1345,19 @@ func TestIam_DeleteAccessKeys(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete access keys failure",
+			name: "deactivate mfa device failure",
 			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
+				ctx:          context.Background(),
+				userName:     aws.String("test"),
+				serialNumber: aws.String("arn:aws:iam::123456789012:mfa/test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteAccessKeysErrorMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"DeactivateMFADeviceErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.ListAccessKeysOutput{},
-								}, middleware.Metadata{}, fmt.Errorf("ListAccessKeysError")
+									Result: &iam.DeactivateMFADeviceOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeactivateMFADeviceError")
 							},
 						),
 						middleware.Before,
@@ -1275,7 +1366,7 @@ func TestIam_DeleteAccessKeys(t *testing.T) {
 			},
 			want: &ClientError{
 				ResourceName: aws.String("test"),
-				Err:          fmt.Errorf("operation error IAM: ListAccessKeys, ListAccessKeysError"),
+				Err:          fmt.Errorf("operation error IAM: DeactivateMFADevice, DeactivateMFADeviceError"),
 			},
 			wantErr: true,
 		},
@@ -1295,7 +1386,304 @@ func TestIam_DeleteAccessKeys(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			err = iamClient.DeleteAccessKeys(tt.args.ctx, tt.args.userName)
+			err = iamClient.DeactivateMFADevice(tt.args.ctx, tt.args.userName, tt.args.serialNumber)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestIam_DeleteVirtualMFADevice(t *testing.T) {
+	SleepTimeSecForIam = 1
+	type args struct {
+		ctx                context.Context
+		serialNumber       *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    error
+		wantErr bool
+	}{
+		{
+			name: "delete virtual mfa device successfully",
+			args: args{
+				ctx:          context.Background(),
+				serialNumber: aws.String("arn:aws:iam::123456789012:mfa/test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteVirtualMFADeviceMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteVirtualMFADeviceOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete virtual mfa device failure",
+			args: args{
+				ctx:          context.Background(),
+				serialNumber: aws.String("arn:aws:iam::123456789012:mfa/test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteVirtualMFADeviceErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteVirtualMFADeviceOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteVirtualMFADeviceError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("arn:aws:iam::123456789012:mfa/test"),
+				Err:          fmt.Errorf("operation error IAM: DeleteVirtualMFADevice, DeleteVirtualMFADeviceError"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			err = iamClient.DeleteVirtualMFADevice(tt.args.ctx, tt.args.serialNumber)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestIam_ListAccessKeys(t *testing.T) {
+	SleepTimeSecForIam = 1
+	type args struct {
+		ctx                context.Context
+		userName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	type want struct {
+		keys []types.AccessKeyMetadata
+		err  error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "list access keys successfully",
+			args: args{
+				ctx:      context.Background(),
+				userName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListAccessKeysMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListAccessKeysOutput{
+										AccessKeyMetadata: []types.AccessKeyMetadata{
+											{
+												AccessKeyId: aws.String("AKIAIOSFODNN7EXAMPLE"),
+												UserName:    aws.String("test"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				keys: []types.AccessKeyMetadata{
+					{
+						AccessKeyId: aws.String("AKIAIOSFODNN7EXAMPLE"),
+						UserName:    aws.String("test"),
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list access keys failure",
+			args: args{
+				ctx:      context.Background(),
+				userName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListAccessKeysErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListAccessKeysOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("ListAccessKeysError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				keys: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error IAM: ListAccessKeys, ListAccessKeysError"),
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			output, _, err := iamClient.ListAccessKeys(tt.args.ctx, tt.args.userName, nil)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.keys) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.keys)
+			}
+		})
+	}
+}
+
+func TestIam_DeleteAccessKey(t *testing.T) {
+	SleepTimeSecForIam = 1
+	type args struct {
+		ctx                context.Context
+		userName           *string
+		accessKeyId        *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    error
+		wantErr bool
+	}{
+		{
+			name: "delete access key successfully",
+			args: args{
+				ctx:         context.Background(),
+				userName:    aws.String("test"),
+				accessKeyId: aws.String("AKIAIOSFODNN7EXAMPLE"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteAccessKeyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteAccessKeyOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete access key failure",
+			args: args{
+				ctx:         context.Background(),
+				userName:    aws.String("test"),
+				accessKeyId: aws.String("AKIAIOSFODNN7EXAMPLE"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteAccessKeyErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteAccessKeyOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteAccessKeyError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error IAM: DeleteAccessKey, DeleteAccessKeyError"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			err = iamClient.DeleteAccessKey(tt.args.ctx, tt.args.userName, tt.args.accessKeyId)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -1334,28 +1722,6 @@ func TestIam_DeleteLoginProfile(t *testing.T) {
 								return middleware.FinalizeOutput{
 									Result: &iam.DeleteLoginProfileOutput{},
 								}, middleware.Metadata{}, nil
-							},
-						),
-						middleware.Before,
-					)
-				},
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "delete login profile not exists successfully",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-					return stack.Finalize.Add(
-						middleware.FinalizeMiddlewareFunc(
-							"DeleteLoginProfileNotExistsMock",
-							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								return middleware.FinalizeOutput{
-									Result: &iam.DeleteLoginProfileOutput{},
-								}, middleware.Metadata{}, fmt.Errorf("NoSuchEntity")
 							},
 						),
 						middleware.Before,
@@ -1418,7 +1784,7 @@ func TestIam_DeleteLoginProfile(t *testing.T) {
 	}
 }
 
-func TestIam_DeleteSigningCertificates(t *testing.T) {
+func TestIam_ListSigningCertificates(t *testing.T) {
 	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
@@ -1426,63 +1792,35 @@ func TestIam_DeleteSigningCertificates(t *testing.T) {
 		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
+	type want struct {
+		certificates []types.SigningCertificate
+		err          error
+	}
+
 	cases := []struct {
 		name    string
 		args    args
-		want    error
+		want    want
 		wantErr bool
 	}{
 		{
-			name: "delete signing certificates successfully",
+			name: "list signing certificates successfully",
 			args: args{
 				ctx:      context.Background(),
 				userName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteSigningCertificatesMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								operationName := awsMiddleware.GetOperationName(ctx)
-								if operationName == "ListSigningCertificates" {
-									return middleware.FinalizeOutput{
-										Result: &iam.ListSigningCertificatesOutput{
-											Certificates: []types.SigningCertificate{
-												{
-													CertificateId: aws.String("cert-id-1"),
-													UserName:      aws.String("test"),
-												},
-											},
-										},
-									}, middleware.Metadata{}, nil
-								}
-								if operationName == "DeleteSigningCertificate" {
-									return middleware.FinalizeOutput{
-										Result: &iam.DeleteSigningCertificateOutput{},
-									}, middleware.Metadata{}, nil
-								}
-								return middleware.FinalizeOutput{}, middleware.Metadata{}, nil
-							},
-						),
-						middleware.Before,
-					)
-				},
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "delete signing certificates with empty certificates successfully",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-					return stack.Finalize.Add(
-						middleware.FinalizeMiddlewareFunc(
-							"DeleteSigningCertificatesEmptyMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"ListSigningCertificatesMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.ListSigningCertificatesOutput{
-										Certificates: []types.SigningCertificate{},
+										Certificates: []types.SigningCertificate{
+											{
+												CertificateId: aws.String("cert-id-1"),
+												UserName:      aws.String("test"),
+											},
+										},
 									},
 								}, middleware.Metadata{}, nil
 							},
@@ -1491,19 +1829,27 @@ func TestIam_DeleteSigningCertificates(t *testing.T) {
 					)
 				},
 			},
-			want:    nil,
+			want: want{
+				certificates: []types.SigningCertificate{
+					{
+						CertificateId: aws.String("cert-id-1"),
+						UserName:      aws.String("test"),
+					},
+				},
+				err: nil,
+			},
 			wantErr: false,
 		},
 		{
-			name: "delete signing certificates failure",
+			name: "list signing certificates failure",
 			args: args{
 				ctx:      context.Background(),
 				userName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteSigningCertificatesErrorMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"ListSigningCertificatesErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.ListSigningCertificatesOutput{},
 								}, middleware.Metadata{}, fmt.Errorf("ListSigningCertificatesError")
@@ -1513,9 +1859,12 @@ func TestIam_DeleteSigningCertificates(t *testing.T) {
 					)
 				},
 			},
-			want: &ClientError{
-				ResourceName: aws.String("test"),
-				Err:          fmt.Errorf("operation error IAM: ListSigningCertificates, ListSigningCertificatesError"),
+			want: want{
+				certificates: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error IAM: ListSigningCertificates, ListSigningCertificatesError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -1535,23 +1884,28 @@ func TestIam_DeleteSigningCertificates(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			err = iamClient.DeleteSigningCertificates(tt.args.ctx, tt.args.userName)
+			output, _, err := iamClient.ListSigningCertificates(tt.args.ctx, tt.args.userName, nil)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
 			}
-			if tt.wantErr && err.Error() != tt.want.Error() {
-				t.Errorf("err = %#v, want %#v", err, tt.want)
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.certificates) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.certificates)
 			}
 		})
 	}
 }
 
-func TestIam_DeleteSSHPublicKeys(t *testing.T) {
+func TestIam_DeleteSigningCertificate(t *testing.T) {
 	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		userName           *string
+		certificateId      *string
 		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
@@ -1562,57 +1916,18 @@ func TestIam_DeleteSSHPublicKeys(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "delete ssh public keys successfully",
+			name: "delete signing certificate successfully",
 			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
+				ctx:           context.Background(),
+				userName:      aws.String("test"),
+				certificateId: aws.String("cert-id-1"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteSSHPublicKeysMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								operationName := awsMiddleware.GetOperationName(ctx)
-								if operationName == "ListSSHPublicKeys" {
-									return middleware.FinalizeOutput{
-										Result: &iam.ListSSHPublicKeysOutput{
-											SSHPublicKeys: []types.SSHPublicKeyMetadata{
-												{
-													SSHPublicKeyId: aws.String("ssh-key-1"),
-													UserName:       aws.String("test"),
-												},
-											},
-										},
-									}, middleware.Metadata{}, nil
-								}
-								if operationName == "DeleteSSHPublicKey" {
-									return middleware.FinalizeOutput{
-										Result: &iam.DeleteSSHPublicKeyOutput{},
-									}, middleware.Metadata{}, nil
-								}
-								return middleware.FinalizeOutput{}, middleware.Metadata{}, nil
-							},
-						),
-						middleware.Before,
-					)
-				},
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "delete ssh public keys with empty keys successfully",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-					return stack.Finalize.Add(
-						middleware.FinalizeMiddlewareFunc(
-							"DeleteSSHPublicKeysEmptyMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"DeleteSigningCertificateMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.ListSSHPublicKeysOutput{
-										SSHPublicKeys: []types.SSHPublicKeyMetadata{},
-									},
+									Result: &iam.DeleteSigningCertificateOutput{},
 								}, middleware.Metadata{}, nil
 							},
 						),
@@ -1624,15 +1939,125 @@ func TestIam_DeleteSSHPublicKeys(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete ssh public keys failure",
+			name: "delete signing certificate failure",
+			args: args{
+				ctx:           context.Background(),
+				userName:      aws.String("test"),
+				certificateId: aws.String("cert-id-1"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteSigningCertificateErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteSigningCertificateOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteSigningCertificateError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error IAM: DeleteSigningCertificate, DeleteSigningCertificateError"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			err = iamClient.DeleteSigningCertificate(tt.args.ctx, tt.args.userName, tt.args.certificateId)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestIam_ListSSHPublicKeys(t *testing.T) {
+	SleepTimeSecForIam = 1
+	type args struct {
+		ctx                context.Context
+		userName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	type want struct {
+		keys []types.SSHPublicKeyMetadata
+		err  error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "list ssh public keys successfully",
 			args: args{
 				ctx:      context.Background(),
 				userName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteSSHPublicKeysErrorMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"ListSSHPublicKeysMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListSSHPublicKeysOutput{
+										SSHPublicKeys: []types.SSHPublicKeyMetadata{
+											{
+												SSHPublicKeyId: aws.String("ssh-key-1"),
+												UserName:       aws.String("test"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				keys: []types.SSHPublicKeyMetadata{
+					{
+						SSHPublicKeyId: aws.String("ssh-key-1"),
+						UserName:       aws.String("test"),
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list ssh public keys failure",
+			args: args{
+				ctx:      context.Background(),
+				userName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListSSHPublicKeysErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.ListSSHPublicKeysOutput{},
 								}, middleware.Metadata{}, fmt.Errorf("ListSSHPublicKeysError")
@@ -1642,9 +2067,12 @@ func TestIam_DeleteSSHPublicKeys(t *testing.T) {
 					)
 				},
 			},
-			want: &ClientError{
-				ResourceName: aws.String("test"),
-				Err:          fmt.Errorf("operation error IAM: ListSSHPublicKeys, ListSSHPublicKeysError"),
+			want: want{
+				keys: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error IAM: ListSSHPublicKeys, ListSSHPublicKeysError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -1664,23 +2092,28 @@ func TestIam_DeleteSSHPublicKeys(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			err = iamClient.DeleteSSHPublicKeys(tt.args.ctx, tt.args.userName)
+			output, _, err := iamClient.ListSSHPublicKeys(tt.args.ctx, tt.args.userName, nil)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
 			}
-			if tt.wantErr && err.Error() != tt.want.Error() {
-				t.Errorf("err = %#v, want %#v", err, tt.want)
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.keys) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.keys)
 			}
 		})
 	}
 }
 
-func TestIam_DeleteServiceSpecificCredentials(t *testing.T) {
+func TestIam_DeleteSSHPublicKey(t *testing.T) {
 	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		userName           *string
+		sshPublicKeyId     *string
 		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
@@ -1691,57 +2124,18 @@ func TestIam_DeleteServiceSpecificCredentials(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "delete service specific credentials successfully",
+			name: "delete ssh public key successfully",
 			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
+				ctx:            context.Background(),
+				userName:       aws.String("test"),
+				sshPublicKeyId: aws.String("ssh-key-1"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteServiceSpecificCredentialsMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								operationName := awsMiddleware.GetOperationName(ctx)
-								if operationName == "ListServiceSpecificCredentials" {
-									return middleware.FinalizeOutput{
-										Result: &iam.ListServiceSpecificCredentialsOutput{
-											ServiceSpecificCredentials: []types.ServiceSpecificCredentialMetadata{
-												{
-													ServiceSpecificCredentialId: aws.String("cred-id-1"),
-													UserName:                    aws.String("test"),
-												},
-											},
-										},
-									}, middleware.Metadata{}, nil
-								}
-								if operationName == "DeleteServiceSpecificCredential" {
-									return middleware.FinalizeOutput{
-										Result: &iam.DeleteServiceSpecificCredentialOutput{},
-									}, middleware.Metadata{}, nil
-								}
-								return middleware.FinalizeOutput{}, middleware.Metadata{}, nil
-							},
-						),
-						middleware.Before,
-					)
-				},
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "delete service specific credentials with empty credentials successfully",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-					return stack.Finalize.Add(
-						middleware.FinalizeMiddlewareFunc(
-							"DeleteServiceSpecificCredentialsEmptyMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"DeleteSSHPublicKeyMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.ListServiceSpecificCredentialsOutput{
-										ServiceSpecificCredentials: []types.ServiceSpecificCredentialMetadata{},
-									},
+									Result: &iam.DeleteSSHPublicKeyOutput{},
 								}, middleware.Metadata{}, nil
 							},
 						),
@@ -1753,15 +2147,125 @@ func TestIam_DeleteServiceSpecificCredentials(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "delete service specific credentials failure",
+			name: "delete ssh public key failure",
+			args: args{
+				ctx:            context.Background(),
+				userName:       aws.String("test"),
+				sshPublicKeyId: aws.String("ssh-key-1"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteSSHPublicKeyErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.DeleteSSHPublicKeyOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteSSHPublicKeyError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: &ClientError{
+				ResourceName: aws.String("test"),
+				Err:          fmt.Errorf("operation error IAM: DeleteSSHPublicKey, DeleteSSHPublicKeyError"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			err = iamClient.DeleteSSHPublicKey(tt.args.ctx, tt.args.userName, tt.args.sshPublicKeyId)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestIam_ListServiceSpecificCredentials(t *testing.T) {
+	SleepTimeSecForIam = 1
+	type args struct {
+		ctx                context.Context
+		userName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	type want struct {
+		credentials []types.ServiceSpecificCredentialMetadata
+		err         error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "list service specific credentials successfully",
 			args: args{
 				ctx:      context.Background(),
 				userName: aws.String("test"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"DeleteServiceSpecificCredentialsErrorMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"ListServiceSpecificCredentialsMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListServiceSpecificCredentialsOutput{
+										ServiceSpecificCredentials: []types.ServiceSpecificCredentialMetadata{
+											{
+												ServiceSpecificCredentialId: aws.String("cred-id-1"),
+												UserName:                    aws.String("test"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				credentials: []types.ServiceSpecificCredentialMetadata{
+					{
+						ServiceSpecificCredentialId: aws.String("cred-id-1"),
+						UserName:                    aws.String("test"),
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list service specific credentials failure",
+			args: args{
+				ctx:      context.Background(),
+				userName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListServiceSpecificCredentialsErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
 									Result: &iam.ListServiceSpecificCredentialsOutput{},
 								}, middleware.Metadata{}, fmt.Errorf("ListServiceSpecificCredentialsError")
@@ -1771,9 +2275,12 @@ func TestIam_DeleteServiceSpecificCredentials(t *testing.T) {
 					)
 				},
 			},
-			want: &ClientError{
-				ResourceName: aws.String("test"),
-				Err:          fmt.Errorf("operation error IAM: ListServiceSpecificCredentials, ListServiceSpecificCredentialsError"),
+			want: want{
+				credentials: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error IAM: ListServiceSpecificCredentials, ListServiceSpecificCredentialsError"),
+				},
 			},
 			wantErr: true,
 		},
@@ -1793,23 +2300,28 @@ func TestIam_DeleteServiceSpecificCredentials(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			err = iamClient.DeleteServiceSpecificCredentials(tt.args.ctx, tt.args.userName)
+			output, err := iamClient.ListServiceSpecificCredentials(tt.args.ctx, tt.args.userName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
 				return
 			}
-			if tt.wantErr && err.Error() != tt.want.Error() {
-				t.Errorf("err = %#v, want %#v", err, tt.want)
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.credentials) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.credentials)
 			}
 		})
 	}
 }
 
-func TestIam_RemoveUserFromGroups(t *testing.T) {
+func TestIam_DeleteServiceSpecificCredential(t *testing.T) {
 	SleepTimeSecForIam = 1
 	type args struct {
 		ctx                context.Context
 		userName           *string
+		credentialId       *string
 		withAPIOptionsFunc func(*middleware.Stack) error
 	}
 
@@ -1820,56 +2332,18 @@ func TestIam_RemoveUserFromGroups(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "remove user from groups successfully",
+			name: "delete service specific credential successfully",
 			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
+				ctx:          context.Background(),
+				userName:     aws.String("test"),
+				credentialId: aws.String("cred-id-1"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"RemoveUserFromGroupsMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-								operationName := awsMiddleware.GetOperationName(ctx)
-								if operationName == "ListGroupsForUser" {
-									return middleware.FinalizeOutput{
-										Result: &iam.ListGroupsForUserOutput{
-											Groups: []types.Group{
-												{
-													GroupName: aws.String("Group1"),
-												},
-											},
-										},
-									}, middleware.Metadata{}, nil
-								}
-								if operationName == "RemoveUserFromGroup" {
-									return middleware.FinalizeOutput{
-										Result: &iam.RemoveUserFromGroupOutput{},
-									}, middleware.Metadata{}, nil
-								}
-								return middleware.FinalizeOutput{}, middleware.Metadata{}, nil
-							},
-						),
-						middleware.Before,
-					)
-				},
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "remove user from groups with empty groups successfully",
-			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
-				withAPIOptionsFunc: func(stack *middleware.Stack) error {
-					return stack.Finalize.Add(
-						middleware.FinalizeMiddlewareFunc(
-							"RemoveUserFromGroupsEmptyMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"DeleteServiceSpecificCredentialMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.ListGroupsForUserOutput{
-										Groups: []types.Group{},
-									},
+									Result: &iam.DeleteServiceSpecificCredentialOutput{},
 								}, middleware.Metadata{}, nil
 							},
 						),
@@ -1881,18 +2355,19 @@ func TestIam_RemoveUserFromGroups(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "remove user from groups failure",
+			name: "delete service specific credential failure",
 			args: args{
-				ctx:      context.Background(),
-				userName: aws.String("test"),
+				ctx:          context.Background(),
+				userName:     aws.String("test"),
+				credentialId: aws.String("cred-id-1"),
 				withAPIOptionsFunc: func(stack *middleware.Stack) error {
 					return stack.Finalize.Add(
 						middleware.FinalizeMiddlewareFunc(
-							"RemoveUserFromGroupsErrorMock",
-							func(ctx context.Context, input middleware.FinalizeInput, handler middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+							"DeleteServiceSpecificCredentialErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-									Result: &iam.ListGroupsForUserOutput{},
-								}, middleware.Metadata{}, fmt.Errorf("ListGroupsForUserError")
+									Result: &iam.DeleteServiceSpecificCredentialOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DeleteServiceSpecificCredentialError")
 							},
 						),
 						middleware.Before,
@@ -1901,7 +2376,7 @@ func TestIam_RemoveUserFromGroups(t *testing.T) {
 			},
 			want: &ClientError{
 				ResourceName: aws.String("test"),
-				Err:          fmt.Errorf("operation error IAM: ListGroupsForUser, ListGroupsForUserError"),
+				Err:          fmt.Errorf("operation error IAM: DeleteServiceSpecificCredential, DeleteServiceSpecificCredentialError"),
 			},
 			wantErr: true,
 		},
@@ -1921,7 +2396,210 @@ func TestIam_RemoveUserFromGroups(t *testing.T) {
 			client := iam.NewFromConfig(cfg)
 			iamClient := NewIam(client)
 
-			err = iamClient.RemoveUserFromGroups(tt.args.ctx, tt.args.userName)
+			err = iamClient.DeleteServiceSpecificCredential(tt.args.ctx, tt.args.userName, tt.args.credentialId)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.Error() {
+				t.Errorf("err = %#v, want %#v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestIam_ListGroupsForUser(t *testing.T) {
+	SleepTimeSecForIam = 1
+	type args struct {
+		ctx                context.Context
+		userName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	type want struct {
+		groups []types.Group
+		err    error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    want
+		wantErr bool
+	}{
+		{
+			name: "list groups for user successfully",
+			args: args{
+				ctx:      context.Background(),
+				userName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListGroupsForUserMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListGroupsForUserOutput{
+										Groups: []types.Group{
+											{
+												GroupName: aws.String("Group1"),
+											},
+										},
+									},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				groups: []types.Group{
+					{
+						GroupName: aws.String("Group1"),
+					},
+				},
+				err: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "list groups for user failure",
+			args: args{
+				ctx:      context.Background(),
+				userName: aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListGroupsForUserErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.ListGroupsForUserOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("ListGroupsForUserError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want: want{
+				groups: nil,
+				err: &ClientError{
+					ResourceName: aws.String("test"),
+					Err:          fmt.Errorf("operation error IAM: ListGroupsForUser, ListGroupsForUserError"),
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			output, _, err := iamClient.ListGroupsForUser(tt.args.ctx, tt.args.userName, nil)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err.Error(), tt.wantErr)
+				return
+			}
+			if tt.wantErr && err.Error() != tt.want.err.Error() {
+				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.err.Error())
+				return
+			}
+			if !reflect.DeepEqual(output, tt.want.groups) {
+				t.Errorf("output = %#v, want %#v", output, tt.want.groups)
+			}
+		})
+	}
+}
+
+func TestIam_RemoveUserFromGroup(t *testing.T) {
+	SleepTimeSecForIam = 1
+	type args struct {
+		ctx                context.Context
+		groupName          *string
+		userName           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		want    error
+		wantErr bool
+	}{
+		{
+			name: "remove user from group successfully",
+			args: args{
+				ctx:       context.Background(),
+				groupName: aws.String("Group1"),
+				userName:  aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"RemoveUserFromGroupMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.RemoveUserFromGroupOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "remove user from group failure",
+			args: args{
+				ctx:       context.Background(),
+				groupName: aws.String("Group1"),
+				userName:  aws.String("test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"RemoveUserFromGroupErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &iam.RemoveUserFromGroupOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("RemoveUserFromGroupError")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    fmt.Errorf("operation error IAM: RemoveUserFromGroup, RemoveUserFromGroupError"),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("ap-northeast-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := iam.NewFromConfig(cfg)
+			iamClient := NewIam(client)
+
+			err = iamClient.RemoveUserFromGroup(tt.args.ctx, tt.args.groupName, tt.args.userName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
 				return
