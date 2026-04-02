@@ -13,13 +13,13 @@ import (
 var _ IOperator = (*IamUserOperator)(nil)
 
 type IamUserOperator struct {
-	client    client.IIamUser
+	client    client.IIam
 	resources []*types.StackResourceSummary
 }
 
-func NewIamUserOperator(client client.IIamUser) *IamUserOperator {
+func NewIamUserOperator(iamClient client.IIam) *IamUserOperator {
 	return &IamUserOperator{
-		client:    client,
+		client:    iamClient,
 		resources: []*types.StackResourceSummary{},
 	}
 }
@@ -59,45 +59,21 @@ func (o *IamUserOperator) DeleteIamUser(ctx context.Context, userName *string) e
 		return nil
 	}
 
-	if err := o.client.DetachUserPolicies(ctx, userName); err != nil {
+	eg, ctx := errgroup.WithContext(ctx)
+
+	eg.Go(func() error { return o.client.DetachUserPolicies(ctx, userName) })
+	eg.Go(func() error { return o.client.DeleteUserInlinePolicies(ctx, userName) })
+	eg.Go(func() error { return o.client.DeactivateAndDeleteMFADevices(ctx, userName) })
+	eg.Go(func() error { return o.client.DeleteAccessKeys(ctx, userName) })
+	eg.Go(func() error { return o.client.DeleteLoginProfile(ctx, userName) })
+	eg.Go(func() error { return o.client.DeleteSigningCertificates(ctx, userName) })
+	eg.Go(func() error { return o.client.DeleteSSHPublicKeys(ctx, userName) })
+	eg.Go(func() error { return o.client.DeleteServiceSpecificCredentials(ctx, userName) })
+	eg.Go(func() error { return o.client.RemoveUserFromGroups(ctx, userName) })
+
+	if err := eg.Wait(); err != nil {
 		return err
 	}
 
-	if err := o.client.DeleteUserInlinePolicies(ctx, userName); err != nil {
-		return err
-	}
-
-	if err := o.client.DeactivateAndDeleteMFADevices(ctx, userName); err != nil {
-		return err
-	}
-
-	if err := o.client.DeleteAccessKeys(ctx, userName); err != nil {
-		return err
-	}
-
-	if err := o.client.DeleteLoginProfile(ctx, userName); err != nil {
-		return err
-	}
-
-	if err := o.client.DeleteSigningCertificates(ctx, userName); err != nil {
-		return err
-	}
-
-	if err := o.client.DeleteSSHPublicKeys(ctx, userName); err != nil {
-		return err
-	}
-
-	if err := o.client.DeleteServiceSpecificCredentials(ctx, userName); err != nil {
-		return err
-	}
-
-	if err := o.client.RemoveUserFromGroups(ctx, userName); err != nil {
-		return err
-	}
-
-	if err := o.client.DeleteUser(ctx, userName); err != nil {
-		return err
-	}
-
-	return nil
+	return o.client.DeleteUser(ctx, userName)
 }

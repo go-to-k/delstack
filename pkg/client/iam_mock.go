@@ -55,6 +55,49 @@ func (mr *MockIIamMockRecorder) CheckGroupExists(ctx, groupName any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckGroupExists", reflect.TypeOf((*MockIIam)(nil).CheckGroupExists), ctx, groupName)
 }
 
+// CheckUserExists mocks base method.
+func (m *MockIIam) CheckUserExists(ctx context.Context, userName *string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckUserExists", ctx, userName)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckUserExists indicates an expected call of CheckUserExists.
+func (mr *MockIIamMockRecorder) CheckUserExists(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserExists", reflect.TypeOf((*MockIIam)(nil).CheckUserExists), ctx, userName)
+}
+
+// DeactivateAndDeleteMFADevices mocks base method.
+func (m *MockIIam) DeactivateAndDeleteMFADevices(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeactivateAndDeleteMFADevices", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeactivateAndDeleteMFADevices indicates an expected call of DeactivateAndDeleteMFADevices.
+func (mr *MockIIamMockRecorder) DeactivateAndDeleteMFADevices(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateAndDeleteMFADevices", reflect.TypeOf((*MockIIam)(nil).DeactivateAndDeleteMFADevices), ctx, userName)
+}
+
+// DeleteAccessKeys mocks base method.
+func (m *MockIIam) DeleteAccessKeys(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAccessKeys", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAccessKeys indicates an expected call of DeleteAccessKeys.
+func (mr *MockIIamMockRecorder) DeleteAccessKeys(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAccessKeys", reflect.TypeOf((*MockIIam)(nil).DeleteAccessKeys), ctx, userName)
+}
+
 // DeleteGroup mocks base method.
 func (m *MockIIam) DeleteGroup(ctx context.Context, groupName *string) error {
 	m.ctrl.T.Helper()
@@ -67,6 +110,104 @@ func (m *MockIIam) DeleteGroup(ctx context.Context, groupName *string) error {
 func (mr *MockIIamMockRecorder) DeleteGroup(ctx, groupName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroup", reflect.TypeOf((*MockIIam)(nil).DeleteGroup), ctx, groupName)
+}
+
+// DeleteLoginProfile mocks base method.
+func (m *MockIIam) DeleteLoginProfile(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteLoginProfile", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteLoginProfile indicates an expected call of DeleteLoginProfile.
+func (mr *MockIIamMockRecorder) DeleteLoginProfile(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLoginProfile", reflect.TypeOf((*MockIIam)(nil).DeleteLoginProfile), ctx, userName)
+}
+
+// DeleteSSHPublicKeys mocks base method.
+func (m *MockIIam) DeleteSSHPublicKeys(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSSHPublicKeys", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSSHPublicKeys indicates an expected call of DeleteSSHPublicKeys.
+func (mr *MockIIamMockRecorder) DeleteSSHPublicKeys(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSSHPublicKeys", reflect.TypeOf((*MockIIam)(nil).DeleteSSHPublicKeys), ctx, userName)
+}
+
+// DeleteServiceSpecificCredentials mocks base method.
+func (m *MockIIam) DeleteServiceSpecificCredentials(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteServiceSpecificCredentials", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteServiceSpecificCredentials indicates an expected call of DeleteServiceSpecificCredentials.
+func (mr *MockIIamMockRecorder) DeleteServiceSpecificCredentials(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteServiceSpecificCredentials", reflect.TypeOf((*MockIIam)(nil).DeleteServiceSpecificCredentials), ctx, userName)
+}
+
+// DeleteSigningCertificates mocks base method.
+func (m *MockIIam) DeleteSigningCertificates(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSigningCertificates", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSigningCertificates indicates an expected call of DeleteSigningCertificates.
+func (mr *MockIIamMockRecorder) DeleteSigningCertificates(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSigningCertificates", reflect.TypeOf((*MockIIam)(nil).DeleteSigningCertificates), ctx, userName)
+}
+
+// DeleteUser mocks base method.
+func (m *MockIIam) DeleteUser(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUser", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUser indicates an expected call of DeleteUser.
+func (mr *MockIIamMockRecorder) DeleteUser(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockIIam)(nil).DeleteUser), ctx, userName)
+}
+
+// DeleteUserInlinePolicies mocks base method.
+func (m *MockIIam) DeleteUserInlinePolicies(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUserInlinePolicies", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUserInlinePolicies indicates an expected call of DeleteUserInlinePolicies.
+func (mr *MockIIamMockRecorder) DeleteUserInlinePolicies(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserInlinePolicies", reflect.TypeOf((*MockIIam)(nil).DeleteUserInlinePolicies), ctx, userName)
+}
+
+// DetachUserPolicies mocks base method.
+func (m *MockIIam) DetachUserPolicies(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DetachUserPolicies", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DetachUserPolicies indicates an expected call of DetachUserPolicies.
+func (mr *MockIIamMockRecorder) DetachUserPolicies(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachUserPolicies", reflect.TypeOf((*MockIIam)(nil).DetachUserPolicies), ctx, userName)
 }
 
 // GetGroupUsers mocks base method.
@@ -82,6 +223,20 @@ func (m *MockIIam) GetGroupUsers(ctx context.Context, groupName *string) ([]type
 func (mr *MockIIamMockRecorder) GetGroupUsers(ctx, groupName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupUsers", reflect.TypeOf((*MockIIam)(nil).GetGroupUsers), ctx, groupName)
+}
+
+// RemoveUserFromGroups mocks base method.
+func (m *MockIIam) RemoveUserFromGroups(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveUserFromGroups", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveUserFromGroups indicates an expected call of RemoveUserFromGroups.
+func (mr *MockIIamMockRecorder) RemoveUserFromGroups(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUserFromGroups", reflect.TypeOf((*MockIIam)(nil).RemoveUserFromGroups), ctx, userName)
 }
 
 // RemoveUsersFromGroup mocks base method.

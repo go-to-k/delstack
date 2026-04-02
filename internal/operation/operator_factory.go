@@ -170,7 +170,7 @@ func (f *OperatorFactory) CreateIamUserOperator() *IamUserOperator {
 	})
 
 	return NewIamUserOperator(
-		client.NewIamUser(
+		client.NewIam(
 			sdkIamClient,
 		),
 	)
