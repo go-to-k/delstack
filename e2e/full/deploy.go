@@ -2,10 +2,16 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
+	mathrand "math/rand"
 	"os"
 	"os/exec"
 	"strconv"
@@ -69,7 +75,7 @@ func main() {
 
 	if options.Stage == "" {
 		// Generate a random number using current time as seed
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		r := mathrand.New(mathrand.NewSource(time.Now().UnixNano()))
 		randomNum := r.Intn(10000)
 		options.Stage = fmt.Sprintf("delstack-full-%04d", randomNum)
 	}
@@ -524,6 +530,57 @@ func (s *DeployStackService) attachDependenciesToUser(stackName string) error {
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create login profile for user %s: %v", userName, err)
+		}
+
+		// Upload a signing certificate
+		certKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			return fmt.Errorf("failed to generate RSA key for signing certificate: %v", err)
+		}
+		certTemplate := &x509.Certificate{
+			SerialNumber: big.NewInt(1),
+			Subject:      pkix.Name{CommonName: "delstack-test"},
+			NotBefore:    time.Now(),
+			NotAfter:     time.Now().Add(24 * time.Hour),
+		}
+		certDER, err := x509.CreateCertificate(rand.Reader, certTemplate, certTemplate, &certKey.PublicKey, certKey)
+		if err != nil {
+			return fmt.Errorf("failed to create signing certificate: %v", err)
+		}
+		certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+		_, err = s.IamClient.UploadSigningCertificate(s.Ctx, &iam.UploadSigningCertificateInput{
+			UserName:        aws.String(userName),
+			CertificateBody: aws.String(string(certPEM)),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to upload signing certificate for user %s: %v", userName, err)
+		}
+
+		// Upload an SSH public key
+		sshKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			return fmt.Errorf("failed to generate RSA key for SSH: %v", err)
+		}
+		sshPubKey, err := x509.MarshalPKIXPublicKey(&sshKey.PublicKey)
+		if err != nil {
+			return fmt.Errorf("failed to marshal SSH public key: %v", err)
+		}
+		sshPubKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: sshPubKey})
+		_, err = s.IamClient.UploadSSHPublicKey(s.Ctx, &iam.UploadSSHPublicKeyInput{
+			UserName:         aws.String(userName),
+			SSHPublicKeyBody: aws.String(string(sshPubKeyPEM)),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to upload SSH public key for user %s: %v", userName, err)
+		}
+
+		// Create a service-specific credential
+		_, err = s.IamClient.CreateServiceSpecificCredential(s.Ctx, &iam.CreateServiceSpecificCredentialInput{
+			UserName:    aws.String(userName),
+			ServiceName: aws.String("codecommit.amazonaws.com"),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create service-specific credential for user %s: %v", userName, err)
 		}
 
 		// Create test group if it doesn't exist
@@ -1150,7 +1207,7 @@ func (s *DeployStackService) indexesUploadToVectorBucket(stackName string) error
 						// Generate sample vector data (128 dimensions)
 						vectorData := make([]float32, 128)
 						for j := range vectorData {
-							vectorData[j] = rand.Float32()
+							vectorData[j] = mathrand.Float32()
 						}
 
 						vectors = append(vectors, s3vectorsTypes.PutInputVector{
