@@ -671,7 +671,7 @@ func (i *Iam) RemoveUserFromGroups(ctx context.Context, userName *string) error 
 		}
 
 		for _, group := range output.Groups {
-			if err := i.removeUserFromGroupByUserName(ctx, userName, group.GroupName); err != nil {
+			if err := i.removeUserFromGroup(ctx, group.GroupName, userName); err != nil {
 				return &ClientError{
 					ResourceName: userName,
 					Err:          err,
@@ -688,19 +688,6 @@ func (i *Iam) RemoveUserFromGroups(ctx context.Context, userName *string) error 
 	return nil
 }
 
-func (i *Iam) removeUserFromGroupByUserName(ctx context.Context, userName *string, groupName *string) error {
-	input := &iam.RemoveUserFromGroupInput{
-		UserName:  userName,
-		GroupName: groupName,
-	}
-
-	optFn := func(o *iam.Options) {
-		o.Retryer = i.retryer
-	}
-
-	_, err := i.client.RemoveUserFromGroup(ctx, input, optFn)
-	return err
-}
 
 func (i *Iam) DeleteUser(ctx context.Context, userName *string) error {
 	input := &iam.DeleteUserInput{
