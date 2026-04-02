@@ -18,6 +18,7 @@ This script creates a CloudFormation stack containing various resources that typ
 - S3 Table Namespaces with tables
 - S3 Vector buckets with indexes
 - IAM groups with users
+- IAM users with policies, access keys, login profiles, and group memberships (attached outside of CFn via SDK)
 - ECR repositories with images
 - AWS Backup vaults with recovery points
 - Athena WorkGroups with named queries and prepared statements

@@ -101,6 +101,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Attach dependencies to IAM user (outside of CFn to trigger DELETE_FAILED)
+	color.Green("=== attach_dependencies_to_user ===")
+	if err := service.attachDependenciesToUser(service.CfnStackName); err != nil {
+		color.Red("Failed to attach dependencies to user: %v", err)
+		os.Exit(1)
+	}
+
 	// Upload objects to S3
 	color.Green("=== object_upload ===")
 	if err := service.objectUpload(service.CfnStackName); err != nil {
@@ -441,6 +448,104 @@ func (s *DeployStackService) attachUserToGroup(stackName string) error {
 		if err != nil {
 			return fmt.Errorf("failed to add user to group: %v", err)
 		}
+	}
+
+	return nil
+}
+
+func (s *DeployStackService) attachDependenciesToUser(stackName string) error {
+	// Get resources in the stack
+	resources, nestedStackNames, err := s.getStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	// Process nested stacks in parallel
+	var wg sync.WaitGroup
+	errorChan := make(chan error, len(nestedStackNames))
+
+	for _, nestedStackName := range nestedStackNames {
+		wg.Add(1)
+		go func(name string) {
+			defer wg.Done()
+			if nestErr := s.attachDependenciesToUser(name); nestErr != nil {
+				errorChan <- nestErr
+			}
+		}(nestedStackName)
+	}
+
+	wg.Wait()
+	close(errorChan)
+
+	for err := range errorChan {
+		if err != nil {
+			return err
+		}
+	}
+
+	// Attach dependencies to IAM users created by CFn (outside of CFn to trigger DELETE_FAILED)
+	for _, resource := range resources {
+		if resource["ResourceType"] != "AWS::IAM::User" {
+			continue
+		}
+
+		userName := resource["PhysicalResourceId"]
+
+		// Attach a managed policy
+		_, err := s.IamClient.AttachUserPolicy(s.Ctx, &iam.AttachUserPolicyInput{
+			UserName:  aws.String(userName),
+			PolicyArn: aws.String("arn:aws:iam::aws:policy/ReadOnlyAccess"),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to attach policy to user %s: %v", userName, err)
+		}
+
+		// Add an inline policy
+		_, err = s.IamClient.PutUserPolicy(s.Ctx, &iam.PutUserPolicyInput{
+			UserName:       aws.String(userName),
+			PolicyName:     aws.String("DelstackTestInlinePolicy"),
+			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:GetObject","Resource":"*"}]}`),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to put inline policy for user %s: %v", userName, err)
+		}
+
+		// Create an access key
+		_, err = s.IamClient.CreateAccessKey(s.Ctx, &iam.CreateAccessKeyInput{
+			UserName: aws.String(userName),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create access key for user %s: %v", userName, err)
+		}
+
+		// Create a login profile
+		_, err = s.IamClient.CreateLoginProfile(s.Ctx, &iam.CreateLoginProfileInput{
+			UserName: aws.String(userName),
+			Password: aws.String("DelstackTest1!"),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create login profile for user %s: %v", userName, err)
+		}
+
+		// Add user to a group (create test group if not exists)
+		testGroupName := "DelstackTestGroupForUser"
+		_, err = s.IamClient.CreateGroup(s.Ctx, &iam.CreateGroupInput{
+			GroupName: aws.String(testGroupName),
+		})
+		var e *iamtypes.EntityAlreadyExistsException
+		if err != nil && !errors.As(err, &e) {
+			return fmt.Errorf("failed to create test group: %v", err)
+		}
+
+		_, err = s.IamClient.AddUserToGroup(s.Ctx, &iam.AddUserToGroupInput{
+			GroupName: aws.String(testGroupName),
+			UserName:  aws.String(userName),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to add user %s to group: %v", userName, err)
+		}
+
+		color.Green("Successfully attached dependencies to IAM user %s", userName)
 	}
 
 	return nil
