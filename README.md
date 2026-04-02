@@ -10,6 +10,10 @@ Works with stacks from **AWS CDK**, **AWS SAM**, **AWS Amplify**, **Serverless F
 
 ![delstack](https://github.com/user-attachments/assets/4f02526d-536c-4a23-81fd-10484902133f)
 
+For CDK apps, `delstack cdk` synthesizes, discovers all stacks (including cross-region), and deletes them with dependency resolution:
+
+![delstack for CDK](https://github.com/user-attachments/assets/0222969c-8c19-4700-80ce-096654ffba74)
+
 ## Features
 
 - **Force delete undeletable resources**: Automatically cleans up resources blocking deletion, such as non-empty S3 buckets, and [more resource types](#resource-types-that-can-be-forced-to-delete)
@@ -258,8 +262,6 @@ Deletion order (reverse dependencies):
 ## CDK Integration Details
 
 The `delstack cdk` subcommand synthesizes a CDK app (or reads an existing `cdk.out`) and deletes all discovered stacks. It parses the Cloud Assembly manifest to determine stack names, regions, and dependencies.
-
-![delstack for CDK](https://github.com/user-attachments/assets/0222969c-8c19-4700-80ce-096654ffba74)
 
 ### Cross-region deletion
 
