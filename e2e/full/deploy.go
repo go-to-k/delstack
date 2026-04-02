@@ -163,6 +163,11 @@ func main() {
 		color.Red("Failed to attach policy to role: %v", err)
 		os.Exit(1)
 	}
+
+	color.Yellow("\n=== Optional: Manual steps for full IAM User deletion testing ===")
+	color.Yellow("The following dependencies cannot be created programmatically and must be attached manually if needed:")
+	color.Yellow("  - Virtual MFA device: Requires TOTP code generation (use AWS Console > IAM > User > Security credentials > Assign MFA device)")
+	color.Yellow("  - FIDO/Passkey: Requires a physical security key (use AWS Console > IAM > User > Security credentials > Assign MFA device)")
 }
 
 func parseArgs() Options {
