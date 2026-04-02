@@ -422,7 +422,6 @@ func (s *DeployStackService) attachUserToGroup(stackName string) error {
 
 	// Create test user if it doesn't exist
 	userName := "DelstackTestUser"
-
 	_, err = s.IamClient.CreateUser(s.Ctx, &iam.CreateUserInput{
 		UserName: aws.String(userName),
 	})
@@ -529,7 +528,6 @@ func (s *DeployStackService) attachDependenciesToUser(stackName string) error {
 
 		// Create test group if it doesn't exist
 		testGroupName := "DelstackTestGroupForUser"
-
 		_, err = s.IamClient.CreateGroup(s.Ctx, &iam.CreateGroupInput{
 			GroupName: aws.String(testGroupName),
 		})
