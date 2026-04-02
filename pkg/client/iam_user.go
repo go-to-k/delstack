@@ -65,28 +65,47 @@ func (u *IamUser) CheckUserExists(ctx context.Context, userName *string) (bool, 
 }
 
 func (u *IamUser) DetachUserPolicies(ctx context.Context, userName *string) error {
-	input := &iam.ListAttachedUserPoliciesInput{
-		UserName: userName,
-	}
+	var marker *string
 
 	optFn := func(o *iam.Options) {
 		o.Retryer = u.retryer
 	}
 
-	output, err := u.client.ListAttachedUserPolicies(ctx, input, optFn)
-	if err != nil {
-		return &ClientError{
-			ResourceName: userName,
-			Err:          err,
+	for {
+		select {
+		case <-ctx.Done():
+			return &ClientError{
+				ResourceName: userName,
+				Err:          ctx.Err(),
+			}
+		default:
 		}
-	}
 
-	for _, policy := range output.AttachedPolicies {
-		if err := u.detachUserPolicy(ctx, userName, policy.PolicyArn); err != nil {
+		input := &iam.ListAttachedUserPoliciesInput{
+			UserName: userName,
+			Marker:   marker,
+		}
+
+		output, err := u.client.ListAttachedUserPolicies(ctx, input, optFn)
+		if err != nil {
 			return &ClientError{
 				ResourceName: userName,
 				Err:          err,
 			}
+		}
+
+		for _, policy := range output.AttachedPolicies {
+			if err := u.detachUserPolicy(ctx, userName, policy.PolicyArn); err != nil {
+				return &ClientError{
+					ResourceName: userName,
+					Err:          err,
+				}
+			}
+		}
+
+		marker = output.Marker
+		if marker == nil {
+			break
 		}
 	}
 
@@ -108,28 +127,47 @@ func (u *IamUser) detachUserPolicy(ctx context.Context, userName *string, policy
 }
 
 func (u *IamUser) DeleteUserInlinePolicies(ctx context.Context, userName *string) error {
-	input := &iam.ListUserPoliciesInput{
-		UserName: userName,
-	}
+	var marker *string
 
 	optFn := func(o *iam.Options) {
 		o.Retryer = u.retryer
 	}
 
-	output, err := u.client.ListUserPolicies(ctx, input, optFn)
-	if err != nil {
-		return &ClientError{
-			ResourceName: userName,
-			Err:          err,
+	for {
+		select {
+		case <-ctx.Done():
+			return &ClientError{
+				ResourceName: userName,
+				Err:          ctx.Err(),
+			}
+		default:
 		}
-	}
 
-	for _, policyName := range output.PolicyNames {
-		if err := u.deleteUserPolicy(ctx, userName, &policyName); err != nil {
+		input := &iam.ListUserPoliciesInput{
+			UserName: userName,
+			Marker:   marker,
+		}
+
+		output, err := u.client.ListUserPolicies(ctx, input, optFn)
+		if err != nil {
 			return &ClientError{
 				ResourceName: userName,
 				Err:          err,
 			}
+		}
+
+		for _, policyName := range output.PolicyNames {
+			if err := u.deleteUserPolicy(ctx, userName, &policyName); err != nil {
+				return &ClientError{
+					ResourceName: userName,
+					Err:          err,
+				}
+			}
+		}
+
+		marker = output.Marker
+		if marker == nil {
+			break
 		}
 	}
 
@@ -151,38 +189,57 @@ func (u *IamUser) deleteUserPolicy(ctx context.Context, userName *string, policy
 }
 
 func (u *IamUser) DeactivateAndDeleteMFADevices(ctx context.Context, userName *string) error {
-	input := &iam.ListMFADevicesInput{
-		UserName: userName,
-	}
+	var marker *string
 
 	optFn := func(o *iam.Options) {
 		o.Retryer = u.retryer
 	}
 
-	output, err := u.client.ListMFADevices(ctx, input, optFn)
-	if err != nil {
-		return &ClientError{
-			ResourceName: userName,
-			Err:          err,
+	for {
+		select {
+		case <-ctx.Done():
+			return &ClientError{
+				ResourceName: userName,
+				Err:          ctx.Err(),
+			}
+		default:
 		}
-	}
 
-	for _, device := range output.MFADevices {
-		if err := u.deactivateMFADevice(ctx, userName, device.SerialNumber); err != nil {
+		input := &iam.ListMFADevicesInput{
+			UserName: userName,
+			Marker:   marker,
+		}
+
+		output, err := u.client.ListMFADevices(ctx, input, optFn)
+		if err != nil {
 			return &ClientError{
 				ResourceName: userName,
 				Err:          err,
 			}
 		}
 
-		// Virtual MFA devices have ARN format serial numbers
-		if strings.Contains(*device.SerialNumber, ":mfa/") {
-			if err := u.deleteVirtualMFADevice(ctx, device.SerialNumber); err != nil {
+		for _, device := range output.MFADevices {
+			if err := u.deactivateMFADevice(ctx, userName, device.SerialNumber); err != nil {
 				return &ClientError{
 					ResourceName: userName,
 					Err:          err,
 				}
 			}
+
+			// Virtual MFA devices have ARN format serial numbers
+			if strings.Contains(*device.SerialNumber, ":mfa/") {
+				if err := u.deleteVirtualMFADevice(ctx, device.SerialNumber); err != nil {
+					return &ClientError{
+						ResourceName: userName,
+						Err:          err,
+					}
+				}
+			}
+		}
+
+		marker = output.Marker
+		if marker == nil {
+			break
 		}
 	}
 
@@ -217,28 +274,47 @@ func (u *IamUser) deleteVirtualMFADevice(ctx context.Context, serialNumber *stri
 }
 
 func (u *IamUser) DeleteAccessKeys(ctx context.Context, userName *string) error {
-	input := &iam.ListAccessKeysInput{
-		UserName: userName,
-	}
+	var marker *string
 
 	optFn := func(o *iam.Options) {
 		o.Retryer = u.retryer
 	}
 
-	output, err := u.client.ListAccessKeys(ctx, input, optFn)
-	if err != nil {
-		return &ClientError{
-			ResourceName: userName,
-			Err:          err,
+	for {
+		select {
+		case <-ctx.Done():
+			return &ClientError{
+				ResourceName: userName,
+				Err:          ctx.Err(),
+			}
+		default:
 		}
-	}
 
-	for _, key := range output.AccessKeyMetadata {
-		if err := u.deleteAccessKey(ctx, userName, key.AccessKeyId); err != nil {
+		input := &iam.ListAccessKeysInput{
+			UserName: userName,
+			Marker:   marker,
+		}
+
+		output, err := u.client.ListAccessKeys(ctx, input, optFn)
+		if err != nil {
 			return &ClientError{
 				ResourceName: userName,
 				Err:          err,
 			}
+		}
+
+		for _, key := range output.AccessKeyMetadata {
+			if err := u.deleteAccessKey(ctx, userName, key.AccessKeyId); err != nil {
+				return &ClientError{
+					ResourceName: userName,
+					Err:          err,
+				}
+			}
+		}
+
+		marker = output.Marker
+		if marker == nil {
+			break
 		}
 	}
 
@@ -283,28 +359,47 @@ func (u *IamUser) DeleteLoginProfile(ctx context.Context, userName *string) erro
 }
 
 func (u *IamUser) DeleteSigningCertificates(ctx context.Context, userName *string) error {
-	input := &iam.ListSigningCertificatesInput{
-		UserName: userName,
-	}
+	var marker *string
 
 	optFn := func(o *iam.Options) {
 		o.Retryer = u.retryer
 	}
 
-	output, err := u.client.ListSigningCertificates(ctx, input, optFn)
-	if err != nil {
-		return &ClientError{
-			ResourceName: userName,
-			Err:          err,
+	for {
+		select {
+		case <-ctx.Done():
+			return &ClientError{
+				ResourceName: userName,
+				Err:          ctx.Err(),
+			}
+		default:
 		}
-	}
 
-	for _, cert := range output.Certificates {
-		if err := u.deleteSigningCertificate(ctx, userName, cert.CertificateId); err != nil {
+		input := &iam.ListSigningCertificatesInput{
+			UserName: userName,
+			Marker:   marker,
+		}
+
+		output, err := u.client.ListSigningCertificates(ctx, input, optFn)
+		if err != nil {
 			return &ClientError{
 				ResourceName: userName,
 				Err:          err,
 			}
+		}
+
+		for _, cert := range output.Certificates {
+			if err := u.deleteSigningCertificate(ctx, userName, cert.CertificateId); err != nil {
+				return &ClientError{
+					ResourceName: userName,
+					Err:          err,
+				}
+			}
+		}
+
+		marker = output.Marker
+		if marker == nil {
+			break
 		}
 	}
 
@@ -326,28 +421,47 @@ func (u *IamUser) deleteSigningCertificate(ctx context.Context, userName *string
 }
 
 func (u *IamUser) DeleteSSHPublicKeys(ctx context.Context, userName *string) error {
-	input := &iam.ListSSHPublicKeysInput{
-		UserName: userName,
-	}
+	var marker *string
 
 	optFn := func(o *iam.Options) {
 		o.Retryer = u.retryer
 	}
 
-	output, err := u.client.ListSSHPublicKeys(ctx, input, optFn)
-	if err != nil {
-		return &ClientError{
-			ResourceName: userName,
-			Err:          err,
+	for {
+		select {
+		case <-ctx.Done():
+			return &ClientError{
+				ResourceName: userName,
+				Err:          ctx.Err(),
+			}
+		default:
 		}
-	}
 
-	for _, key := range output.SSHPublicKeys {
-		if err := u.deleteSSHPublicKey(ctx, userName, key.SSHPublicKeyId); err != nil {
+		input := &iam.ListSSHPublicKeysInput{
+			UserName: userName,
+			Marker:   marker,
+		}
+
+		output, err := u.client.ListSSHPublicKeys(ctx, input, optFn)
+		if err != nil {
 			return &ClientError{
 				ResourceName: userName,
 				Err:          err,
 			}
+		}
+
+		for _, key := range output.SSHPublicKeys {
+			if err := u.deleteSSHPublicKey(ctx, userName, key.SSHPublicKeyId); err != nil {
+				return &ClientError{
+					ResourceName: userName,
+					Err:          err,
+				}
+			}
+		}
+
+		marker = output.Marker
+		if marker == nil {
+			break
 		}
 	}
 
@@ -412,28 +526,47 @@ func (u *IamUser) deleteServiceSpecificCredential(ctx context.Context, userName 
 }
 
 func (u *IamUser) RemoveUserFromGroups(ctx context.Context, userName *string) error {
-	input := &iam.ListGroupsForUserInput{
-		UserName: userName,
-	}
+	var marker *string
 
 	optFn := func(o *iam.Options) {
 		o.Retryer = u.retryer
 	}
 
-	output, err := u.client.ListGroupsForUser(ctx, input, optFn)
-	if err != nil {
-		return &ClientError{
-			ResourceName: userName,
-			Err:          err,
+	for {
+		select {
+		case <-ctx.Done():
+			return &ClientError{
+				ResourceName: userName,
+				Err:          ctx.Err(),
+			}
+		default:
 		}
-	}
 
-	for _, group := range output.Groups {
-		if err := u.removeUserFromGroup(ctx, userName, group.GroupName); err != nil {
+		input := &iam.ListGroupsForUserInput{
+			UserName: userName,
+			Marker:   marker,
+		}
+
+		output, err := u.client.ListGroupsForUser(ctx, input, optFn)
+		if err != nil {
 			return &ClientError{
 				ResourceName: userName,
 				Err:          err,
 			}
+		}
+
+		for _, group := range output.Groups {
+			if err := u.removeUserFromGroup(ctx, userName, group.GroupName); err != nil {
+				return &ClientError{
+					ResourceName: userName,
+					Err:          err,
+				}
+			}
+		}
+
+		marker = output.Marker
+		if marker == nil {
+			break
 		}
 	}
 

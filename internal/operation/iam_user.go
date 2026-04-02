@@ -36,14 +36,14 @@ func (o *IamUserOperator) DeleteResources(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
 
-	for _, User := range o.resources {
+	for _, user := range o.resources {
 		if err := sem.Acquire(ctx, 1); err != nil {
 			return err
 		}
 		eg.Go(func() error {
 			defer sem.Release(1)
 
-			return o.DeleteIamUser(ctx, User.PhysicalResourceId)
+			return o.DeleteIamUser(ctx, user.PhysicalResourceId)
 		})
 	}
 
