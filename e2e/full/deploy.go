@@ -420,7 +420,7 @@ func (s *DeployStackService) attachUserToGroup(stackName string) error {
 		}
 	}
 
-	// Create user if it doesn't exist (outside of CFn to trigger DELETE_FAILED for IAM Group)
+	// Create test user if it doesn't exist
 	userName := "DelstackTestUser"
 
 	_, err = s.IamClient.CreateUser(s.Ctx, &iam.CreateUserInput{
@@ -483,7 +483,7 @@ func (s *DeployStackService) attachDependenciesToUser(stackName string) error {
 		}
 	}
 
-	// Attach dependencies to IAM users created by CFn (outside of CFn to trigger DELETE_FAILED)
+	// Attach dependencies to IAM users (outside of CFn to trigger DELETE_FAILED)
 	for _, resource := range resources {
 		if resource["ResourceType"] != "AWS::IAM::User" {
 			continue
@@ -527,8 +527,9 @@ func (s *DeployStackService) attachDependenciesToUser(stackName string) error {
 			return fmt.Errorf("failed to create login profile for user %s: %v", userName, err)
 		}
 
-		// Add user to a group (create test group if not exists)
+		// Create test group if it doesn't exist
 		testGroupName := "DelstackTestGroupForUser"
+
 		_, err = s.IamClient.CreateGroup(s.Ctx, &iam.CreateGroupInput{
 			GroupName: aws.String(testGroupName),
 		})
@@ -1225,10 +1226,10 @@ func (s *DeployStackService) createAthenaNamedQueries(stackName string) error {
 		for i := range 3 {
 			queryName := fmt.Sprintf("test-query-%d", i)
 			_, err := s.AthenaClient.CreateNamedQuery(s.Ctx, &athena.CreateNamedQueryInput{
-				Name:      aws.String(queryName),
-				Database:  aws.String("default"),
+				Name:        aws.String(queryName),
+				Database:    aws.String("default"),
 				QueryString: aws.String(fmt.Sprintf("SELECT %d", i)),
-				WorkGroup: aws.String(workGroupName),
+				WorkGroup:   aws.String(workGroupName),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to create named query %s: %v", queryName, err)
@@ -1239,8 +1240,8 @@ func (s *DeployStackService) createAthenaNamedQueries(stackName string) error {
 		for i := range 3 {
 			statementName := fmt.Sprintf("test_statement_%d", i)
 			_, err := s.AthenaClient.CreatePreparedStatement(s.Ctx, &athena.CreatePreparedStatementInput{
-				StatementName: aws.String(statementName),
-				WorkGroup:     aws.String(workGroupName),
+				StatementName:  aws.String(statementName),
+				WorkGroup:      aws.String(workGroupName),
 				QueryStatement: aws.String(fmt.Sprintf("SELECT ? + %d", i)),
 			})
 			if err != nil {
