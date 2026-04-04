@@ -1,5 +1,14 @@
 # Changelog
 
+## [v2.9.1](https://github.com/go-to-k/delstack/compare/v2.9.0...v2.9.1) - 2026-04-04
+- test: deploy Stage stacks in cdk_glob e2e test by @go-to-k in https://github.com/go-to-k/delstack/pull/625
+- docs: change description for CDK integration in README by @go-to-k in https://github.com/go-to-k/delstack/pull/627
+- docs: add -i for cdk in README by @go-to-k in https://github.com/go-to-k/delstack/pull/628
+- docs: add E2E testing guidance for DELETE_FAILED reproduction by @go-to-k in https://github.com/go-to-k/delstack/pull/629
+- docs: add note about adding to existing service client in CONTRIBUTING.md by @go-to-k in https://github.com/go-to-k/delstack/pull/631
+- style: fix uppercase loop variable in IamGroupOperator by @go-to-k in https://github.com/go-to-k/delstack/pull/630
+- feat: support IAM Users with policies, MFA devices, and other dependencies by @go-to-k in https://github.com/go-to-k/delstack/pull/632
+
 ## [v2.9.0](https://github.com/go-to-k/delstack/compare/v2.8.0...v2.9.0) - 2026-03-31
 - feat: add TerminationProtection awareness to cdk subcommand by @go-to-k in https://github.com/go-to-k/delstack/pull/622
 - style: fix gofmt alignment in StackInfo struct by @go-to-k in https://github.com/go-to-k/delstack/pull/624
