@@ -55,6 +55,49 @@ func (mr *MockIIamMockRecorder) CheckGroupExists(ctx, groupName any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckGroupExists", reflect.TypeOf((*MockIIam)(nil).CheckGroupExists), ctx, groupName)
 }
 
+// CheckUserExists mocks base method.
+func (m *MockIIam) CheckUserExists(ctx context.Context, userName *string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckUserExists", ctx, userName)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckUserExists indicates an expected call of CheckUserExists.
+func (mr *MockIIamMockRecorder) CheckUserExists(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserExists", reflect.TypeOf((*MockIIam)(nil).CheckUserExists), ctx, userName)
+}
+
+// DeactivateMFADevice mocks base method.
+func (m *MockIIam) DeactivateMFADevice(ctx context.Context, userName, serialNumber *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeactivateMFADevice", ctx, userName, serialNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeactivateMFADevice indicates an expected call of DeactivateMFADevice.
+func (mr *MockIIamMockRecorder) DeactivateMFADevice(ctx, userName, serialNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateMFADevice", reflect.TypeOf((*MockIIam)(nil).DeactivateMFADevice), ctx, userName, serialNumber)
+}
+
+// DeleteAccessKey mocks base method.
+func (m *MockIIam) DeleteAccessKey(ctx context.Context, userName, accessKeyId *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAccessKey", ctx, userName, accessKeyId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAccessKey indicates an expected call of DeleteAccessKey.
+func (mr *MockIIamMockRecorder) DeleteAccessKey(ctx, userName, accessKeyId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAccessKey", reflect.TypeOf((*MockIIam)(nil).DeleteAccessKey), ctx, userName, accessKeyId)
+}
+
 // DeleteGroup mocks base method.
 func (m *MockIIam) DeleteGroup(ctx context.Context, groupName *string) error {
 	m.ctrl.T.Helper()
@@ -67,6 +110,118 @@ func (m *MockIIam) DeleteGroup(ctx context.Context, groupName *string) error {
 func (mr *MockIIamMockRecorder) DeleteGroup(ctx, groupName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroup", reflect.TypeOf((*MockIIam)(nil).DeleteGroup), ctx, groupName)
+}
+
+// DeleteLoginProfile mocks base method.
+func (m *MockIIam) DeleteLoginProfile(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteLoginProfile", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteLoginProfile indicates an expected call of DeleteLoginProfile.
+func (mr *MockIIamMockRecorder) DeleteLoginProfile(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLoginProfile", reflect.TypeOf((*MockIIam)(nil).DeleteLoginProfile), ctx, userName)
+}
+
+// DeleteSSHPublicKey mocks base method.
+func (m *MockIIam) DeleteSSHPublicKey(ctx context.Context, userName, sshPublicKeyId *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSSHPublicKey", ctx, userName, sshPublicKeyId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSSHPublicKey indicates an expected call of DeleteSSHPublicKey.
+func (mr *MockIIamMockRecorder) DeleteSSHPublicKey(ctx, userName, sshPublicKeyId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSSHPublicKey", reflect.TypeOf((*MockIIam)(nil).DeleteSSHPublicKey), ctx, userName, sshPublicKeyId)
+}
+
+// DeleteServiceSpecificCredential mocks base method.
+func (m *MockIIam) DeleteServiceSpecificCredential(ctx context.Context, userName, credentialId *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteServiceSpecificCredential", ctx, userName, credentialId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteServiceSpecificCredential indicates an expected call of DeleteServiceSpecificCredential.
+func (mr *MockIIamMockRecorder) DeleteServiceSpecificCredential(ctx, userName, credentialId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteServiceSpecificCredential", reflect.TypeOf((*MockIIam)(nil).DeleteServiceSpecificCredential), ctx, userName, credentialId)
+}
+
+// DeleteSigningCertificate mocks base method.
+func (m *MockIIam) DeleteSigningCertificate(ctx context.Context, userName, certificateId *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSigningCertificate", ctx, userName, certificateId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSigningCertificate indicates an expected call of DeleteSigningCertificate.
+func (mr *MockIIamMockRecorder) DeleteSigningCertificate(ctx, userName, certificateId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSigningCertificate", reflect.TypeOf((*MockIIam)(nil).DeleteSigningCertificate), ctx, userName, certificateId)
+}
+
+// DeleteUser mocks base method.
+func (m *MockIIam) DeleteUser(ctx context.Context, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUser", ctx, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUser indicates an expected call of DeleteUser.
+func (mr *MockIIamMockRecorder) DeleteUser(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockIIam)(nil).DeleteUser), ctx, userName)
+}
+
+// DeleteUserPolicy mocks base method.
+func (m *MockIIam) DeleteUserPolicy(ctx context.Context, userName, policyName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUserPolicy", ctx, userName, policyName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUserPolicy indicates an expected call of DeleteUserPolicy.
+func (mr *MockIIamMockRecorder) DeleteUserPolicy(ctx, userName, policyName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserPolicy", reflect.TypeOf((*MockIIam)(nil).DeleteUserPolicy), ctx, userName, policyName)
+}
+
+// DeleteVirtualMFADevice mocks base method.
+func (m *MockIIam) DeleteVirtualMFADevice(ctx context.Context, serialNumber *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteVirtualMFADevice", ctx, serialNumber)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteVirtualMFADevice indicates an expected call of DeleteVirtualMFADevice.
+func (mr *MockIIamMockRecorder) DeleteVirtualMFADevice(ctx, serialNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVirtualMFADevice", reflect.TypeOf((*MockIIam)(nil).DeleteVirtualMFADevice), ctx, serialNumber)
+}
+
+// DetachUserPolicy mocks base method.
+func (m *MockIIam) DetachUserPolicy(ctx context.Context, userName, policyArn *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DetachUserPolicy", ctx, userName, policyArn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DetachUserPolicy indicates an expected call of DetachUserPolicy.
+func (mr *MockIIamMockRecorder) DetachUserPolicy(ctx, userName, policyArn any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachUserPolicy", reflect.TypeOf((*MockIIam)(nil).DetachUserPolicy), ctx, userName, policyArn)
 }
 
 // GetGroupUsers mocks base method.
@@ -82,6 +237,147 @@ func (m *MockIIam) GetGroupUsers(ctx context.Context, groupName *string) ([]type
 func (mr *MockIIamMockRecorder) GetGroupUsers(ctx, groupName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupUsers", reflect.TypeOf((*MockIIam)(nil).GetGroupUsers), ctx, groupName)
+}
+
+// ListAccessKeys mocks base method.
+func (m *MockIIam) ListAccessKeys(ctx context.Context, userName, marker *string) ([]types.AccessKeyMetadata, *string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAccessKeys", ctx, userName, marker)
+	ret0, _ := ret[0].([]types.AccessKeyMetadata)
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListAccessKeys indicates an expected call of ListAccessKeys.
+func (mr *MockIIamMockRecorder) ListAccessKeys(ctx, userName, marker any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAccessKeys", reflect.TypeOf((*MockIIam)(nil).ListAccessKeys), ctx, userName, marker)
+}
+
+// ListAttachedUserPolicies mocks base method.
+func (m *MockIIam) ListAttachedUserPolicies(ctx context.Context, userName, marker *string) ([]types.AttachedPolicy, *string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAttachedUserPolicies", ctx, userName, marker)
+	ret0, _ := ret[0].([]types.AttachedPolicy)
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListAttachedUserPolicies indicates an expected call of ListAttachedUserPolicies.
+func (mr *MockIIamMockRecorder) ListAttachedUserPolicies(ctx, userName, marker any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAttachedUserPolicies", reflect.TypeOf((*MockIIam)(nil).ListAttachedUserPolicies), ctx, userName, marker)
+}
+
+// ListGroupsForUser mocks base method.
+func (m *MockIIam) ListGroupsForUser(ctx context.Context, userName, marker *string) ([]types.Group, *string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListGroupsForUser", ctx, userName, marker)
+	ret0, _ := ret[0].([]types.Group)
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListGroupsForUser indicates an expected call of ListGroupsForUser.
+func (mr *MockIIamMockRecorder) ListGroupsForUser(ctx, userName, marker any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListGroupsForUser", reflect.TypeOf((*MockIIam)(nil).ListGroupsForUser), ctx, userName, marker)
+}
+
+// ListMFADevices mocks base method.
+func (m *MockIIam) ListMFADevices(ctx context.Context, userName, marker *string) ([]types.MFADevice, *string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListMFADevices", ctx, userName, marker)
+	ret0, _ := ret[0].([]types.MFADevice)
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListMFADevices indicates an expected call of ListMFADevices.
+func (mr *MockIIamMockRecorder) ListMFADevices(ctx, userName, marker any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMFADevices", reflect.TypeOf((*MockIIam)(nil).ListMFADevices), ctx, userName, marker)
+}
+
+// ListSSHPublicKeys mocks base method.
+func (m *MockIIam) ListSSHPublicKeys(ctx context.Context, userName, marker *string) ([]types.SSHPublicKeyMetadata, *string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListSSHPublicKeys", ctx, userName, marker)
+	ret0, _ := ret[0].([]types.SSHPublicKeyMetadata)
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListSSHPublicKeys indicates an expected call of ListSSHPublicKeys.
+func (mr *MockIIamMockRecorder) ListSSHPublicKeys(ctx, userName, marker any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSSHPublicKeys", reflect.TypeOf((*MockIIam)(nil).ListSSHPublicKeys), ctx, userName, marker)
+}
+
+// ListServiceSpecificCredentials mocks base method.
+func (m *MockIIam) ListServiceSpecificCredentials(ctx context.Context, userName *string) ([]types.ServiceSpecificCredentialMetadata, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListServiceSpecificCredentials", ctx, userName)
+	ret0, _ := ret[0].([]types.ServiceSpecificCredentialMetadata)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListServiceSpecificCredentials indicates an expected call of ListServiceSpecificCredentials.
+func (mr *MockIIamMockRecorder) ListServiceSpecificCredentials(ctx, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListServiceSpecificCredentials", reflect.TypeOf((*MockIIam)(nil).ListServiceSpecificCredentials), ctx, userName)
+}
+
+// ListSigningCertificates mocks base method.
+func (m *MockIIam) ListSigningCertificates(ctx context.Context, userName, marker *string) ([]types.SigningCertificate, *string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListSigningCertificates", ctx, userName, marker)
+	ret0, _ := ret[0].([]types.SigningCertificate)
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListSigningCertificates indicates an expected call of ListSigningCertificates.
+func (mr *MockIIamMockRecorder) ListSigningCertificates(ctx, userName, marker any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSigningCertificates", reflect.TypeOf((*MockIIam)(nil).ListSigningCertificates), ctx, userName, marker)
+}
+
+// ListUserPolicies mocks base method.
+func (m *MockIIam) ListUserPolicies(ctx context.Context, userName, marker *string) ([]string, *string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListUserPolicies", ctx, userName, marker)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListUserPolicies indicates an expected call of ListUserPolicies.
+func (mr *MockIIamMockRecorder) ListUserPolicies(ctx, userName, marker any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserPolicies", reflect.TypeOf((*MockIIam)(nil).ListUserPolicies), ctx, userName, marker)
+}
+
+// RemoveUserFromGroup mocks base method.
+func (m *MockIIam) RemoveUserFromGroup(ctx context.Context, groupName, userName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveUserFromGroup", ctx, groupName, userName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveUserFromGroup indicates an expected call of RemoveUserFromGroup.
+func (mr *MockIIamMockRecorder) RemoveUserFromGroup(ctx, groupName, userName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveUserFromGroup", reflect.TypeOf((*MockIIam)(nil).RemoveUserFromGroup), ctx, groupName, userName)
 }
 
 // RemoveUsersFromGroup mocks base method.

@@ -2,10 +2,16 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
+	mathrand "math/rand"
 	"os"
 	"os/exec"
 	"strconv"
@@ -69,7 +75,7 @@ func main() {
 
 	if options.Stage == "" {
 		// Generate a random number using current time as seed
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		r := mathrand.New(mathrand.NewSource(time.Now().UnixNano()))
 		randomNum := r.Intn(10000)
 		options.Stage = fmt.Sprintf("delstack-full-%04d", randomNum)
 	}
@@ -98,6 +104,13 @@ func main() {
 	color.Green("=== attach_user_to_group ===")
 	if err := service.attachUserToGroup(service.CfnStackName); err != nil {
 		color.Red("Failed to attach user to group: %v", err)
+		os.Exit(1)
+	}
+
+	// Attach dependencies to IAM user (outside of CFn to trigger DELETE_FAILED)
+	color.Green("=== attach_dependencies_to_user ===")
+	if err := service.attachDependenciesToUser(service.CfnStackName); err != nil {
+		color.Red("Failed to attach dependencies to user: %v", err)
 		os.Exit(1)
 	}
 
@@ -150,6 +163,11 @@ func main() {
 		color.Red("Failed to attach policy to role: %v", err)
 		os.Exit(1)
 	}
+
+	color.Yellow("\n=== Optional: Manual steps for full IAM User deletion testing ===")
+	color.Yellow("The following dependencies cannot be created programmatically and must be attached manually if needed:")
+	color.Yellow("  - Virtual MFA device: Requires TOTP code generation (use AWS Console > IAM > User > Security credentials > Assign MFA device)")
+	color.Yellow("  - FIDO/Passkey: Requires a physical security key (use AWS Console > IAM > User > Security credentials > Assign MFA device)")
 }
 
 func parseArgs() Options {
@@ -413,9 +431,8 @@ func (s *DeployStackService) attachUserToGroup(stackName string) error {
 		}
 	}
 
-	// Create user if it doesn't exist
+	// Create test user if it doesn't exist
 	userName := "DelstackTestUser"
-
 	_, err = s.IamClient.CreateUser(s.Ctx, &iam.CreateUserInput{
 		UserName: aws.String(userName),
 	})
@@ -441,6 +458,155 @@ func (s *DeployStackService) attachUserToGroup(stackName string) error {
 		if err != nil {
 			return fmt.Errorf("failed to add user to group: %v", err)
 		}
+	}
+
+	return nil
+}
+
+func (s *DeployStackService) attachDependenciesToUser(stackName string) error {
+	// Get resources in the stack
+	resources, nestedStackNames, err := s.getStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	// Process nested stacks in parallel
+	var wg sync.WaitGroup
+	errorChan := make(chan error, len(nestedStackNames))
+
+	for _, nestedStackName := range nestedStackNames {
+		wg.Add(1)
+		go func(name string) {
+			defer wg.Done()
+			if nestErr := s.attachDependenciesToUser(name); nestErr != nil {
+				errorChan <- nestErr
+			}
+		}(nestedStackName)
+	}
+
+	wg.Wait()
+	close(errorChan)
+
+	for err := range errorChan {
+		if err != nil {
+			return err
+		}
+	}
+
+	// Attach dependencies to IAM users (outside of CFn to trigger DELETE_FAILED)
+	for _, resource := range resources {
+		if resource["ResourceType"] != "AWS::IAM::User" {
+			continue
+		}
+
+		userName := resource["PhysicalResourceId"]
+
+		// Attach a managed policy
+		_, err := s.IamClient.AttachUserPolicy(s.Ctx, &iam.AttachUserPolicyInput{
+			UserName:  aws.String(userName),
+			PolicyArn: aws.String("arn:aws:iam::aws:policy/ReadOnlyAccess"),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to attach policy to user %s: %v", userName, err)
+		}
+
+		// Add an inline policy
+		_, err = s.IamClient.PutUserPolicy(s.Ctx, &iam.PutUserPolicyInput{
+			UserName:       aws.String(userName),
+			PolicyName:     aws.String("DelstackTestInlinePolicy"),
+			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:GetObject","Resource":"*"}]}`),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to put inline policy for user %s: %v", userName, err)
+		}
+
+		// Create an access key
+		_, err = s.IamClient.CreateAccessKey(s.Ctx, &iam.CreateAccessKeyInput{
+			UserName: aws.String(userName),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create access key for user %s: %v", userName, err)
+		}
+
+		// Create a login profile
+		_, err = s.IamClient.CreateLoginProfile(s.Ctx, &iam.CreateLoginProfileInput{
+			UserName: aws.String(userName),
+			Password: aws.String("DelstackTest1!"),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create login profile for user %s: %v", userName, err)
+		}
+
+		// Upload a signing certificate
+		certKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			return fmt.Errorf("failed to generate RSA key for signing certificate: %v", err)
+		}
+		certTemplate := &x509.Certificate{
+			SerialNumber: big.NewInt(1),
+			Subject:      pkix.Name{CommonName: "delstack-test"},
+			NotBefore:    time.Now(),
+			NotAfter:     time.Now().Add(24 * time.Hour),
+		}
+		certDER, err := x509.CreateCertificate(rand.Reader, certTemplate, certTemplate, &certKey.PublicKey, certKey)
+		if err != nil {
+			return fmt.Errorf("failed to create signing certificate: %v", err)
+		}
+		certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+		_, err = s.IamClient.UploadSigningCertificate(s.Ctx, &iam.UploadSigningCertificateInput{
+			UserName:        aws.String(userName),
+			CertificateBody: aws.String(string(certPEM)),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to upload signing certificate for user %s: %v", userName, err)
+		}
+
+		// Upload an SSH public key
+		sshKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			return fmt.Errorf("failed to generate RSA key for SSH: %v", err)
+		}
+		sshPubKey, err := x509.MarshalPKIXPublicKey(&sshKey.PublicKey)
+		if err != nil {
+			return fmt.Errorf("failed to marshal SSH public key: %v", err)
+		}
+		sshPubKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: sshPubKey})
+		_, err = s.IamClient.UploadSSHPublicKey(s.Ctx, &iam.UploadSSHPublicKeyInput{
+			UserName:         aws.String(userName),
+			SSHPublicKeyBody: aws.String(string(sshPubKeyPEM)),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to upload SSH public key for user %s: %v", userName, err)
+		}
+
+		// Create a service-specific credential
+		_, err = s.IamClient.CreateServiceSpecificCredential(s.Ctx, &iam.CreateServiceSpecificCredentialInput{
+			UserName:    aws.String(userName),
+			ServiceName: aws.String("codecommit.amazonaws.com"),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create service-specific credential for user %s: %v", userName, err)
+		}
+
+		// Create test group if it doesn't exist
+		testGroupName := "DelstackTestGroupForUser"
+		_, err = s.IamClient.CreateGroup(s.Ctx, &iam.CreateGroupInput{
+			GroupName: aws.String(testGroupName),
+		})
+		var e *iamtypes.EntityAlreadyExistsException
+		if err != nil && !errors.As(err, &e) {
+			return fmt.Errorf("failed to create test group: %v", err)
+		}
+
+		_, err = s.IamClient.AddUserToGroup(s.Ctx, &iam.AddUserToGroupInput{
+			GroupName: aws.String(testGroupName),
+			UserName:  aws.String(userName),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to add user %s to group: %v", userName, err)
+		}
+
+		color.Green("Successfully attached dependencies to IAM user %s", userName)
 	}
 
 	return nil
@@ -1046,7 +1212,7 @@ func (s *DeployStackService) indexesUploadToVectorBucket(stackName string) error
 						// Generate sample vector data (128 dimensions)
 						vectorData := make([]float32, 128)
 						for j := range vectorData {
-							vectorData[j] = rand.Float32()
+							vectorData[j] = mathrand.Float32()
 						}
 
 						vectors = append(vectors, s3vectorsTypes.PutInputVector{
@@ -1120,10 +1286,10 @@ func (s *DeployStackService) createAthenaNamedQueries(stackName string) error {
 		for i := range 3 {
 			queryName := fmt.Sprintf("test-query-%d", i)
 			_, err := s.AthenaClient.CreateNamedQuery(s.Ctx, &athena.CreateNamedQueryInput{
-				Name:      aws.String(queryName),
-				Database:  aws.String("default"),
+				Name:        aws.String(queryName),
+				Database:    aws.String("default"),
 				QueryString: aws.String(fmt.Sprintf("SELECT %d", i)),
-				WorkGroup: aws.String(workGroupName),
+				WorkGroup:   aws.String(workGroupName),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to create named query %s: %v", queryName, err)
@@ -1134,8 +1300,8 @@ func (s *DeployStackService) createAthenaNamedQueries(stackName string) error {
 		for i := range 3 {
 			statementName := fmt.Sprintf("test_statement_%d", i)
 			_, err := s.AthenaClient.CreatePreparedStatement(s.Ctx, &athena.CreatePreparedStatementInput{
-				StatementName: aws.String(statementName),
-				WorkGroup:     aws.String(workGroupName),
+				StatementName:  aws.String(statementName),
+				WorkGroup:      aws.String(workGroupName),
 				QueryStatement: aws.String(fmt.Sprintf("SELECT ? + %d", i)),
 			})
 			if err != nil {

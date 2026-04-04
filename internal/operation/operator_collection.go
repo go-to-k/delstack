@@ -48,6 +48,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	S3TableNamespaceOperator := c.operatorFactory.CreateS3TableNamespaceOperator()
 	s3VectorBucketOperator := c.operatorFactory.CreateS3VectorBucketOperator()
 	iamGroupOperator := c.operatorFactory.CreateIamGroupOperator()
+	iamUserOperator := c.operatorFactory.CreateIamUserOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
 	athenaWorkGroupOperator := c.operatorFactory.CreateAthenaWorkGroupOperator()
@@ -78,6 +79,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				s3VectorBucketOperator.AddResource(&resource)
 			case resourcetype.IamGroup:
 				iamGroupOperator.AddResource(&resource)
+			case resourcetype.IamUser:
+				iamUserOperator.AddResource(&resource)
 			case resourcetype.EcrRepository:
 				ecrRepositoryOperator.AddResource(&resource)
 			case resourcetype.BackupVault:
@@ -104,6 +107,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, S3TableNamespaceOperator)
 	c.operators = append(c.operators, s3VectorBucketOperator)
 	c.operators = append(c.operators, iamGroupOperator)
+	c.operators = append(c.operators, iamUserOperator)
 	c.operators = append(c.operators, ecrRepositoryOperator)
 	c.operators = append(c.operators, backupVaultOperator)
 	c.operators = append(c.operators, athenaWorkGroupOperator)
@@ -153,6 +157,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.S3TableNamespace, "S3 Table Namespaces, including namespaces with any tables and DeletionPolicy not Retain."},
 		{resourcetype.S3VectorBucket, "S3 Vector Buckets, including buckets with any indexes and DeletionPolicy not Retain."},
 		{resourcetype.IamGroup, "IAM Groups, including groups with IAM users from outside the stack."},
+		{resourcetype.IamUser, "IAM Users, including users with policies, MFA devices, access keys, login profiles, or other dependencies from outside the stack."},
 		{resourcetype.EcrRepository, "ECR Repositories, including repositories that contain images and where the `EmptyOnDelete` is not true."},
 		{resourcetype.BackupVault, "Backup Vaults, including vaults containing recovery points."},
 		{resourcetype.AthenaWorkGroup, "Athena WorkGroups, including workgroups containing named queries or prepared statements."},

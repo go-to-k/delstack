@@ -32,6 +32,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		S3TableNamespaceOperatorResourcesLength    int
 		s3VectorBucketOperatorResourcesLength      int
 		iamGroupOperatorResourcesLength            int
+		iamUserOperatorResourcesLength             int
 		ecrRepositoryOperatorResourcesLength       int
 		backupVaultOperatorResourcesLength         int
 		athenaWorkGroupOperatorResourcesLength     int
@@ -94,6 +95,12 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 						PhysicalResourceId: aws.String("PhysicalResourceId7"),
 					},
 					{
+						LogicalResourceId:  aws.String("LogicalResourceId14"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::IAM::User"),
+						PhysicalResourceId: aws.String("PhysicalResourceId14"),
+					},
+					{
 						LogicalResourceId:  aws.String("LogicalResourceId8"),
 						ResourceStatus:     "DELETE_FAILED",
 						ResourceType:       aws.String("AWS::ECR::Repository"),
@@ -132,7 +139,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                   13,
+				logicalResourceIdsLength:                   14,
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   1,
@@ -140,6 +147,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				S3TableNamespaceOperatorResourcesLength:    1,
 				s3VectorBucketOperatorResourcesLength:      1,
 				iamGroupOperatorResourcesLength:            1,
+				iamUserOperatorResourcesLength:             1,
 				ecrRepositoryOperatorResourcesLength:       1,
 				backupVaultOperatorResourcesLength:         1,
 				athenaWorkGroupOperatorResourcesLength:     1,
@@ -177,6 +185,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
+				iamUserOperatorResourcesLength:             0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
@@ -226,6 +235,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
+				iamUserOperatorResourcesLength:             0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
@@ -263,6 +273,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
+				iamUserOperatorResourcesLength:             0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
@@ -312,6 +323,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
+				iamUserOperatorResourcesLength:             0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
@@ -349,6 +361,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
+				iamUserOperatorResourcesLength:             0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
@@ -398,6 +411,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				S3TableNamespaceOperatorResourcesLength:    0,
 				s3VectorBucketOperatorResourcesLength:      0,
 				iamGroupOperatorResourcesLength:            0,
+				iamUserOperatorResourcesLength:             0,
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
@@ -422,6 +436,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			S3TableNamespaceOperatorResourcesLength := 0
 			s3VectorBucketOperatorResourcesLength := 0
 			iamGroupOperatorResourcesLength := 0
+			iamUserOperatorResourcesLength := 0
 			ecrRepositoryOperatorResourcesLength := 0
 			backupVaultOperatorResourcesLength := 0
 			athenaWorkGroupOperatorResourcesLength := 0
@@ -445,6 +460,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					s3VectorBucketOperatorResourcesLength += operator.GetResourcesLength()
 				case *IamGroupOperator:
 					iamGroupOperatorResourcesLength += operator.GetResourcesLength()
+				case *IamUserOperator:
+					iamUserOperatorResourcesLength += operator.GetResourcesLength()
 				case *EcrRepositoryOperator:
 					ecrRepositoryOperatorResourcesLength += operator.GetResourcesLength()
 				case *BackupVaultOperator:
@@ -470,6 +487,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				S3TableNamespaceOperatorResourcesLength:    S3TableNamespaceOperatorResourcesLength,
 				s3VectorBucketOperatorResourcesLength:      s3VectorBucketOperatorResourcesLength,
 				iamGroupOperatorResourcesLength:            iamGroupOperatorResourcesLength,
+				iamUserOperatorResourcesLength:             iamUserOperatorResourcesLength,
 				ecrRepositoryOperatorResourcesLength:       ecrRepositoryOperatorResourcesLength,
 				backupVaultOperatorResourcesLength:         backupVaultOperatorResourcesLength,
 				athenaWorkGroupOperatorResourcesLength:     athenaWorkGroupOperatorResourcesLength,
@@ -604,6 +622,15 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 				ctx:       context.Background(),
 				stackName: aws.String("test"),
 				resource:  "AWS::IAM::Group",
+			},
+			want: true,
+		},
+		{
+			name: "IAM User",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				resource:  "AWS::IAM::User",
 			},
 			want: true,
 		},

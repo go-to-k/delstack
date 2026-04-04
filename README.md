@@ -126,6 +126,7 @@ If you need support for additional resource types, please create an issue at [Gi
 |  AWS::S3Tables::Namespace  |  S3 Table Namespaces, including namespaces with any tables.  |
 |  AWS::S3Vectors::VectorBucket  |  S3 Vector Buckets, including buckets with any indexes.  |
 |  AWS::IAM::Group  |  IAM Groups, including groups **with IAM users from outside the stack.** In that case, this tool detaches the IAM users and then deletes the IAM group (but not the IAM users themselves).  |
+|  AWS::IAM::User  |  IAM Users, including users **with policies, MFA devices, access keys, login profiles, or other dependencies from outside the stack.** This tool removes all dependencies and then deletes the IAM user.  |
 |  AWS::ECR::Repository  |  ECR Repositories, including repositories that contain images and where **the `EmptyOnDelete` is not true.**  |
 |  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
 |  AWS::Athena::WorkGroup  |  Athena WorkGroups, including workgroups containing **named queries or prepared statements**.  |

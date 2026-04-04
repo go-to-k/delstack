@@ -163,6 +163,19 @@ func (f *OperatorFactory) CreateS3VectorBucketOperator() *S3VectorBucketOperator
 	)
 }
 
+func (f *OperatorFactory) CreateIamUserOperator() *IamUserOperator {
+	sdkIamClient := iam.NewFromConfig(f.config, func(o *iam.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	return NewIamUserOperator(
+		client.NewIam(
+			sdkIamClient,
+		),
+	)
+}
+
 func (f *OperatorFactory) CreateAthenaWorkGroupOperator() *AthenaWorkGroupOperator {
 	sdkAthenaClient := athena.NewFromConfig(f.config, func(o *athena.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts

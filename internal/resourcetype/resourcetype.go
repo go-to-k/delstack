@@ -8,6 +8,7 @@ const (
 	S3TableNamespace             = "AWS::S3Tables::Namespace"
 	S3VectorBucket               = "AWS::S3Vectors::VectorBucket"
 	IamGroup                     = "AWS::IAM::Group"
+	IamUser                      = "AWS::IAM::User"
 	EcrRepository                = "AWS::ECR::Repository"
 	BackupVault                  = "AWS::Backup::BackupVault"
 	AthenaWorkGroup              = "AWS::Athena::WorkGroup"
@@ -38,6 +39,7 @@ var ResourceTypes = []string{
 	S3TableNamespace,
 	S3VectorBucket,
 	IamGroup,
+	IamUser,
 	EcrRepository,
 	BackupVault,
 	AthenaWorkGroup,
