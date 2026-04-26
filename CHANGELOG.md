@@ -1,5 +1,8 @@
 # Changelog
 
+## [v2.10.1](https://github.com/go-to-k/delstack/compare/v2.10.0...v2.10.1) - 2026-04-26
+- docs: add mise installation method by @go-to-k in https://github.com/go-to-k/delstack/pull/635
+
 ## [v2.10.0](https://github.com/go-to-k/delstack/compare/v2.9.0...v2.10.0) - 2026-04-04
 - test: deploy Stage stacks in cdk_glob e2e test by @go-to-k in https://github.com/go-to-k/delstack/pull/625
 - docs: change description for CDK integration in README by @go-to-k in https://github.com/go-to-k/delstack/pull/627
