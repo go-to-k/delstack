@@ -51,6 +51,12 @@ For CDK apps, `delstack cdk` synthesizes, discovers all stacks (including cross-
   aqua g -i go-to-k/delstack
   ```
 
+- mise
+
+  ```bash
+  mise use -g aqua:go-to-k/delstack
+  ```
+
 - Binary
   - [Releases](https://github.com/go-to-k/delstack/releases)
 - Git Clone and install (for developers)
