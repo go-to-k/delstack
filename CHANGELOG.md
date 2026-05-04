@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.11.0](https://github.com/go-to-k/delstack/compare/v2.10.0...v2.11.0) - 2026-05-04
+- docs: add mise installation method by @go-to-k in https://github.com/go-to-k/delstack/pull/635
+- chore: add CLAUDE.md by @go-to-k in https://github.com/go-to-k/delstack/pull/638
+- ci: Add Claude Code GitHub Workflow by @go-to-k in https://github.com/go-to-k/delstack/pull/640
+- docs: add Claude Code skills for adding operators/preprocessors by @go-to-k in https://github.com/go-to-k/delstack/pull/642
+- feat: force-delete Subnet/SG blocked by orphan Lambda VPC ENIs by @go-to-k in https://github.com/go-to-k/delstack/pull/643
+
 ## [v2.10.0](https://github.com/go-to-k/delstack/compare/v2.9.0...v2.10.0) - 2026-04-04
 - test: deploy Stage stacks in cdk_glob e2e test by @go-to-k in https://github.com/go-to-k/delstack/pull/625
 - docs: change description for CDK integration in README by @go-to-k in https://github.com/go-to-k/delstack/pull/627
