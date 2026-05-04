@@ -29,7 +29,7 @@ The user provides an AWS resource type, e.g. `AWS::Athena::WorkGroup`. Derive:
    - Define `I<Service>` interface and a `<Service>` struct that wraps the SDK client.
    - Public methods must wrap errors with `ClientError` (see how an existing client like `pkg/client/ecr.go` or `pkg/client/athena.go` does it).
    - If the file already exists, just add new methods to the existing interface + struct.
-   - Methods can be either thin SDK 1:1 wrappers OR higher-level helpers that combine multiple SDK calls (and may add parallelism with `errgroup` + `semaphore.NewWeighted(runtime.NumCPU())`) when the abstraction belongs at the client layer. Example: `pkg/client/ec2.go` `DeleteOrphanLambdaENIsByFilter` discovers ENIs via `DescribeNetworkInterfaces` then deletes them in parallel via `DeleteNetworkInterface`.
+   - Keep these methods as **thin SDK 1:1 wrappers**. Composition (loops, parallel fan-out with `errgroup`, business logic that combines multiple SDK calls) belongs in the operation layer, not here. A method like "discover-and-delete in parallel" should live in `internal/operation/`, not in `pkg/client/`.
 
 3. **`pkg/client/<service>_mock.go`** — Auto-generated. Do not edit by hand. Run `make mockgen` after step 2.
 
@@ -41,7 +41,7 @@ The user provides an AWS resource type, e.g. `AWS::Athena::WorkGroup`. Derive:
    - Concurrency uses `errgroup` + `semaphore.NewWeighted(runtime.NumCPU())`.
    - Errors: return client errors as-is (already wrapped). Only wrap with `ClientError` for errors generated locally in the operation layer (e.g. `ctx.Done()`, validation).
    - **Deletion model**: the operator deletes the AWS resource itself directly via the SDK (and any blocking dependencies it owns). The CFN deletion loop in `internal/operation/cloudformation_stack.go` then passes every DELETE_FAILED `LogicalResourceId` as `RetainResources` on the next `DeleteStack` call, so CFN skips that resource on retry. Do **not** rely on CloudFormation to redelete the resource for you.
-   - **Cross-resource cleanup (advanced)**: an operator may also remove out-of-stack dependencies that block deletion (example: `EC2SubnetOperator` / `EC2SecurityGroupOperator` first remove orphan AWS Lambda VPC ENIs that AWS Lambda has not yet released, then delete the Subnet / SecurityGroup). When you do this, scope the dependency filter very tightly (e.g. `status=available` AND a description prefix) so you cannot accidentally touch unrelated resources.
+   - **Cross-resource cleanup (advanced)**: an operator may also remove out-of-stack dependencies that block deletion (example: `EC2SubnetOperator` / `EC2SecurityGroupOperator` first remove orphan AWS Lambda VPC ENIs that AWS Lambda has not yet released, then delete the Subnet / SecurityGroup). When you do this, scope the dependency filter very tightly (e.g. `status=available` AND a description prefix) so you cannot accidentally touch unrelated resources. If two operators need the same cleanup (as Subnet and SecurityGroup do), put the shared helper as a package-level function in the operator file that owns the domain knowledge (here: `internal/operation/lambda_function.go`'s `cleanupOrphanLambdaENIsByFilter`), not in `pkg/client/`.
 
 6. **`internal/operation/<resource>_test.go`** — Tests use **gomock** (not middleware). Use the `I<Service>` mock generated in step 3.
 

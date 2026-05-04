@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 	gomock "go.uber.org/mock/gomock"
@@ -28,39 +29,72 @@ func TestEC2SecurityGroupOperator_DeleteEC2SecurityGroup(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name: "delete security group successfully after cleaning orphan ENIs",
+			name: "delete security group successfully when no orphan ENIs",
 			args: args{
 				ctx:             context.Background(),
 				securityGroupId: aws.String("sg-111"),
 			},
 			prepareMockFn: func(m *client.MockIEC2) {
-				m.EXPECT().DeleteOrphanLambdaENIsByFilter(gomock.Any(), "group-id", "sg-111").Return(nil)
+				m.EXPECT().DescribeNetworkInterfaces(gomock.Any(), gomock.Any()).Return([]ec2types.NetworkInterface{}, nil)
 				m.EXPECT().DeleteSecurityGroup(gomock.Any(), aws.String("sg-111")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,
 		},
 		{
-			name: "orphan ENI cleanup failure aborts security group deletion",
+			name: "delete security group successfully after cleaning multiple orphan ENIs",
 			args: args{
 				ctx:             context.Background(),
 				securityGroupId: aws.String("sg-222"),
 			},
 			prepareMockFn: func(m *client.MockIEC2) {
-				m.EXPECT().DeleteOrphanLambdaENIsByFilter(gomock.Any(), "group-id", "sg-222").Return(fmt.Errorf("DescribeNetworkInterfacesError"))
+				m.EXPECT().DescribeNetworkInterfaces(gomock.Any(), gomock.Any()).Return([]ec2types.NetworkInterface{
+					{NetworkInterfaceId: aws.String("eni-1")},
+					{NetworkInterfaceId: aws.String("eni-2")},
+				}, nil)
+				m.EXPECT().DeleteNetworkInterface(gomock.Any(), aws.String("eni-1")).Return(nil)
+				m.EXPECT().DeleteNetworkInterface(gomock.Any(), aws.String("eni-2")).Return(nil)
+				m.EXPECT().DeleteSecurityGroup(gomock.Any(), aws.String("sg-222")).Return(nil)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "describe network interfaces failure aborts security group deletion",
+			args: args{
+				ctx:             context.Background(),
+				securityGroupId: aws.String("sg-333"),
+			},
+			prepareMockFn: func(m *client.MockIEC2) {
+				m.EXPECT().DescribeNetworkInterfaces(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("DescribeNetworkInterfacesError"))
 			},
 			want:    fmt.Errorf("DescribeNetworkInterfacesError"),
+			wantErr: true,
+		},
+		{
+			name: "ENI deletion failure aborts security group deletion",
+			args: args{
+				ctx:             context.Background(),
+				securityGroupId: aws.String("sg-444"),
+			},
+			prepareMockFn: func(m *client.MockIEC2) {
+				m.EXPECT().DescribeNetworkInterfaces(gomock.Any(), gomock.Any()).Return([]ec2types.NetworkInterface{
+					{NetworkInterfaceId: aws.String("eni-9")},
+				}, nil)
+				m.EXPECT().DeleteNetworkInterface(gomock.Any(), aws.String("eni-9")).Return(fmt.Errorf("DeleteNetworkInterfaceError"))
+			},
+			want:    fmt.Errorf("DeleteNetworkInterfaceError"),
 			wantErr: true,
 		},
 		{
 			name: "security group deletion failure (e.g. non-Lambda dependency) propagates",
 			args: args{
 				ctx:             context.Background(),
-				securityGroupId: aws.String("sg-333"),
+				securityGroupId: aws.String("sg-555"),
 			},
 			prepareMockFn: func(m *client.MockIEC2) {
-				m.EXPECT().DeleteOrphanLambdaENIsByFilter(gomock.Any(), "group-id", "sg-333").Return(nil)
-				m.EXPECT().DeleteSecurityGroup(gomock.Any(), aws.String("sg-333")).Return(fmt.Errorf("DependencyViolation"))
+				m.EXPECT().DescribeNetworkInterfaces(gomock.Any(), gomock.Any()).Return([]ec2types.NetworkInterface{}, nil)
+				m.EXPECT().DeleteSecurityGroup(gomock.Any(), aws.String("sg-555")).Return(fmt.Errorf("DependencyViolation"))
 			},
 			want:    fmt.Errorf("DependencyViolation"),
 			wantErr: true,
@@ -108,7 +142,7 @@ func TestEC2SecurityGroupOperator_DeleteResourcesForEC2SecurityGroup(t *testing.
 				ctx: context.Background(),
 			},
 			prepareMockFn: func(m *client.MockIEC2) {
-				m.EXPECT().DeleteOrphanLambdaENIsByFilter(gomock.Any(), "group-id", "sg-111").Return(nil)
+				m.EXPECT().DescribeNetworkInterfaces(gomock.Any(), gomock.Any()).Return([]ec2types.NetworkInterface{}, nil)
 				m.EXPECT().DeleteSecurityGroup(gomock.Any(), aws.String("sg-111")).Return(nil)
 			},
 			want:    nil,
@@ -120,7 +154,7 @@ func TestEC2SecurityGroupOperator_DeleteResourcesForEC2SecurityGroup(t *testing.
 				ctx: context.Background(),
 			},
 			prepareMockFn: func(m *client.MockIEC2) {
-				m.EXPECT().DeleteOrphanLambdaENIsByFilter(gomock.Any(), "group-id", "sg-111").Return(fmt.Errorf("DescribeNetworkInterfacesError"))
+				m.EXPECT().DescribeNetworkInterfaces(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("DescribeNetworkInterfacesError"))
 			},
 			want:    fmt.Errorf("DescribeNetworkInterfacesError"),
 			wantErr: true,

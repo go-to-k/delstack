@@ -57,7 +57,7 @@ func (o *EC2SubnetOperator) DeleteResources(ctx context.Context) error {
 }
 
 func (o *EC2SubnetOperator) DeleteEC2Subnet(ctx context.Context, subnetId *string) error {
-	if err := o.client.DeleteOrphanLambdaENIsByFilter(ctx, "subnet-id", aws.ToString(subnetId)); err != nil {
+	if err := cleanupOrphanLambdaENIsByFilter(ctx, o.client, "subnet-id", aws.ToString(subnetId)); err != nil {
 		return err
 	}
 

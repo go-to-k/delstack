@@ -58,7 +58,7 @@ func (o *EC2SecurityGroupOperator) DeleteResources(ctx context.Context) error {
 }
 
 func (o *EC2SecurityGroupOperator) DeleteEC2SecurityGroup(ctx context.Context, securityGroupId *string) error {
-	if err := o.client.DeleteOrphanLambdaENIsByFilter(ctx, "group-id", aws.ToString(securityGroupId)); err != nil {
+	if err := cleanupOrphanLambdaENIsByFilter(ctx, o.client, "group-id", aws.ToString(securityGroupId)); err != nil {
 		return err
 	}
 
