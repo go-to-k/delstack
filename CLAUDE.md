@@ -1,0 +1,71 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+`delstack` is a Go CLI for force-deleting AWS CloudFormation stacks (including stacks with resources that normally cause `DELETE_FAILED`). See [README.md](README.md) for user-facing behavior and [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor guide; this file captures the architectural shape needed to navigate the code productively.
+
+## Common commands
+
+- `make build` / `make install` / `make run OPT="-s <stack>"`: build, install, or run locally with arbitrary CLI args via `OPT`.
+- `make test`: full test suite. `make test_diff` runs only packages touched in the working tree (uses `git diff`). `make test_view` regenerates `cover.out` / `cover.html`.
+- `make lint` (full) / `make lint_diff` (changed packages). Run before pushing.
+- `make mockgen`: regenerate gomock mocks. Driven by `//go:generate mockgen` comments which **must be on line 1** of the source file.
+- Single test: `go test -race -run '^TestEcr_DeleteRepository$' ./pkg/client/...` (test names follow `Test[ReceiverType]_[MethodName]`).
+- E2E: `make testgen_<scenario>` deploys a real test stack; `make e2e_<scenario>` deploys then runs `delstack` against it (auto-generated stage names; `STAGE=...` to override, `OPT="-p <profile>"` for AWS profile). `make testgen_help` / `make e2e_help` list scenarios. E2E creates real AWS resources and incurs cost: write/update E2E code for new resource support but the maintainer runs them.
+
+## Architecture
+
+### Layered package dependencies
+
+Strict, no cycles allowed:
+
+```
+pkg/client            -> AWS SDK only (no internal deps)
+internal/operation    -> pkg/client
+internal/preprocessor -> pkg/client
+internal/app          -> internal/operation, internal/preprocessor   (NOT pkg/client directly)
+internal/cdk          -> CDK Cloud Assembly manifest parsing + `cdk synth` invocation
+```
+
+`internal/app` orchestrates a deletion run; it must reach AWS only through `operation` or `preprocessor`.
+
+### Operator vs Preprocessor (the central distinction)
+
+When adding AWS resource support, decide which side it belongs to:
+
+- **Operator** (`internal/operation/<resource>.go`): force-deletes a specific resource type that causes `DELETE_FAILED` (e.g. emptying S3 buckets, deleting ECR images, detaching IAM users). Wired in via `operator_factory.go` + `operator_collection.go` (4 update sites in the latter: instantiation, switch case, `operators` slice, `supportedStackResourcesData` table). Implements `IOperator`; assert with `var _ IOperator = (*XxxOperator)(nil)`.
+- **Preprocessor** (`internal/preprocessor/<name>.go`): runs **before** CloudFormation deletion. Two phases inside `CompositePreprocessor`:
+  - **Checkers** run first, in parallel; any error is **fatal** and aborts deletion (e.g. deletion-protection check). All checker errors are collected before returning.
+  - **Modifiers** run after all checkers pass; errors are **logged as warnings only** (e.g. Lambda VPC detachment optimization).
+  - Register in `factory.go` by appending to either the `checkers` or `modifiers` slice.
+
+### Multi-stack deletion algorithm (`internal/app` + `internal/operation/stack_dependency_graph.go`)
+
+When multiple stacks are targeted, `delstack` does a **reverse topological sort with dynamic scheduling** over CloudFormation Exports/Imports:
+
+1. Analyze dependencies, detect cycles up front, refuse if a target stack's export is imported by a non-target stack.
+2. Delete each stack as soon as all stacks that depend on it are gone, with unbounded parallelism by default (`-n` caps it).
+3. On any failure, cancel remaining deletions.
+
+### CDK integration (`internal/cdk` + `internal/app/cdk*.go`)
+
+`delstack cdk` either runs `npx cdk synth` or reads `-a <cdk.out>` directly, then parses the Cloud Assembly manifest to discover stack name + region + dependencies. Cross-region stacks are grouped by region with separate AWS sessions; cross-region dependencies are honored, independent regions delete in parallel. Environment-agnostic (`unknown-region`) stacks fall back to `-r` / default config.
+
+### Force mode template handling
+
+When `-f` rewrites a stack template that exceeds **51,200 bytes** (CloudFormation's direct-template limit), the run transparently creates a temporary S3 bucket, uploads the template, updates via S3 URL, then cleans the bucket up. See `internal/operation/cloudformation_template.go`.
+
+### Test mocking strategy (two patterns, do not mix)
+
+- `pkg/client/*_test.go`: AWS SDK middleware mocks: inject a `middleware.FinalizeMiddlewareFunc` via `config.WithAPIOptions` to intercept SDK calls. For paginated APIs, capture `NextToken` in an Initialize-stage middleware via `middleware.WithStackValue` / `GetStackValue` (see `s3_test.go`, `backup_test.go`).
+- `internal/operation/*_test.go`: gomock against the `I<Service>` interfaces in `pkg/client/`, with mocks regenerated by `make mockgen`.
+
+When a client file already exists for a service (e.g. `iam.go`), extend its interface and struct rather than creating a new file.
+
+## Conventions
+
+- Code comments minimal, in English. PRs, commits, and public-facing text are English (OSS project).
+- Concurrency uses `errgroup` + `semaphore.NewWeighted(runtime.NumCPU())`.
+- Errors: `pkg/client` public methods wrap with `ClientError`. `internal/operation` returns client errors as-is and only wraps with `ClientError` for errors generated locally (e.g. `ctx.Done()`, validation).
+- Operations must be idempotent: check existence before deleting.
+- Root `-s` does **not** support glob patterns (only `delstack cdk -s` does), since glob against deployed stacks is too dangerous.
