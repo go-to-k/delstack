@@ -69,6 +69,48 @@ func (mr *MockIEC2MockRecorder) DeleteNetworkInterface(ctx, networkInterfaceId a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNetworkInterface", reflect.TypeOf((*MockIEC2)(nil).DeleteNetworkInterface), ctx, networkInterfaceId)
 }
 
+// DeleteOrphanLambdaENIsByFilter mocks base method.
+func (m *MockIEC2) DeleteOrphanLambdaENIsByFilter(ctx context.Context, filterName, filterValue string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrphanLambdaENIsByFilter", ctx, filterName, filterValue)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrphanLambdaENIsByFilter indicates an expected call of DeleteOrphanLambdaENIsByFilter.
+func (mr *MockIEC2MockRecorder) DeleteOrphanLambdaENIsByFilter(ctx, filterName, filterValue any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrphanLambdaENIsByFilter", reflect.TypeOf((*MockIEC2)(nil).DeleteOrphanLambdaENIsByFilter), ctx, filterName, filterValue)
+}
+
+// DeleteSecurityGroup mocks base method.
+func (m *MockIEC2) DeleteSecurityGroup(ctx context.Context, securityGroupId *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSecurityGroup", ctx, securityGroupId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSecurityGroup indicates an expected call of DeleteSecurityGroup.
+func (mr *MockIEC2MockRecorder) DeleteSecurityGroup(ctx, securityGroupId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSecurityGroup", reflect.TypeOf((*MockIEC2)(nil).DeleteSecurityGroup), ctx, securityGroupId)
+}
+
+// DeleteSubnet mocks base method.
+func (m *MockIEC2) DeleteSubnet(ctx context.Context, subnetId *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSubnet", ctx, subnetId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSubnet indicates an expected call of DeleteSubnet.
+func (mr *MockIEC2MockRecorder) DeleteSubnet(ctx, subnetId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSubnet", reflect.TypeOf((*MockIEC2)(nil).DeleteSubnet), ctx, subnetId)
+}
+
 // DescribeNetworkInterfaces mocks base method.
 func (m *MockIEC2) DescribeNetworkInterfaces(ctx context.Context, filters []types.Filter) ([]types.NetworkInterface, error) {
 	m.ctrl.T.Helper()

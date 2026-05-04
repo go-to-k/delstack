@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -185,6 +186,32 @@ func (f *OperatorFactory) CreateAthenaWorkGroupOperator() *AthenaWorkGroupOperat
 	return NewAthenaWorkGroupOperator(
 		client.NewAthena(
 			sdkAthenaClient,
+		),
+	)
+}
+
+func (f *OperatorFactory) CreateEC2SubnetOperator() *EC2SubnetOperator {
+	sdkEC2Client := ec2.NewFromConfig(f.config, func(o *ec2.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	return NewEC2SubnetOperator(
+		client.NewEC2Client(
+			sdkEC2Client,
+		),
+	)
+}
+
+func (f *OperatorFactory) CreateEC2SecurityGroupOperator() *EC2SecurityGroupOperator {
+	sdkEC2Client := ec2.NewFromConfig(f.config, func(o *ec2.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	return NewEC2SecurityGroupOperator(
+		client.NewEC2Client(
+			sdkEC2Client,
 		),
 	)
 }

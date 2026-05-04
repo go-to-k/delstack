@@ -4,21 +4,33 @@ package client
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 )
 
 const (
 	ENIDetachmentWaitTime = 90 * time.Second // Maximum wait time for ENI detachment
+
+	// LambdaVPCENIDescriptionPrefix is the description prefix Lambda assigns to ENIs
+	// it provisions for VPC-attached functions. AWS Lambda releases these ENIs
+	// asynchronously after function deletion, which can leave them orphan and block
+	// Subnet/SecurityGroup deletion.
+	LambdaVPCENIDescriptionPrefix = "AWS Lambda VPC ENI"
 )
 
 type IEC2 interface {
 	DescribeNetworkInterfaces(ctx context.Context, filters []types.Filter) ([]types.NetworkInterface, error)
 	DeleteNetworkInterface(ctx context.Context, networkInterfaceId *string) error
+	DeleteOrphanLambdaENIsByFilter(ctx context.Context, filterName, filterValue string) error
+	DeleteSubnet(ctx context.Context, subnetId *string) error
+	DeleteSecurityGroup(ctx context.Context, securityGroupId *string) error
 	CheckTerminationProtection(ctx context.Context, instanceId *string) (bool, error)
 	DisableTerminationProtection(ctx context.Context, instanceId *string) error
 }
@@ -82,6 +94,90 @@ func (c *EC2Client) DeleteNetworkInterface(ctx context.Context, networkInterface
 			Err:          fmt.Errorf("timeout waiting for ENI to be deletable: %w", err),
 		}
 	}
+}
+
+// DeleteOrphanLambdaENIsByFilter finds available ENIs whose description starts with
+// "AWS Lambda VPC ENI" and that match the given filter (e.g. subnet-id or group-id),
+// then deletes them in parallel. Used to unblock Subnet / SecurityGroup deletion when
+// AWS Lambda has not yet released its ENIs after the function was already deleted.
+func (c *EC2Client) DeleteOrphanLambdaENIsByFilter(ctx context.Context, filterName, filterValue string) error {
+	filters := []types.Filter{
+		{
+			Name:   aws.String(filterName),
+			Values: []string{filterValue},
+		},
+		{
+			Name:   aws.String("description"),
+			Values: []string{LambdaVPCENIDescriptionPrefix + "*"},
+		},
+		{
+			Name:   aws.String("status"),
+			Values: []string{string(types.NetworkInterfaceStatusAvailable)},
+		},
+	}
+
+	enis, err := c.DescribeNetworkInterfaces(ctx, filters)
+	if err != nil {
+		return err
+	}
+	if len(enis) == 0 {
+		return nil
+	}
+
+	eg, ctx := errgroup.WithContext(ctx)
+	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
+	for _, eni := range enis {
+		eniId := eni.NetworkInterfaceId
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
+		eg.Go(func() error {
+			defer sem.Release(1)
+			return c.DeleteNetworkInterface(ctx, eniId)
+		})
+	}
+
+	return eg.Wait()
+}
+
+func (c *EC2Client) DeleteSubnet(ctx context.Context, subnetId *string) error {
+	input := &ec2.DeleteSubnetInput{
+		SubnetId: subnetId,
+	}
+
+	_, err := c.client.DeleteSubnet(ctx, input)
+	if err != nil {
+		// If the subnet is already gone, treat as success.
+		if strings.Contains(err.Error(), "InvalidSubnetID.NotFound") {
+			return nil
+		}
+		return &ClientError{
+			ResourceName: subnetId,
+			Err:          err,
+		}
+	}
+
+	return nil
+}
+
+func (c *EC2Client) DeleteSecurityGroup(ctx context.Context, securityGroupId *string) error {
+	input := &ec2.DeleteSecurityGroupInput{
+		GroupId: securityGroupId,
+	}
+
+	_, err := c.client.DeleteSecurityGroup(ctx, input)
+	if err != nil {
+		// If the security group is already gone, treat as success.
+		if strings.Contains(err.Error(), "InvalidGroup.NotFound") {
+			return nil
+		}
+		return &ClientError{
+			ResourceName: securityGroupId,
+			Err:          err,
+		}
+	}
+
+	return nil
 }
 
 func (c *EC2Client) CheckTerminationProtection(ctx context.Context, instanceId *string) (bool, error) {
