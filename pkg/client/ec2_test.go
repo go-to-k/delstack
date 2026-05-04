@@ -242,6 +242,228 @@ func TestEC2Client_DeleteNetworkInterface(t *testing.T) {
 	}
 }
 
+func TestEC2Client_DeleteSubnet(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	type args struct {
+		ctx                context.Context
+		subnetId           *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "delete subnet successfully",
+			args: args{
+				ctx:      context.Background(),
+				subnetId: aws.String("subnet-111"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteSubnetMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &ec2.DeleteSubnetOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "delete subnet already deleted (NotFound)",
+			args: args{
+				ctx:      context.Background(),
+				subnetId: aws.String("subnet-222"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteSubnetNotFoundMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &ec2.DeleteSubnetOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("InvalidSubnetID.NotFound: The subnet ID 'subnet-222' does not exist")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "delete subnet with dependency error",
+			args: args{
+				ctx:      context.Background(),
+				subnetId: aws.String("subnet-333"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteSubnetDependencyErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &ec2.DeleteSubnetOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DependencyViolation: The subnet 'subnet-333' has dependencies and cannot be deleted")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("us-east-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			sdkClient := ec2.NewFromConfig(cfg)
+			ec2Client := NewEC2Client(sdkClient)
+
+			err = ec2Client.DeleteSubnet(tt.args.ctx, tt.args.subnetId)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				var clientErr *ClientError
+				if !errors.As(err, &clientErr) {
+					t.Errorf("expected ClientError, got = %#v", err)
+				}
+				if clientErr == nil || *clientErr.ResourceName != *tt.args.subnetId {
+					t.Errorf("ClientError ResourceName = %#v, want %#v", clientErr, tt.args.subnetId)
+				}
+			}
+		})
+	}
+}
+
+func TestEC2Client_DeleteSecurityGroup(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	type args struct {
+		ctx                context.Context
+		securityGroupId    *string
+		withAPIOptionsFunc func(*middleware.Stack) error
+	}
+
+	cases := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "delete security group successfully",
+			args: args{
+				ctx:             context.Background(),
+				securityGroupId: aws.String("sg-111"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteSecurityGroupMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &ec2.DeleteSecurityGroupOutput{},
+								}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "delete security group already deleted (NotFound)",
+			args: args{
+				ctx:             context.Background(),
+				securityGroupId: aws.String("sg-222"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteSecurityGroupNotFoundMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &ec2.DeleteSecurityGroupOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("InvalidGroup.NotFound: The security group 'sg-222' does not exist")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "delete security group with dependency error",
+			args: args{
+				ctx:             context.Background(),
+				securityGroupId: aws.String("sg-333"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"DeleteSecurityGroupDependencyErrorMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &ec2.DeleteSecurityGroupOutput{},
+								}, middleware.Metadata{}, fmt.Errorf("DependencyViolation: resource sg-333 has a dependent object")
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := config.LoadDefaultConfig(
+				tt.args.ctx,
+				config.WithRegion("us-east-1"),
+				config.WithAPIOptions([]func(*middleware.Stack) error{tt.args.withAPIOptionsFunc}),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			sdkClient := ec2.NewFromConfig(cfg)
+			ec2Client := NewEC2Client(sdkClient)
+
+			err = ec2Client.DeleteSecurityGroup(tt.args.ctx, tt.args.securityGroupId)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %#v, wantErr %#v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				var clientErr *ClientError
+				if !errors.As(err, &clientErr) {
+					t.Errorf("expected ClientError, got = %#v", err)
+				}
+				if clientErr == nil || *clientErr.ResourceName != *tt.args.securityGroupId {
+					t.Errorf("ClientError ResourceName = %#v, want %#v", clientErr, tt.args.securityGroupId)
+				}
+			}
+		})
+	}
+}
+
 func TestEC2Client_CheckTerminationProtection(t *testing.T) {
 	defer goleak.VerifyNone(t)
 

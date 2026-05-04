@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 	"golang.org/x/sync/errgroup"
@@ -15,6 +17,12 @@ import (
 
 const (
 	lambdaEdgeRetryInterval = 30 * time.Second
+
+	// lambdaVPCENIDescriptionPrefix is the description prefix AWS Lambda assigns to
+	// VPC (Hyperplane) ENIs it provisions for VPC-attached functions. AWS Lambda
+	// releases these ENIs asynchronously after function deletion, which can leave
+	// them orphan in `available` state and block Subnet/SecurityGroup deletion.
+	lambdaVPCENIDescriptionPrefix = "AWS Lambda VPC ENI"
 )
 
 // LambdaFunctionOperator handles deletion of Lambda functions that fail to delete due to
@@ -116,4 +124,51 @@ func (o *LambdaFunctionOperator) DeleteLambdaFunction(ctx context.Context, funct
 
 func (o *LambdaFunctionOperator) isReplicatedFunctionError(err error) bool {
 	return strings.Contains(err.Error(), "replicated function")
+}
+
+// cleanupOrphanLambdaENIsByFilter finds available ENIs whose description starts with
+// "AWS Lambda VPC ENI" and that match the given filter (e.g. subnet-id or group-id),
+// then deletes them in parallel. Used by EC2SubnetOperator / EC2SecurityGroupOperator
+// to unblock deletion when AWS Lambda has not yet released its VPC ENIs after the
+// function was already deleted. The helper lives here because it encodes Lambda VPC
+// ENI domain knowledge (description prefix, asynchronous release semantics), even
+// though it operates on EC2 APIs.
+func cleanupOrphanLambdaENIsByFilter(ctx context.Context, ec2Client client.IEC2, filterName, filterValue string) error {
+	filters := []ec2types.Filter{
+		{
+			Name:   aws.String(filterName),
+			Values: []string{filterValue},
+		},
+		{
+			Name:   aws.String("description"),
+			Values: []string{lambdaVPCENIDescriptionPrefix + "*"},
+		},
+		{
+			Name:   aws.String("status"),
+			Values: []string{string(ec2types.NetworkInterfaceStatusAvailable)},
+		},
+	}
+
+	enis, err := ec2Client.DescribeNetworkInterfaces(ctx, filters)
+	if err != nil {
+		return err
+	}
+	if len(enis) == 0 {
+		return nil
+	}
+
+	eg, ctx := errgroup.WithContext(ctx)
+	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
+	for _, eni := range enis {
+		eniId := eni.NetworkInterfaceId
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
+		eg.Go(func() error {
+			defer sem.Release(1)
+			return ec2Client.DeleteNetworkInterface(ctx, eniId)
+		})
+	}
+
+	return eg.Wait()
 }

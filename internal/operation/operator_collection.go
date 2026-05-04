@@ -52,6 +52,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
 	backupVaultOperator := c.operatorFactory.CreateBackupVaultOperator()
 	athenaWorkGroupOperator := c.operatorFactory.CreateAthenaWorkGroupOperator()
+	ec2SubnetOperator := c.operatorFactory.CreateEC2SubnetOperator()
+	ec2SecurityGroupOperator := c.operatorFactory.CreateEC2SecurityGroupOperator()
 	lambdaFunctionOperator := c.operatorFactory.CreateLambdaFunctionOperator()
 	cloudformationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator()
 	customOperator := c.operatorFactory.CreateCustomOperator()
@@ -87,6 +89,10 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				backupVaultOperator.AddResource(&resource)
 			case resourcetype.AthenaWorkGroup:
 				athenaWorkGroupOperator.AddResource(&resource)
+			case resourcetype.EC2Subnet:
+				ec2SubnetOperator.AddResource(&resource)
+			case resourcetype.EC2SecurityGroup:
+				ec2SecurityGroupOperator.AddResource(&resource)
 			case resourcetype.LambdaFunction:
 				lambdaFunctionOperator.AddResource(&resource)
 			case resourcetype.CloudformationStack:
@@ -111,6 +117,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, ecrRepositoryOperator)
 	c.operators = append(c.operators, backupVaultOperator)
 	c.operators = append(c.operators, athenaWorkGroupOperator)
+	c.operators = append(c.operators, ec2SubnetOperator)
+	c.operators = append(c.operators, ec2SecurityGroupOperator)
 	c.operators = append(c.operators, lambdaFunctionOperator)
 	c.operators = append(c.operators, cloudformationStackOperator)
 	c.operators = append(c.operators, customOperator)
@@ -161,6 +169,8 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.EcrRepository, "ECR Repositories, including repositories that contain images and where the `EmptyOnDelete` is not true."},
 		{resourcetype.BackupVault, "Backup Vaults, including vaults containing recovery points."},
 		{resourcetype.AthenaWorkGroup, "Athena WorkGroups, including workgroups containing named queries or prepared statements."},
+		{resourcetype.EC2Subnet, "EC2 Subnets blocked by orphan AWS Lambda VPC ENIs left in `available` state after the function was deleted."},
+		{resourcetype.EC2SecurityGroup, "EC2 SecurityGroups blocked by orphan AWS Lambda VPC ENIs left in `available` state after the function was deleted."},
 		{resourcetype.LambdaFunction, "Lambda Functions, including Lambda@Edge functions with replicas still being cleaned up by AWS. Waits for AWS to finish removing edge replicas."},
 		{resourcetype.CloudformationStack, "Nested Child Stacks that failed to delete."},
 		{resourcetype.CloudformationCustomResource, "Custom Resources (AWS::CloudFormation::CustomResource), including resources that do not return a SUCCESS status."},

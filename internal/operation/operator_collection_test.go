@@ -36,6 +36,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		ecrRepositoryOperatorResourcesLength       int
 		backupVaultOperatorResourcesLength         int
 		athenaWorkGroupOperatorResourcesLength     int
+		ec2SubnetOperatorResourcesLength           int
+		ec2SecurityGroupOperatorResourcesLength    int
 		lambdaFunctionOperatorResourcesLength      int
 		cloudformationStackOperatorResourcesLength int
 		customOperatorResourcesLength              int
@@ -136,10 +138,22 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 						ResourceType:       aws.String("AWS::CloudFormation::CustomResource"),
 						PhysicalResourceId: aws.String("PhysicalResourceId13"),
 					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId15"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::EC2::Subnet"),
+						PhysicalResourceId: aws.String("subnet-15"),
+					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId16"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::EC2::SecurityGroup"),
+						PhysicalResourceId: aws.String("sg-16"),
+					},
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                   14,
+				logicalResourceIdsLength:                   16,
 				unsupportedStackResourcesLength:            0,
 				s3BucketOperatorResourcesLength:            1,
 				s3DirectoryBucketOperatorResourcesLength:   1,
@@ -151,6 +165,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       1,
 				backupVaultOperatorResourcesLength:         1,
 				athenaWorkGroupOperatorResourcesLength:     1,
+				ec2SubnetOperatorResourcesLength:           1,
+				ec2SecurityGroupOperatorResourcesLength:    1,
 				lambdaFunctionOperatorResourcesLength:      1,
 				cloudformationStackOperatorResourcesLength: 1,
 				customOperatorResourcesLength:              2,
@@ -189,6 +205,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				ec2SubnetOperatorResourcesLength:           0,
+				ec2SecurityGroupOperatorResourcesLength:    0,
 				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 1,
 				customOperatorResourcesLength:              0,
@@ -239,6 +257,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				ec2SubnetOperatorResourcesLength:           0,
+				ec2SecurityGroupOperatorResourcesLength:    0,
 				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 2,
 				customOperatorResourcesLength:              0,
@@ -277,6 +297,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				ec2SubnetOperatorResourcesLength:           0,
+				ec2SecurityGroupOperatorResourcesLength:    0,
 				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 0,
 				customOperatorResourcesLength:              0,
@@ -327,6 +349,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				ec2SubnetOperatorResourcesLength:           0,
+				ec2SecurityGroupOperatorResourcesLength:    0,
 				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 0,
 				customOperatorResourcesLength:              0,
@@ -365,6 +389,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				ec2SubnetOperatorResourcesLength:           0,
+				ec2SecurityGroupOperatorResourcesLength:    0,
 				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 1,
 				customOperatorResourcesLength:              0,
@@ -415,6 +441,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       0,
 				backupVaultOperatorResourcesLength:         0,
 				athenaWorkGroupOperatorResourcesLength:     0,
+				ec2SubnetOperatorResourcesLength:           0,
+				ec2SecurityGroupOperatorResourcesLength:    0,
 				lambdaFunctionOperatorResourcesLength:      0,
 				cloudformationStackOperatorResourcesLength: 2,
 				customOperatorResourcesLength:              0,
@@ -440,6 +468,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			ecrRepositoryOperatorResourcesLength := 0
 			backupVaultOperatorResourcesLength := 0
 			athenaWorkGroupOperatorResourcesLength := 0
+			ec2SubnetOperatorResourcesLength := 0
+			ec2SecurityGroupOperatorResourcesLength := 0
 			lambdaFunctionOperatorResourcesLength := 0
 			cloudformationStackOperatorResourcesLength := 0
 			customOperatorResourcesLength := 0
@@ -468,6 +498,10 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					backupVaultOperatorResourcesLength += operator.GetResourcesLength()
 				case *AthenaWorkGroupOperator:
 					athenaWorkGroupOperatorResourcesLength += operator.GetResourcesLength()
+				case *EC2SubnetOperator:
+					ec2SubnetOperatorResourcesLength += operator.GetResourcesLength()
+				case *EC2SecurityGroupOperator:
+					ec2SecurityGroupOperatorResourcesLength += operator.GetResourcesLength()
 				case *LambdaFunctionOperator:
 					lambdaFunctionOperatorResourcesLength += operator.GetResourcesLength()
 				case *CloudFormationStackOperator:
@@ -491,6 +525,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ecrRepositoryOperatorResourcesLength:       ecrRepositoryOperatorResourcesLength,
 				backupVaultOperatorResourcesLength:         backupVaultOperatorResourcesLength,
 				athenaWorkGroupOperatorResourcesLength:     athenaWorkGroupOperatorResourcesLength,
+				ec2SubnetOperatorResourcesLength:           ec2SubnetOperatorResourcesLength,
+				ec2SecurityGroupOperatorResourcesLength:    ec2SecurityGroupOperatorResourcesLength,
 				lambdaFunctionOperatorResourcesLength:      lambdaFunctionOperatorResourcesLength,
 				cloudformationStackOperatorResourcesLength: cloudformationStackOperatorResourcesLength,
 				customOperatorResourcesLength:              customOperatorResourcesLength,
@@ -658,6 +694,24 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 				ctx:       context.Background(),
 				stackName: aws.String("test"),
 				resource:  "AWS::Athena::WorkGroup",
+			},
+			want: true,
+		},
+		{
+			name: "EC2 Subnet",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				resource:  "AWS::EC2::Subnet",
+			},
+			want: true,
+		},
+		{
+			name: "EC2 SecurityGroup",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				resource:  "AWS::EC2::SecurityGroup",
 			},
 			want: true,
 		},

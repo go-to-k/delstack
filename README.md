@@ -136,6 +136,8 @@ If you need support for additional resource types, please create an issue at [Gi
 |  AWS::ECR::Repository  |  ECR Repositories, including repositories that contain images and where **the `EmptyOnDelete` is not true.**  |
 |  AWS::Backup::BackupVault  |  Backup Vaults, including vaults **containing recovery points**.  |
 |  AWS::Athena::WorkGroup  |  Athena WorkGroups, including workgroups containing **named queries or prepared statements**.  |
+|  AWS::EC2::Subnet  |  EC2 Subnets blocked by **orphan AWS Lambda VPC ENIs** that AWS Lambda has not yet released after the function was deleted. This tool deletes those orphan ENIs (`available` state, `AWS Lambda VPC ENI*` description only) and then deletes the subnet.  |
+|  AWS::EC2::SecurityGroup  |  EC2 SecurityGroups blocked by **orphan AWS Lambda VPC ENIs** that AWS Lambda has not yet released after the function was deleted. This tool deletes those orphan ENIs (`available` state, `AWS Lambda VPC ENI*` description only) and then deletes the security group.  |
 |  AWS::Lambda::Function  |  Lambda Functions, including **Lambda@Edge functions with replicas** still being cleaned up by AWS. Waits for AWS to finish removing edge replicas.  |
 |  AWS::CloudFormation::Stack  |  **Nested Child Stacks** that failed to delete. If any of the other resources are included in the child stack, **they too will be deleted**.  |
 |  AWS::CloudFormation::CustomResource  |  Custom Resources (AWS::CloudFormation::CustomResource), including resources that **do not return a SUCCESS status.**  |

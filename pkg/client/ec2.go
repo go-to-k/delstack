@@ -19,6 +19,8 @@ const (
 type IEC2 interface {
 	DescribeNetworkInterfaces(ctx context.Context, filters []types.Filter) ([]types.NetworkInterface, error)
 	DeleteNetworkInterface(ctx context.Context, networkInterfaceId *string) error
+	DeleteSubnet(ctx context.Context, subnetId *string) error
+	DeleteSecurityGroup(ctx context.Context, securityGroupId *string) error
 	CheckTerminationProtection(ctx context.Context, instanceId *string) (bool, error)
 	DisableTerminationProtection(ctx context.Context, instanceId *string) error
 }
@@ -82,6 +84,46 @@ func (c *EC2Client) DeleteNetworkInterface(ctx context.Context, networkInterface
 			Err:          fmt.Errorf("timeout waiting for ENI to be deletable: %w", err),
 		}
 	}
+}
+
+func (c *EC2Client) DeleteSubnet(ctx context.Context, subnetId *string) error {
+	input := &ec2.DeleteSubnetInput{
+		SubnetId: subnetId,
+	}
+
+	_, err := c.client.DeleteSubnet(ctx, input)
+	if err != nil {
+		// If the subnet is already gone, treat as success.
+		if strings.Contains(err.Error(), "InvalidSubnetID.NotFound") {
+			return nil
+		}
+		return &ClientError{
+			ResourceName: subnetId,
+			Err:          err,
+		}
+	}
+
+	return nil
+}
+
+func (c *EC2Client) DeleteSecurityGroup(ctx context.Context, securityGroupId *string) error {
+	input := &ec2.DeleteSecurityGroupInput{
+		GroupId: securityGroupId,
+	}
+
+	_, err := c.client.DeleteSecurityGroup(ctx, input)
+	if err != nil {
+		// If the security group is already gone, treat as success.
+		if strings.Contains(err.Error(), "InvalidGroup.NotFound") {
+			return nil
+		}
+		return &ClientError{
+			ResourceName: securityGroupId,
+			Err:          err,
+		}
+	}
+
+	return nil
 }
 
 func (c *EC2Client) CheckTerminationProtection(ctx context.Context, instanceId *string) (bool, error) {

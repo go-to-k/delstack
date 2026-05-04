@@ -1,0 +1,3 @@
+# `go build ./...` from this directory produces a binary named after the module's
+# basename (vpc_lambda). It is a local build artifact and must not be committed.
+/vpc_lambda

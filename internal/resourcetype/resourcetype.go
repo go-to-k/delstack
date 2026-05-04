@@ -12,6 +12,8 @@ const (
 	EcrRepository                = "AWS::ECR::Repository"
 	BackupVault                  = "AWS::Backup::BackupVault"
 	AthenaWorkGroup              = "AWS::Athena::WorkGroup"
+	EC2Subnet                    = "AWS::EC2::Subnet"
+	EC2SecurityGroup             = "AWS::EC2::SecurityGroup"
 	CloudformationStack          = "AWS::CloudFormation::Stack"
 	CloudformationCustomResource = "AWS::CloudFormation::CustomResource"
 	CustomResource               = "Custom::"
@@ -43,6 +45,8 @@ var ResourceTypes = []string{
 	EcrRepository,
 	BackupVault,
 	AthenaWorkGroup,
+	EC2Subnet,
+	EC2SecurityGroup,
 	LambdaFunction,
 	CloudformationStack,
 	CloudformationCustomResource,
