@@ -23,10 +23,8 @@ We do **not** deploy a real VPC Lambda. AWS Lambda's Hyperplane ENI release is n
 
 1. `cdk deploy` a minimal VPC + private Subnet + SecurityGroup. The stack outputs `PrivateSubnetId` and `LambdaSgId`.
 2. `CreateNetworkInterface` (x2) on that Subnet+SG with description `AWS Lambda VPC ENI-<stage>-<n>`. The ENIs are unattached and stay in `available` state.
-3. Trigger an ordinary CloudFormation `DeleteStack` (not `delstack`). CFN tries to delete the SecurityGroup and Subnet and fails with `DependencyViolation` because of the synthetic ENIs.
-4. Poll until the stack reaches `DELETE_FAILED`. If it reaches `DELETE_COMPLETE` instead the script reports failure — the test would not be meaningful.
 
-After step 4 the stack is in the exact state described in issue #637 from the operator's perspective. Running `delstack -s <stage>` then exercises `EC2SubnetOperator` and `EC2SecurityGroupOperator`: the operators detect the synthetic ENIs by the description prefix, delete them, and then delete the Subnet / SecurityGroup themselves.
+`delstack` itself drives `DeleteStack` and waits for `DELETE_FAILED` via its internal CloudFormation delete waiter (~75 min cap), so this script does not call `DeleteStack` itself. CFN's first delete pass hits `DependencyViolation` on the SecurityGroup / Subnet because of the synthetic ENIs, the stack lands in `DELETE_FAILED`, and the new `EC2SubnetOperator` / `EC2SecurityGroupOperator` remove the synthetic ENIs (matched by the description prefix) and then the Subnet / SecurityGroup themselves.
 
 ## Test Stack Deployment
 

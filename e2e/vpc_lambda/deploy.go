@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
-	cfntypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fatih/color"
@@ -53,14 +52,12 @@ type DeployStackService struct {
 //     "AWS Lambda VPC ENI-..." so the new operators recognise them. The ENIs
 //     are unattached and stay in `available` state, mirroring orphan Lambda
 //     Hyperplane ENIs.
-//  3. Trigger an ordinary CloudFormation DeleteStack. CFN tries to delete the
-//     SecurityGroup and Subnet and fails with `DependencyViolation` because
-//     of the synthetic ENIs.
-//  4. Wait until the stack reaches DELETE_FAILED.
 //
-// Real Hyperplane ENI release timing is non-deterministic, which made the
-// earlier real-Lambda approach flaky. This synthetic approach exercises the
-// same operator code path the real scenario does.
+// `delstack` itself drives DeleteStack and waits for DELETE_FAILED via its
+// internal CloudFormation delete waiter, so this script does not need to call
+// DeleteStack itself. Real Hyperplane ENI release timing is non-deterministic,
+// which made the earlier real-Lambda approach flaky. The synthetic approach
+// exercises the same operator code path the real scenario does.
 func main() {
 	ctx := context.Background()
 	options := parseArgs()
@@ -94,16 +91,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := service.triggerCfnDeleteAndWaitForFailure(); err != nil {
-		color.Red("Failed to bring the stack into DELETE_FAILED: %v", err)
-		os.Exit(1)
-	}
-
 	color.Green("===================================")
-	color.Green("STACK IS NOW IN DELETE_FAILED (synthetic Lambda VPC ENIs blocking Subnet/SG)")
+	color.Green("STACK READY (synthetic Lambda VPC ENIs are attached to Subnet/SG)")
 	color.Green("Stack Name: %s", service.CfnStackName)
 	color.Green("===================================")
-	color.Yellow("To force delete this stuck stack, run:")
+	color.Yellow("To force delete via delstack (will go through DELETE_FAILED internally):")
 	color.Yellow("  delstack -s %s", service.CfnStackName)
 }
 
@@ -218,47 +210,6 @@ func (s *DeployStackService) createSyntheticENIs(subnetId, sgId string, count in
 	}
 
 	return nil
-}
-
-func (s *DeployStackService) triggerCfnDeleteAndWaitForFailure() error {
-	color.Green("=== trigger ordinary CloudFormation DeleteStack and wait for DELETE_FAILED ===")
-
-	_, err := s.CfnClient.DeleteStack(s.Ctx, &cloudformation.DeleteStackInput{
-		StackName: aws.String(s.CfnStackName),
-	})
-	if err != nil {
-		return fmt.Errorf("DeleteStack %s failed: %w", s.CfnStackName, err)
-	}
-
-	deadline := time.Now().Add(15 * time.Minute)
-	for {
-		if time.Now().After(deadline) {
-			return fmt.Errorf("timeout waiting for stack %s to reach DELETE_FAILED", s.CfnStackName)
-		}
-
-		out, err := s.CfnClient.DescribeStacks(s.Ctx, &cloudformation.DescribeStacksInput{
-			StackName: aws.String(s.CfnStackName),
-		})
-		if err != nil || len(out.Stacks) == 0 {
-			return fmt.Errorf("stack %s no longer exists; the synthetic ENIs were not blocking deletion (unexpected)", s.CfnStackName)
-		}
-
-		status := out.Stacks[0].StackStatus
-		color.Cyan("  current StackStatus: %s", status)
-		switch status {
-		case cfntypes.StackStatusDeleteFailed:
-			color.Green("Stack reached DELETE_FAILED as expected.")
-			return nil
-		case cfntypes.StackStatusDeleteComplete:
-			return fmt.Errorf("stack %s reached DELETE_COMPLETE; the synthetic ENIs were not blocking deletion (unexpected)", s.CfnStackName)
-		case cfntypes.StackStatusDeleteInProgress:
-			// keep polling
-		default:
-			return fmt.Errorf("unexpected StackStatus while waiting for DELETE_FAILED: %s", status)
-		}
-
-		time.Sleep(15 * time.Second)
-	}
 }
 
 func runCommand(command string) error {
