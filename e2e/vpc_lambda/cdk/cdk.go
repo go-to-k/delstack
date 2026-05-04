@@ -24,14 +24,16 @@ func NewVpcLambdaTestStack(scope constructs.Construct, id string, props *VpcLamb
 
 	r := resource.NewVpcLambdaStack(stack)
 
-	// Export the Subnet/SG IDs so deploy.go can attach synthetic ENIs to them.
+	// Output (NOT Export) the Subnet/SG IDs so deploy.go can read them via
+	// DescribeStacks. We deliberately do NOT set ExportName: a CFN Export on a
+	// stack that goes through DELETE_FAILED makes ListImports return
+	// ValidationError once the stack starts tearing down, which trips delstack's
+	// dependency-graph analysis.
 	awscdk.NewCfnOutput(stack, jsii.String("PrivateSubnetId"), &awscdk.CfnOutputProps{
-		Value:      r.PrivateSubnet.SubnetId(),
-		ExportName: jsii.String(props.PjPrefix + "-PrivateSubnetId"),
+		Value: r.PrivateSubnet.SubnetId(),
 	})
 	awscdk.NewCfnOutput(stack, jsii.String("LambdaSgId"), &awscdk.CfnOutputProps{
-		Value:      r.LambdaSg.SecurityGroupId(),
-		ExportName: jsii.String(props.PjPrefix + "-LambdaSgId"),
+		Value: r.LambdaSg.SecurityGroupId(),
 	})
 
 	return stack
