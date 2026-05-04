@@ -22,7 +22,17 @@ func NewVpcLambdaTestStack(scope constructs.Construct, id string, props *VpcLamb
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	resource.NewVpcLambdaStack(stack, props.PjPrefix)
+	r := resource.NewVpcLambdaStack(stack)
+
+	// Export the Subnet/SG IDs so deploy.go can attach synthetic ENIs to them.
+	awscdk.NewCfnOutput(stack, jsii.String("PrivateSubnetId"), &awscdk.CfnOutputProps{
+		Value:      r.PrivateSubnet.SubnetId(),
+		ExportName: jsii.String(props.PjPrefix + "-PrivateSubnetId"),
+	})
+	awscdk.NewCfnOutput(stack, jsii.String("LambdaSgId"), &awscdk.CfnOutputProps{
+		Value:      r.LambdaSg.SecurityGroupId(),
+		ExportName: jsii.String(props.PjPrefix + "-LambdaSgId"),
+	})
 
 	return stack
 }

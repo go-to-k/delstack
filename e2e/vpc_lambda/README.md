@@ -19,12 +19,14 @@ This E2E reproduces **scenario 4** and then expects `delstack` to clean the stac
 
 ## What `deploy.go` does
 
-1. `cdk deploy` a minimal VPC + VPC-attached Lambda topology.
-2. Invokes the Lambda once so AWS Lambda provisions the VPC (Hyperplane) ENIs.
-3. Triggers an ordinary CloudFormation `DeleteStack` (not `delstack`) so CFN itself drives Lambda deletion and then fails on Subnet / SecurityGroup.
-4. Polls until the stack reaches `DELETE_FAILED`. If AWS Lambda happens to release the ENIs in time and the stack reaches `DELETE_COMPLETE` instead, the script reports failure (the orphan ENI condition was not actually reproduced, so the test would not be meaningful).
+We do **not** deploy a real VPC Lambda. AWS Lambda's Hyperplane ENI release is non-deterministic — sometimes the ENIs are released before CFN gets to the Subnet / SecurityGroup, the stack reaches `DELETE_COMPLETE` cleanly, and the new operator code never runs. To exercise the operator code path on every run we instead inject **synthetic ENIs** that look exactly like orphan Lambda VPC ENIs from the operator's point of view (same `description` prefix, `available` state).
 
-After step 4, the stack is in the exact state described in issue #637. Running `delstack -s <stage>` then exercises the new operators end-to-end.
+1. `cdk deploy` a minimal VPC + private Subnet + SecurityGroup. The stack outputs `PrivateSubnetId` and `LambdaSgId`.
+2. `CreateNetworkInterface` (x2) on that Subnet+SG with description `AWS Lambda VPC ENI-<stage>-<n>`. The ENIs are unattached and stay in `available` state.
+3. Trigger an ordinary CloudFormation `DeleteStack` (not `delstack`). CFN tries to delete the SecurityGroup and Subnet and fails with `DependencyViolation` because of the synthetic ENIs.
+4. Poll until the stack reaches `DELETE_FAILED`. If it reaches `DELETE_COMPLETE` instead the script reports failure — the test would not be meaningful.
+
+After step 4 the stack is in the exact state described in issue #637 from the operator's perspective. Running `delstack -s <stage>` then exercises `EC2SubnetOperator` and `EC2SecurityGroupOperator`: the operators detect the synthetic ENIs by the description prefix, delete them, and then delete the Subnet / SecurityGroup themselves.
 
 ## Test Stack Deployment
 

@@ -1,18 +1,25 @@
 package resource
 
 import (
-	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
-	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
 
-// NewVpcLambdaStack creates a minimal VPC + VPC-attached Lambda topology used to
-// reproduce orphan AWS Lambda VPC ENIs blocking Subnet/SecurityGroup deletion.
-// PRIVATE_ISOLATED + 0 NAT Gateways keeps the cost low; Lambda VPC ENIs are still
-// provisioned by AWS Lambda when the function is invoked.
-func NewVpcLambdaStack(scope constructs.Construct, pjPrefix string) awslambda.Function {
+// VpcLambdaResources is the topology required to reproduce issue #637 in
+// E2E. We do NOT deploy a real VPC Lambda function: Hyperplane ENI release
+// timing is non-deterministic, which makes the orphan-ENI condition flaky.
+// Instead, deploy.go creates synthetic ENIs (description prefix
+// "AWS Lambda VPC ENI-...") attached to this Subnet / SecurityGroup so the
+// CloudFormation Subnet / SecurityGroup deletion always fails with the same
+// dependency error a real orphan Lambda VPC ENI would produce.
+type VpcLambdaResources struct {
+	Vpc           awsec2.Vpc
+	LambdaSg      awsec2.SecurityGroup
+	PrivateSubnet awsec2.ISubnet
+}
+
+func NewVpcLambdaStack(scope constructs.Construct) VpcLambdaResources {
 	vpc := awsec2.NewVpc(scope, jsii.String("Vpc"), &awsec2.VpcProps{
 		IpAddresses: awsec2.IpAddresses_Cidr(jsii.String("10.193.0.0/16")),
 		MaxAzs:      jsii.Number(2),
@@ -28,25 +35,14 @@ func NewVpcLambdaStack(scope constructs.Construct, pjPrefix string) awslambda.Fu
 
 	lambdaSg := awsec2.NewSecurityGroup(scope, jsii.String("LambdaSg"), &awsec2.SecurityGroupProps{
 		Vpc:              vpc,
-		Description:      jsii.String("Security group for VPC Lambda used in orphan ENI E2E"),
+		Description:      jsii.String("Security group used to host synthetic Lambda VPC ENIs in E2E"),
 		AllowAllOutbound: jsii.Bool(true),
 	})
 
-	functionName := pjPrefix + "-VpcLambda"
-
-	return awslambda.NewFunction(scope, jsii.String("VpcLambda"), &awslambda.FunctionProps{
-		FunctionName: jsii.String(functionName),
-		Runtime:      awslambda.Runtime_PYTHON_3_12(),
-		Handler:      jsii.String("index.handler"),
-		Code: awslambda.Code_FromInline(jsii.String(`
-def handler(event, context):
-    return {'statusCode': 200, 'body': 'ok'}
-`)),
-		Timeout: awscdk.Duration_Seconds(jsii.Number(10)),
-		Vpc:     vpc,
-		VpcSubnets: &awsec2.SubnetSelection{
-			SubnetType: awsec2.SubnetType_PRIVATE_ISOLATED,
-		},
-		SecurityGroups: &[]awsec2.ISecurityGroup{lambdaSg},
-	})
+	subnets := vpc.IsolatedSubnets()
+	return VpcLambdaResources{
+		Vpc:           vpc,
+		LambdaSg:      lambdaSg,
+		PrivateSubnet: (*subnets)[0],
+	}
 }

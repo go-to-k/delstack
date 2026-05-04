@@ -12,13 +12,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	cfntypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fatih/color"
 )
 
 const (
 	region = "us-east-1"
+
+	// syntheticENIDescriptionPrefix matches the prefix internal/operation uses to
+	// detect orphan AWS Lambda VPC ENIs. Using the same prefix lets the new
+	// EC2SubnetOperator / EC2SecurityGroupOperator pick these synthetic ENIs up
+	// exactly as they would real Lambda Hyperplane ENIs.
+	syntheticENIDescriptionPrefix = "AWS Lambda VPC ENI"
 )
 
 type Options struct {
@@ -30,31 +36,31 @@ type DeployStackService struct {
 	Options       Options
 	CfnPjPrefix   string
 	CfnStackName  string
-	FunctionName  string
 	AccountID     string
 	ProfileOption string
 	Ctx           context.Context
 	StsClient     *sts.Client
-	LambdaClient  *lambda.Client
 	CfnClient     *cloudformation.Client
+	EC2Client     *ec2.Client
 }
 
-// This script reproduces the real user-facing scenario of issue #637:
-// a stack is left in DELETE_FAILED by an ordinary CloudFormation delete-stack
-// because AWS Lambda has not yet released its VPC ENIs. The user then runs
-// `delstack` to recover from that stuck state. Steps:
+// This script reproduces the user-facing scenario of issue #637 in a
+// deterministic way for E2E:
 //
-//  1. cdk deploy: creates VPC, Subnet, SG, VPC Lambda.
-//  2. Invoke the Lambda once so AWS Lambda provisions the VPC (Hyperplane) ENIs.
-//  3. Trigger an ordinary CloudFormation DeleteStack (NOT delstack). CFN deletes
-//     the Lambda first, then tries to delete the Subnet / SecurityGroup; those
-//     fail with "has dependencies" / "has a dependent object" because Lambda has
-//     not yet released the ENIs (release is asynchronous, ~30 min).
+//  1. cdk deploy: creates VPC, private Subnet, SecurityGroup. Stack outputs
+//     the Subnet ID and SG ID so this script can attach ENIs to them.
+//  2. CreateNetworkInterface (x2) on that Subnet+SG with description prefix
+//     "AWS Lambda VPC ENI-..." so the new operators recognise them. The ENIs
+//     are unattached and stay in `available` state, mirroring orphan Lambda
+//     Hyperplane ENIs.
+//  3. Trigger an ordinary CloudFormation DeleteStack. CFN tries to delete the
+//     SecurityGroup and Subnet and fails with `DependencyViolation` because
+//     of the synthetic ENIs.
 //  4. Wait until the stack reaches DELETE_FAILED.
 //
-// After this script the stack is in the exact state issue #637 describes.
-// Running `delstack -s <stage>` should then detect the orphan Lambda VPC ENIs,
-// delete them, and delete the Subnet / SecurityGroup themselves.
+// Real Hyperplane ENI release timing is non-deterministic, which made the
+// earlier real-Lambda approach flaky. This synthetic approach exercises the
+// same operator code path the real scenario does.
 func main() {
 	ctx := context.Background()
 	options := parseArgs()
@@ -77,8 +83,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := service.invokeLambda(); err != nil {
-		color.Red("Failed to invoke Lambda (ENI creation): %v", err)
+	subnetId, sgId, err := service.fetchStackOutputs()
+	if err != nil {
+		color.Red("Failed to read stack outputs: %v", err)
+		os.Exit(1)
+	}
+
+	if err := service.createSyntheticENIs(subnetId, sgId, 2); err != nil {
+		color.Red("Failed to create synthetic ENIs: %v", err)
 		os.Exit(1)
 	}
 
@@ -88,7 +100,7 @@ func main() {
 	}
 
 	color.Green("===================================")
-	color.Green("STACK IS NOW IN DELETE_FAILED (orphan Lambda VPC ENIs blocking Subnet/SG)")
+	color.Green("STACK IS NOW IN DELETE_FAILED (synthetic Lambda VPC ENIs blocking Subnet/SG)")
 	color.Green("Stack Name: %s", service.CfnStackName)
 	color.Green("===================================")
 	color.Yellow("To force delete this stuck stack, run:")
@@ -107,7 +119,6 @@ func NewDeployStackService(ctx context.Context, options Options) *DeployStackSer
 		Options:       options,
 		CfnPjPrefix:   cfnPjPrefix,
 		CfnStackName:  cfnPjPrefix,
-		FunctionName:  cfnPjPrefix + "-VpcLambda",
 		ProfileOption: profileOption,
 		Ctx:           ctx,
 	}
@@ -132,8 +143,8 @@ func (s *DeployStackService) initAWSClients() error {
 	}
 
 	s.StsClient = sts.NewFromConfig(cfg)
-	s.LambdaClient = lambda.NewFromConfig(cfg)
 	s.CfnClient = cloudformation.NewFromConfig(cfg)
+	s.EC2Client = ec2.NewFromConfig(cfg)
 
 	stsOutput, err := s.StsClient.GetCallerIdentity(s.Ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -161,18 +172,51 @@ func (s *DeployStackService) cdkDeploy() error {
 	return nil
 }
 
-func (s *DeployStackService) invokeLambda() error {
-	color.Green("=== invoke Lambda to provision VPC ENIs ===")
+func (s *DeployStackService) fetchStackOutputs() (subnetId, sgId string, err error) {
+	color.Green("=== fetch CFN stack outputs (Subnet/SG IDs) ===")
 
-	_, err := s.LambdaClient.Invoke(s.Ctx, &lambda.InvokeInput{
-		FunctionName: aws.String(s.FunctionName),
+	out, err := s.CfnClient.DescribeStacks(s.Ctx, &cloudformation.DescribeStacksInput{
+		StackName: aws.String(s.CfnStackName),
 	})
 	if err != nil {
-		return fmt.Errorf("invoke %s failed: %w", s.FunctionName, err)
+		return "", "", fmt.Errorf("DescribeStacks %s failed: %w", s.CfnStackName, err)
+	}
+	if len(out.Stacks) == 0 {
+		return "", "", fmt.Errorf("stack %s not found", s.CfnStackName)
 	}
 
-	color.Green("Lambda invoked. Waiting briefly for ENIs to be visible...")
-	time.Sleep(15 * time.Second)
+	for _, o := range out.Stacks[0].Outputs {
+		switch aws.ToString(o.OutputKey) {
+		case "PrivateSubnetId":
+			subnetId = aws.ToString(o.OutputValue)
+		case "LambdaSgId":
+			sgId = aws.ToString(o.OutputValue)
+		}
+	}
+	if subnetId == "" || sgId == "" {
+		return "", "", fmt.Errorf("missing CFN outputs PrivateSubnetId / LambdaSgId on stack %s", s.CfnStackName)
+	}
+
+	color.Green("  PrivateSubnetId=%s LambdaSgId=%s", subnetId, sgId)
+	return subnetId, sgId, nil
+}
+
+func (s *DeployStackService) createSyntheticENIs(subnetId, sgId string, count int) error {
+	color.Green("=== create %d synthetic Lambda VPC ENIs in %s / %s ===", count, subnetId, sgId)
+
+	for i := 0; i < count; i++ {
+		desc := fmt.Sprintf("%s-%s-%d", syntheticENIDescriptionPrefix, s.CfnPjPrefix, i)
+		out, err := s.EC2Client.CreateNetworkInterface(s.Ctx, &ec2.CreateNetworkInterfaceInput{
+			SubnetId:    aws.String(subnetId),
+			Groups:      []string{sgId},
+			Description: aws.String(desc),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateNetworkInterface failed: %w", err)
+		}
+		color.Cyan("  created ENI %s (description=%q)", aws.ToString(out.NetworkInterface.NetworkInterfaceId), desc)
+	}
+
 	return nil
 }
 
@@ -186,9 +230,7 @@ func (s *DeployStackService) triggerCfnDeleteAndWaitForFailure() error {
 		return fmt.Errorf("DeleteStack %s failed: %w", s.CfnStackName, err)
 	}
 
-	// Poll until the stack reaches DELETE_FAILED, DELETE_COMPLETE (rare: AWS released
-	// the ENIs in time and CFN deleted the stack cleanly), or the timeout fires.
-	deadline := time.Now().Add(20 * time.Minute)
+	deadline := time.Now().Add(15 * time.Minute)
 	for {
 		if time.Now().After(deadline) {
 			return fmt.Errorf("timeout waiting for stack %s to reach DELETE_FAILED", s.CfnStackName)
@@ -197,15 +239,8 @@ func (s *DeployStackService) triggerCfnDeleteAndWaitForFailure() error {
 		out, err := s.CfnClient.DescribeStacks(s.Ctx, &cloudformation.DescribeStacksInput{
 			StackName: aws.String(s.CfnStackName),
 		})
-		if err != nil {
-			// Stack may have been removed entirely (DELETE_COMPLETE drops it from
-			// DescribeStacks). That means the orphan ENI condition did not occur —
-			// still report it so the human can decide whether to retry.
-			color.Yellow("DescribeStacks returned error (stack may be gone): %v", err)
-			return fmt.Errorf("stack %s no longer exists; orphan ENI scenario was not reproduced", s.CfnStackName)
-		}
-		if len(out.Stacks) == 0 {
-			return fmt.Errorf("stack %s no longer exists; orphan ENI scenario was not reproduced", s.CfnStackName)
+		if err != nil || len(out.Stacks) == 0 {
+			return fmt.Errorf("stack %s no longer exists; the synthetic ENIs were not blocking deletion (unexpected)", s.CfnStackName)
 		}
 
 		status := out.Stacks[0].StackStatus
@@ -215,7 +250,7 @@ func (s *DeployStackService) triggerCfnDeleteAndWaitForFailure() error {
 			color.Green("Stack reached DELETE_FAILED as expected.")
 			return nil
 		case cfntypes.StackStatusDeleteComplete:
-			return fmt.Errorf("stack %s reached DELETE_COMPLETE; orphan ENI scenario was not reproduced (Lambda may have released ENIs in time)", s.CfnStackName)
+			return fmt.Errorf("stack %s reached DELETE_COMPLETE; the synthetic ENIs were not blocking deletion (unexpected)", s.CfnStackName)
 		case cfntypes.StackStatusDeleteInProgress:
 			// keep polling
 		default:
