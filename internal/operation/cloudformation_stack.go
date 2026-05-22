@@ -27,6 +27,8 @@ const StackNameRule = `^arn:aws:cloudformation:[^:]*:[0-9]*:stack/([^/]*)/.*$`
 
 // Except xxInProgress
 // StackStatusDeleteComplete is not included because DescribeStacks does not return a DELETE_COMPLETE stack.
+// StackStatusReviewInProgress is not included because a stack in this state has no actual resources
+// (only metadata from an unexecuted change set) and DeleteStack accepts it.
 var StackStatusExceptionsForDescribeStacks = []types.StackStatus{
 	types.StackStatusCreateInProgress,
 	types.StackStatusRollbackInProgress,
@@ -35,7 +37,6 @@ var StackStatusExceptionsForDescribeStacks = []types.StackStatus{
 	types.StackStatusUpdateCompleteCleanupInProgress,
 	types.StackStatusUpdateRollbackInProgress,
 	types.StackStatusUpdateRollbackCompleteCleanupInProgress,
-	types.StackStatusReviewInProgress,
 	types.StackStatusImportInProgress,
 	types.StackStatusImportRollbackInProgress,
 }
