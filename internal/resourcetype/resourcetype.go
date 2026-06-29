@@ -2,21 +2,22 @@ package resourcetype
 
 // For Force Deletion
 const (
-	S3Bucket                     = "AWS::S3::Bucket"
-	S3DirectoryBucket            = "AWS::S3Express::DirectoryBucket"
-	S3TableBucket                = "AWS::S3Tables::TableBucket"
-	S3TableNamespace             = "AWS::S3Tables::Namespace"
-	S3VectorBucket               = "AWS::S3Vectors::VectorBucket"
-	IamGroup                     = "AWS::IAM::Group"
-	IamUser                      = "AWS::IAM::User"
-	EcrRepository                = "AWS::ECR::Repository"
-	BackupVault                  = "AWS::Backup::BackupVault"
-	AthenaWorkGroup              = "AWS::Athena::WorkGroup"
-	EC2Subnet                    = "AWS::EC2::Subnet"
-	EC2SecurityGroup             = "AWS::EC2::SecurityGroup"
-	CloudformationStack          = "AWS::CloudFormation::Stack"
-	CloudformationCustomResource = "AWS::CloudFormation::CustomResource"
-	CustomResource               = "Custom::"
+	S3Bucket                                 = "AWS::S3::Bucket"
+	S3DirectoryBucket                        = "AWS::S3Express::DirectoryBucket"
+	S3TableBucket                            = "AWS::S3Tables::TableBucket"
+	S3TableNamespace                         = "AWS::S3Tables::Namespace"
+	S3VectorBucket                           = "AWS::S3Vectors::VectorBucket"
+	IamGroup                                 = "AWS::IAM::Group"
+	IamUser                                  = "AWS::IAM::User"
+	EcrRepository                            = "AWS::ECR::Repository"
+	BackupVault                              = "AWS::Backup::BackupVault"
+	AthenaWorkGroup                          = "AWS::Athena::WorkGroup"
+	EC2Subnet                                = "AWS::EC2::Subnet"
+	EC2SecurityGroup                         = "AWS::EC2::SecurityGroup"
+	CognitoUserPoolUICustomizationAttachment = "AWS::Cognito::UserPoolUICustomizationAttachment"
+	CloudformationStack                      = "AWS::CloudFormation::Stack"
+	CloudformationCustomResource             = "AWS::CloudFormation::CustomResource"
+	CustomResource                           = "Custom::"
 )
 
 // For Force Deletion and Preprocessors
@@ -47,6 +48,7 @@ var ResourceTypes = []string{
 	AthenaWorkGroup,
 	EC2Subnet,
 	EC2SecurityGroup,
+	CognitoUserPoolUICustomizationAttachment,
 	LambdaFunction,
 	CloudformationStack,
 	CloudformationCustomResource,

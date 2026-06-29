@@ -20,7 +20,7 @@ TEST_COV_RESULT := "$$(go test -race -cover -v ./... -coverpkg=./... -coverprofi
 
 FAIL_CHECK := "^[^\s\t]*FAIL[^\s\t]*$$"
 
-.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_vpc_lambda testgen_lambda_edge testgen_deletion_protection testgen_deletion_protection_no_tp testgen_cdk_integration testgen_help e2e_full e2e_full_retain e2e_large_template e2e_dependency e2e_dependency_retain e2e_preprocessor e2e_vpc_lambda e2e_lambda_edge e2e_deletion_protection e2e_deletion_protection_no_tp e2e_cdk_integration e2e_help
+.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_vpc_lambda testgen_lambda_edge testgen_deletion_protection testgen_deletion_protection_no_tp testgen_cdk_integration testgen_create_failed testgen_help e2e_full e2e_full_retain e2e_large_template e2e_dependency e2e_dependency_retain e2e_preprocessor e2e_vpc_lambda e2e_lambda_edge e2e_deletion_protection e2e_deletion_protection_no_tp e2e_cdk_integration e2e_create_failed e2e_help
 
 test_diff:
 	@! echo $(TEST_DIFF_RESULT) | $(COLORIZE_PASS) | $(COLORIZE_FAIL) | tee /dev/stderr | grep $(FAIL_CHECK) > /dev/null
@@ -100,6 +100,11 @@ testgen_vpc_lambda:
 	@echo "Setting up VPC Lambda orphan-ENI test stack..."
 	@cd e2e/vpc_lambda && go mod tidy && go run deploy.go $(OPT)
 
+# Generate and deploy a stack whose CREATE fails, leaving a phantom DELETE_FAILED resource (issue #647)
+testgen_create_failed:
+	@echo "Setting up create-failed phantom test stack..."
+	@cd e2e/create_failed && go mod tidy && go run deploy.go $(OPT)
+
 # Generate and deploy deletion protection test stacks
 testgen_deletion_protection:
 	@echo "Setting up deletion protection test stacks..."
@@ -161,6 +166,7 @@ testgen_help:
 	@echo "  testgen_lambda_edge         - Generate and deploy Lambda@Edge test stacks"
 	@echo "  testgen_preprocessor        - Generate and deploy preprocessor test stacks for Lambda VPC detachment"
 	@echo "  testgen_vpc_lambda          - Generate and deploy VPC Lambda orphan-ENI test stack (issue #637)"
+	@echo "  testgen_create_failed       - Generate and deploy a create-failed phantom test stack (issue #647)"
 	@echo "  testgen_deletion_protection       - Generate and deploy deletion protection test stacks"
 	@echo "  testgen_deletion_protection_no_tp - Generate and deploy deletion protection test stacks without stack TP"
 	@echo "  testgen_cdk_integration           - Generate and deploy CDK integration test stacks"
@@ -195,6 +201,9 @@ testgen_help:
 	@echo "  make testgen_vpc_lambda"
 	@echo "  make testgen_vpc_lambda OPT=\"-s my-stage\""
 	@echo "  make testgen_vpc_lambda OPT=\"-p my-profile\""
+	@echo "  make testgen_create_failed"
+	@echo "  make testgen_create_failed OPT=\"-s my-stage\""
+	@echo "  make testgen_create_failed OPT=\"-p my-profile\""
 	@echo "  make testgen_deletion_protection"
 	@echo "  make testgen_deletion_protection OPT=\"-s my-stage\""
 	@echo "  make testgen_deletion_protection OPT=\"-p my-profile\""
@@ -264,6 +273,12 @@ e2e_preprocessor:
 e2e_vpc_lambda: STAGE = e2e-vpc-lambda-$(E2E_RANDOM)
 e2e_vpc_lambda:
 	@$(MAKE) testgen_vpc_lambda OPT="-s $(STAGE) $(OPT)"
+	@$(MAKE) run OPT="-s $(STAGE) -y $(OPT)"
+
+# Run create-failed phantom E2E test (deploy intentionally failing stack + delete) (issue #647)
+e2e_create_failed: STAGE = e2e-create-failed-$(E2E_RANDOM)
+e2e_create_failed:
+	@$(MAKE) testgen_create_failed OPT="-s $(STAGE) $(OPT)"
 	@$(MAKE) run OPT="-s $(STAGE) -y $(OPT)"
 
 # Run deletion protection E2E test (deploy + force delete)
@@ -348,6 +363,7 @@ e2e_help:
 	@echo "  e2e_lambda_edge             - Deploy Lambda@Edge stacks and delete (takes ~20 min)"
 	@echo "  e2e_preprocessor            - Deploy preprocessor stacks and delete"
 	@echo "  e2e_vpc_lambda              - Deploy VPC Lambda + setup orphan ENI and force delete (issue #637)"
+	@echo "  e2e_create_failed           - Deploy a create-failed phantom stack and delete (issue #647)"
 	@echo "  e2e_deletion_protection     - Deploy deletion protection stacks and force delete"
 	@echo "  e2e_deletion_protection_no_tp - Deploy deletion protection stacks (no TP) and force delete"
 	@echo "  e2e_cdk_integration          - Deploy CDK stacks and delete with 'delstack cdk'"
@@ -367,6 +383,7 @@ e2e_help:
 	@echo "  make e2e_full"
 	@echo "  make e2e_full STAGE=my-stage"
 	@echo "  make e2e_full STAGE=my-stage OPT=\"-p my-profile\""
+	@echo "  make e2e_create_failed"
 	@echo "  make e2e_cdk_integration"
 	@echo "  make e2e_cdk_cross_region"
 	@echo "  make e2e_cdk_stage"
