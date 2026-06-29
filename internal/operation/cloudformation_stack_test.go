@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"regexp"
 	"testing"
 	"time"
 
@@ -4360,6 +4361,64 @@ func TestCloudFormationStackOperator_RemoveDeletionPolicy(t *testing.T) {
 			if tt.wantErr && err.Error() != tt.want.Error() {
 				t.Errorf("err = %#v, want %#v", err.Error(), tt.want.Error())
 				return
+			}
+		})
+	}
+}
+
+func TestCloudFormationStackOperator_uploadTemplateToS3(t *testing.T) {
+	io.NewLogger(false)
+
+	// AWS S3 bucket names must be at most 63 characters and match the S3 naming rules.
+	// A 19-digit decimal nanosecond timestamp used to overflow this limit for longer
+	// region names (e.g. ap-northeast-1), causing InvalidBucketName on CreateBucket.
+	bucketNameRegex := regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`)
+
+	cases := []struct {
+		name   string
+		region string
+	}{
+		{name: "long region name (ap-northeast-1) stays within the 63-character limit", region: "ap-northeast-1"},
+		{name: "short region name (us-east-1)", region: "us-east-1"},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			cloudformationMock := client.NewMockICloudFormation(ctrl)
+
+			s3Mock := client.NewMockIS3(ctrl)
+
+			var capturedBucketName string
+			s3Mock.EXPECT().CreateBucket(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(_ context.Context, bucketName *string) error {
+					capturedBucketName = *bucketName
+					return nil
+				},
+			)
+			s3Mock.EXPECT().PutObject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+			cloudformationStackOperator := NewCloudFormationStackOperator(aws.Config{Region: tt.region}, cloudformationMock, s3Mock)
+
+			stackName := aws.String("test-stack")
+			template := aws.String(`{"Resources":{}}`)
+			stack := &types.Stack{
+				StackId: aws.String("arn:aws:cloudformation:" + tt.region + ":583942117338:stack/test-stack/guid"),
+			}
+
+			result, err := cloudformationStackOperator.uploadTemplateToS3(context.Background(), stackName, template, stack)
+			if err != nil {
+				t.Fatalf("uploadTemplateToS3 returned error: %v", err)
+			}
+			if result == nil || result.BucketName == nil {
+				t.Fatalf("uploadTemplateToS3 returned nil result")
+			}
+
+			if len(capturedBucketName) > 63 {
+				t.Errorf("bucket name exceeds the S3 63-character limit (%d): %s", len(capturedBucketName), capturedBucketName)
+			}
+			if !bucketNameRegex.MatchString(capturedBucketName) {
+				t.Errorf("bucket name is not a valid S3 bucket name: %s", capturedBucketName)
 			}
 		})
 	}

@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -533,7 +534,9 @@ func (o *CloudFormationStackOperator) uploadTemplateToS3(ctx context.Context, st
 		return nil, fmt.Errorf("TemplateS3UploadError: failed to extract account ID from stack ARN")
 	}
 
-	timestamp := fmt.Sprintf("%d", time.Now().UnixNano())
+	// Base36-encode the nanosecond timestamp to keep the bucket name within S3's 63-character limit
+	// (a 19-digit decimal timestamp overflows the limit for longer region names such as ap-northeast-1).
+	timestamp := strconv.FormatInt(time.Now().UnixNano(), 36)
 	bucketName := fmt.Sprintf("delstack-templates-%s-%s-%s", accountID, o.config.Region, timestamp)
 
 	// Ensure bucket cleanup if upload fails (only after bucket is created)
