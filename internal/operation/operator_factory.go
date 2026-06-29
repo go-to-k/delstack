@@ -231,6 +231,10 @@ func (f *OperatorFactory) CreateLambdaFunctionOperator() *LambdaFunctionOperator
 	)
 }
 
+func (f *OperatorFactory) CreateCognitoUserPoolUICustomizationAttachmentOperator() *CognitoUserPoolUICustomizationAttachmentOperator {
+	return NewCognitoUserPoolUICustomizationAttachmentOperator() // Implicit instance that does not actually delete resources (phantom only)
+}
+
 func (f *OperatorFactory) CreateCustomOperator() *CustomOperator {
 	return NewCustomOperator() // Implicit instances that do not actually delete resources
 }

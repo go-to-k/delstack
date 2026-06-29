@@ -24,23 +24,24 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 	}
 
 	type want struct {
-		logicalResourceIdsLength                   int
-		unsupportedStackResourcesLength            int
-		s3BucketOperatorResourcesLength            int
-		s3DirectoryBucketOperatorResourcesLength   int
-		s3TableBucketOperatorResourcesLength       int
-		S3TableNamespaceOperatorResourcesLength    int
-		s3VectorBucketOperatorResourcesLength      int
-		iamGroupOperatorResourcesLength            int
-		iamUserOperatorResourcesLength             int
-		ecrRepositoryOperatorResourcesLength       int
-		backupVaultOperatorResourcesLength         int
-		athenaWorkGroupOperatorResourcesLength     int
-		ec2SubnetOperatorResourcesLength           int
-		ec2SecurityGroupOperatorResourcesLength    int
-		lambdaFunctionOperatorResourcesLength      int
-		cloudformationStackOperatorResourcesLength int
-		customOperatorResourcesLength              int
+		logicalResourceIdsLength                                        int
+		unsupportedStackResourcesLength                                 int
+		s3BucketOperatorResourcesLength                                 int
+		s3DirectoryBucketOperatorResourcesLength                        int
+		s3TableBucketOperatorResourcesLength                            int
+		S3TableNamespaceOperatorResourcesLength                         int
+		s3VectorBucketOperatorResourcesLength                           int
+		iamGroupOperatorResourcesLength                                 int
+		iamUserOperatorResourcesLength                                  int
+		ecrRepositoryOperatorResourcesLength                            int
+		backupVaultOperatorResourcesLength                              int
+		athenaWorkGroupOperatorResourcesLength                          int
+		ec2SubnetOperatorResourcesLength                                int
+		ec2SecurityGroupOperatorResourcesLength                         int
+		lambdaFunctionOperatorResourcesLength                           int
+		cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength int
+		cloudformationStackOperatorResourcesLength                      int
+		customOperatorResourcesLength                                   int
 	}
 
 	cases := []struct {
@@ -150,26 +151,33 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 						ResourceType:       aws.String("AWS::EC2::SecurityGroup"),
 						PhysicalResourceId: aws.String("sg-16"),
 					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId17"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::Cognito::UserPoolUICustomizationAttachment"),
+						PhysicalResourceId: aws.String("PhysicalResourceId17"),
+					},
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                   16,
-				unsupportedStackResourcesLength:            0,
-				s3BucketOperatorResourcesLength:            1,
-				s3DirectoryBucketOperatorResourcesLength:   1,
-				s3TableBucketOperatorResourcesLength:       1,
-				S3TableNamespaceOperatorResourcesLength:    1,
-				s3VectorBucketOperatorResourcesLength:      1,
-				iamGroupOperatorResourcesLength:            1,
-				iamUserOperatorResourcesLength:             1,
-				ecrRepositoryOperatorResourcesLength:       1,
-				backupVaultOperatorResourcesLength:         1,
-				athenaWorkGroupOperatorResourcesLength:     1,
-				ec2SubnetOperatorResourcesLength:           1,
-				ec2SecurityGroupOperatorResourcesLength:    1,
-				lambdaFunctionOperatorResourcesLength:      1,
-				cloudformationStackOperatorResourcesLength: 1,
-				customOperatorResourcesLength:              2,
+				logicalResourceIdsLength:                                        17,
+				unsupportedStackResourcesLength:                                 0,
+				s3BucketOperatorResourcesLength:                                 1,
+				s3DirectoryBucketOperatorResourcesLength:                        1,
+				s3TableBucketOperatorResourcesLength:                            1,
+				S3TableNamespaceOperatorResourcesLength:                         1,
+				s3VectorBucketOperatorResourcesLength:                           1,
+				iamGroupOperatorResourcesLength:                                 1,
+				iamUserOperatorResourcesLength:                                  1,
+				ecrRepositoryOperatorResourcesLength:                            1,
+				backupVaultOperatorResourcesLength:                              1,
+				athenaWorkGroupOperatorResourcesLength:                          1,
+				ec2SubnetOperatorResourcesLength:                                1,
+				ec2SecurityGroupOperatorResourcesLength:                         1,
+				lambdaFunctionOperatorResourcesLength:                           1,
+				cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength: 1,
+				cloudformationStackOperatorResourcesLength:                      1,
+				customOperatorResourcesLength:                                   2,
 			},
 		},
 		{
@@ -471,6 +479,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			ec2SubnetOperatorResourcesLength := 0
 			ec2SecurityGroupOperatorResourcesLength := 0
 			lambdaFunctionOperatorResourcesLength := 0
+			cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength := 0
 			cloudformationStackOperatorResourcesLength := 0
 			customOperatorResourcesLength := 0
 
@@ -504,6 +513,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					ec2SecurityGroupOperatorResourcesLength += operator.GetResourcesLength()
 				case *LambdaFunctionOperator:
 					lambdaFunctionOperatorResourcesLength += operator.GetResourcesLength()
+				case *CognitoUserPoolUICustomizationAttachmentOperator:
+					cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength += operator.GetResourcesLength()
 				case *CloudFormationStackOperator:
 					cloudformationStackOperatorResourcesLength += operator.GetResourcesLength()
 				case *CustomOperator:
@@ -513,23 +524,24 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			}
 
 			got := want{
-				logicalResourceIdsLength:                   len(operatorCollection.logicalResourceIds),
-				unsupportedStackResourcesLength:            len(operatorCollection.unsupportedStackResources),
-				s3BucketOperatorResourcesLength:            s3BucketOperatorResourcesLength,
-				s3DirectoryBucketOperatorResourcesLength:   s3DirectoryBucketOperatorResourcesLength,
-				s3TableBucketOperatorResourcesLength:       s3TableBucketOperatorResourcesLength,
-				S3TableNamespaceOperatorResourcesLength:    S3TableNamespaceOperatorResourcesLength,
-				s3VectorBucketOperatorResourcesLength:      s3VectorBucketOperatorResourcesLength,
-				iamGroupOperatorResourcesLength:            iamGroupOperatorResourcesLength,
-				iamUserOperatorResourcesLength:             iamUserOperatorResourcesLength,
-				ecrRepositoryOperatorResourcesLength:       ecrRepositoryOperatorResourcesLength,
-				backupVaultOperatorResourcesLength:         backupVaultOperatorResourcesLength,
-				athenaWorkGroupOperatorResourcesLength:     athenaWorkGroupOperatorResourcesLength,
-				ec2SubnetOperatorResourcesLength:           ec2SubnetOperatorResourcesLength,
-				ec2SecurityGroupOperatorResourcesLength:    ec2SecurityGroupOperatorResourcesLength,
-				lambdaFunctionOperatorResourcesLength:      lambdaFunctionOperatorResourcesLength,
-				cloudformationStackOperatorResourcesLength: cloudformationStackOperatorResourcesLength,
-				customOperatorResourcesLength:              customOperatorResourcesLength,
+				logicalResourceIdsLength:                                        len(operatorCollection.logicalResourceIds),
+				unsupportedStackResourcesLength:                                 len(operatorCollection.unsupportedStackResources),
+				s3BucketOperatorResourcesLength:                                 s3BucketOperatorResourcesLength,
+				s3DirectoryBucketOperatorResourcesLength:                        s3DirectoryBucketOperatorResourcesLength,
+				s3TableBucketOperatorResourcesLength:                            s3TableBucketOperatorResourcesLength,
+				S3TableNamespaceOperatorResourcesLength:                         S3TableNamespaceOperatorResourcesLength,
+				s3VectorBucketOperatorResourcesLength:                           s3VectorBucketOperatorResourcesLength,
+				iamGroupOperatorResourcesLength:                                 iamGroupOperatorResourcesLength,
+				iamUserOperatorResourcesLength:                                  iamUserOperatorResourcesLength,
+				ecrRepositoryOperatorResourcesLength:                            ecrRepositoryOperatorResourcesLength,
+				backupVaultOperatorResourcesLength:                              backupVaultOperatorResourcesLength,
+				athenaWorkGroupOperatorResourcesLength:                          athenaWorkGroupOperatorResourcesLength,
+				ec2SubnetOperatorResourcesLength:                                ec2SubnetOperatorResourcesLength,
+				ec2SecurityGroupOperatorResourcesLength:                         ec2SecurityGroupOperatorResourcesLength,
+				lambdaFunctionOperatorResourcesLength:                           lambdaFunctionOperatorResourcesLength,
+				cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength: cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength,
+				cloudformationStackOperatorResourcesLength:                      cloudformationStackOperatorResourcesLength,
+				customOperatorResourcesLength:                                   customOperatorResourcesLength,
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
@@ -712,6 +724,15 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 				ctx:       context.Background(),
 				stackName: aws.String("test"),
 				resource:  "AWS::EC2::SecurityGroup",
+			},
+			want: true,
+		},
+		{
+			name: "Cognito UserPool UI Customization Attachment",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				resource:  "AWS::Cognito::UserPoolUICustomizationAttachment",
 			},
 			want: true,
 		},
