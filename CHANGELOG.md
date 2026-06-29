@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2.12.0](https://github.com/go-to-k/delstack/compare/v2.11.1...v2.12.0) - 2026-06-29
+
+- feat: force-delete phantom Cognito UserPoolUICustomizationAttachment (#647) by @go-to-k in https://github.com/go-to-k/delstack/pull/648
+
 ## [v2.11.1](https://github.com/go-to-k/delstack/compare/v2.11.0...v2.11.1) - 2026-05-22
 - revert: ci: Add Claude Code GitHub Workflow (#640) by @go-to-k in https://github.com/go-to-k/delstack/pull/644
 - feat: allow deletion of stacks in REVIEW_IN_PROGRESS state by @go-to-k in https://github.com/go-to-k/delstack/pull/646
