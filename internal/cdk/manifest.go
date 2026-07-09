@@ -9,9 +9,16 @@ import (
 )
 
 type StackInfo struct {
-	StackName             string
-	Region                string
-	Account               string
+	// Identifier is the unique Cloud Assembly artifact key. Unlike StackName it is
+	// guaranteed unique even when cross-region stacks share the same CloudFormation
+	// stack name (e.g. a CloudFront us-east-1 support stack reusing the main stack
+	// name). It is used as the identity for dependency-graph resolution.
+	Identifier string
+	StackName  string
+	Region     string
+	Account    string
+	// Dependencies holds the Identifier (artifact key) of each stack this stack
+	// depends on, not the StackName, to stay unambiguous when names collide.
 	Dependencies          []string
 	TerminationProtection bool
 }
@@ -54,12 +61,12 @@ func parseManifestRecursive(dir string) ([]StackInfo, error) {
 	}
 
 	// Build a set of stack artifact keys for dependency filtering
-	stackArtifactKeys := make(map[string]string) // artifact key -> stack name
+	stackArtifactKeys := make(map[string]struct{})
 	for key, art := range m.Artifacts {
 		if art.Type != "aws:cloudformation:stack" {
 			continue
 		}
-		stackArtifactKeys[key] = resolveStackName(key, art)
+		stackArtifactKeys[key] = struct{}{}
 	}
 
 	var stacks []StackInfo
@@ -70,15 +77,18 @@ func parseManifestRecursive(dir string) ([]StackInfo, error) {
 
 			account, region := parseEnvironment(art.Environment)
 
-			// Filter dependencies: only include other stack artifacts (exclude .assets etc.)
+			// Filter dependencies: only include other stack artifacts (exclude .assets etc.).
+			// Keep the artifact key (unique) instead of the resolved stack name, which can
+			// collide across regions.
 			var deps []string
 			for _, dep := range art.Dependencies {
-				if depName, ok := stackArtifactKeys[dep]; ok {
-					deps = append(deps, depName)
+				if _, ok := stackArtifactKeys[dep]; ok {
+					deps = append(deps, dep)
 				}
 			}
 
 			stacks = append(stacks, StackInfo{
+				Identifier:   key,
 				StackName:    name,
 				Region:       region,
 				Account:      account,

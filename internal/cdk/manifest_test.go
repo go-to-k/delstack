@@ -204,6 +204,67 @@ func TestParseManifest_FallbackToArtifactKey(t *testing.T) {
 	}
 }
 
+// TestParseManifest_CrossRegionSameStackName covers a real CDK app where a
+// CloudFront us-east-1 support stack reuses the main stack's CloudFormation name via
+// the stackName property. Identity must come from the unique artifact key, and the
+// dependency must be expressed as that key (not the ambiguous stack name).
+func TestParseManifest_CrossRegionSameStackName(t *testing.T) {
+	dir := t.TempDir()
+	manifestJSON := `{
+  "version": "52.0.0",
+  "artifacts": {
+    "AiApi-us-east-1": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://123456789012/us-east-1",
+      "properties": { "templateFile": "AiApi-us-east-1.template.json", "stackName": "AiApi" },
+      "displayName": "AiApi-us-east-1"
+    },
+    "AiApi": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://123456789012/ap-northeast-1",
+      "properties": { "templateFile": "AiApi.template.json" },
+      "dependencies": ["AiApi-us-east-1"],
+      "displayName": "AiApi"
+    }
+  }
+}`
+	writeManifest(t, dir, manifestJSON)
+
+	stacks, err := ParseManifest(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(stacks) != 2 {
+		t.Fatalf("expected 2 stacks, got %d", len(stacks))
+	}
+
+	byIdentifier := make(map[string]StackInfo)
+	for _, s := range stacks {
+		byIdentifier[s.Identifier] = s
+	}
+
+	main, ok := byIdentifier["AiApi"]
+	if !ok {
+		t.Fatal("stack with identifier 'AiApi' not found")
+	}
+	support, ok := byIdentifier["AiApi-us-east-1"]
+	if !ok {
+		t.Fatal("stack with identifier 'AiApi-us-east-1' not found")
+	}
+
+	// Both share the same CloudFormation stack name.
+	if main.StackName != "AiApi" || support.StackName != "AiApi" {
+		t.Errorf("expected both stack names to be 'AiApi', got main=%q support=%q", main.StackName, support.StackName)
+	}
+	if main.Region != "ap-northeast-1" || support.Region != "us-east-1" {
+		t.Errorf("unexpected regions: main=%q support=%q", main.Region, support.Region)
+	}
+	// The dependency must be the unique artifact key, not the shared stack name.
+	if len(main.Dependencies) != 1 || main.Dependencies[0] != "AiApi-us-east-1" {
+		t.Errorf("expected main to depend on 'AiApi-us-east-1', got %v", main.Dependencies)
+	}
+}
+
 func TestParseManifest_NoStacks(t *testing.T) {
 	dir := t.TempDir()
 	manifestJSON := `{
@@ -317,8 +378,9 @@ func TestParseManifest_NestedAssembly_Stage(t *testing.T) {
 	if stackB.Region != "ap-northeast-1" {
 		t.Errorf("expected region ap-northeast-1, got %s", stackB.Region)
 	}
-	if len(stackB.Dependencies) != 1 || stackB.Dependencies[0] != "my-stage-stack-a" {
-		t.Errorf("expected StackB to depend on my-stage-stack-a, got %v", stackB.Dependencies)
+	// Dependencies hold the artifact key (unique), not the resolved stack name.
+	if len(stackB.Dependencies) != 1 || stackB.Dependencies[0] != "MyStage-StackA" {
+		t.Errorf("expected StackB to depend on MyStage-StackA, got %v", stackB.Dependencies)
 	}
 }
 
