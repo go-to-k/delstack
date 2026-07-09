@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -201,6 +202,42 @@ func TestParseManifest_FallbackToArtifactKey(t *testing.T) {
 
 	if stacks[0].StackName != "MyStackArtifactKey" {
 		t.Errorf("expected stack name 'MyStackArtifactKey', got '%s'", stacks[0].StackName)
+	}
+}
+
+// TestParseManifest_NestedConstructDisplayName reproduces an integ-runner snapshot
+// where a DeployAssert stack has no stackName property and a displayName that is a
+// construct path with slashes. The resolved CloudFormation stack name must be the
+// sanitized artifact key, not the slash-containing displayName (which would fail the
+// DescribeStacks stackName validation).
+func TestParseManifest_NestedConstructDisplayName(t *testing.T) {
+	dir := t.TempDir()
+	manifestJSON := `{
+  "version": "52.0.0",
+  "artifacts": {
+    "MultiRegionStackWeakTestDefaultTestDeployAssert395291BD": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "displayName": "MultiRegionStackWeakTest/DefaultTest/DeployAssert"
+    }
+  }
+}`
+	writeManifest(t, dir, manifestJSON)
+
+	stacks, err := ParseManifest(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(stacks) != 1 {
+		t.Fatalf("expected 1 stack, got %d", len(stacks))
+	}
+
+	const wantName = "MultiRegionStackWeakTestDefaultTestDeployAssert395291BD"
+	if stacks[0].StackName != wantName {
+		t.Errorf("expected stack name %q (artifact key), got %q", wantName, stacks[0].StackName)
+	}
+	if strings.ContainsRune(stacks[0].StackName, '/') {
+		t.Errorf("stack name must not contain '/', got %q", stacks[0].StackName)
 	}
 }
 
