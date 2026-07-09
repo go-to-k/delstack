@@ -114,13 +114,16 @@ func parseManifestRecursive(dir string) ([]StackInfo, error) {
 }
 
 // resolveStackName returns the CloudFormation stack name.
-// Priority: properties.stackName > displayName > artifact key
+// Priority: properties.stackName > artifact key.
+//
+// displayName is intentionally NOT used as the stack name. For nested constructs
+// (CDK Stages, integ-runner DeployAssert stacks) displayName is a human-readable
+// construct path like "Foo/Bar/Baz" that violates the CloudFormation stack name
+// constraint ([a-zA-Z][-a-zA-Z0-9]*). The real CFN stack name is the artifact key,
+// which CDK derives by sanitizing that path.
 func resolveStackName(artifactKey string, art artifact) string {
 	if art.Properties.StackName != "" {
 		return art.Properties.StackName
-	}
-	if art.DisplayName != "" {
-		return art.DisplayName
 	}
 	return artifactKey
 }
