@@ -34,12 +34,24 @@ func NewCdkDeleter(profile string, forceMode bool, concurrencyNumber int) *CdkDe
 	}
 }
 
+// stackIdentity returns a unique key for a stack: the Cloud Assembly artifact key
+// (Identifier), which stays unique even when cross-region stacks share the same
+// CloudFormation stack name. It falls back to StackName only if Identifier is unset.
+func stackIdentity(s cdk.StackInfo) string {
+	if s.Identifier != "" {
+		return s.Identifier
+	}
+	return s.StackName
+}
+
 func (d *CdkDeleter) DeleteStacks(ctx context.Context, stacks []cdk.StackInfo) error {
 	regionStacks, regions := d.groupByRegion(stacks)
 
+	// Key by Identifier (unique artifact key), not StackName, because cross-region
+	// stacks can share the same CloudFormation stack name.
 	stackMap := make(map[string]cdk.StackInfo)
 	for _, s := range stacks {
-		stackMap[s.StackName] = s
+		stackMap[stackIdentity(s)] = s
 	}
 
 	if d.hasCrossRegionDependencies(stacks, stackMap) {
@@ -89,13 +101,13 @@ func (d *CdkDeleter) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks
 	dependents := make(map[string][]string) // stack -> stacks that depend on it (i.e. stacks that become unblocked when this stack is deleted)
 
 	for _, s := range stacks {
-		reverseInDegree[s.StackName] = 0
+		reverseInDegree[stackIdentity(s)] = 0
 	}
 	for _, s := range stacks {
 		for _, dep := range s.Dependencies {
 			if _, ok := stackMap[dep]; ok {
 				reverseInDegree[dep]++
-				dependents[s.StackName] = append(dependents[s.StackName], dep)
+				dependents[stackIdentity(s)] = append(dependents[stackIdentity(s)], dep)
 			}
 		}
 	}
@@ -135,7 +147,7 @@ func (d *CdkDeleter) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks
 
 	var wg sync.WaitGroup
 
-	startDeletion := func(stackName string) {
+	startDeletion := func(identifier string) {
 		defer wg.Done()
 
 		// Acquire semaphore inside goroutine to avoid blocking the main goroutine.
@@ -150,11 +162,11 @@ func (d *CdkDeleter) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks
 		}
 		defer sem.Release(1)
 
-		s := stackMap[stackName]
+		s := stackMap[identifier]
 		config := configCache[s.Region]
 		operatorFactory := factoryCache[s.Region]
 
-		if err := d.executor.Execute(deleteCtx, stackName, config, operatorFactory, d.forceMode, true); err != nil {
+		if err := d.executor.Execute(deleteCtx, s.StackName, config, operatorFactory, d.forceMode, true); err != nil {
 			select {
 			case errorChan <- err:
 			default:
@@ -163,14 +175,14 @@ func (d *CdkDeleter) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks
 			return
 		}
 
-		completionChan <- stackName
+		completionChan <- identifier
 	}
 
 	// Start initial deletions for stacks with reverse in-degree 0
 	for _, s := range stacks {
-		if reverseInDegree[s.StackName] == 0 {
+		if reverseInDegree[stackIdentity(s)] == 0 {
 			wg.Add(1)
-			go startDeletion(s.StackName)
+			go startDeletion(stackIdentity(s))
 		}
 	}
 
@@ -189,12 +201,13 @@ func (d *CdkDeleter) deleteStacksWithCrossRegionDeps(ctx context.Context, stacks
 		case err := <-errorChan:
 			return err
 
-		case deletedStackName := <-completionChan:
+		case deletedIdentifier := <-completionChan:
 			deletedCount++
-			deletedStacks = append(deletedStacks, deletedStackName)
+			deleted := stackMap[deletedIdentifier]
+			deletedStacks = append(deletedStacks, fmt.Sprintf("%s (%s)", deleted.StackName, deleted.Region))
 			io.Logger.Info().Msgf("Progress: %d/%d stacks deleted [%s]", deletedCount, totalStackCount, strings.Join(deletedStacks, ", "))
 
-			for _, depStack := range dependents[deletedStackName] {
+			for _, depStack := range dependents[deletedIdentifier] {
 				reverseInDegree[depStack]--
 				if reverseInDegree[depStack] == 0 {
 					wg.Add(1)

@@ -58,6 +58,7 @@ func (s *CdkStackSelector) matchByPatterns(stacks []cdk.StackInfo) ([]cdk.StackI
 
 	// Split patterns into exact names and glob patterns
 	exactSet := make(map[string]struct{})
+	matchedExact := make(map[string]struct{})
 	var globs []string
 	for _, p := range s.stackNames {
 		if s.isGlobPattern(p) {
@@ -68,15 +69,19 @@ func (s *CdkStackSelector) matchByPatterns(stacks []cdk.StackInfo) ([]cdk.StackI
 	}
 
 	for _, st := range stacks {
-		if _, ok := seen[st.StackName]; ok {
+		// Dedup by Identifier, not StackName, so cross-region stacks that share the
+		// same CloudFormation stack name are both selectable.
+		id := stackIdentity(st)
+		if _, ok := seen[id]; ok {
 			continue
 		}
 
-		// Check exact match
+		// Check exact match. The name is not removed from exactSet so it can also
+		// match another stack with the same name in a different region.
 		if _, ok := exactSet[st.StackName]; ok {
 			selected = append(selected, st)
-			seen[st.StackName] = struct{}{}
-			delete(exactSet, st.StackName)
+			seen[id] = struct{}{}
+			matchedExact[st.StackName] = struct{}{}
 			continue
 		}
 
@@ -88,7 +93,7 @@ func (s *CdkStackSelector) matchByPatterns(stacks []cdk.StackInfo) ([]cdk.StackI
 			}
 			if matched {
 				selected = append(selected, st)
-				seen[st.StackName] = struct{}{}
+				seen[id] = struct{}{}
 				break
 			}
 		}
@@ -97,7 +102,9 @@ func (s *CdkStackSelector) matchByPatterns(stacks []cdk.StackInfo) ([]cdk.StackI
 	// Collect unmatched exact names (glob patterns that match nothing are not errors)
 	var unmatched []string
 	for name := range exactSet {
-		unmatched = append(unmatched, name)
+		if _, ok := matchedExact[name]; !ok {
+			unmatched = append(unmatched, name)
+		}
 	}
 
 	return selected, unmatched, nil

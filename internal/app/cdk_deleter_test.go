@@ -97,8 +97,8 @@ func TestCdkDeleter_DeleteStacks_CrossRegionDeps(t *testing.T) {
 	})
 
 	stacks := []cdk.StackInfo{
-		{StackName: "Edge", Region: "us-east-1"},
-		{StackName: "Main", Region: "ap-northeast-1", Dependencies: []string{"Edge"}},
+		{Identifier: "Edge", StackName: "Edge", Region: "us-east-1"},
+		{Identifier: "Main", StackName: "Main", Region: "ap-northeast-1", Dependencies: []string{"Edge"}},
 	}
 
 	err := d.DeleteStacks(context.Background(), stacks)
@@ -114,6 +114,39 @@ func TestCdkDeleter_DeleteStacks_CrossRegionDeps(t *testing.T) {
 	}
 	if deletionOrder[1] != "Edge" {
 		t.Errorf("expected Edge to be deleted second, got %s", deletionOrder[1])
+	}
+}
+
+// TestCdkDeleter_DeleteStacks_CrossRegionDeps_SameStackName reproduces the deadlock
+// where two cross-region stacks share the same CloudFormation stack name (e.g. a
+// CloudFront us-east-1 support stack reusing the main stack name). Identity must be
+// the unique artifact key, otherwise the dependency graph collapses and no stack ever
+// reaches in-degree 0.
+func TestCdkDeleter_DeleteStacks_CrossRegionDeps_SameStackName(t *testing.T) {
+	io.NewLogger(false)
+
+	var mu sync.Mutex
+	var deletionOrder []string
+
+	d := newTestCdkDeleter(&trackingExecutor{
+		mu:    &mu,
+		order: &deletionOrder,
+	})
+
+	// Both stacks are named "app" but live in different regions; the tokyo stack
+	// depends on the us-east-1 support stack (referenced by its artifact key).
+	stacks := []cdk.StackInfo{
+		{Identifier: "app", StackName: "app", Region: "ap-northeast-1", Dependencies: []string{"app-us-east-1"}},
+		{Identifier: "app-us-east-1", StackName: "app", Region: "us-east-1"},
+	}
+
+	err := d.DeleteStacks(context.Background(), stacks)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(deletionOrder) != 2 {
+		t.Fatalf("expected 2 stacks deleted, got %d: %v", len(deletionOrder), deletionOrder)
 	}
 }
 

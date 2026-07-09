@@ -10,7 +10,7 @@ import (
 func makeStacks(names ...string) []cdk.StackInfo {
 	stacks := make([]cdk.StackInfo, len(names))
 	for i, n := range names {
-		stacks[i] = cdk.StackInfo{StackName: n, Region: "us-east-1"}
+		stacks[i] = cdk.StackInfo{Identifier: n, StackName: n, Region: "us-east-1"}
 	}
 	return stacks
 }
