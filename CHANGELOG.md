@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2.12.3](https://github.com/go-to-k/delstack/compare/v2.12.2...v2.12.3) - 2026-07-09
+
+- fix: use artifact key as CDK stack name instead of slash-containing displayName by @go-to-k in https://github.com/go-to-k/delstack/pull/654
+
 ## [v2.12.2](https://github.com/go-to-k/delstack/compare/v2.12.1...v2.12.2) - 2026-07-09
 
 - fix: prevent deadlock when cross-region CDK stacks share the same stack name by @go-to-k in https://github.com/go-to-k/delstack/pull/652
