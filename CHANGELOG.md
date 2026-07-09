@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2.12.2](https://github.com/go-to-k/delstack/compare/v2.12.1...v2.12.2) - 2026-07-09
+
+- fix: prevent deadlock when cross-region CDK stacks share the same stack name by @go-to-k in https://github.com/go-to-k/delstack/pull/652
+
 ## [v2.12.1](https://github.com/go-to-k/delstack/compare/v2.12.0...v2.12.1) - 2026-06-29
 
 - fix: keep temporary template S3 bucket name within 63-character limit by @go-to-k in https://github.com/go-to-k/delstack/pull/650
