@@ -1,10 +1,8 @@
 package resource
 
 import (
-	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awselasticloadbalancingv2"
-	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
@@ -15,9 +13,14 @@ import (
 // out of band by deploy.go, because a consumer endpoint inside this stack would be
 // deleted by CloudFormation in the correct order and never block anything.
 //
-// AcceptanceRequired is false so the connection reaches `Available` on its own,
-// and the deploying account is an allowed principal so it can connect to its own
-// endpoint service.
+// AcceptanceRequired is false so the connection reaches `Available` on its own.
+//
+// AllowedPrincipals is deliberately NOT set here. Setting it makes CDK add an
+// AWS::EC2::VPCEndpointServicePermissions resource to this stack, and CloudFormation
+// deletes that resource before the endpoint service: revoking the principal makes AWS
+// reject the consumer connection on its own, the endpoint service then deletes
+// cleanly, and the stack never reaches DELETE_FAILED. deploy.go grants the permission
+// out of band instead, so nothing in the stack can clear the blocker for us.
 type VpcEndpointServiceResources struct {
 	Vpc                 awsec2.Vpc
 	NetworkLoadBalancer awselasticloadbalancingv2.NetworkLoadBalancer
@@ -48,14 +51,9 @@ func NewVpcEndpointServiceStack(scope constructs.Construct) VpcEndpointServiceRe
 		},
 	})
 
-	accountRootArn := awscdk.Fn_Sub(jsii.String("arn:${AWS::Partition}:iam::${AWS::AccountId}:root"), nil)
-
 	endpointService := awsec2.NewVpcEndpointService(scope, jsii.String("EndpointService"), &awsec2.VpcEndpointServiceProps{
 		VpcEndpointServiceLoadBalancers: &[]awsec2.IVpcEndpointServiceLoadBalancer{nlb},
 		AcceptanceRequired:              jsii.Bool(false),
-		AllowedPrincipals: &[]awsiam.ArnPrincipal{
-			awsiam.NewArnPrincipal(accountRootArn),
-		},
 	})
 
 	return VpcEndpointServiceResources{

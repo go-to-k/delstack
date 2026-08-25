@@ -3,6 +3,7 @@ package operation
 import (
 	"context"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -146,13 +147,24 @@ func (o *EC2VPCEndpointServiceOperator) rejectVpcEndpointConnections(ctx context
 // ...) no longer blocks it.
 func hasBlockingVpcEndpointConnections(connections []ec2types.VpcEndpointConnection) bool {
 	for _, connection := range connections {
-		switch connection.VpcEndpointState {
-		case ec2types.StateAvailable, ec2types.StatePendingAcceptance, ec2types.StatePending:
+		if isVpcEndpointState(connection.VpcEndpointState, ec2types.StateAvailable) ||
+			isVpcEndpointState(connection.VpcEndpointState, ec2types.StatePendingAcceptance) ||
+			isVpcEndpointState(connection.VpcEndpointState, ec2types.StatePending) {
 			return true
 		}
 	}
 
 	return false
+}
+
+// isVpcEndpointState compares a connection state with a types.State constant, ignoring
+// case. DescribeVpcEndpointConnections returns the state in the lower-camel form the
+// API documents for its `vpc-endpoint-state` filter (`available`, `pendingAcceptance`,
+// ...), which is not the casing of the SDK constants ("Available",
+// "PendingAcceptance"). Comparing the two directly makes every connection look
+// harmless, so nothing is ever rejected and the deletion always fails.
+func isVpcEndpointState(state ec2types.State, want ec2types.State) bool {
+	return strings.EqualFold(string(state), string(want))
 }
 
 // rejectableVpcEndpointIds returns the endpoints that can be rejected right now, minus
@@ -164,7 +176,8 @@ func rejectableVpcEndpointIds(connections []ec2types.VpcEndpointConnection, reje
 	vpcEndpointIds := []string{}
 
 	for _, connection := range connections {
-		if connection.VpcEndpointState != ec2types.StateAvailable && connection.VpcEndpointState != ec2types.StatePendingAcceptance {
+		if !isVpcEndpointState(connection.VpcEndpointState, ec2types.StateAvailable) &&
+			!isVpcEndpointState(connection.VpcEndpointState, ec2types.StatePendingAcceptance) {
 			continue
 		}
 		if connection.VpcEndpointId == nil {

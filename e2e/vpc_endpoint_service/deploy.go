@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -13,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fatih/color"
 )
 
@@ -47,6 +49,7 @@ type DeployStackService struct {
 	Ctx           context.Context
 	CfnClient     *cloudformation.Client
 	EC2Client     *ec2.Client
+	StsClient     *sts.Client
 }
 
 // This script reproduces the user-facing scenario of issue #656 in a deterministic
@@ -114,6 +117,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := service.allowConsumerPrincipal(serviceId); err != nil {
+		color.Red("Failed to allow the consumer principal: %v", err)
+		os.Exit(1)
+	}
+
 	vpcEndpointId, err := service.createConsumerEndpoint(serviceName)
 	if err != nil {
 		color.Red("Failed to create the consumer VPC endpoint: %v", err)
@@ -172,6 +180,7 @@ func (s *DeployStackService) initAWSClients() error {
 
 	s.CfnClient = cloudformation.NewFromConfig(cfg)
 	s.EC2Client = ec2.NewFromConfig(cfg)
+	s.StsClient = sts.NewFromConfig(cfg)
 
 	return nil
 }
@@ -220,6 +229,35 @@ func (s *DeployStackService) fetchStackOutputs() (serviceId, serviceName string,
 
 	color.Green("  EndpointServiceId=%s EndpointServiceName=%s", serviceId, serviceName)
 	return serviceId, serviceName, nil
+}
+
+// allowConsumerPrincipal grants the deploying account permission to connect to the
+// endpoint service.
+//
+// This is done here rather than through the CDK stack's AllowedPrincipals on purpose.
+// CDK renders that prop as an AWS::EC2::VPCEndpointServicePermissions resource, and
+// CloudFormation deletes it before the endpoint service. Revoking the principal makes
+// AWS reject the consumer connection by itself, so the endpoint service deletes
+// cleanly, the stack never reaches DELETE_FAILED, and the operator under test never
+// runs. Granting it out of band keeps the blocker in place for the whole delete.
+func (s *DeployStackService) allowConsumerPrincipal(serviceId string) error {
+	color.Green("=== allow this account to connect to %s ===", serviceId)
+
+	identity, err := s.StsClient.GetCallerIdentity(s.Ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return fmt.Errorf("GetCallerIdentity failed: %w", err)
+	}
+	principal := fmt.Sprintf("arn:aws:iam::%s:root", aws.ToString(identity.Account))
+
+	if _, err := s.EC2Client.ModifyVpcEndpointServicePermissions(s.Ctx, &ec2.ModifyVpcEndpointServicePermissionsInput{
+		ServiceId:            aws.String(serviceId),
+		AddAllowedPrincipals: []string{principal},
+	}); err != nil {
+		return fmt.Errorf("ModifyVpcEndpointServicePermissions failed: %w", err)
+	}
+
+	color.Cyan("  allowed principal %s", principal)
+	return nil
 }
 
 // createConsumerEndpoint builds the consumer side entirely with the SDK: a VPC, a
@@ -334,7 +372,10 @@ func (s *DeployStackService) waitForConnection(serviceId, vpcEndpointId string) 
 			if aws.ToString(connection.VpcEndpointId) != vpcEndpointId {
 				continue
 			}
-			if connection.VpcEndpointState == types.StateAvailable || connection.VpcEndpointState == types.StatePendingAcceptance {
+			// Case-insensitive: the API returns `available` / `pendingAcceptance`,
+			// not the casing of the SDK's types.State constants.
+			if strings.EqualFold(string(connection.VpcEndpointState), string(types.StateAvailable)) ||
+				strings.EqualFold(string(connection.VpcEndpointState), string(types.StatePendingAcceptance)) {
 				color.Green("  connection %s is %s", vpcEndpointId, connection.VpcEndpointState)
 				return nil
 			}

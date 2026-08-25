@@ -50,8 +50,8 @@ func TestEC2VPCEndpointServiceOperator_DeleteEC2VPCEndpointService(t *testing.T)
 			},
 			prepareMockFn: func(m *client.MockIEC2) {
 				m.EXPECT().DescribeVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-222")).Return([]ec2types.VpcEndpointConnection{
-					{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.StateRejected},
-					{VpcEndpointId: aws.String("vpce-2"), VpcEndpointState: ec2types.StateDeleted},
+					{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.State("rejected")},
+					{VpcEndpointId: aws.String("vpce-2"), VpcEndpointState: ec2types.State("deleted")},
 				}, nil)
 				m.EXPECT().DeleteVpcEndpointServiceConfiguration(gomock.Any(), aws.String("vpce-svc-222")).Return(nil)
 			},
@@ -67,15 +67,15 @@ func TestEC2VPCEndpointServiceOperator_DeleteEC2VPCEndpointService(t *testing.T)
 			prepareMockFn: func(m *client.MockIEC2) {
 				gomock.InOrder(
 					m.EXPECT().DescribeVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-333")).Return([]ec2types.VpcEndpointConnection{
-						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.StateAvailable},
-						{VpcEndpointId: aws.String("vpce-2"), VpcEndpointState: ec2types.StatePendingAcceptance},
-						{VpcEndpointId: aws.String("vpce-3"), VpcEndpointState: ec2types.StateRejected},
+						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.State("available")},
+						{VpcEndpointId: aws.String("vpce-2"), VpcEndpointState: ec2types.State("pendingAcceptance")},
+						{VpcEndpointId: aws.String("vpce-3"), VpcEndpointState: ec2types.State("rejected")},
 					}, nil),
 					m.EXPECT().RejectVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-333"), []string{"vpce-1", "vpce-2"}).Return(nil),
 					m.EXPECT().DescribeVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-333")).Return([]ec2types.VpcEndpointConnection{
-						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.StateRejected},
-						{VpcEndpointId: aws.String("vpce-2"), VpcEndpointState: ec2types.StateRejected},
-						{VpcEndpointId: aws.String("vpce-3"), VpcEndpointState: ec2types.StateRejected},
+						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.State("rejected")},
+						{VpcEndpointId: aws.String("vpce-2"), VpcEndpointState: ec2types.State("rejected")},
+						{VpcEndpointId: aws.String("vpce-3"), VpcEndpointState: ec2types.State("rejected")},
 					}, nil),
 					m.EXPECT().DeleteVpcEndpointServiceConfiguration(gomock.Any(), aws.String("vpce-svc-333")).Return(nil),
 				)
@@ -97,7 +97,7 @@ func TestEC2VPCEndpointServiceOperator_DeleteEC2VPCEndpointService(t *testing.T)
 					vpcEndpointId := fmt.Sprintf("vpce-%d", i)
 					connections = append(connections, ec2types.VpcEndpointConnection{
 						VpcEndpointId:    aws.String(vpcEndpointId),
-						VpcEndpointState: ec2types.StateAvailable,
+						VpcEndpointState: ec2types.State("available"),
 					})
 					if i < vpcEndpointConnectionRejectionBatchSize {
 						firstBatch = append(firstBatch, vpcEndpointId)
@@ -125,7 +125,7 @@ func TestEC2VPCEndpointServiceOperator_DeleteEC2VPCEndpointService(t *testing.T)
 			},
 			prepareMockFn: func(m *client.MockIEC2) {
 				m.EXPECT().DescribeVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-555")).Return([]ec2types.VpcEndpointConnection{
-					{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.StateAvailable},
+					{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.State("available")},
 				}, nil).Times(vpcEndpointConnectionRejectionMaxAttempts)
 				// Rejected only once: a connection that stays `Available` in the describe
 				// results must not be rejected again on every attempt.
@@ -146,16 +146,41 @@ func TestEC2VPCEndpointServiceOperator_DeleteEC2VPCEndpointService(t *testing.T)
 					// `Pending` cannot be rejected yet, but it becomes `Available` shortly,
 					// so it must not be mistaken for "nothing blocks the deletion".
 					m.EXPECT().DescribeVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-999")).Return([]ec2types.VpcEndpointConnection{
-						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.StatePending},
+						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.State("pending")},
 					}, nil),
 					m.EXPECT().DescribeVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-999")).Return([]ec2types.VpcEndpointConnection{
-						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.StateAvailable},
+						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.State("available")},
 					}, nil),
 					m.EXPECT().RejectVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-999"), []string{"vpce-1"}).Return(nil),
 					m.EXPECT().DescribeVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-999")).Return([]ec2types.VpcEndpointConnection{
-						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.StateRejected},
+						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.State("rejected")},
 					}, nil),
 					m.EXPECT().DeleteVpcEndpointServiceConfiguration(gomock.Any(), aws.String("vpce-svc-999")).Return(nil),
+				)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "reject blocking connections reported with the SDK constant casing",
+			args: args{
+				ctx:       context.Background(),
+				serviceId: aws.String("vpce-svc-aaa"),
+			},
+			prepareMockFn: func(m *client.MockIEC2) {
+				// The API returns `available` / `pendingAcceptance`, but the states are
+				// matched case-insensitively, so the types.State constants work too.
+				gomock.InOrder(
+					m.EXPECT().DescribeVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-aaa")).Return([]ec2types.VpcEndpointConnection{
+						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.StateAvailable},
+						{VpcEndpointId: aws.String("vpce-2"), VpcEndpointState: ec2types.StatePendingAcceptance},
+					}, nil),
+					m.EXPECT().RejectVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-aaa"), []string{"vpce-1", "vpce-2"}).Return(nil),
+					m.EXPECT().DescribeVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-aaa")).Return([]ec2types.VpcEndpointConnection{
+						{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.StateRejected},
+						{VpcEndpointId: aws.String("vpce-2"), VpcEndpointState: ec2types.StateRejected},
+					}, nil),
+					m.EXPECT().DeleteVpcEndpointServiceConfiguration(gomock.Any(), aws.String("vpce-svc-aaa")).Return(nil),
 				)
 			},
 			want:    nil,
@@ -181,7 +206,7 @@ func TestEC2VPCEndpointServiceOperator_DeleteEC2VPCEndpointService(t *testing.T)
 			},
 			prepareMockFn: func(m *client.MockIEC2) {
 				m.EXPECT().DescribeVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-777")).Return([]ec2types.VpcEndpointConnection{
-					{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.StateAvailable},
+					{VpcEndpointId: aws.String("vpce-1"), VpcEndpointState: ec2types.State("available")},
 				}, nil)
 				m.EXPECT().RejectVpcEndpointConnections(gomock.Any(), aws.String("vpce-svc-777"), []string{"vpce-1"}).Return(fmt.Errorf("RejectVpcEndpointConnectionsError"))
 			},

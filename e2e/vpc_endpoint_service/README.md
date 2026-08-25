@@ -15,11 +15,14 @@ Rejecting a connection only severs it from this endpoint service. The consumer's
 
 ## What `deploy.go` does
 
-1. `cdk deploy` a provider stack: VPC, an internal Network Load Balancer, and the endpoint service hosted on it (`AcceptanceRequired: false`, the deploying account as an allowed principal). The stack outputs `EndpointServiceId` and `EndpointServiceName`.
-2. **Out of band** (SDK only, so CloudFormation knows nothing about them): a small consumer VPC, a subnet in an Availability Zone the endpoint service supports, and an interface VPC endpoint pointing at the endpoint service. Since acceptance is not required, the connection reaches `Available` on its own.
+1. `cdk deploy` a provider stack: VPC, an internal Network Load Balancer, and the endpoint service hosted on it (`AcceptanceRequired: false`). The stack outputs `EndpointServiceId` and `EndpointServiceName`.
+2. **Out of band** (SDK only, so CloudFormation knows nothing about them): `ModifyVpcEndpointServicePermissions` to allow this account, then a small consumer VPC, a subnet in an Availability Zone the endpoint service supports, and an interface VPC endpoint pointing at the endpoint service. Since acceptance is not required, the connection reaches `Available` on its own.
 3. Wait until the connection actually shows up on the endpoint service, so the stack is never deleted before anything blocks it.
 
-The consumer resources must live **outside** the CDK stack. A consumer endpoint inside the same stack would be deleted by CloudFormation in the correct dependency order and would never block anything; a consumer endpoint inside the stack's own VPC would additionally block the Subnet and VPC deletion, which is a different (unsupported) failure.
+Everything that holds the connection open has to live **outside** the CDK stack, in two separate ways, and getting either wrong makes the fixture silently stop reproducing the bug:
+
+- **The consumer endpoint.** Inside the same stack it would be deleted by CloudFormation in the correct dependency order and never block anything; inside the stack's own VPC it would additionally block the Subnet and VPC deletion, which is a different (unsupported) failure.
+- **The endpoint service permission.** Setting CDK's `allowedPrincipals` adds an `AWS::EC2::VPCEndpointServicePermissions` resource to the stack, and CloudFormation deletes it *before* the endpoint service. Revoking the principal makes AWS reject the consumer connection on its own, so the endpoint service then deletes cleanly and the stack never reaches `DELETE_FAILED`. The first version of this fixture did exactly that and passed while testing nothing, which is why the permission is granted with the SDK instead.
 
 `delstack` itself drives `DeleteStack` and waits for `DELETE_FAILED` via its internal CloudFormation delete waiter, so this script does not call `DeleteStack`. CFN's first delete pass fails on the endpoint service, the stack lands in `DELETE_FAILED`, and the `EC2VPCEndpointServiceOperator` rejects the connection and deletes the endpoint service. CloudFormation then removes the NLB, subnets and VPC normally.
 
