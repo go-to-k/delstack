@@ -54,6 +54,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	athenaWorkGroupOperator := c.operatorFactory.CreateAthenaWorkGroupOperator()
 	ec2SubnetOperator := c.operatorFactory.CreateEC2SubnetOperator()
 	ec2SecurityGroupOperator := c.operatorFactory.CreateEC2SecurityGroupOperator()
+	ec2VPCEndpointServiceOperator := c.operatorFactory.CreateEC2VPCEndpointServiceOperator()
 	lambdaFunctionOperator := c.operatorFactory.CreateLambdaFunctionOperator()
 	cognitoUserPoolUICustomizationAttachmentOperator := c.operatorFactory.CreateCognitoUserPoolUICustomizationAttachmentOperator()
 	cloudformationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator()
@@ -94,6 +95,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				ec2SubnetOperator.AddResource(&resource)
 			case resourcetype.EC2SecurityGroup:
 				ec2SecurityGroupOperator.AddResource(&resource)
+			case resourcetype.EC2VPCEndpointService:
+				ec2VPCEndpointServiceOperator.AddResource(&resource)
 			case resourcetype.LambdaFunction:
 				lambdaFunctionOperator.AddResource(&resource)
 			case resourcetype.CognitoUserPoolUICustomizationAttachment:
@@ -122,6 +125,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, athenaWorkGroupOperator)
 	c.operators = append(c.operators, ec2SubnetOperator)
 	c.operators = append(c.operators, ec2SecurityGroupOperator)
+	c.operators = append(c.operators, ec2VPCEndpointServiceOperator)
 	c.operators = append(c.operators, lambdaFunctionOperator)
 	c.operators = append(c.operators, cognitoUserPoolUICustomizationAttachmentOperator)
 	c.operators = append(c.operators, cloudformationStackOperator)
@@ -175,6 +179,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.AthenaWorkGroup, "Athena WorkGroups, including workgroups containing named queries or prepared statements."},
 		{resourcetype.EC2Subnet, "EC2 Subnets blocked by orphan AWS Lambda VPC ENIs left in `available` state after the function was deleted."},
 		{resourcetype.EC2SecurityGroup, "EC2 SecurityGroups blocked by orphan AWS Lambda VPC ENIs left in `available` state after the function was deleted."},
+		{resourcetype.EC2VPCEndpointService, "VPC Endpoint Services (AWS PrivateLink or Gateway Load Balancer) blocked by consumer endpoint connections in `Available` or `PendingAcceptance` state."},
 		{resourcetype.LambdaFunction, "Lambda Functions, including Lambda@Edge functions with replicas still being cleaned up by AWS. Waits for AWS to finish removing edge replicas."},
 		{resourcetype.CognitoUserPoolUICustomizationAttachment, "Cognito UserPool UI Customization Attachments left in DELETE_FAILED as phantoms (e.g. a failed create with no UserPoolDomain), where no actual customization exists in AWS."},
 		{resourcetype.CloudformationStack, "Nested Child Stacks that failed to delete."},

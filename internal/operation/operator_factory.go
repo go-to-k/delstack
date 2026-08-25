@@ -216,6 +216,19 @@ func (f *OperatorFactory) CreateEC2SecurityGroupOperator() *EC2SecurityGroupOper
 	)
 }
 
+func (f *OperatorFactory) CreateEC2VPCEndpointServiceOperator() *EC2VPCEndpointServiceOperator {
+	sdkEC2Client := ec2.NewFromConfig(f.config, func(o *ec2.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	return NewEC2VPCEndpointServiceOperator(
+		client.NewEC2Client(
+			sdkEC2Client,
+		),
+	)
+}
+
 func (f *OperatorFactory) CreateLambdaFunctionOperator() *LambdaFunctionOperator {
 	sdkLambdaClient := lambda.NewFromConfig(f.config, func(o *lambda.Options) {
 		o.RetryMaxAttempts = SDKRetryMaxAttempts
