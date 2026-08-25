@@ -74,6 +74,14 @@ func main() {
 	options := parseArgs()
 
 	if options.Stage == "" {
+		// Cleanup targets resources tagged with the stage, so an auto-generated one
+		// would silently match nothing and report success while the real consumer
+		// resources keep running.
+		if options.Cleanup {
+			color.Red("-s <stage> is required with -d")
+			os.Exit(1)
+		}
+
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		randomNum := r.Intn(10000)
 		options.Stage = fmt.Sprintf("delstack-vpce-svc-%04d", randomNum)
