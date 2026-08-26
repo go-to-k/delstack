@@ -209,6 +209,7 @@ testgen_help:
 	@echo "  make testgen_vpc_lambda OPT=\"-p my-profile\""
 	@echo "  make testgen_vpc_endpoint_service"
 	@echo "  make testgen_vpc_endpoint_service OPT=\"-s my-stage\""
+	@echo "  make testgen_vpc_endpoint_service OPT=\"-p my-profile\""
 	@echo "  make testgen_create_failed"
 	@echo "  make testgen_create_failed OPT=\"-s my-stage\""
 	@echo "  make testgen_create_failed OPT=\"-p my-profile\""
