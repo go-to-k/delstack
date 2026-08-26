@@ -35,6 +35,11 @@ jobs:
         run: make build
       - name: test
         run: make test_view
+      # golangci-lint runs against the root module only, so the reviewdog job never
+      # looks at e2e/: every scenario there is a separate Go module. Check their
+      # formatting here, where a plain Go toolchain is already set up.
+      - name: gofmt (e2e modules)
+        run: make gofmt_e2e
       - name: Archive code coverage results
         uses: actions/upload-artifact@v6
         with:

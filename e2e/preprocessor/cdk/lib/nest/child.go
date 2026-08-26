@@ -42,9 +42,9 @@ def handler(event, context):
 
 	// Lambda function in nested stack with VPC (IPv6 enabled)
 	awslambda.NewFunction(stack, jsii.String("ChildLambdaVpcIpv6"), &awslambda.FunctionProps{
-		FunctionName:             jsii.String(props.PjPrefix + "-Child-LambdaVpcIpv6"),
-		Runtime:                  awslambda.Runtime_PYTHON_3_12(),
-		Handler:                  jsii.String("index.handler"),
+		FunctionName: jsii.String(props.PjPrefix + "-Child-LambdaVpcIpv6"),
+		Runtime:      awslambda.Runtime_PYTHON_3_12(),
+		Handler:      jsii.String("index.handler"),
 		Code: awslambda.Code_FromInline(jsii.String(`
 def handler(event, context):
     return {
@@ -52,8 +52,8 @@ def handler(event, context):
         'body': 'Hello from child VPC Lambda with IPv6!'
     }
 `)),
-		Timeout:                  awscdk.Duration_Seconds(jsii.Number(30)),
-		Vpc:                      props.Vpc,
+		Timeout: awscdk.Duration_Seconds(jsii.Number(30)),
+		Vpc:     props.Vpc,
 		VpcSubnets: &awsec2.SubnetSelection{
 			SubnetType: awsec2.SubnetType_PRIVATE_ISOLATED,
 		},

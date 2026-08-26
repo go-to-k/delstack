@@ -19,9 +19,9 @@ const (
 )
 
 type Options struct {
-	Profile                  string
-	Stage                    string
-	NoTerminationProtection  bool
+	Profile                 string
+	Stage                   string
+	NoTerminationProtection bool
 }
 
 type DeployStackService struct {
