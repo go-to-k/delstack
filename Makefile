@@ -5,6 +5,10 @@ RESET=\033[0m
 COLORIZE_PASS = sed "s/^\([- ]*\)\(PASS\)/\1$$(printf "$(GREEN)")\2$$(printf "$(RESET)")/g"
 COLORIZE_FAIL = sed "s/^\([- ]*\)\(FAIL\)/\1$$(printf "$(RED)")\2$$(printf "$(RESET)")/g"
 
+# Single source of truth for the golangci-lint version, read by both `make lint` and
+# the reviewdog job in .github/workflows/ci.yml so the two cannot drift apart.
+GOLANGCI_LINT_VERSION_FILE := .golangci-version
+
 VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
 LDFLAGS := -s -w \
@@ -20,7 +24,7 @@ TEST_COV_RESULT := "$$(go test -race -cover -v ./... -coverpkg=./... -coverprofi
 
 FAIL_CHECK := "^[^\s\t]*FAIL[^\s\t]*$$"
 
-.PHONY: test_diff test test_view lint lint_diff mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_vpc_lambda testgen_vpc_endpoint_service testgen_lambda_edge testgen_deletion_protection testgen_deletion_protection_no_tp testgen_cdk_integration testgen_create_failed testgen_help e2e_full e2e_full_retain e2e_large_template e2e_dependency e2e_dependency_retain e2e_preprocessor e2e_vpc_lambda e2e_vpc_endpoint_service e2e_lambda_edge e2e_deletion_protection e2e_deletion_protection_no_tp e2e_cdk_integration e2e_create_failed e2e_help
+.PHONY: test_diff test test_view lint lint_diff lint_version_check gofmt_e2e mockgen shadow cognit deadcode run build install clean testgen_full testgen_full_retain testgen_large_template testgen_dependency testgen_dependency_retain testgen_preprocessor testgen_vpc_lambda testgen_vpc_endpoint_service testgen_lambda_edge testgen_deletion_protection testgen_deletion_protection_no_tp testgen_cdk_integration testgen_create_failed testgen_help e2e_full e2e_full_retain e2e_large_template e2e_dependency e2e_dependency_retain e2e_preprocessor e2e_vpc_lambda e2e_vpc_endpoint_service e2e_lambda_edge e2e_deletion_protection e2e_deletion_protection_no_tp e2e_cdk_integration e2e_create_failed e2e_help
 
 test_diff:
 	@! echo $(TEST_DIFF_RESULT) | $(COLORIZE_PASS) | $(COLORIZE_FAIL) | tee /dev/stderr | grep $(FAIL_CHECK) > /dev/null
@@ -32,10 +36,32 @@ test_view:
 	rm cover.out.tmp
 	go tool cover -func=cover.out
 	go tool cover -html=cover.out -o cover.html
-lint:
+lint: lint_version_check gofmt_e2e
 	golangci-lint run
-lint_diff:
+lint_diff: lint_version_check gofmt_e2e
 	golangci-lint run $$(echo $(DIFF_FILE))
+# golangci-lint only ever sees the root module, so nothing under e2e/ is checked:
+# each scenario there is its own Go module. Running the full linter on all of them
+# would mean downloading the CDK dependency tree on every lint, so check just their
+# formatting, which is what actually drifts.
+gofmt_e2e:
+	@unformatted=$$(gofmt -l e2e); \
+	if [ -n "$$unformatted" ]; then \
+		echo "$(RED)not gofmt-ed (run \`gofmt -w e2e\`):$(RESET)"; \
+		echo "$$unformatted"; \
+		exit 1; \
+	fi
+# golangci-lint bundles its own copy of the Go formatter, independent of the Go
+# toolchain in go.mod. A version other than the pinned one can therefore demand a
+# formatting that `gofmt` immediately reverts (Go 1.27 changed the indentation of
+# composite literals in return statements: golang/go#7195). Warn instead of failing
+# so this never blocks work; CI runs the pinned version and stays authoritative.
+lint_version_check:
+	@want=$$(cat $(GOLANGCI_LINT_VERSION_FILE)); \
+	got=v$$(golangci-lint version --short 2>/dev/null || echo "unknown"); \
+	if [ "$$got" != "$$want" ]; then \
+		echo "$(RED)warning: golangci-lint $$got does not match $$want pinned in $(GOLANGCI_LINT_VERSION_FILE); CI may disagree$(RESET)"; \
+	fi
 mockgen:
 	go generate ./...
 shadow:

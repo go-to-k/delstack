@@ -89,11 +89,11 @@ func TestS3Vectors_DeleteVectorBucket(t *testing.T) {
 							"DeleteVectorBucketApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-										Result: nil,
-									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxAttempts,
-										Err:     fmt.Errorf("api error SlowDown"),
-									}
+									Result: nil,
+								}, middleware.Metadata{}, &retry.MaxAttemptsError{
+									Attempt: MaxAttempts,
+									Err:     fmt.Errorf("api error SlowDown"),
+								}
 							},
 						),
 						middleware.Before,
@@ -479,11 +479,11 @@ func TestS3Vectors_CheckVectorBucketExists(t *testing.T) {
 							"ListVectorBucketsApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-										Result: nil,
-									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxAttempts,
-										Err:     fmt.Errorf("api error SlowDown"),
-									}
+									Result: nil,
+								}, middleware.Metadata{}, &retry.MaxAttemptsError{
+									Attempt: MaxAttempts,
+									Err:     fmt.Errorf("api error SlowDown"),
+								}
 							},
 						),
 						middleware.Before,

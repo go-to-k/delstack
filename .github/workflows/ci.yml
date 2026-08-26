@@ -35,6 +35,11 @@ jobs:
         run: make build
       - name: test
         run: make test_view
+      # golangci-lint runs against the root module only, so the reviewdog job never
+      # looks at e2e/: every scenario there is a separate Go module. Check their
+      # formatting here, where a plain Go toolchain is already set up.
+      - name: gofmt (e2e modules)
+        run: make gofmt_e2e
       - name: Archive code coverage results
         uses: actions/upload-artifact@v6
         with:
@@ -46,10 +51,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      # The action installs the latest golangci-lint unless told otherwise, and
+      # golangci-lint bundles its own copy of the Go formatter, independent of the Go
+      # toolchain in go.mod, so its formatting rules can move ahead of this repository
+      # on their own. Reading the version from .golangci-version keeps CI and
+      # `make lint` on the same one. That file holds the version and nothing else:
+      # both readers `cat` it as-is, so it cannot carry a comment.
+      - name: Read golangci-lint version
+        id: golangci_lint_version
+        run: echo "version=$(cat .golangci-version)" >> "$GITHUB_OUTPUT"
       - name: lint
         uses: reviewdog/action-golangci-lint@v2
         with:
           go_version_file: go.mod
+          golangci_lint_version: ${{ steps.golangci_lint_version.outputs.version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-check
           level: error
