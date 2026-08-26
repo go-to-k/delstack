@@ -48,8 +48,10 @@ jobs:
         uses: actions/checkout@v6
       # The action installs the latest golangci-lint unless told otherwise, and
       # golangci-lint bundles its own copy of the Go formatter, independent of the Go
-      # toolchain in go.mod. Reading the version from .golangci-version keeps CI and
-      # `make lint` on the same one. See that file for why it matters.
+      # toolchain in go.mod, so its formatting rules can move ahead of this repository
+      # on their own. Reading the version from .golangci-version keeps CI and
+      # `make lint` on the same one. That file holds the version and nothing else:
+      # both readers `cat` it as-is, so it cannot carry a comment.
       - name: Read golangci-lint version
         id: golangci_lint_version
         run: echo "version=$(cat .golangci-version)" >> "$GITHUB_OUTPUT"
