@@ -21,6 +21,9 @@ type IEC2 interface {
 	DeleteNetworkInterface(ctx context.Context, networkInterfaceId *string) error
 	DeleteSubnet(ctx context.Context, subnetId *string) error
 	DeleteSecurityGroup(ctx context.Context, securityGroupId *string) error
+	DescribeVpcEndpointConnections(ctx context.Context, serviceId *string) ([]types.VpcEndpointConnection, error)
+	RejectVpcEndpointConnections(ctx context.Context, serviceId *string, vpcEndpointIds []string) error
+	DeleteVpcEndpointServiceConfiguration(ctx context.Context, serviceId *string) error
 	CheckTerminationProtection(ctx context.Context, instanceId *string) (bool, error)
 	DisableTerminationProtection(ctx context.Context, instanceId *string) error
 }
@@ -164,4 +167,116 @@ func (c *EC2Client) DisableTerminationProtection(ctx context.Context, instanceId
 	}
 
 	return nil
+}
+
+func (c *EC2Client) DescribeVpcEndpointConnections(ctx context.Context, serviceId *string) ([]types.VpcEndpointConnection, error) {
+	var nextToken *string
+	connections := []types.VpcEndpointConnection{}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return connections, &ClientError{
+				ResourceName: serviceId,
+				Err:          ctx.Err(),
+			}
+		default:
+		}
+
+		input := &ec2.DescribeVpcEndpointConnectionsInput{
+			Filters: []types.Filter{
+				{
+					Name:   aws.String("service-id"),
+					Values: []string{aws.ToString(serviceId)},
+				},
+			},
+			NextToken: nextToken,
+		}
+
+		output, err := c.client.DescribeVpcEndpointConnections(ctx, input)
+		if err != nil {
+			return nil, &ClientError{
+				ResourceName: serviceId,
+				Err:          err,
+			}
+		}
+		connections = append(connections, output.VpcEndpointConnections...)
+
+		nextToken = output.NextToken
+		if nextToken == nil {
+			break
+		}
+	}
+
+	return connections, nil
+}
+
+func (c *EC2Client) RejectVpcEndpointConnections(ctx context.Context, serviceId *string, vpcEndpointIds []string) error {
+	input := &ec2.RejectVpcEndpointConnectionsInput{
+		ServiceId:      serviceId,
+		VpcEndpointIds: vpcEndpointIds,
+	}
+
+	output, err := c.client.RejectVpcEndpointConnections(ctx, input)
+	if err != nil {
+		return &ClientError{
+			ResourceName: serviceId,
+			Err:          err,
+		}
+	}
+	if err := unsuccessfulItemsError(output.Unsuccessful); err != nil {
+		return &ClientError{
+			ResourceName: serviceId,
+			Err:          err,
+		}
+	}
+
+	return nil
+}
+
+func (c *EC2Client) DeleteVpcEndpointServiceConfiguration(ctx context.Context, serviceId *string) error {
+	input := &ec2.DeleteVpcEndpointServiceConfigurationsInput{
+		ServiceIds: []string{aws.ToString(serviceId)},
+	}
+
+	output, err := c.client.DeleteVpcEndpointServiceConfigurations(ctx, input)
+	if err != nil {
+		return &ClientError{
+			ResourceName: serviceId,
+			Err:          err,
+		}
+	}
+	if err := unsuccessfulItemsError(output.Unsuccessful); err != nil {
+		return &ClientError{
+			ResourceName: serviceId,
+			Err:          err,
+		}
+	}
+
+	return nil
+}
+
+// unsuccessfulItemsError turns the per-resource failures that EC2 batch APIs report
+// in their `Unsuccessful` list (the call itself succeeds with HTTP 200) into a single
+// error. Items reporting that the resource no longer exists are ignored so the
+// operations stay idempotent.
+func unsuccessfulItemsError(items []types.UnsuccessfulItem) error {
+	messages := []string{}
+
+	for _, item := range items {
+		if item.Error == nil {
+			continue
+		}
+		code := aws.ToString(item.Error.Code)
+		if strings.HasSuffix(code, ".NotFound") {
+			continue
+		}
+		messages = append(messages, fmt.Sprintf("%s: %s: %s", aws.ToString(item.ResourceId), code, aws.ToString(item.Error.Message)))
+	}
+
+	if len(messages) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("%s", strings.Join(messages, ", "))
 }

@@ -14,6 +14,7 @@ const (
 	AthenaWorkGroup                          = "AWS::Athena::WorkGroup"
 	EC2Subnet                                = "AWS::EC2::Subnet"
 	EC2SecurityGroup                         = "AWS::EC2::SecurityGroup"
+	EC2VPCEndpointService                    = "AWS::EC2::VPCEndpointService"
 	CognitoUserPoolUICustomizationAttachment = "AWS::Cognito::UserPoolUICustomizationAttachment"
 	CloudformationStack                      = "AWS::CloudFormation::Stack"
 	CloudformationCustomResource             = "AWS::CloudFormation::CustomResource"
@@ -48,6 +49,7 @@ var ResourceTypes = []string{
 	AthenaWorkGroup,
 	EC2Subnet,
 	EC2SecurityGroup,
+	EC2VPCEndpointService,
 	CognitoUserPoolUICustomizationAttachment,
 	LambdaFunction,
 	CloudformationStack,

@@ -97,6 +97,20 @@ func (mr *MockIEC2MockRecorder) DeleteSubnet(ctx, subnetId any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSubnet", reflect.TypeOf((*MockIEC2)(nil).DeleteSubnet), ctx, subnetId)
 }
 
+// DeleteVpcEndpointServiceConfiguration mocks base method.
+func (m *MockIEC2) DeleteVpcEndpointServiceConfiguration(ctx context.Context, serviceId *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteVpcEndpointServiceConfiguration", ctx, serviceId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteVpcEndpointServiceConfiguration indicates an expected call of DeleteVpcEndpointServiceConfiguration.
+func (mr *MockIEC2MockRecorder) DeleteVpcEndpointServiceConfiguration(ctx, serviceId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVpcEndpointServiceConfiguration", reflect.TypeOf((*MockIEC2)(nil).DeleteVpcEndpointServiceConfiguration), ctx, serviceId)
+}
+
 // DescribeNetworkInterfaces mocks base method.
 func (m *MockIEC2) DescribeNetworkInterfaces(ctx context.Context, filters []types.Filter) ([]types.NetworkInterface, error) {
 	m.ctrl.T.Helper()
@@ -112,6 +126,21 @@ func (mr *MockIEC2MockRecorder) DescribeNetworkInterfaces(ctx, filters any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeNetworkInterfaces", reflect.TypeOf((*MockIEC2)(nil).DescribeNetworkInterfaces), ctx, filters)
 }
 
+// DescribeVpcEndpointConnections mocks base method.
+func (m *MockIEC2) DescribeVpcEndpointConnections(ctx context.Context, serviceId *string) ([]types.VpcEndpointConnection, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DescribeVpcEndpointConnections", ctx, serviceId)
+	ret0, _ := ret[0].([]types.VpcEndpointConnection)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DescribeVpcEndpointConnections indicates an expected call of DescribeVpcEndpointConnections.
+func (mr *MockIEC2MockRecorder) DescribeVpcEndpointConnections(ctx, serviceId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeVpcEndpointConnections", reflect.TypeOf((*MockIEC2)(nil).DescribeVpcEndpointConnections), ctx, serviceId)
+}
+
 // DisableTerminationProtection mocks base method.
 func (m *MockIEC2) DisableTerminationProtection(ctx context.Context, instanceId *string) error {
 	m.ctrl.T.Helper()
@@ -124,4 +153,18 @@ func (m *MockIEC2) DisableTerminationProtection(ctx context.Context, instanceId 
 func (mr *MockIEC2MockRecorder) DisableTerminationProtection(ctx, instanceId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableTerminationProtection", reflect.TypeOf((*MockIEC2)(nil).DisableTerminationProtection), ctx, instanceId)
+}
+
+// RejectVpcEndpointConnections mocks base method.
+func (m *MockIEC2) RejectVpcEndpointConnections(ctx context.Context, serviceId *string, vpcEndpointIds []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RejectVpcEndpointConnections", ctx, serviceId, vpcEndpointIds)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RejectVpcEndpointConnections indicates an expected call of RejectVpcEndpointConnections.
+func (mr *MockIEC2MockRecorder) RejectVpcEndpointConnections(ctx, serviceId, vpcEndpointIds any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RejectVpcEndpointConnections", reflect.TypeOf((*MockIEC2)(nil).RejectVpcEndpointConnections), ctx, serviceId, vpcEndpointIds)
 }
