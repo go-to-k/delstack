@@ -249,7 +249,7 @@ func TestEC2VPCEndpointServiceOperator_DeleteEC2VPCEndpointService(t *testing.T)
 	}
 }
 
-func TestEC2VPCEndpointServiceOperator_DeleteResources(t *testing.T) {
+func TestEC2VPCEndpointServiceOperator_DeleteResourcesForEC2VPCEndpointService(t *testing.T) {
 	io.NewLogger(false)
 
 	type args struct {

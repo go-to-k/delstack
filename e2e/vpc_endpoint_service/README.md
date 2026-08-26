@@ -34,7 +34,7 @@ Since rejecting a connection does not delete the consumer's endpoint, the consum
 go run e2e/vpc_endpoint_service/deploy.go -s <stage> -d
 ```
 
-`make e2e_vpc_endpoint_service` does this automatically after `delstack` finishes.
+`make e2e_vpc_endpoint_service` does this automatically after `delstack` finishes. If `delstack` itself fails, make stops before that step and the consumer resources keep running, so run the command above by hand.
 
 ## Test Stack Deployment
 

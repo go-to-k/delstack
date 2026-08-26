@@ -14,6 +14,19 @@ import (
 	"go.uber.org/goleak"
 )
 
+type tokenKeyForEC2 struct{}
+
+func getNextTokenForEC2Initialize(
+	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
+) (
+	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
+) {
+	if v, ok := in.Parameters.(*ec2.DescribeVpcEndpointConnectionsInput); ok {
+		ctx = middleware.WithStackValue(ctx, tokenKeyForEC2{}, v.NextToken)
+	}
+	return next.HandleInitialize(ctx, in)
+}
+
 func TestEC2Client_DescribeNetworkInterfaces(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
@@ -704,19 +717,6 @@ func TestEC2Client_DisableTerminationProtection(t *testing.T) {
 			}
 		})
 	}
-}
-
-type tokenKeyForEC2 struct{}
-
-func getNextTokenForEC2Initialize(
-	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
-) (
-	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
-) {
-	if v, ok := in.Parameters.(*ec2.DescribeVpcEndpointConnectionsInput); ok {
-		ctx = middleware.WithStackValue(ctx, tokenKeyForEC2{}, v.NextToken)
-	}
-	return next.HandleInitialize(ctx, in)
 }
 
 func TestEC2Client_DescribeVpcEndpointConnections(t *testing.T) {
