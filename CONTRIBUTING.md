@@ -37,7 +37,7 @@ No circular dependencies. `internal/app` must not depend on `pkg/client` directl
 - `make run OPT="<options>"`: Run delstack locally
 - `make test`: Run all tests
 - `make mockgen`: Regenerate mocks
-- `make lint`: Run linter
+- `make lint`: Run linter. The version is pinned in [.golangci-version](.golangci-version) and read by both `make lint` and CI, because golangci-lint bundles its own copy of the Go formatter independently of the Go toolchain in `go.mod`. Install that version; `make lint` warns if yours differs.
 
 ## Adding New Resource Support
 
