@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.13.0](https://github.com/go-to-k/delstack/compare/v2.12.3...v2.13.0) - 2026-08-26
+
+- ci: pin the golangci-lint version and share it with make lint by @go-to-k in https://github.com/go-to-k/delstack/pull/658
+- ci: check the formatting of the e2e modules by @go-to-k in https://github.com/go-to-k/delstack/pull/660
+- chore: move to Go 1.27 and adopt its gofmt by @go-to-k in https://github.com/go-to-k/delstack/pull/659
+- feat: support force deletion of AWS::EC2::VPCEndpointService by @go-to-k in https://github.com/go-to-k/delstack/pull/657
+
 ## [v2.12.3](https://github.com/go-to-k/delstack/compare/v2.12.2...v2.12.3) - 2026-07-09
 
 - fix: use artifact key as CDK stack name instead of slash-containing displayName by @go-to-k in https://github.com/go-to-k/delstack/pull/654
