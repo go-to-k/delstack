@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2.13.1](https://github.com/go-to-k/delstack/compare/v2.13.0...v2.13.1) - 2026-09-08
+
+- chore(deps): fix Dependabot alerts and cover e2e modules by @go-to-k in https://github.com/go-to-k/delstack/pull/663
+
 ## [v2.13.0](https://github.com/go-to-k/delstack/compare/v2.12.3...v2.13.0) - 2026-08-26
 
 - ci: pin the golangci-lint version and share it with make lint by @go-to-k in https://github.com/go-to-k/delstack/pull/658
