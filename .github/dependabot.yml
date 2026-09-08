@@ -11,3 +11,17 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]
+  # E2E modules are separate Go modules, so they need their own entry.
+  # They are grouped into a single PR to keep the noise down.
+  - package-ecosystem: "gomod"
+    directories:
+      - "/e2e/*"
+      - "/e2e/*/cdk"
+    schedule:
+      interval: "weekly"
+    groups:
+      e2e:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
