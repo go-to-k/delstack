@@ -41,7 +41,7 @@ jobs:
       - name: gofmt (e2e modules)
         run: make gofmt_e2e
       - name: Archive code coverage results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: code-coverage-report
           path: cover.html
