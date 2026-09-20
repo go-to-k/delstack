@@ -1,5 +1,10 @@
 # Changelog
 
+## [v2.14.0](https://github.com/go-to-k/delstack/compare/v2.13.1...v2.14.0) - 2026-09-20
+
+- style(client): reformat multi-value returns for gofmt in golangci-lint 2.13.2 by @go-to-k in https://github.com/go-to-k/delstack/pull/674
+- feat(operation): support AWS::IAM::Role for roles in out-of-stack instance profiles by @go-to-k in https://github.com/go-to-k/delstack/pull/676
+
 ## [v2.13.1](https://github.com/go-to-k/delstack/compare/v2.13.0...v2.13.1) - 2026-09-08
 
 - chore(deps): fix Dependabot alerts and cover e2e modules by @go-to-k in https://github.com/go-to-k/delstack/pull/663
