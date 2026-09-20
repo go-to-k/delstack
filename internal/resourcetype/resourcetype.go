@@ -7,6 +7,7 @@ const (
 	S3TableBucket                            = "AWS::S3Tables::TableBucket"
 	S3TableNamespace                         = "AWS::S3Tables::Namespace"
 	S3VectorBucket                           = "AWS::S3Vectors::VectorBucket"
+	IamRole                                  = "AWS::IAM::Role"
 	IamGroup                                 = "AWS::IAM::Group"
 	IamUser                                  = "AWS::IAM::User"
 	EcrRepository                            = "AWS::ECR::Repository"
@@ -41,6 +42,7 @@ var ResourceTypes = []string{
 	S3TableBucket,
 	S3TableNamespace,
 	S3VectorBucket,
+	IamRole,
 	IamGroup,
 	IamUser,
 	EcrRepository,
