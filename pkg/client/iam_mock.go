@@ -55,6 +55,21 @@ func (mr *MockIIamMockRecorder) CheckGroupExists(ctx, groupName any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckGroupExists", reflect.TypeOf((*MockIIam)(nil).CheckGroupExists), ctx, groupName)
 }
 
+// CheckRoleExists mocks base method.
+func (m *MockIIam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckRoleExists", ctx, roleName)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckRoleExists indicates an expected call of CheckRoleExists.
+func (mr *MockIIamMockRecorder) CheckRoleExists(ctx, roleName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckRoleExists", reflect.TypeOf((*MockIIam)(nil).CheckRoleExists), ctx, roleName)
+}
+
 // CheckUserExists mocks base method.
 func (m *MockIIam) CheckUserExists(ctx context.Context, userName *string) (bool, error) {
 	m.ctrl.T.Helper()
@@ -124,6 +139,34 @@ func (m *MockIIam) DeleteLoginProfile(ctx context.Context, userName *string) err
 func (mr *MockIIamMockRecorder) DeleteLoginProfile(ctx, userName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLoginProfile", reflect.TypeOf((*MockIIam)(nil).DeleteLoginProfile), ctx, userName)
+}
+
+// DeleteRole mocks base method.
+func (m *MockIIam) DeleteRole(ctx context.Context, roleName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRole", ctx, roleName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRole indicates an expected call of DeleteRole.
+func (mr *MockIIamMockRecorder) DeleteRole(ctx, roleName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRole", reflect.TypeOf((*MockIIam)(nil).DeleteRole), ctx, roleName)
+}
+
+// DeleteRolePolicy mocks base method.
+func (m *MockIIam) DeleteRolePolicy(ctx context.Context, roleName, policyName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRolePolicy", ctx, roleName, policyName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRolePolicy indicates an expected call of DeleteRolePolicy.
+func (mr *MockIIamMockRecorder) DeleteRolePolicy(ctx, roleName, policyName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRolePolicy", reflect.TypeOf((*MockIIam)(nil).DeleteRolePolicy), ctx, roleName, policyName)
 }
 
 // DeleteSSHPublicKey mocks base method.
@@ -210,6 +253,20 @@ func (mr *MockIIamMockRecorder) DeleteVirtualMFADevice(ctx, serialNumber any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVirtualMFADevice", reflect.TypeOf((*MockIIam)(nil).DeleteVirtualMFADevice), ctx, serialNumber)
 }
 
+// DetachRolePolicy mocks base method.
+func (m *MockIIam) DetachRolePolicy(ctx context.Context, roleName, policyArn *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DetachRolePolicy", ctx, roleName, policyArn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DetachRolePolicy indicates an expected call of DetachRolePolicy.
+func (mr *MockIIamMockRecorder) DetachRolePolicy(ctx, roleName, policyArn any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachRolePolicy", reflect.TypeOf((*MockIIam)(nil).DetachRolePolicy), ctx, roleName, policyArn)
+}
+
 // DetachUserPolicy mocks base method.
 func (m *MockIIam) DetachUserPolicy(ctx context.Context, userName, policyArn *string) error {
 	m.ctrl.T.Helper()
@@ -255,6 +312,22 @@ func (mr *MockIIamMockRecorder) ListAccessKeys(ctx, userName, marker any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAccessKeys", reflect.TypeOf((*MockIIam)(nil).ListAccessKeys), ctx, userName, marker)
 }
 
+// ListAttachedRolePolicies mocks base method.
+func (m *MockIIam) ListAttachedRolePolicies(ctx context.Context, roleName, marker *string) ([]types.AttachedPolicy, *string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAttachedRolePolicies", ctx, roleName, marker)
+	ret0, _ := ret[0].([]types.AttachedPolicy)
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListAttachedRolePolicies indicates an expected call of ListAttachedRolePolicies.
+func (mr *MockIIamMockRecorder) ListAttachedRolePolicies(ctx, roleName, marker any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAttachedRolePolicies", reflect.TypeOf((*MockIIam)(nil).ListAttachedRolePolicies), ctx, roleName, marker)
+}
+
 // ListAttachedUserPolicies mocks base method.
 func (m *MockIIam) ListAttachedUserPolicies(ctx context.Context, userName, marker *string) ([]types.AttachedPolicy, *string, error) {
 	m.ctrl.T.Helper()
@@ -287,6 +360,22 @@ func (mr *MockIIamMockRecorder) ListGroupsForUser(ctx, userName, marker any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListGroupsForUser", reflect.TypeOf((*MockIIam)(nil).ListGroupsForUser), ctx, userName, marker)
 }
 
+// ListInstanceProfilesForRole mocks base method.
+func (m *MockIIam) ListInstanceProfilesForRole(ctx context.Context, roleName, marker *string) ([]types.InstanceProfile, *string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListInstanceProfilesForRole", ctx, roleName, marker)
+	ret0, _ := ret[0].([]types.InstanceProfile)
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListInstanceProfilesForRole indicates an expected call of ListInstanceProfilesForRole.
+func (mr *MockIIamMockRecorder) ListInstanceProfilesForRole(ctx, roleName, marker any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInstanceProfilesForRole", reflect.TypeOf((*MockIIam)(nil).ListInstanceProfilesForRole), ctx, roleName, marker)
+}
+
 // ListMFADevices mocks base method.
 func (m *MockIIam) ListMFADevices(ctx context.Context, userName, marker *string) ([]types.MFADevice, *string, error) {
 	m.ctrl.T.Helper()
@@ -301,6 +390,22 @@ func (m *MockIIam) ListMFADevices(ctx context.Context, userName, marker *string)
 func (mr *MockIIamMockRecorder) ListMFADevices(ctx, userName, marker any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMFADevices", reflect.TypeOf((*MockIIam)(nil).ListMFADevices), ctx, userName, marker)
+}
+
+// ListRolePolicies mocks base method.
+func (m *MockIIam) ListRolePolicies(ctx context.Context, roleName, marker *string) ([]string, *string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListRolePolicies", ctx, roleName, marker)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListRolePolicies indicates an expected call of ListRolePolicies.
+func (mr *MockIIamMockRecorder) ListRolePolicies(ctx, roleName, marker any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRolePolicies", reflect.TypeOf((*MockIIam)(nil).ListRolePolicies), ctx, roleName, marker)
 }
 
 // ListSSHPublicKeys mocks base method.
@@ -364,6 +469,20 @@ func (m *MockIIam) ListUserPolicies(ctx context.Context, userName, marker *strin
 func (mr *MockIIamMockRecorder) ListUserPolicies(ctx, userName, marker any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserPolicies", reflect.TypeOf((*MockIIam)(nil).ListUserPolicies), ctx, userName, marker)
+}
+
+// RemoveRoleFromInstanceProfile mocks base method.
+func (m *MockIIam) RemoveRoleFromInstanceProfile(ctx context.Context, instanceProfileName, roleName *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveRoleFromInstanceProfile", ctx, instanceProfileName, roleName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveRoleFromInstanceProfile indicates an expected call of RemoveRoleFromInstanceProfile.
+func (mr *MockIIamMockRecorder) RemoveRoleFromInstanceProfile(ctx, instanceProfileName, roleName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveRoleFromInstanceProfile", reflect.TypeOf((*MockIIam)(nil).RemoveRoleFromInstanceProfile), ctx, instanceProfileName, roleName)
 }
 
 // RemoveUserFromGroup mocks base method.

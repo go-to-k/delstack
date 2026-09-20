@@ -39,6 +39,16 @@ type IIam interface {
 	DeleteServiceSpecificCredential(ctx context.Context, userName *string, credentialId *string) error
 	ListGroupsForUser(ctx context.Context, userName *string, marker *string) ([]types.Group, *string, error)
 	RemoveUserFromGroup(ctx context.Context, groupName *string, userName *string) error
+
+	// Role operations
+	CheckRoleExists(ctx context.Context, roleName *string) (bool, error)
+	DeleteRole(ctx context.Context, roleName *string) error
+	ListAttachedRolePolicies(ctx context.Context, roleName *string, marker *string) ([]types.AttachedPolicy, *string, error)
+	DetachRolePolicy(ctx context.Context, roleName *string, policyArn *string) error
+	ListRolePolicies(ctx context.Context, roleName *string, marker *string) ([]string, *string, error)
+	DeleteRolePolicy(ctx context.Context, roleName *string, policyName *string) error
+	ListInstanceProfilesForRole(ctx context.Context, roleName *string, marker *string) ([]types.InstanceProfile, *string, error)
+	RemoveRoleFromInstanceProfile(ctx context.Context, instanceProfileName *string, roleName *string) error
 }
 
 var _ IIam = (*Iam)(nil)
@@ -554,4 +564,174 @@ func (i *Iam) ListGroupsForUser(ctx context.Context, userName *string, marker *s
 	}
 
 	return output.Groups, output.Marker, nil
+}
+
+// Role operations
+
+func (i *Iam) CheckRoleExists(ctx context.Context, roleName *string) (bool, error) {
+	input := &iam.GetRoleInput{
+		RoleName: roleName,
+	}
+
+	optFn := func(o *iam.Options) {
+		o.Retryer = i.retryer
+	}
+
+	_, err := i.client.GetRole(ctx, input, optFn)
+	if err != nil && strings.Contains(err.Error(), "NoSuchEntity") {
+		return false, nil
+	}
+	if err != nil {
+		return false, &ClientError{
+			ResourceName: roleName,
+			Err:          err,
+		}
+	}
+
+	return true, nil
+}
+
+func (i *Iam) DeleteRole(ctx context.Context, roleName *string) error {
+	input := &iam.DeleteRoleInput{
+		RoleName: roleName,
+	}
+
+	optFn := func(o *iam.Options) {
+		o.Retryer = i.retryer
+	}
+
+	_, err := i.client.DeleteRole(ctx, input, optFn)
+	if err != nil {
+		return &ClientError{
+			ResourceName: roleName,
+			Err:          err,
+		}
+	}
+	return nil
+}
+
+func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName *string, marker *string) ([]types.AttachedPolicy, *string, error) {
+	input := &iam.ListAttachedRolePoliciesInput{
+		RoleName: roleName,
+		Marker:   marker,
+	}
+
+	optFn := func(o *iam.Options) {
+		o.Retryer = i.retryer
+	}
+
+	output, err := i.client.ListAttachedRolePolicies(ctx, input, optFn)
+	if err != nil {
+		return nil, nil, &ClientError{
+			ResourceName: roleName,
+			Err:          err,
+		}
+	}
+
+	return output.AttachedPolicies, output.Marker, nil
+}
+
+func (i *Iam) DetachRolePolicy(ctx context.Context, roleName *string, policyArn *string) error {
+	input := &iam.DetachRolePolicyInput{
+		RoleName:  roleName,
+		PolicyArn: policyArn,
+	}
+
+	optFn := func(o *iam.Options) {
+		o.Retryer = i.retryer
+	}
+
+	_, err := i.client.DetachRolePolicy(ctx, input, optFn)
+	if err != nil {
+		return &ClientError{
+			ResourceName: roleName,
+			Err:          err,
+		}
+	}
+	return nil
+}
+
+func (i *Iam) ListRolePolicies(ctx context.Context, roleName *string, marker *string) ([]string, *string, error) {
+	input := &iam.ListRolePoliciesInput{
+		RoleName: roleName,
+		Marker:   marker,
+	}
+
+	optFn := func(o *iam.Options) {
+		o.Retryer = i.retryer
+	}
+
+	output, err := i.client.ListRolePolicies(ctx, input, optFn)
+	if err != nil {
+		return nil, nil, &ClientError{
+			ResourceName: roleName,
+			Err:          err,
+		}
+	}
+
+	return output.PolicyNames, output.Marker, nil
+}
+
+func (i *Iam) DeleteRolePolicy(ctx context.Context, roleName *string, policyName *string) error {
+	input := &iam.DeleteRolePolicyInput{
+		RoleName:   roleName,
+		PolicyName: policyName,
+	}
+
+	optFn := func(o *iam.Options) {
+		o.Retryer = i.retryer
+	}
+
+	_, err := i.client.DeleteRolePolicy(ctx, input, optFn)
+	if err != nil {
+		return &ClientError{
+			ResourceName: roleName,
+			Err:          err,
+		}
+	}
+	return nil
+}
+
+func (i *Iam) ListInstanceProfilesForRole(ctx context.Context, roleName *string, marker *string) ([]types.InstanceProfile, *string, error) {
+	input := &iam.ListInstanceProfilesForRoleInput{
+		RoleName: roleName,
+		Marker:   marker,
+	}
+
+	optFn := func(o *iam.Options) {
+		o.Retryer = i.retryer
+	}
+
+	output, err := i.client.ListInstanceProfilesForRole(ctx, input, optFn)
+	if err != nil {
+		return nil, nil, &ClientError{
+			ResourceName: roleName,
+			Err:          err,
+		}
+	}
+
+	return output.InstanceProfiles, output.Marker, nil
+}
+
+func (i *Iam) RemoveRoleFromInstanceProfile(ctx context.Context, instanceProfileName *string, roleName *string) error {
+	input := &iam.RemoveRoleFromInstanceProfileInput{
+		InstanceProfileName: instanceProfileName,
+		RoleName:            roleName,
+	}
+
+	optFn := func(o *iam.Options) {
+		o.Retryer = i.retryer
+	}
+
+	_, err := i.client.RemoveRoleFromInstanceProfile(ctx, input, optFn)
+	if err != nil && strings.Contains(err.Error(), "NoSuchEntity") {
+		return nil
+	}
+	if err != nil {
+		return &ClientError{
+			ResourceName: roleName,
+			Err:          err,
+		}
+	}
+	return nil
 }

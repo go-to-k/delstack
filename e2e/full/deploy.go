@@ -157,10 +157,18 @@ func main() {
 	}
 
 	// Attach policy to role
-	// The following function is no longer needed as the IAM role no longer fails on normal deletion, but it is left in place just in case.
+	// CloudFormation detaches out-of-band policies by itself now, so this alone no longer causes a
+	// DELETE_FAILED, but it is left in place just in case.
 	color.Green("=== attach_policy_to_role ===")
 	if err := service.attachPolicyToRole(service.CfnStackName); err != nil {
 		color.Red("Failed to attach policy to role: %v", err)
+		os.Exit(1)
+	}
+
+	// Add roles to instance profiles created outside of CFn to trigger DELETE_FAILED (issue #662)
+	color.Green("=== add_role_to_instance_profile ===")
+	if err := service.addRoleToInstanceProfile(service.CfnStackName); err != nil {
+		color.Red("Failed to add role to instance profile: %v", err)
 		os.Exit(1)
 	}
 
@@ -329,7 +337,8 @@ func (s *DeployStackService) loginToECR() error {
 	return nil
 }
 
-// The following function is no longer needed as the IAM role no longer fails on normal deletion, but it is left in place just in case.
+// CloudFormation detaches out-of-band policies by itself now, so this alone no longer causes a
+// DELETE_FAILED, but it is left in place just in case.
 func (s *DeployStackService) attachPolicyToRole(stackName string) error {
 	// Get resources in the stack
 	resources, nestedStackNames, err := s.getStackResources(stackName)
@@ -396,6 +405,75 @@ func (s *DeployStackService) attachPolicyToRole(stackName string) error {
 		if err != nil {
 			return fmt.Errorf("failed to attach policy to role: %v", err)
 		}
+	}
+
+	return nil
+}
+
+// addRoleToInstanceProfile adds the IAM roles of the stack to instance profiles created outside of
+// CFn. CloudFormation detaches out-of-band policies by itself, but it does not remove the role from
+// an instance profile it does not own, so the role ends up in DELETE_FAILED (issue #662).
+func (s *DeployStackService) addRoleToInstanceProfile(stackName string) error {
+	// Get resources in the stack
+	resources, nestedStackNames, err := s.getStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	// Process nested stacks in parallel
+	var wg sync.WaitGroup
+	errorChan := make(chan error, len(nestedStackNames))
+
+	for _, nestedStackName := range nestedStackNames {
+		wg.Add(1)
+		go func(name string) {
+			defer wg.Done()
+			if nestErr := s.addRoleToInstanceProfile(name); nestErr != nil {
+				errorChan <- nestErr
+			}
+		}(nestedStackName)
+	}
+
+	wg.Wait()
+	close(errorChan)
+
+	for err := range errorChan {
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, resource := range resources {
+		if resource["ResourceType"] != "AWS::IAM::Role" {
+			continue
+		}
+		// Only the roles of the NewIamRole construct, to keep the number of instance profiles bounded
+		if !strings.HasPrefix(resource["LogicalResourceId"], "IamRole") {
+			continue
+		}
+
+		roleName := resource["PhysicalResourceId"]
+		// An instance profile can hold only one role, so create one per role
+		instanceProfileName := fmt.Sprintf("DelstackTestProfile-%s", roleName)
+
+		_, err := s.IamClient.CreateInstanceProfile(s.Ctx, &iam.CreateInstanceProfileInput{
+			InstanceProfileName: aws.String(instanceProfileName),
+		})
+		var e *iamtypes.EntityAlreadyExistsException
+		if err != nil && !errors.As(err, &e) {
+			return fmt.Errorf("failed to create instance profile %s: %v", instanceProfileName, err)
+		}
+
+		_, err = s.IamClient.AddRoleToInstanceProfile(s.Ctx, &iam.AddRoleToInstanceProfileInput{
+			InstanceProfileName: aws.String(instanceProfileName),
+			RoleName:            aws.String(roleName),
+		})
+		var limitErr *iamtypes.LimitExceededException
+		if err != nil && !errors.As(err, &limitErr) {
+			return fmt.Errorf("failed to add role %s to instance profile %s: %v", roleName, instanceProfileName, err)
+		}
+
+		color.Green("Successfully added IAM role %s to instance profile %s", roleName, instanceProfileName)
 	}
 
 	return nil
