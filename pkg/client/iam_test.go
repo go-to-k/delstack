@@ -86,11 +86,11 @@ func TestIam_DeleteGroup(t *testing.T) {
 							"DeleteGroupApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-										Result: &iam.DeleteGroupOutput{},
-									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxAttempts,
-										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
-									}
+									Result: &iam.DeleteGroupOutput{},
+								}, middleware.Metadata{}, &retry.MaxAttemptsError{
+									Attempt: MaxAttempts,
+									Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+								}
 							},
 						),
 						middleware.Before,
@@ -243,11 +243,11 @@ func TestIam_CheckGroupExists(t *testing.T) {
 							"GetGroupApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-										Result: &iam.GetGroupOutput{},
-									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxAttempts,
-										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
-									}
+									Result: &iam.GetGroupOutput{},
+								}, middleware.Metadata{}, &retry.MaxAttemptsError{
+									Attempt: MaxAttempts,
+									Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+								}
 							},
 						),
 						middleware.Before,
@@ -421,11 +421,11 @@ func TestIam_GetGroupUsers(t *testing.T) {
 							"GetGroupApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-										Result: &iam.GetGroupOutput{},
-									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxAttempts,
-										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
-									}
+									Result: &iam.GetGroupOutput{},
+								}, middleware.Metadata{}, &retry.MaxAttemptsError{
+									Attempt: MaxAttempts,
+									Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+								}
 							},
 						),
 						middleware.Before,
@@ -581,11 +581,11 @@ func TestIam_RemoveUsersFromGroup(t *testing.T) {
 							"RemoveUserFromGroupApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-										Result: &iam.RemoveUserFromGroupOutput{},
-									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxAttempts,
-										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
-									}
+									Result: &iam.RemoveUserFromGroupOutput{},
+								}, middleware.Metadata{}, &retry.MaxAttemptsError{
+									Attempt: MaxAttempts,
+									Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+								}
 							},
 						),
 						middleware.Before,
@@ -738,11 +738,11 @@ func TestIam_CheckUserExists(t *testing.T) {
 							"GetUserApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-										Result: &iam.GetUserOutput{},
-									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxAttempts,
-										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
-									}
+									Result: &iam.GetUserOutput{},
+								}, middleware.Metadata{}, &retry.MaxAttemptsError{
+									Attempt: MaxAttempts,
+									Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+								}
 							},
 						),
 						middleware.Before,
@@ -2683,11 +2683,11 @@ func TestIam_DeleteUser(t *testing.T) {
 							"DeleteUserApiErrorMock",
 							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 								return middleware.FinalizeOutput{
-										Result: &iam.DeleteUserOutput{},
-									}, middleware.Metadata{}, &retry.MaxAttemptsError{
-										Attempt: MaxAttempts,
-										Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
-									}
+									Result: &iam.DeleteUserOutput{},
+								}, middleware.Metadata{}, &retry.MaxAttemptsError{
+									Attempt: MaxAttempts,
+									Err:     fmt.Errorf("api error Throttling: Rate exceeded"),
+								}
 							},
 						),
 						middleware.Before,
