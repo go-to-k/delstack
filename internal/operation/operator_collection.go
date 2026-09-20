@@ -47,6 +47,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	s3TableBucketOperator := c.operatorFactory.CreateS3TableBucketOperator()
 	S3TableNamespaceOperator := c.operatorFactory.CreateS3TableNamespaceOperator()
 	s3VectorBucketOperator := c.operatorFactory.CreateS3VectorBucketOperator()
+	iamRoleOperator := c.operatorFactory.CreateIamRoleOperator()
 	iamGroupOperator := c.operatorFactory.CreateIamGroupOperator()
 	iamUserOperator := c.operatorFactory.CreateIamUserOperator()
 	ecrRepositoryOperator := c.operatorFactory.CreateEcrRepositoryOperator()
@@ -81,6 +82,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				S3TableNamespaceOperator.AddResource(&resource)
 			case resourcetype.S3VectorBucket:
 				s3VectorBucketOperator.AddResource(&resource)
+			case resourcetype.IamRole:
+				iamRoleOperator.AddResource(&resource)
 			case resourcetype.IamGroup:
 				iamGroupOperator.AddResource(&resource)
 			case resourcetype.IamUser:
@@ -118,6 +121,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, s3TableBucketOperator)
 	c.operators = append(c.operators, S3TableNamespaceOperator)
 	c.operators = append(c.operators, s3VectorBucketOperator)
+	c.operators = append(c.operators, iamRoleOperator)
 	c.operators = append(c.operators, iamGroupOperator)
 	c.operators = append(c.operators, iamUserOperator)
 	c.operators = append(c.operators, ecrRepositoryOperator)
@@ -172,6 +176,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.S3TableBucket, "S3 Table Buckets, including buckets with any namespaces or tables and DeletionPolicy not Retain."},
 		{resourcetype.S3TableNamespace, "S3 Table Namespaces, including namespaces with any tables and DeletionPolicy not Retain."},
 		{resourcetype.S3VectorBucket, "S3 Vector Buckets, including buckets with any indexes and DeletionPolicy not Retain."},
+		{resourcetype.IamRole, "IAM Roles, including roles used by instance profiles, or with policies from outside the stack."},
 		{resourcetype.IamGroup, "IAM Groups, including groups with IAM users from outside the stack."},
 		{resourcetype.IamUser, "IAM Users, including users with policies, MFA devices, access keys, login profiles, or other dependencies from outside the stack."},
 		{resourcetype.EcrRepository, "ECR Repositories, including repositories that contain images and where the `EmptyOnDelete` is not true."},
