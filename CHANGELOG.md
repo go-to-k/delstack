@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2.14.1](https://github.com/go-to-k/delstack/compare/v2.14.0...v2.14.1) - 2026-10-23
+
+- chore: build with Go 1.27.3 to distrust compromised eMudhra CAs by @go-to-k in https://github.com/go-to-k/delstack/pull/678
+
 ## [v2.14.0](https://github.com/go-to-k/delstack/compare/v2.13.1...v2.14.0) - 2026-09-20
 
 - style(client): reformat multi-value returns for gofmt in golangci-lint 2.13.2 by @go-to-k in https://github.com/go-to-k/delstack/pull/674
