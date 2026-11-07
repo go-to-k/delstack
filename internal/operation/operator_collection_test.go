@@ -41,6 +41,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		ec2SecurityGroupOperatorResourcesLength                         int
 		ec2VPCEndpointServiceOperatorResourcesLength                    int
 		route53ResolverConfigOperatorResourcesLength                    int
+		s3FilesFileSystemOperatorResourcesLength                        int
 		lambdaFunctionOperatorResourcesLength                           int
 		cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength int
 		cloudformationStackOperatorResourcesLength                      int
@@ -178,10 +179,16 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 						ResourceType:       aws.String("AWS::Route53Resolver::ResolverConfig"),
 						PhysicalResourceId: aws.String("vpc-19"),
 					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId20"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::S3Files::FileSystem"),
+						PhysicalResourceId: aws.String("arn:aws:s3files:us-east-1:123456789012:file-system/fs-20"),
+					},
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                                        20,
+				logicalResourceIdsLength:                                        21,
 				unsupportedStackResourcesLength:                                 0,
 				s3BucketOperatorResourcesLength:                                 1,
 				s3DirectoryBucketOperatorResourcesLength:                        1,
@@ -198,6 +205,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ec2SecurityGroupOperatorResourcesLength:                         1,
 				ec2VPCEndpointServiceOperatorResourcesLength:                    1,
 				route53ResolverConfigOperatorResourcesLength:                    1,
+				s3FilesFileSystemOperatorResourcesLength:                        1,
 				lambdaFunctionOperatorResourcesLength:                           1,
 				cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength: 1,
 				cloudformationStackOperatorResourcesLength:                      1,
@@ -517,6 +525,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			ec2SecurityGroupOperatorResourcesLength := 0
 			ec2VPCEndpointServiceOperatorResourcesLength := 0
 			route53ResolverConfigOperatorResourcesLength := 0
+			s3FilesFileSystemOperatorResourcesLength := 0
 			lambdaFunctionOperatorResourcesLength := 0
 			cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength := 0
 			cloudformationStackOperatorResourcesLength := 0
@@ -556,6 +565,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					ec2VPCEndpointServiceOperatorResourcesLength += operator.GetResourcesLength()
 				case *Route53ResolverConfigOperator:
 					route53ResolverConfigOperatorResourcesLength += operator.GetResourcesLength()
+				case *S3FilesFileSystemOperator:
+					s3FilesFileSystemOperatorResourcesLength += operator.GetResourcesLength()
 				case *LambdaFunctionOperator:
 					lambdaFunctionOperatorResourcesLength += operator.GetResourcesLength()
 				case *CognitoUserPoolUICustomizationAttachmentOperator:
@@ -586,6 +597,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ec2SecurityGroupOperatorResourcesLength:                         ec2SecurityGroupOperatorResourcesLength,
 				ec2VPCEndpointServiceOperatorResourcesLength:                    ec2VPCEndpointServiceOperatorResourcesLength,
 				route53ResolverConfigOperatorResourcesLength:                    route53ResolverConfigOperatorResourcesLength,
+				s3FilesFileSystemOperatorResourcesLength:                        s3FilesFileSystemOperatorResourcesLength,
 				lambdaFunctionOperatorResourcesLength:                           lambdaFunctionOperatorResourcesLength,
 				cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength: cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength,
 				cloudformationStackOperatorResourcesLength:                      cloudformationStackOperatorResourcesLength,
@@ -799,6 +811,15 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 				ctx:       context.Background(),
 				stackName: aws.String("test"),
 				resource:  "AWS::Route53Resolver::ResolverConfig",
+			},
+			want: true,
+		},
+		{
+			name: "S3 Files File System",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				resource:  "AWS::S3Files::FileSystem",
 			},
 			want: true,
 		},

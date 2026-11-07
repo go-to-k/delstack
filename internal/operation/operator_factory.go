@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/route53resolver"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3files"
 	"github.com/aws/aws-sdk-go-v2/service/s3tables"
 	"github.com/aws/aws-sdk-go-v2/service/s3vectors"
 	"github.com/go-to-k/delstack/pkg/client"
@@ -252,6 +253,19 @@ func (f *OperatorFactory) CreateRoute53ResolverConfigOperator() *Route53Resolver
 	return NewRoute53ResolverConfigOperator(
 		client.NewRoute53Resolver(
 			sdkRoute53ResolverClient,
+		),
+	)
+}
+
+func (f *OperatorFactory) CreateS3FilesFileSystemOperator() *S3FilesFileSystemOperator {
+	sdkS3FilesClient := s3files.NewFromConfig(f.config, func(o *s3files.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	return NewS3FilesFileSystemOperator(
+		client.NewS3Files(
+			sdkS3FilesClient,
 		),
 	)
 }
