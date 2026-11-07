@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.16.0](https://github.com/go-to-k/delstack/compare/v2.15.0...v2.16.0) - 2026-11-07
+
+- chore: pin mockgen and golangci-lint versions in the repository by @go-to-k in https://github.com/go-to-k/delstack/pull/684
+- feat(operation): support AWS::S3Files::FileSystem by @go-to-k in https://github.com/go-to-k/delstack/pull/686
+- chore(client): use go tool mockgen directive in s3files.go by @go-to-k in https://github.com/go-to-k/delstack/pull/687
+- test(e2e): add S3 Files scenario with a client writing during deletion by @go-to-k in https://github.com/go-to-k/delstack/pull/688
+
 ## [v2.15.0](https://github.com/go-to-k/delstack/compare/v2.14.1...v2.15.0) - 2026-11-07
 
 - ci: hold Dependabot version updates back for 7 days after a release by @go-to-k in https://github.com/go-to-k/delstack/pull/680
