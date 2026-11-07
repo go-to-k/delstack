@@ -38,7 +38,7 @@ The user provides a name like `LambdaVPCDetacher` or `DeletionProtectionRemover`
 
 3. **`pkg/client/`** — If the preprocessor needs an AWS service the project does not yet wrap:
    - If the service file exists, **extend** the interface and struct (do not create a new file).
-   - If new, create `pkg/client/<service>.go` with `//go:generate mockgen` on **line 1**, then run `make mockgen`. Public methods wrap errors with `ClientError`. Tests use AWS SDK middleware mocks (see `s3_test.go`, `backup_test.go`), NOT gomock.
+   - If new, create `pkg/client/<service>.go` with `//go:generate go tool mockgen` on **line 1**, then run `make mockgen`. Public methods wrap errors with `ClientError`. Tests use AWS SDK middleware mocks (see `s3_test.go`, `backup_test.go`), NOT gomock.
 
 4. **`internal/preprocessor/factory.go`** — Wire it in:
    - Add `new<Name>FromConfig(config aws.Config[, forceMode bool])` that builds SDK clients with `operation.SDKRetryMaxAttempts` and `aws.RetryModeStandard`, wraps them via `pkg/client`, and returns the preprocessor.

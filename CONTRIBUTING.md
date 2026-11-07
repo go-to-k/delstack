@@ -36,8 +36,8 @@ No circular dependencies. `internal/app` must not depend on `pkg/client` directl
 
 - `make run OPT="<options>"`: Run delstack locally
 - `make test`: Run all tests
-- `make mockgen`: Regenerate mocks
-- `make lint`: Run linter. The version is pinned in [.golangci-version](.golangci-version) and read by both `make lint` and CI, because golangci-lint bundles its own copy of the Go formatter independently of the Go toolchain in `go.mod`. Install that version; `make lint` warns if yours differs. It also runs `gofmt` over `e2e/`, which golangci-lint never sees because every scenario there is its own Go module.
+- `make mockgen`: Regenerate mocks. mockgen runs via `go tool`, at the version pinned by the `tool` directive in `go.mod`
+- `make lint`: Run linter. The version is pinned in [.golangci-version](.golangci-version) and read by both `make lint` and CI, because golangci-lint bundles its own copy of the Go formatter independently of the Go toolchain in `go.mod`. `make lint` runs exactly that version via `go run`, so no local install is needed. It also runs `gofmt` over `e2e/`, which golangci-lint never sees because every scenario there is its own Go module.
 
 ## Adding New Resource Support
 
@@ -57,7 +57,7 @@ Detailed step-by-step procedures for each are in the Claude Code skills under [.
 
 - `make test`: Run all tests
 - `make test_view`: Run tests with coverage report
-- `make mockgen`: Regenerate mocks (driven by `//go:generate mockgen` comments in `pkg/client/`, which **must be on line 1**)
+- `make mockgen`: Regenerate mocks (driven by `//go:generate go tool mockgen` comments in `pkg/client/`, which **must be on line 1**)
 
 Two mocking patterns are used; do not mix them:
 
@@ -85,7 +85,7 @@ When creating a new `e2e/<name>/` directory, add a `cdk/.gitignore` that exclude
 - Concurrency: `errgroup` + `semaphore.NewWeighted(runtime.NumCPU())`.
 - Errors: public methods in `pkg/client` wrap with `ClientError`. In `internal/operation` and `internal/preprocessor`, return client errors as-is (already wrapped); only wrap with `ClientError` for errors generated locally (e.g., `ctx.Done()`, validation).
 - Idempotency: check existence before deletion.
-- `//go:generate mockgen` comment must be on **line 1** of the file.
+- `//go:generate go tool mockgen` comment must be on **line 1** of the file.
 - When a client file already exists for a service (e.g., `iam.go`), extend its interface and struct rather than creating a new file.
 
 ### Test Naming
