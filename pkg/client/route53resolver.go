@@ -46,6 +46,7 @@ func (r *Route53Resolver) GetResolverConfig(ctx context.Context, resourceId *str
 	return output.ResolverConfig, true, nil
 }
 
+// UpdateResolverConfig succeeds without doing anything when the target resource (e.g. VPC) no longer exists.
 func (r *Route53Resolver) UpdateResolverConfig(ctx context.Context, resourceId *string, flag types.AutodefinedReverseFlag) error {
 	input := &route53resolver.UpdateResolverConfigInput{
 		ResourceId:             resourceId,
@@ -54,6 +55,10 @@ func (r *Route53Resolver) UpdateResolverConfig(ctx context.Context, resourceId *
 
 	_, err := r.client.UpdateResolverConfig(ctx, input)
 	if err != nil {
+		var notFound *types.ResourceNotFoundException
+		if errors.As(err, &notFound) {
+			return nil
+		}
 		return &ClientError{
 			ResourceName: resourceId,
 			Err:          err,

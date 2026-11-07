@@ -194,6 +194,28 @@ func TestRoute53Resolver_UpdateResolverConfig(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "update resolver config successfully when resource not found",
+			args: args{
+				ctx:        context.Background(),
+				resourceId: aws.String("vpc-test"),
+				withAPIOptionsFunc: func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"UpdateResolverConfigNotFoundMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								return middleware.FinalizeOutput{
+									Result: &route53resolver.UpdateResolverConfigOutput{},
+								}, middleware.Metadata{}, &types.ResourceNotFoundException{Message: aws.String("[RSLVR-00913] Can't find the resource")}
+							},
+						),
+						middleware.Before,
+					)
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
 			name: "update resolver config failure",
 			args: args{
 				ctx:        context.Background(),
