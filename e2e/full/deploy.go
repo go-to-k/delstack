@@ -24,6 +24,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
@@ -65,6 +66,7 @@ type DeployStackService struct {
 	StsClient       *sts.Client
 	BackupClient    *backup.Client
 	AthenaClient    *athena.Client
+	EC2Client       *ec2.Client
 }
 
 // This script allows you to deploy the stack for delstack testing.
@@ -172,6 +174,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Delete the VPC of the ResolverConfig outside of CFn to trigger DELETE_FAILED (issue #682)
+	color.Green("=== delete_resolver_config_vpc ===")
+	if err := service.deleteResolverConfigVpc(service.CfnStackName); err != nil {
+		color.Red("Failed to delete VPC of resolver config: %v", err)
+		os.Exit(1)
+	}
+
 	color.Yellow("\n=== Optional: Manual steps for full IAM User deletion testing ===")
 	color.Yellow("The following dependencies cannot be created programmatically and must be attached manually if needed:")
 	color.Yellow("  - Virtual MFA device: Requires TOTP code generation (use AWS Console > IAM > User > Security credentials > Assign MFA device)")
@@ -242,6 +251,7 @@ func (s *DeployStackService) initAWSClients() error {
 	s.StsClient = sts.NewFromConfig(cfg)
 	s.BackupClient = backup.NewFromConfig(cfg)
 	s.AthenaClient = athena.NewFromConfig(cfg)
+	s.EC2Client = ec2.NewFromConfig(cfg)
 
 	// Get account ID
 	stsOutput, err := s.StsClient.GetCallerIdentity(s.Ctx, &sts.GetCallerIdentityInput{})
@@ -1496,6 +1506,30 @@ func (s *DeployStackService) startBackup(stackName string) error {
 
 			time.Sleep(10 * time.Second)
 		}
+	}
+
+	return nil
+}
+
+func (s *DeployStackService) deleteResolverConfigVpc(stackName string) error {
+	resources, _, err := s.getStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	for _, resource := range resources {
+		if resource["ResourceType"] != "AWS::Route53Resolver::ResolverConfig" {
+			continue
+		}
+
+		// The physical resource ID of a ResolverConfig is the VPC ID.
+		vpcId := resource["PhysicalResourceId"]
+		if _, err := s.EC2Client.DeleteVpc(s.Ctx, &ec2.DeleteVpcInput{
+			VpcId: aws.String(vpcId),
+		}); err != nil {
+			return fmt.Errorf("failed to delete VPC %s: %v", vpcId, err)
+		}
+		fmt.Printf("Deleted VPC %s of resolver config %s\n", vpcId, resource["LogicalResourceId"])
 	}
 
 	return nil

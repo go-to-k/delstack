@@ -41,6 +41,7 @@ func NewTestStack(scope constructs.Construct, id string, props *TestStackProps) 
 	resource.NewDynamoDB(stack, props.PjPrefix+"-Root")
 	resource.NewBackup(stack, props.PjPrefix+"-Root")
 	resource.NewAthena(stack, props.PjPrefix+"-Root")
+	resource.NewRoute53ResolverConfig(stack)
 
 	nest.NewChildStack(stack, "Child", &nest.ChildStackProps{
 		PjPrefix: props.PjPrefix,

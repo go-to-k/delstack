@@ -40,6 +40,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		ec2SubnetOperatorResourcesLength                                int
 		ec2SecurityGroupOperatorResourcesLength                         int
 		ec2VPCEndpointServiceOperatorResourcesLength                    int
+		route53ResolverConfigOperatorResourcesLength                    int
 		lambdaFunctionOperatorResourcesLength                           int
 		cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength int
 		cloudformationStackOperatorResourcesLength                      int
@@ -171,10 +172,16 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 						ResourceType:       aws.String("AWS::EC2::VPCEndpointService"),
 						PhysicalResourceId: aws.String("vpce-svc-18"),
 					},
+					{
+						LogicalResourceId:  aws.String("LogicalResourceId19"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::Route53Resolver::ResolverConfig"),
+						PhysicalResourceId: aws.String("vpc-19"),
+					},
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                                        19,
+				logicalResourceIdsLength:                                        20,
 				unsupportedStackResourcesLength:                                 0,
 				s3BucketOperatorResourcesLength:                                 1,
 				s3DirectoryBucketOperatorResourcesLength:                        1,
@@ -190,6 +197,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ec2SubnetOperatorResourcesLength:                                1,
 				ec2SecurityGroupOperatorResourcesLength:                         1,
 				ec2VPCEndpointServiceOperatorResourcesLength:                    1,
+				route53ResolverConfigOperatorResourcesLength:                    1,
 				lambdaFunctionOperatorResourcesLength:                           1,
 				cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength: 1,
 				cloudformationStackOperatorResourcesLength:                      1,
@@ -508,6 +516,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			ec2SubnetOperatorResourcesLength := 0
 			ec2SecurityGroupOperatorResourcesLength := 0
 			ec2VPCEndpointServiceOperatorResourcesLength := 0
+			route53ResolverConfigOperatorResourcesLength := 0
 			lambdaFunctionOperatorResourcesLength := 0
 			cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength := 0
 			cloudformationStackOperatorResourcesLength := 0
@@ -545,6 +554,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					ec2SecurityGroupOperatorResourcesLength += operator.GetResourcesLength()
 				case *EC2VPCEndpointServiceOperator:
 					ec2VPCEndpointServiceOperatorResourcesLength += operator.GetResourcesLength()
+				case *Route53ResolverConfigOperator:
+					route53ResolverConfigOperatorResourcesLength += operator.GetResourcesLength()
 				case *LambdaFunctionOperator:
 					lambdaFunctionOperatorResourcesLength += operator.GetResourcesLength()
 				case *CognitoUserPoolUICustomizationAttachmentOperator:
@@ -574,6 +585,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ec2SubnetOperatorResourcesLength:                                ec2SubnetOperatorResourcesLength,
 				ec2SecurityGroupOperatorResourcesLength:                         ec2SecurityGroupOperatorResourcesLength,
 				ec2VPCEndpointServiceOperatorResourcesLength:                    ec2VPCEndpointServiceOperatorResourcesLength,
+				route53ResolverConfigOperatorResourcesLength:                    route53ResolverConfigOperatorResourcesLength,
 				lambdaFunctionOperatorResourcesLength:                           lambdaFunctionOperatorResourcesLength,
 				cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength: cognitoUserPoolUICustomizationAttachmentOperatorResourcesLength,
 				cloudformationStackOperatorResourcesLength:                      cloudformationStackOperatorResourcesLength,
@@ -778,6 +790,15 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 				ctx:       context.Background(),
 				stackName: aws.String("test"),
 				resource:  "AWS::EC2::VPCEndpointService",
+			},
+			want: true,
+		},
+		{
+			name: "Route53 Resolver Config",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				resource:  "AWS::Route53Resolver::ResolverConfig",
 			},
 			want: true,
 		},
