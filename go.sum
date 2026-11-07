@@ -46,6 +46,8 @@ github.com/aws/aws-sdk-go-v2/service/lambda v1.88.5 h1:HWN7xwaV7Zwrn3Jlauio4u4aT
 github.com/aws/aws-sdk-go-v2/service/lambda v1.88.5/go.mod h1:6HBXRyFFqOw+ALkJ6YGHfrr20/YXYv6X9pcZErXRvCA=
 github.com/aws/aws-sdk-go-v2/service/rds v1.116.3 h1:H/ZYZ6QR4EXJAYElI5xkIM/yCz+A4uHIvWpzl+IfJks=
 github.com/aws/aws-sdk-go-v2/service/rds v1.116.3/go.mod h1:QbXW4coAMakHQhf1qhE0eVVCen9gwB/Kvn+HHHKhpGY=
+github.com/aws/aws-sdk-go-v2/service/route53resolver v1.42.5 h1:9uxejgrJldhFZSTk45M4tyVS5InMbKrv2Wd6xduwJqM=
+github.com/aws/aws-sdk-go-v2/service/route53resolver v1.42.5/go.mod h1:CHlUDVPfaxHe/w601xTfVYyQZazO1MsAzNCx4huTia0=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.97.3 h1:HwxWTbTrIHm5qY+CAEur0s/figc3qwvLWsNkF4RPToo=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.97.3/go.mod h1:uoA43SdFwacedBfSgfFSjjCvYe8aYBS7EnU5GZ/YKMM=
 github.com/aws/aws-sdk-go-v2/service/s3tables v1.13.1 h1:kLYq+sKElFUQ67avMfe8FaU5AsPHNB1MHVGBGCVgYUE=

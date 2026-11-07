@@ -16,6 +16,7 @@ const (
 	EC2Subnet                                = "AWS::EC2::Subnet"
 	EC2SecurityGroup                         = "AWS::EC2::SecurityGroup"
 	EC2VPCEndpointService                    = "AWS::EC2::VPCEndpointService"
+	Route53ResolverConfig                    = "AWS::Route53Resolver::ResolverConfig"
 	CognitoUserPoolUICustomizationAttachment = "AWS::Cognito::UserPoolUICustomizationAttachment"
 	CloudformationStack                      = "AWS::CloudFormation::Stack"
 	CloudformationCustomResource             = "AWS::CloudFormation::CustomResource"
@@ -52,6 +53,7 @@ var ResourceTypes = []string{
 	EC2Subnet,
 	EC2SecurityGroup,
 	EC2VPCEndpointService,
+	Route53ResolverConfig,
 	CognitoUserPoolUICustomizationAttachment,
 	LambdaFunction,
 	CloudformationStack,
