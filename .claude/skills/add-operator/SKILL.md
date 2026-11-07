@@ -25,7 +25,7 @@ The user provides an AWS resource type, e.g. `AWS::Athena::WorkGroup`. Derive:
 1. **`internal/resourcetype/resourcetype.go`** — Add the constant to the `const` block and append it to the `ResourceTypes` slice. Keep it in the existing grouping (most go in the "For Force Deletion" group).
 
 2. **`pkg/client/<service>.go`** — AWS SDK client wrapper.
-   - **Line 1 must be** the `//go:generate mockgen` directive (mockgen requires this exact placement).
+   - **Line 1 must be** the `//go:generate go tool mockgen` directive (mockgen requires this exact placement).
    - Define `I<Service>` interface and a `<Service>` struct that wraps the SDK client.
    - Public methods must wrap errors with `ClientError` (see how an existing client like `pkg/client/ecr.go` or `pkg/client/athena.go` does it).
    - If the file already exists, just add new methods to the existing interface + struct.

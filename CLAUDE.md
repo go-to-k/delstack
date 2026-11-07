@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `make build` / `make install` / `make run OPT="-s <stack>"`: build, install, or run locally with arbitrary CLI args via `OPT`.
 - `make test`: full test suite. `make test_diff` runs only packages touched in the working tree (uses `git diff`). `make test_view` regenerates `cover.out` / `cover.html`.
-- `make lint` (full) / `make lint_diff` (changed packages). Run before pushing.
-- `make mockgen`: regenerate gomock mocks. Driven by `//go:generate mockgen` comments which **must be on line 1** of the source file.
+- `make lint` (full) / `make lint_diff` (changed packages), running the golangci-lint version pinned in `.golangci-version` via `go run`. Run before pushing.
+- `make mockgen`: regenerate gomock mocks (mockgen version pinned by the `tool` directive in `go.mod`, run via `go tool`). Driven by `//go:generate go tool mockgen` comments which **must be on line 1** of the source file.
 - Single test: `go test -race -run '^TestEcr_DeleteRepository$' ./pkg/client/...` (test names follow `Test[ReceiverType]_[MethodName]`).
 - E2E: `make testgen_<scenario>` deploys a real test stack; `make e2e_<scenario>` deploys then runs `delstack` against it (auto-generated stage names; `STAGE=...` to override, `OPT="-p <profile>"` for AWS profile). `make testgen_help` / `make e2e_help` list scenarios. E2E creates real AWS resources and incurs cost: write/update E2E code for new resource support but the maintainer runs them.
 
