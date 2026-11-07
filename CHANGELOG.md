@@ -1,5 +1,10 @@
 # Changelog
 
+## [v2.15.0](https://github.com/go-to-k/delstack/compare/v2.14.1...v2.15.0) - 2026-11-07
+
+- ci: hold Dependabot version updates back for 7 days after a release by @go-to-k in https://github.com/go-to-k/delstack/pull/680
+- feat(operation): support AWS::Route53Resolver::ResolverConfig by @go-to-k in https://github.com/go-to-k/delstack/pull/683
+
 ## [v2.14.1](https://github.com/go-to-k/delstack/compare/v2.14.0...v2.14.1) - 2026-10-23
 
 - chore: build with Go 1.27.3 to distrust compromised eMudhra CAs by @go-to-k in https://github.com/go-to-k/delstack/pull/678
