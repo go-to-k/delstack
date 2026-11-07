@@ -17,6 +17,7 @@ const (
 	EC2SecurityGroup                         = "AWS::EC2::SecurityGroup"
 	EC2VPCEndpointService                    = "AWS::EC2::VPCEndpointService"
 	Route53ResolverConfig                    = "AWS::Route53Resolver::ResolverConfig"
+	S3FilesFileSystem                        = "AWS::S3Files::FileSystem"
 	CognitoUserPoolUICustomizationAttachment = "AWS::Cognito::UserPoolUICustomizationAttachment"
 	CloudformationStack                      = "AWS::CloudFormation::Stack"
 	CloudformationCustomResource             = "AWS::CloudFormation::CustomResource"
@@ -54,6 +55,7 @@ var ResourceTypes = []string{
 	EC2SecurityGroup,
 	EC2VPCEndpointService,
 	Route53ResolverConfig,
+	S3FilesFileSystem,
 	CognitoUserPoolUICustomizationAttachment,
 	LambdaFunction,
 	CloudformationStack,

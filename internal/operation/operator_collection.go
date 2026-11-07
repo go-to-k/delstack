@@ -57,6 +57,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	ec2SecurityGroupOperator := c.operatorFactory.CreateEC2SecurityGroupOperator()
 	ec2VPCEndpointServiceOperator := c.operatorFactory.CreateEC2VPCEndpointServiceOperator()
 	route53ResolverConfigOperator := c.operatorFactory.CreateRoute53ResolverConfigOperator()
+	s3FilesFileSystemOperator := c.operatorFactory.CreateS3FilesFileSystemOperator()
 	lambdaFunctionOperator := c.operatorFactory.CreateLambdaFunctionOperator()
 	cognitoUserPoolUICustomizationAttachmentOperator := c.operatorFactory.CreateCognitoUserPoolUICustomizationAttachmentOperator()
 	cloudformationStackOperator := c.operatorFactory.CreateCloudFormationStackOperator()
@@ -103,6 +104,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				ec2VPCEndpointServiceOperator.AddResource(&resource)
 			case resourcetype.Route53ResolverConfig:
 				route53ResolverConfigOperator.AddResource(&resource)
+			case resourcetype.S3FilesFileSystem:
+				s3FilesFileSystemOperator.AddResource(&resource)
 			case resourcetype.LambdaFunction:
 				lambdaFunctionOperator.AddResource(&resource)
 			case resourcetype.CognitoUserPoolUICustomizationAttachment:
@@ -134,6 +137,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, ec2SecurityGroupOperator)
 	c.operators = append(c.operators, ec2VPCEndpointServiceOperator)
 	c.operators = append(c.operators, route53ResolverConfigOperator)
+	c.operators = append(c.operators, s3FilesFileSystemOperator)
 	c.operators = append(c.operators, lambdaFunctionOperator)
 	c.operators = append(c.operators, cognitoUserPoolUICustomizationAttachmentOperator)
 	c.operators = append(c.operators, cloudformationStackOperator)
@@ -190,6 +194,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.EC2SecurityGroup, "EC2 SecurityGroups blocked by orphan AWS Lambda VPC ENIs left in `available` state after the function was deleted."},
 		{resourcetype.EC2VPCEndpointService, "VPC Endpoint Services (AWS PrivateLink or Gateway Load Balancer) blocked by consumer endpoint connections in `Available` or `PendingAcceptance` state."},
 		{resourcetype.Route53ResolverConfig, "Route 53 Resolver Configs, including configs whose VPC was already deleted outside the stack."},
+		{resourcetype.S3FilesFileSystem, "S3 Files File Systems, including file systems with data pending export to the S3 bucket."},
 		{resourcetype.LambdaFunction, "Lambda Functions, including Lambda@Edge functions with replicas still being cleaned up by AWS. Waits for AWS to finish removing edge replicas."},
 		{resourcetype.CognitoUserPoolUICustomizationAttachment, "Cognito UserPool UI Customization Attachments left in DELETE_FAILED as phantoms (e.g. a failed create with no UserPoolDomain), where no actual customization exists in AWS."},
 		{resourcetype.CloudformationStack, "Nested Child Stacks that failed to delete."},
