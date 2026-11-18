@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	route53Types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 	"github.com/rs/zerolog"
@@ -34,6 +35,25 @@ func TestDeletionProtectionRemover_Preprocess(t *testing.T) {
 		cognito *client.MockICognito
 		logs    *client.MockICloudWatchLogs
 		elbv2   *client.MockIELBV2
+		route53 *client.MockIRoute53
+	}
+
+	hostedZoneResources := []types.StackResourceSummary{
+		{
+			ResourceType:       aws.String("AWS::Route53::HostedZone"),
+			LogicalResourceId:  aws.String("MyHostedZone"),
+			PhysicalResourceId: aws.String("Z0000000000001"),
+		},
+	}
+	protection := func(i int) route53Types.ResourceRecordSetProtection {
+		return route53Types.ResourceRecordSetProtection{
+			RecordName: aws.String(fmt.Sprintf("r%d.example.com.", i)),
+			RecordType: route53Types.RRTypeA,
+		}
+	}
+	manyProtections := make([]route53Types.ResourceRecordSetProtection, 101)
+	for i := range manyProtections {
+		manyProtections[i] = protection(i)
 	}
 
 	cases := []struct {
@@ -404,6 +424,80 @@ func TestDeletionProtectionRemover_Preprocess(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:      "route53 hosted zone with no record set protections",
+			forceMode: false,
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test-stack"),
+				resources: hostedZoneResources,
+			},
+			setup: func(m mocks) {
+				m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("Z0000000000001")).Return([]route53Types.ResourceRecordSetProtection{}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:      "route53 hosted zone with record set protections without force mode",
+			forceMode: false,
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test-stack"),
+				resources: hostedZoneResources,
+			},
+			setup: func(m mocks) {
+				m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("Z0000000000001")).Return([]route53Types.ResourceRecordSetProtection{protection(0)}, nil)
+			},
+			wantErr: true,
+			errMsg:  "AWS::Route53::HostedZone: MyHostedZone (physical: Z0000000000001)",
+		},
+		{
+			name:      "route53 hosted zone with record set protections check error without force mode",
+			forceMode: false,
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test-stack"),
+				resources: hostedZoneResources,
+			},
+			setup: func(m mocks) {
+				m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("Z0000000000001")).Return(nil, fmt.Errorf("ListResourceRecordSetProtectionsError"))
+			},
+			wantErr: true,
+			errMsg:  "DeletionProtectionError",
+		},
+		{
+			name:      "route53 hosted zone with record set protections with force mode",
+			forceMode: true,
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test-stack"),
+				resources: hostedZoneResources,
+			},
+			setup: func(m mocks) {
+				gomock.InOrder(
+					m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("Z0000000000001")).Return(manyProtections, nil),
+					m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("Z0000000000001")).Return(manyProtections, nil),
+					m.route53.EXPECT().DeleteResourceRecordSetProtections(gomock.Any(), aws.String("Z0000000000001"), manyProtections[:100]).Return(nil),
+					m.route53.EXPECT().DeleteResourceRecordSetProtections(gomock.Any(), aws.String("Z0000000000001"), manyProtections[100:]).Return(nil),
+				)
+			},
+			wantErr: false,
+		},
+		{
+			name:      "route53 hosted zone with record set protections with force mode delete error",
+			forceMode: true,
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test-stack"),
+				resources: hostedZoneResources,
+			},
+			setup: func(m mocks) {
+				m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("Z0000000000001")).Return([]route53Types.ResourceRecordSetProtection{protection(0)}, nil).Times(2)
+				m.route53.EXPECT().DeleteResourceRecordSetProtections(gomock.Any(), aws.String("Z0000000000001"), []route53Types.ResourceRecordSetProtection{protection(0)}).Return(fmt.Errorf("DeleteResourceRecordSetProtectionsError"))
+			},
+			wantErr: true,
+			errMsg:  "DeleteResourceRecordSetProtectionsError",
+		},
 	}
 
 	for _, tt := range cases {
@@ -413,6 +507,7 @@ func TestDeletionProtectionRemover_Preprocess(t *testing.T) {
 			mockCognito := client.NewMockICognito(ctrl)
 			mockLogs := client.NewMockICloudWatchLogs(ctrl)
 			mockELBV2 := client.NewMockIELBV2(ctrl)
+			mockRoute53 := client.NewMockIRoute53(ctrl)
 
 			tt.setup(mocks{
 				ec2:     mockEC2,
@@ -420,9 +515,10 @@ func TestDeletionProtectionRemover_Preprocess(t *testing.T) {
 				cognito: mockCognito,
 				logs:    mockLogs,
 				elbv2:   mockELBV2,
+				route53: mockRoute53,
 			})
 
-			remover := NewDeletionProtectionRemover(tt.forceMode, mockEC2, mockRDS, mockCognito, mockLogs, mockELBV2)
+			remover := NewDeletionProtectionRemover(tt.forceMode, mockEC2, mockRDS, mockCognito, mockLogs, mockELBV2, mockRoute53)
 			err := remover.Preprocess(tt.args.ctx, tt.args.stackName, tt.args.resources)
 
 			if (err != nil) != tt.wantErr {

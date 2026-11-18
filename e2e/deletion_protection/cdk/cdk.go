@@ -34,6 +34,9 @@ func NewDeletionProtectionTestStack(scope constructs.Construct, id string, props
 	// Create CloudWatch LogGroup with deletion protection
 	resource.NewLogGroup(stack)
 
+	// Create Route 53 HostedZone (resource record set protections are created by deploy.go)
+	resource.NewHostedZone(stack, id)
+
 	return stack
 }
 

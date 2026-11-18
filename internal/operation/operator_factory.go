@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53resolver"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3files"
@@ -240,6 +241,19 @@ func (f *OperatorFactory) CreateEC2VPCEndpointServiceOperator() *EC2VPCEndpointS
 	return NewEC2VPCEndpointServiceOperator(
 		client.NewEC2Client(
 			sdkEC2Client,
+		),
+	)
+}
+
+func (f *OperatorFactory) CreateRoute53HostedZoneOperator() *Route53HostedZoneOperator {
+	sdkRoute53Client := route53.NewFromConfig(f.config, func(o *route53.Options) {
+		o.RetryMaxAttempts = SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
+	return NewRoute53HostedZoneOperator(
+		client.NewRoute53(
+			sdkRoute53Client,
 		),
 	)
 }

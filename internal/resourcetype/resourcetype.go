@@ -26,7 +26,8 @@ const (
 
 // For Force Deletion and Preprocessors
 const (
-	LambdaFunction = "AWS::Lambda::Function"
+	LambdaFunction    = "AWS::Lambda::Function"
+	Route53HostedZone = "AWS::Route53::HostedZone"
 )
 
 // For Deletion Protection Check
@@ -54,6 +55,7 @@ var ResourceTypes = []string{
 	EC2Subnet,
 	EC2SecurityGroup,
 	EC2VPCEndpointService,
+	Route53HostedZone,
 	Route53ResolverConfig,
 	S3FilesFileSystem,
 	CognitoUserPoolUICustomizationAttachment,

@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/go-to-k/delstack/internal/operation"
 	"github.com/go-to-k/delstack/pkg/client"
 )
@@ -84,6 +85,11 @@ func newDeletionProtectionRemoverFromConfig(config aws.Config, forceMode bool) *
 		o.RetryMode = aws.RetryModeStandard
 	})
 
+	sdkRoute53Client := route53.NewFromConfig(config, func(o *route53.Options) {
+		o.RetryMaxAttempts = operation.SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+
 	return NewDeletionProtectionRemover(
 		forceMode,
 		client.NewEC2Client(sdkEC2Client),
@@ -91,5 +97,6 @@ func newDeletionProtectionRemoverFromConfig(config aws.Config, forceMode bool) *
 		client.NewCognito(sdkCognitoClient),
 		client.NewCloudWatchLogs(sdkLogsClient),
 		client.NewELBV2(sdkELBV2Client),
+		client.NewRoute53(sdkRoute53Client),
 	)
 }
