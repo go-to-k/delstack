@@ -33,6 +33,7 @@ type recordSetTarget struct {
 	hostedZoneId      string
 	name              string
 	recordType        route53Types.RRType
+	setIdentifier     string
 }
 
 type protectedRecordSet struct {
@@ -89,7 +90,7 @@ func (r *Route53RecordSetProtectionRemover) findTargets(
 ) ([]recordSetTarget, error) {
 	templateBody, err := r.cfnClient.GetTemplate(ctx, stackName)
 	if err != nil {
-		if isAccessDenied(err) {
+		if client.IsAccessDeniedError(err) {
 			io.Logger.Warn().Msgf("[%v]: Skipped checking resource record set protections for record sets due to missing permission: %v", aws.ToString(stackName), err)
 			return nil, nil
 		}
@@ -120,6 +121,12 @@ func (r *Route53RecordSetProtectionRemover) findTargets(
 
 	targets := []recordSetTarget{}
 	for _, resource := range recordSetResources {
+		// A record set that failed to create does not exist, and a protection may be the reason it failed.
+		// Such a protection is not owned by the stack, so leave it alone.
+		if resource.ResourceStatus == types.ResourceStatusCreateFailed || aws.ToString(resource.PhysicalResourceId) == "" {
+			continue
+		}
+
 		logicalId := aws.ToString(resource.LogicalResourceId)
 		resourceType := aws.ToString(resource.ResourceType)
 		skip := func(reason string) {
@@ -160,12 +167,14 @@ func (r *Route53RecordSetProtectionRemover) findTargets(
 				continue
 			}
 
+			// The physical resource ID of a RecordSet is the name of the record actually created,
+			// which can differ from the template after a failed update.
 			name, ok := entry["Name"].(string)
-			if !ok && resourceType == resourcetype.Route53RecordSet {
-				// The physical resource ID of a RecordSet is its record name.
-				name, ok = aws.ToString(resource.PhysicalResourceId), resource.PhysicalResourceId != nil
+			if resourceType == resourcetype.Route53RecordSet {
+				name, ok = aws.ToString(resource.PhysicalResourceId), true
 			}
 			recordType, typeOk := entry["Type"].(string)
+			setIdentifier, _ := entry["SetIdentifier"].(string)
 			if !ok || !typeOk {
 				skip("record name or type is not a literal value in the template")
 				continue
@@ -177,6 +186,7 @@ func (r *Route53RecordSetProtectionRemover) findTargets(
 				hostedZoneId:      hostedZoneId,
 				name:              name,
 				recordType:        route53Types.RRType(recordType),
+				setIdentifier:     setIdentifier,
 			})
 		}
 	}
@@ -198,7 +208,7 @@ func (r *Route53RecordSetProtectionRemover) findProtectedRecordSets(ctx context.
 	for _, hostedZoneId := range hostedZoneIds {
 		protections, err := r.route53Client.ListResourceRecordSetProtections(ctx, aws.String(hostedZoneId))
 		if err != nil {
-			if isAccessDenied(err) {
+			if client.IsAccessDeniedError(err) {
 				io.Logger.Warn().Msgf("[%v]: Skipped checking resource record set protections in hosted zone %s due to missing permission: %v", aws.ToString(stackName), hostedZoneId, err)
 				continue
 			}
@@ -219,6 +229,10 @@ func (r *Route53RecordSetProtectionRemover) findProtectedRecordSets(ctx context.
 }
 
 func (r *Route53RecordSetProtectionRemover) deleteProtections(ctx context.Context, stackName *string, protectedRecordSets []protectedRecordSet) error {
+	if err := r.checkProtectionsOwnedByStack(ctx, protectedRecordSets); err != nil {
+		return err
+	}
+
 	protectionsByZone := map[string][]route53Types.ResourceRecordSetProtection{}
 	hostedZoneIds := []string{}
 	for _, p := range protectedRecordSets {
@@ -250,6 +264,42 @@ func (r *Route53RecordSetProtectionRemover) deleteProtections(ctx context.Contex
 	return nil
 }
 
+// A protection covers every record set with the name and type, including the ones with other set identifiers
+// (e.g. weighted records) that may be managed outside the stack. Refuse to delete such a protection.
+func (r *Route53RecordSetProtectionRemover) checkProtectionsOwnedByStack(ctx context.Context, protectedRecordSets []protectedRecordSet) error {
+	type key struct {
+		hostedZoneId string
+		name         string
+		recordType   route53Types.RRType
+	}
+	setIdentifiersByKey := map[key][]string{}
+	keys := []key{}
+	for _, p := range protectedRecordSets {
+		k := key{p.target.hostedZoneId, normalizeRecordName(p.target.name), p.target.recordType}
+		if _, ok := setIdentifiersByKey[k]; !ok {
+			keys = append(keys, k)
+		}
+		setIdentifiersByKey[k] = append(setIdentifiersByKey[k], p.target.setIdentifier)
+	}
+
+	lines := []string{}
+	for _, k := range keys {
+		recordSets, err := r.route53Client.ListResourceRecordSetsByNameAndType(ctx, aws.String(k.hostedZoneId), aws.String(k.name), k.recordType)
+		if err != nil {
+			return fmt.Errorf("DeletionProtectionError: failed to list record sets %s %s in hosted zone %s: %w", k.name, k.recordType, k.hostedZoneId, err)
+		}
+		for _, recordSet := range recordSets {
+			if !slices.Contains(setIdentifiersByKey[k], aws.ToString(recordSet.SetIdentifier)) {
+				lines = append(lines, fmt.Sprintf("- %s %s (set identifier: %s) in hosted zone %s", k.name, k.recordType, aws.ToString(recordSet.SetIdentifier), k.hostedZoneId))
+			}
+		}
+	}
+	if len(lines) > 0 {
+		return fmt.Errorf("DeletionProtectionError: the resource record set protections also protect the following record sets not managed by the stack, so they were not deleted:\n  %s\ndelete the protections manually if intended", strings.Join(lines, "\n  "))
+	}
+	return nil
+}
+
 func (r *Route53RecordSetProtectionRemover) buildProtectionError(protectedRecordSets []protectedRecordSet) error {
 	lines := make([]string, 0, len(protectedRecordSets))
 	for _, p := range protectedRecordSets {
@@ -276,8 +326,8 @@ func (h *hostedZoneResolver) resolve(ctx context.Context, entry map[string]any, 
 			if id, ok := value.(string); ok {
 				return normalizeHostedZoneId(id), "", nil
 			}
-			if ref, ok := value.(map[string]any)["Ref"].(string); ok {
-				if resource, ok := h.stackResources[ref]; ok && aws.ToString(resource.ResourceType) == resourcetype.Route53HostedZone {
+			if logicalId := refOrGetAttLogicalId(value); logicalId != "" {
+				if resource, ok := h.stackResources[logicalId]; ok && aws.ToString(resource.ResourceType) == resourcetype.Route53HostedZone {
 					return normalizeHostedZoneId(aws.ToString(resource.PhysicalResourceId)), "", nil
 				}
 			}
@@ -303,7 +353,7 @@ func (h *hostedZoneResolver) resolveByName(ctx context.Context, name string) (st
 
 	hostedZones, err := h.route53Client.ListHostedZonesByName(ctx, aws.String(name))
 	if err != nil {
-		if isAccessDenied(err) {
+		if client.IsAccessDeniedError(err) {
 			return "", fmt.Sprintf("missing permission to find hosted zone %s: %v", name, err), nil
 		}
 		return "", "", fmt.Errorf("DeletionProtectionError: failed to find hosted zone %s: %w", name, err)
@@ -315,6 +365,26 @@ func (h *hostedZoneResolver) resolveByName(ctx context.Context, name string) (st
 	id := normalizeHostedZoneId(aws.ToString(hostedZones[0].Id))
 	h.zoneIdsByName[key] = id
 	return id, "", nil
+}
+
+// refOrGetAttLogicalId returns the logical ID of {"Ref": "X"} or {"Fn::GetAtt": "X.Id" | ["X", "Id"]}.
+func refOrGetAttLogicalId(value any) string {
+	mapping, _ := value.(map[string]any)
+	if ref, ok := mapping["Ref"].(string); ok {
+		return ref
+	}
+	switch getAtt := mapping["Fn::GetAtt"].(type) {
+	case string:
+		if logicalId, attribute, ok := strings.Cut(getAtt, "."); ok && attribute == "Id" {
+			return logicalId
+		}
+	case []any:
+		if len(getAtt) == 2 && getAtt[1] == "Id" {
+			logicalId, _ := getAtt[0].(string)
+			return logicalId
+		}
+	}
+	return ""
 }
 
 func normalizeHostedZoneId(id string) string {

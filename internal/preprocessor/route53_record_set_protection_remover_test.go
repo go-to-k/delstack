@@ -29,6 +29,17 @@ func TestRoute53RecordSetProtectionRemover_Preprocess(t *testing.T) {
 		LogicalResourceId:  aws.String("Group"),
 		PhysicalResourceId: aws.String("group-id"),
 	}
+	wildcardRecordSet := types.StackResourceSummary{
+		ResourceType:       aws.String("AWS::Route53::RecordSet"),
+		LogicalResourceId:  aws.String("Www"),
+		PhysicalResourceId: aws.String("*.example.com"),
+	}
+	createFailedRecordSet := types.StackResourceSummary{
+		ResourceType:       aws.String("AWS::Route53::RecordSet"),
+		LogicalResourceId:  aws.String("Www"),
+		PhysicalResourceId: aws.String("www.example.com"),
+		ResourceStatus:     types.ResourceStatusCreateFailed,
+	}
 	inStackZone := types.StackResourceSummary{
 		ResourceType:       aws.String("AWS::Route53::HostedZone"),
 		LogicalResourceId:  aws.String("Zone"),
@@ -82,18 +93,21 @@ func TestRoute53RecordSetProtectionRemover_Preprocess(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "AWS::Route53::RecordSet: Www (WWW.example.com A in hosted zone ZEXT)",
+			errMsg:  "AWS::Route53::RecordSet: Www (www.example.com A in hosted zone ZEXT)",
 		},
 		{
 			name:      "record set in external hosted zone with protection with force mode deletes only matching protections",
 			forceMode: true,
-			resources: []types.StackResourceSummary{recordSet},
+			resources: []types.StackResourceSummary{wildcardRecordSet},
 			setup: func(m mocks) {
 				m.cfn.EXPECT().GetTemplate(gomock.Any(), aws.String("test-stack")).Return(recordSetJSON(`{"HostedZoneId":"ZEXT","Name":"*.example.com","Type":"A"}`), nil)
 				m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("ZEXT")).Return([]route53Types.ResourceRecordSetProtection{
 					protection(`\052.example.com.`, route53Types.RRTypeA),
 					protection("other.example.com.", route53Types.RRTypeA),
 				}, nil)
+				m.route53.EXPECT().ListResourceRecordSetsByNameAndType(gomock.Any(), aws.String("ZEXT"), aws.String("*.example.com."), route53Types.RRTypeA).Return(
+					[]route53Types.ResourceRecordSet{{Name: aws.String(`\052.example.com.`), Type: route53Types.RRTypeA}}, nil,
+				)
 				m.route53.EXPECT().DeleteResourceRecordSetProtections(gomock.Any(), aws.String("ZEXT"), []route53Types.ResourceRecordSetProtection{
 					protection(`\052.example.com.`, route53Types.RRTypeA),
 				}).Return(nil)
@@ -108,6 +122,7 @@ func TestRoute53RecordSetProtectionRemover_Preprocess(t *testing.T) {
 				m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("ZEXT")).Return([]route53Types.ResourceRecordSetProtection{
 					protection("www.example.com.", route53Types.RRTypeA),
 				}, nil)
+				m.route53.EXPECT().ListResourceRecordSetsByNameAndType(gomock.Any(), aws.String("ZEXT"), aws.String("www.example.com."), route53Types.RRTypeA).Return([]route53Types.ResourceRecordSet{}, nil)
 				m.route53.EXPECT().DeleteResourceRecordSetProtections(gomock.Any(), aws.String("ZEXT"), gomock.Any()).Return(fmt.Errorf("DeleteResourceRecordSetProtectionsError"))
 			},
 			wantErr: true,
@@ -121,7 +136,7 @@ func TestRoute53RecordSetProtectionRemover_Preprocess(t *testing.T) {
 			},
 		},
 		{
-			name:      "record set with non-literal name falls back to physical resource id",
+			name:      "record set name is taken from the physical resource id",
 			resources: []types.StackResourceSummary{recordSet},
 			setup: func(m mocks) {
 				m.cfn.EXPECT().GetTemplate(gomock.Any(), aws.String("test-stack")).Return(recordSetJSON(`{"HostedZoneId":"ZEXT","Name":{"Fn::Sub":"www.${Domain}"},"Type":"A"}`), nil)
@@ -164,6 +179,10 @@ func TestRoute53RecordSetProtectionRemover_Preprocess(t *testing.T) {
 				m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("ZEXT")).Return([]route53Types.ResourceRecordSetProtection{
 					protection("a.example.com.", route53Types.RRTypeA),
 				}, nil)
+				m.route53.EXPECT().ListResourceRecordSetsByNameAndType(gomock.Any(), aws.String("ZEXT"), aws.String("a.example.com."), route53Types.RRTypeA).Return([]route53Types.ResourceRecordSet{
+					{Name: aws.String("a.example.com."), Type: route53Types.RRTypeA, SetIdentifier: aws.String("one")},
+					{Name: aws.String("a.example.com."), Type: route53Types.RRTypeA, SetIdentifier: aws.String("two")},
+				}, nil)
 				m.route53.EXPECT().DeleteResourceRecordSetProtections(gomock.Any(), aws.String("ZEXT"), []route53Types.ResourceRecordSetProtection{
 					protection("a.example.com.", route53Types.RRTypeA),
 				}).Return(nil)
@@ -180,6 +199,50 @@ func TestRoute53RecordSetProtectionRemover_Preprocess(t *testing.T) {
 					{Id: aws.String("/hostedzone/ZPUBLIC"), Name: aws.String("example.com.")},
 					{Id: aws.String("/hostedzone/ZPRIVATE"), Name: aws.String("example.com.")},
 				}, nil)
+			},
+		},
+		{
+			name:      "record set with force mode refuses to delete a protection also covering record sets not in the stack",
+			forceMode: true,
+			resources: []types.StackResourceSummary{recordSet},
+			setup: func(m mocks) {
+				m.cfn.EXPECT().GetTemplate(gomock.Any(), aws.String("test-stack")).Return(recordSetJSON(`{"HostedZoneId":"ZEXT","Name":"www.example.com","Type":"A","SetIdentifier":"mine"}`), nil)
+				m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("ZEXT")).Return([]route53Types.ResourceRecordSetProtection{
+					protection("www.example.com.", route53Types.RRTypeA),
+				}, nil)
+				m.route53.EXPECT().ListResourceRecordSetsByNameAndType(gomock.Any(), aws.String("ZEXT"), aws.String("www.example.com."), route53Types.RRTypeA).Return([]route53Types.ResourceRecordSet{
+					{Name: aws.String("www.example.com."), Type: route53Types.RRTypeA, SetIdentifier: aws.String("mine")},
+					{Name: aws.String("www.example.com."), Type: route53Types.RRTypeA, SetIdentifier: aws.String("theirs")},
+				}, nil)
+			},
+			wantErr: true,
+			errMsg:  "www.example.com. A (set identifier: theirs) in hosted zone ZEXT",
+		},
+		{
+			name:      "record set that failed to create is skipped",
+			forceMode: true,
+			resources: []types.StackResourceSummary{createFailedRecordSet},
+			setup: func(m mocks) {
+				m.cfn.EXPECT().GetTemplate(gomock.Any(), aws.String("test-stack")).Return(recordSetJSON(`{"HostedZoneId":"ZEXT","Name":"www.example.com","Type":"A"}`), nil)
+			},
+		},
+		{
+			name:      "record set with get att to hosted zone in the stack is skipped",
+			resources: []types.StackResourceSummary{recordSet, inStackZone},
+			setup: func(m mocks) {
+				m.cfn.EXPECT().GetTemplate(gomock.Any(), aws.String("test-stack")).Return(aws.String(
+					"Resources:\n  Www:\n    Type: AWS::Route53::RecordSet\n    Properties:\n      HostedZoneId: !GetAtt Zone.Id\n      Name: www.example.com\n      Type: A\n",
+				), nil)
+			},
+		},
+		{
+			name:      "record set group entry overrides the hosted zone of the group",
+			resources: []types.StackResourceSummary{recordSetGroup},
+			setup: func(m mocks) {
+				m.cfn.EXPECT().GetTemplate(gomock.Any(), aws.String("test-stack")).Return(aws.String(
+					`{"Resources":{"Group":{"Type":"AWS::Route53::RecordSetGroup","Properties":{"HostedZoneId":"ZGROUP","RecordSets":[{"HostedZoneId":"ZENTRY","Name":"a.example.com","Type":"A"}]}}}}`,
+				), nil)
+				m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("ZENTRY")).Return([]route53Types.ResourceRecordSetProtection{}, nil)
 			},
 		},
 		{

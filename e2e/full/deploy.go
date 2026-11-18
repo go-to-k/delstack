@@ -1632,14 +1632,20 @@ func (s *DeployStackService) enableHostedZoneDNSSEC(stackName string) error {
 		return fmt.Errorf("hosted zone or KMS key for DNSSEC not found in stack %s", stackName)
 	}
 
-	if _, err := s.Route53Client.CreateKeySigningKey(s.Ctx, &route53.CreateKeySigningKeyInput{
+	kskOutput, err := s.Route53Client.CreateKeySigningKey(s.Ctx, &route53.CreateKeySigningKeyInput{
 		CallerReference:         aws.String(fmt.Sprintf("delstack-e2e-%d", time.Now().UnixNano())),
 		HostedZoneId:            aws.String(hostedZoneId),
 		KeyManagementServiceArn: aws.String(fmt.Sprintf("arn:aws:kms:%s:%s:key/%s", region, s.AccountID, keyId)),
 		Name:                    aws.String("delstack_e2e_ksk"),
 		Status:                  aws.String("ACTIVE"),
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to create key-signing key in hosted zone %s: %v", hostedZoneId, err)
+	}
+	if err := route53.NewResourceRecordSetsChangedWaiter(s.Route53Client).Wait(s.Ctx, &route53.GetChangeInput{
+		Id: kskOutput.ChangeInfo.Id,
+	}, 5*time.Minute); err != nil {
+		return fmt.Errorf("failed to wait for key-signing key creation in hosted zone %s: %v", hostedZoneId, err)
 	}
 
 	if _, err := s.Route53Client.EnableHostedZoneDNSSEC(s.Ctx, &route53.EnableHostedZoneDNSSECInput{

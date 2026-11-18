@@ -622,3 +622,72 @@ func TestRoute53_DisableHostedZoneDNSSEC(t *testing.T) {
 		})
 	}
 }
+
+func TestRoute53_ListResourceRecordSetsByNameAndType(t *testing.T) {
+	recordSet := func(name string, recordType types.RRType, setIdentifier string) types.ResourceRecordSet {
+		return types.ResourceRecordSet{Name: aws.String(name), Type: recordType, SetIdentifier: aws.String(setIdentifier)}
+	}
+
+	cases := []struct {
+		name               string
+		withAPIOptionsFunc func(*middleware.Stack) error
+		want               []types.ResourceRecordSet
+		wantErr            bool
+	}{
+		{
+			name: "list only record sets with the name and type",
+			withAPIOptionsFunc: route53FinalizeMock("ListResourceRecordSetsByNameAndTypeMock", &route53.ListResourceRecordSetsOutput{
+				ResourceRecordSets: []types.ResourceRecordSet{
+					recordSet("www.example.com.", types.RRTypeA, "one"),
+					recordSet("www.example.com.", types.RRTypeA, "two"),
+					recordSet("www.example.com.", types.RRTypeAaaa, "one"),
+					recordSet("zzz.example.com.", types.RRTypeA, "one"),
+				},
+				IsTruncated: true,
+			}, nil),
+			want: []types.ResourceRecordSet{
+				recordSet("www.example.com.", types.RRTypeA, "one"),
+				recordSet("www.example.com.", types.RRTypeA, "two"),
+			},
+		},
+		{
+			name:               "list record sets failure",
+			withAPIOptionsFunc: route53FinalizeMock("ListResourceRecordSetsByNameAndTypeErrorMock", &route53.ListResourceRecordSetsOutput{}, fmt.Errorf("ListResourceRecordSetsError")),
+			wantErr:            true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			route53Client := newRoute53ClientForTest(t, ctx, tt.withAPIOptionsFunc)
+
+			output, err := route53Client.ListResourceRecordSetsByNameAndType(ctx, aws.String("Z0000000000001"), aws.String("WWW.example.com"), types.RRTypeA)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("error = %#v, wantErr %#v", err, tt.wantErr)
+			}
+			if !tt.wantErr && !reflect.DeepEqual(output, tt.want) {
+				t.Errorf("output = %#v, want %#v", output, tt.want)
+			}
+		})
+	}
+}
+
+func TestRoute53_ListHostedZonesByName(t *testing.T) {
+	ctx := context.Background()
+	route53Client := newRoute53ClientForTest(t, ctx, route53FinalizeMock("ListHostedZonesByNameMock", &route53.ListHostedZonesByNameOutput{
+		HostedZones: []types.HostedZone{
+			{Id: aws.String("/hostedzone/Z1"), Name: aws.String("example.com.")},
+			{Id: aws.String("/hostedzone/Z2"), Name: aws.String("example.com.")},
+			{Id: aws.String("/hostedzone/Z3"), Name: aws.String("example.net.")},
+		},
+	}, nil))
+
+	output, err := route53Client.ListHostedZonesByName(ctx, aws.String("EXAMPLE.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(output) != 2 || aws.ToString(output[0].Id) != "/hostedzone/Z1" || aws.ToString(output[1].Id) != "/hostedzone/Z2" {
+		t.Errorf("output = %#v", output)
+	}
+}

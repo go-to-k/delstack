@@ -23,6 +23,7 @@ type IRoute53 interface {
 	GetDNSSECStatus(ctx context.Context, hostedZoneId *string) (*types.DNSSECStatus, error)
 	DisableHostedZoneDNSSEC(ctx context.Context, hostedZoneId *string) error
 	ListHostedZonesByName(ctx context.Context, dnsName *string) ([]types.HostedZone, error)
+	ListResourceRecordSetsByNameAndType(ctx context.Context, hostedZoneId *string, name *string, recordType types.RRType) ([]types.ResourceRecordSet, error)
 }
 
 var _ IRoute53 = (*Route53)(nil)
@@ -263,4 +264,34 @@ func (r *Route53) ListHostedZonesByName(ctx context.Context, dnsName *string) ([
 		hostedZones = append(hostedZones, hostedZone)
 	}
 	return hostedZones, nil
+}
+
+// ListResourceRecordSetsByNameAndType returns the record sets with exactly the specified name and type
+// (e.g. weighted record sets with different set identifiers).
+func (r *Route53) ListResourceRecordSetsByNameAndType(ctx context.Context, hostedZoneId *string, name *string, recordType types.RRType) ([]types.ResourceRecordSet, error) {
+	recordSets := []types.ResourceRecordSet{}
+
+	paginator := route53.NewListResourceRecordSetsPaginator(r.client, &route53.ListResourceRecordSetsInput{
+		HostedZoneId:    hostedZoneId,
+		StartRecordName: name,
+		StartRecordType: recordType,
+	})
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, &ClientError{
+				ResourceName: hostedZoneId,
+				Err:          err,
+			}
+		}
+		// Record sets are sorted by name and type starting from the specified ones, so stop at the first other one.
+		for _, recordSet := range output.ResourceRecordSets {
+			if !strings.EqualFold(strings.TrimSuffix(aws.ToString(recordSet.Name), "."), strings.TrimSuffix(aws.ToString(name), ".")) || recordSet.Type != recordType {
+				return recordSets, nil
+			}
+			recordSets = append(recordSets, recordSet)
+		}
+	}
+
+	return recordSets, nil
 }

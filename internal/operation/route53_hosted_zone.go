@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	route53Types "github.com/aws/aws-sdk-go-v2/service/route53/types"
+	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -135,6 +136,12 @@ func (o *Route53HostedZoneOperator) DeleteRoute53HostedZone(ctx context.Context,
 func (o *Route53HostedZoneOperator) disableDNSSEC(ctx context.Context, hostedZoneId *string) error {
 	status, err := o.client.GetDNSSECStatus(ctx, hostedZoneId)
 	if err != nil {
+		// Do not block deletions that worked before for roles without the permission.
+		// If DNSSEC signing is enabled, deleting the hosted zone fails instead.
+		if client.IsAccessDeniedError(err) {
+			io.Logger.Warn().Msgf("Skipped checking DNSSEC signing for hosted zone %s due to missing permission: %v", aws.ToString(hostedZoneId), err)
+			return nil
+		}
 		return err
 	}
 	if isDNSSECNotSigning(status) {

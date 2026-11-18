@@ -14,7 +14,7 @@ import (
 // Record sets are created and DNSSEC signing is enabled outside of CFn by deploy.go, so the HostedZone fails to delete.
 // The domain is not delegated, so the zone never serves real DNS traffic.
 func NewRoute53HostedZone(scope constructs.Construct, resourcePrefix string) {
-	awsroute53.NewCfnHostedZone(scope, jsii.String("HostedZone"), &awsroute53.CfnHostedZoneProps{
+	hostedZone := awsroute53.NewCfnHostedZone(scope, jsii.String("HostedZone"), &awsroute53.CfnHostedZoneProps{
 		Name: jsii.String(strings.ToLower(resourcePrefix) + ".delstack-e2e.com"),
 	})
 
@@ -25,6 +25,8 @@ func NewRoute53HostedZone(scope constructs.Construct, resourcePrefix string) {
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 		PendingWindow: awscdk.Duration_Days(jsii.Number(7)),
 	})
+	// Delete the hosted zone before the key, so that DNSSEC signing is disabled while the key is still available.
+	hostedZone.AddDependency(key.Node().DefaultChild().(awscdk.CfnResource))
 	key.AddToResourcePolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
 		Principals: &[]awsiam.IPrincipal{awsiam.NewServicePrincipal(jsii.String("dnssec-route53.amazonaws.com"), nil)},
 		Actions:    jsii.Strings("kms:DescribeKey", "kms:GetPublicKey", "kms:Sign"),

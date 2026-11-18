@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfnTypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
+	"github.com/aws/smithy-go"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 	gomock "go.uber.org/mock/gomock"
@@ -289,6 +290,23 @@ func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone(t *testing.T) {
 					m.EXPECT().DeleteResourceRecordSets(gomock.Any(), aws.String("Z0000000000001"), []types.ResourceRecordSet{a}).Return(nil),
 					m.EXPECT().DeleteHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(nil),
 				)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete hosted zone successfully when DNSSEC status access denied",
+			args: args{
+				ctx:          context.Background(),
+				hostedZoneId: aws.String("Z0000000000001"),
+			},
+			prepareMockFn: func(m *client.MockIRoute53) {
+				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
+				m.EXPECT().GetDNSSECStatus(gomock.Any(), aws.String("Z0000000000001")).Return(nil, &client.ClientError{
+					Err: &smithy.GenericAPIError{Code: "AccessDenied", Message: "not authorized"},
+				})
+				m.EXPECT().ListResourceRecordSets(gomock.Any(), aws.String("Z0000000000001")).Return([]types.ResourceRecordSet{soa, ns}, nil)
+				m.EXPECT().DeleteHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(nil)
 			},
 			want:    nil,
 			wantErr: false,

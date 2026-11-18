@@ -185,3 +185,18 @@ func (mr *MockIRoute53MockRecorder) ListResourceRecordSets(ctx, hostedZoneId any
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListResourceRecordSets", reflect.TypeOf((*MockIRoute53)(nil).ListResourceRecordSets), ctx, hostedZoneId)
 }
+
+// ListResourceRecordSetsByNameAndType mocks base method.
+func (m *MockIRoute53) ListResourceRecordSetsByNameAndType(ctx context.Context, hostedZoneId, name *string, recordType types.RRType) ([]types.ResourceRecordSet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListResourceRecordSetsByNameAndType", ctx, hostedZoneId, name, recordType)
+	ret0, _ := ret[0].([]types.ResourceRecordSet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListResourceRecordSetsByNameAndType indicates an expected call of ListResourceRecordSetsByNameAndType.
+func (mr *MockIRoute53MockRecorder) ListResourceRecordSetsByNameAndType(ctx, hostedZoneId, name, recordType any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListResourceRecordSetsByNameAndType", reflect.TypeOf((*MockIRoute53)(nil).ListResourceRecordSetsByNameAndType), ctx, hostedZoneId, name, recordType)
+}
