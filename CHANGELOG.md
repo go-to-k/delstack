@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2.17.0](https://github.com/go-to-k/delstack/compare/v2.16.0...v2.17.0) - 2026-11-18
+
+- feat: support force deletion of AWS::Route53::HostedZone by @go-to-k in https://github.com/go-to-k/delstack/pull/691
+
 ## [v2.16.0](https://github.com/go-to-k/delstack/compare/v2.15.0...v2.16.0) - 2026-11-11
 
 - chore: pin mockgen and golangci-lint versions in the repository by @go-to-k in https://github.com/go-to-k/delstack/pull/684
