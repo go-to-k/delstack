@@ -20,8 +20,10 @@ type IRoute53 interface {
 	DeleteTrafficPolicyInstance(ctx context.Context, trafficPolicyInstanceId *string) error
 	ListResourceRecordSetProtections(ctx context.Context, hostedZoneId *string) ([]types.ResourceRecordSetProtection, error)
 	DeleteResourceRecordSetProtections(ctx context.Context, hostedZoneId *string, protections []types.ResourceRecordSetProtection) error
-	GetDNSSECStatus(ctx context.Context, hostedZoneId *string) (*types.DNSSECStatus, error)
+	GetDNSSEC(ctx context.Context, hostedZoneId *string) (*types.DNSSECStatus, []types.KeySigningKey, error)
 	DisableHostedZoneDNSSEC(ctx context.Context, hostedZoneId *string) error
+	DeactivateKeySigningKey(ctx context.Context, hostedZoneId *string, name *string) error
+	DeleteKeySigningKey(ctx context.Context, hostedZoneId *string, name *string) error
 	ListHostedZonesByName(ctx context.Context, dnsName *string) ([]types.HostedZone, error)
 	ListResourceRecordSetsByNameAndType(ctx context.Context, hostedZoneId *string, name *string, recordType types.RRType) ([]types.ResourceRecordSet, error)
 }
@@ -206,19 +208,61 @@ func (r *Route53) DeleteResourceRecordSetProtections(ctx context.Context, hosted
 	return nil
 }
 
-func (r *Route53) GetDNSSECStatus(ctx context.Context, hostedZoneId *string) (*types.DNSSECStatus, error) {
+func (r *Route53) GetDNSSEC(ctx context.Context, hostedZoneId *string) (*types.DNSSECStatus, []types.KeySigningKey, error) {
 	input := &route53.GetDNSSECInput{
 		HostedZoneId: hostedZoneId,
 	}
 
 	output, err := r.client.GetDNSSEC(ctx, input)
 	if err != nil {
-		return nil, &ClientError{
+		return nil, nil, &ClientError{
 			ResourceName: hostedZoneId,
 			Err:          err,
 		}
 	}
-	return output.Status, nil
+	return output.Status, output.KeySigningKeys, nil
+}
+
+// DeactivateKeySigningKey succeeds without doing anything when the key-signing key no longer exists.
+func (r *Route53) DeactivateKeySigningKey(ctx context.Context, hostedZoneId *string, name *string) error {
+	input := &route53.DeactivateKeySigningKeyInput{
+		HostedZoneId: hostedZoneId,
+		Name:         name,
+	}
+
+	_, err := r.client.DeactivateKeySigningKey(ctx, input)
+	if err != nil {
+		var notFound *types.NoSuchKeySigningKey
+		if errors.As(err, &notFound) {
+			return nil
+		}
+		return &ClientError{
+			ResourceName: hostedZoneId,
+			Err:          err,
+		}
+	}
+	return nil
+}
+
+// DeleteKeySigningKey succeeds without doing anything when the key-signing key no longer exists.
+func (r *Route53) DeleteKeySigningKey(ctx context.Context, hostedZoneId *string, name *string) error {
+	input := &route53.DeleteKeySigningKeyInput{
+		HostedZoneId: hostedZoneId,
+		Name:         name,
+	}
+
+	_, err := r.client.DeleteKeySigningKey(ctx, input)
+	if err != nil {
+		var notFound *types.NoSuchKeySigningKey
+		if errors.As(err, &notFound) {
+			return nil
+		}
+		return &ClientError{
+			ResourceName: hostedZoneId,
+			Err:          err,
+		}
+	}
+	return nil
 }
 
 // DisableHostedZoneDNSSEC succeeds without doing anything when DNSSEC signing is not enabled.

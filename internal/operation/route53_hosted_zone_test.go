@@ -266,7 +266,7 @@ func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIRoute53) {
 				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
-				m.EXPECT().GetDNSSECStatus(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, nil)
+				m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, nil, nil)
 				m.EXPECT().ListResourceRecordSets(gomock.Any(), aws.String("Z0000000000001")).Return([]types.ResourceRecordSet{soa, ns}, nil)
 				m.EXPECT().DeleteHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(nil)
 			},
@@ -282,10 +282,10 @@ func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone(t *testing.T) {
 			prepareMockFn: func(m *client.MockIRoute53) {
 				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
 				gomock.InOrder(
-					m.EXPECT().GetDNSSECStatus(gomock.Any(), aws.String("Z0000000000001")).Return(signing, nil),
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(signing, nil, nil),
 					m.EXPECT().DisableHostedZoneDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(nil),
-					m.EXPECT().GetDNSSECStatus(gomock.Any(), aws.String("Z0000000000001")).Return(deleting, nil),
-					m.EXPECT().GetDNSSECStatus(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, nil),
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(deleting, nil, nil),
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, nil, nil),
 					m.EXPECT().ListResourceRecordSets(gomock.Any(), aws.String("Z0000000000001")).Return([]types.ResourceRecordSet{soa, ns, a}, nil),
 					m.EXPECT().DeleteResourceRecordSets(gomock.Any(), aws.String("Z0000000000001"), []types.ResourceRecordSet{a}).Return(nil),
 					m.EXPECT().DeleteHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(nil),
@@ -302,7 +302,7 @@ func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIRoute53) {
 				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
-				m.EXPECT().GetDNSSECStatus(gomock.Any(), aws.String("Z0000000000001")).Return(nil, &client.ClientError{
+				m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(nil, nil, &client.ClientError{
 					Err: &smithy.GenericAPIError{Code: "AccessDenied", Message: "not authorized"},
 				})
 				m.EXPECT().ListResourceRecordSets(gomock.Any(), aws.String("Z0000000000001")).Return([]types.ResourceRecordSet{soa, ns}, nil)
@@ -312,6 +312,79 @@ func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "delete hosted zone successfully after disabling DNSSEC signing and deleting key-signing keys",
+			args: args{
+				ctx:          context.Background(),
+				hostedZoneId: aws.String("Z0000000000001"),
+			},
+			prepareMockFn: func(m *client.MockIRoute53) {
+				activeKsk := types.KeySigningKey{Name: aws.String("ksk_active"), Status: aws.String("ACTIVE")}
+				inactiveKsk := types.KeySigningKey{Name: aws.String("ksk_inactive"), Status: aws.String("INACTIVE")}
+				deactivatedKsk := types.KeySigningKey{Name: aws.String("ksk_active"), Status: aws.String("INACTIVE")}
+				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
+				gomock.InOrder(
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(signing, []types.KeySigningKey{activeKsk, inactiveKsk}, nil),
+					m.EXPECT().DisableHostedZoneDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(nil),
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{activeKsk, inactiveKsk}, nil),
+					m.EXPECT().DeactivateKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk_active")).Return(nil),
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{activeKsk, inactiveKsk}, nil),
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{deactivatedKsk, inactiveKsk}, nil),
+					m.EXPECT().DeleteKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk_active")).Return(nil),
+					m.EXPECT().DeleteKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk_inactive")).Return(nil),
+					m.EXPECT().ListResourceRecordSets(gomock.Any(), aws.String("Z0000000000001")).Return([]types.ResourceRecordSet{soa, ns}, nil),
+					m.EXPECT().DeleteHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(nil),
+				)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete hosted zone successfully after deleting inactive key-signing keys without DNSSEC signing",
+			args: args{
+				ctx:          context.Background(),
+				hostedZoneId: aws.String("Z0000000000001"),
+			},
+			prepareMockFn: func(m *client.MockIRoute53) {
+				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
+				gomock.InOrder(
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{{Name: aws.String("ksk"), Status: aws.String("INACTIVE")}}, nil),
+					m.EXPECT().DeleteKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk")).Return(nil),
+					m.EXPECT().ListResourceRecordSets(gomock.Any(), aws.String("Z0000000000001")).Return([]types.ResourceRecordSet{soa, ns}, nil),
+					m.EXPECT().DeleteHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(nil),
+				)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete hosted zone failure for deactivate key-signing key errors",
+			args: args{
+				ctx:          context.Background(),
+				hostedZoneId: aws.String("Z0000000000001"),
+			},
+			prepareMockFn: func(m *client.MockIRoute53) {
+				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
+				m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{{Name: aws.String("ksk"), Status: aws.String("ACTIVE")}}, nil)
+				m.EXPECT().DeactivateKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk")).Return(fmt.Errorf("DeactivateKeySigningKeyError"))
+			},
+			want:    fmt.Errorf("DeactivateKeySigningKeyError"),
+			wantErr: true,
+		},
+		{
+			name: "delete hosted zone failure for delete key-signing key errors",
+			args: args{
+				ctx:          context.Background(),
+				hostedZoneId: aws.String("Z0000000000001"),
+			},
+			prepareMockFn: func(m *client.MockIRoute53) {
+				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
+				m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{{Name: aws.String("ksk"), Status: aws.String("INACTIVE")}}, nil)
+				m.EXPECT().DeleteKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk")).Return(fmt.Errorf("DeleteKeySigningKeyError"))
+			},
+			want:    fmt.Errorf("DeleteKeySigningKeyError"),
+			wantErr: true,
+		},
+		{
 			name: "delete hosted zone failure for get DNSSEC status errors",
 			args: args{
 				ctx:          context.Background(),
@@ -319,7 +392,7 @@ func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIRoute53) {
 				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
-				m.EXPECT().GetDNSSECStatus(gomock.Any(), aws.String("Z0000000000001")).Return(nil, fmt.Errorf("GetDNSSECError"))
+				m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(nil, nil, fmt.Errorf("GetDNSSECError"))
 			},
 			want:    fmt.Errorf("GetDNSSECError"),
 			wantErr: true,
@@ -332,7 +405,7 @@ func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIRoute53) {
 				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
-				m.EXPECT().GetDNSSECStatus(gomock.Any(), aws.String("Z0000000000001")).Return(signing, nil)
+				m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(signing, nil, nil)
 				m.EXPECT().DisableHostedZoneDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(fmt.Errorf("DisableHostedZoneDNSSECError"))
 			},
 			want:    fmt.Errorf("DisableHostedZoneDNSSECError"),
@@ -346,9 +419,9 @@ func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone(t *testing.T) {
 			},
 			prepareMockFn: func(m *client.MockIRoute53) {
 				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
-				m.EXPECT().GetDNSSECStatus(gomock.Any(), aws.String("Z0000000000001")).Return(signing, nil)
+				m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(signing, nil, nil)
 				m.EXPECT().DisableHostedZoneDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(nil)
-				m.EXPECT().GetDNSSECStatus(gomock.Any(), aws.String("Z0000000000001")).Return(deleting, nil).Times(route53WaitMaxAttempts)
+				m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(deleting, nil, nil).Times(route53WaitMaxAttempts)
 			},
 			want:    fmt.Errorf("[resource Z0000000000001] timed out waiting for DNSSEC signing to be disabled"),
 			wantErr: true,

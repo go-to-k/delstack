@@ -40,6 +40,20 @@ func (m *MockIRoute53) EXPECT() *MockIRoute53MockRecorder {
 	return m.recorder
 }
 
+// DeactivateKeySigningKey mocks base method.
+func (m *MockIRoute53) DeactivateKeySigningKey(ctx context.Context, hostedZoneId, name *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeactivateKeySigningKey", ctx, hostedZoneId, name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeactivateKeySigningKey indicates an expected call of DeactivateKeySigningKey.
+func (mr *MockIRoute53MockRecorder) DeactivateKeySigningKey(ctx, hostedZoneId, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateKeySigningKey", reflect.TypeOf((*MockIRoute53)(nil).DeactivateKeySigningKey), ctx, hostedZoneId, name)
+}
+
 // DeleteHostedZone mocks base method.
 func (m *MockIRoute53) DeleteHostedZone(ctx context.Context, hostedZoneId *string) error {
 	m.ctrl.T.Helper()
@@ -52,6 +66,20 @@ func (m *MockIRoute53) DeleteHostedZone(ctx context.Context, hostedZoneId *strin
 func (mr *MockIRoute53MockRecorder) DeleteHostedZone(ctx, hostedZoneId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteHostedZone", reflect.TypeOf((*MockIRoute53)(nil).DeleteHostedZone), ctx, hostedZoneId)
+}
+
+// DeleteKeySigningKey mocks base method.
+func (m *MockIRoute53) DeleteKeySigningKey(ctx context.Context, hostedZoneId, name *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteKeySigningKey", ctx, hostedZoneId, name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteKeySigningKey indicates an expected call of DeleteKeySigningKey.
+func (mr *MockIRoute53MockRecorder) DeleteKeySigningKey(ctx, hostedZoneId, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteKeySigningKey", reflect.TypeOf((*MockIRoute53)(nil).DeleteKeySigningKey), ctx, hostedZoneId, name)
 }
 
 // DeleteResourceRecordSetProtections mocks base method.
@@ -110,19 +138,20 @@ func (mr *MockIRoute53MockRecorder) DisableHostedZoneDNSSEC(ctx, hostedZoneId an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableHostedZoneDNSSEC", reflect.TypeOf((*MockIRoute53)(nil).DisableHostedZoneDNSSEC), ctx, hostedZoneId)
 }
 
-// GetDNSSECStatus mocks base method.
-func (m *MockIRoute53) GetDNSSECStatus(ctx context.Context, hostedZoneId *string) (*types.DNSSECStatus, error) {
+// GetDNSSEC mocks base method.
+func (m *MockIRoute53) GetDNSSEC(ctx context.Context, hostedZoneId *string) (*types.DNSSECStatus, []types.KeySigningKey, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDNSSECStatus", ctx, hostedZoneId)
+	ret := m.ctrl.Call(m, "GetDNSSEC", ctx, hostedZoneId)
 	ret0, _ := ret[0].(*types.DNSSECStatus)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].([]types.KeySigningKey)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
-// GetDNSSECStatus indicates an expected call of GetDNSSECStatus.
-func (mr *MockIRoute53MockRecorder) GetDNSSECStatus(ctx, hostedZoneId any) *gomock.Call {
+// GetDNSSEC indicates an expected call of GetDNSSEC.
+func (mr *MockIRoute53MockRecorder) GetDNSSEC(ctx, hostedZoneId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDNSSECStatus", reflect.TypeOf((*MockIRoute53)(nil).GetDNSSECStatus), ctx, hostedZoneId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDNSSEC", reflect.TypeOf((*MockIRoute53)(nil).GetDNSSEC), ctx, hostedZoneId)
 }
 
 // GetHostedZone mocks base method.

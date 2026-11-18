@@ -85,7 +85,7 @@ func (o *Route53HostedZoneOperator) DeleteRoute53HostedZone(ctx context.Context,
 
 	// DNSSEC is not supported for private hosted zones.
 	if hostedZone.Config == nil || !hostedZone.Config.PrivateZone {
-		if err = o.disableDNSSEC(ctx, hostedZoneId); err != nil {
+		if err = o.cleanupDNSSEC(ctx, hostedZoneId); err != nil {
 			return err
 		}
 	}
@@ -132,38 +132,79 @@ func (o *Route53HostedZoneOperator) DeleteRoute53HostedZone(ctx context.Context,
 	return o.client.DeleteHostedZone(ctx, hostedZoneId)
 }
 
-// A hosted zone with DNSSEC signing enabled cannot be deleted.
-func (o *Route53HostedZoneOperator) disableDNSSEC(ctx context.Context, hostedZoneId *string) error {
-	status, err := o.client.GetDNSSECStatus(ctx, hostedZoneId)
+// A hosted zone with DNSSEC signing enabled or with key-signing keys cannot be deleted.
+func (o *Route53HostedZoneOperator) cleanupDNSSEC(ctx context.Context, hostedZoneId *string) error {
+	status, keySigningKeys, err := o.client.GetDNSSEC(ctx, hostedZoneId)
 	if err != nil {
 		// Do not block deletions that worked before for roles without the permission.
-		// If DNSSEC signing is enabled, deleting the hosted zone fails instead.
+		// If DNSSEC is in use, deleting the hosted zone fails instead.
 		if client.IsAccessDeniedError(err) {
-			io.Logger.Warn().Msgf("Skipped checking DNSSEC signing for hosted zone %s due to missing permission: %v", aws.ToString(hostedZoneId), err)
+			io.Logger.Warn().Msgf("Skipped checking DNSSEC for hosted zone %s due to missing permission: %v", aws.ToString(hostedZoneId), err)
 			return nil
 		}
 		return err
 	}
-	if isDNSSECNotSigning(status) {
-		return nil
-	}
 
-	if err := o.client.DisableHostedZoneDNSSEC(ctx, hostedZoneId); err != nil {
-		return err
-	}
-
-	for range route53WaitMaxAttempts {
-		status, err := o.client.GetDNSSECStatus(ctx, hostedZoneId)
+	if !isDNSSECNotSigning(status) {
+		if err = o.client.DisableHostedZoneDNSSEC(ctx, hostedZoneId); err != nil {
+			return err
+		}
+		keySigningKeys, err = o.waitForDNSSEC(ctx, hostedZoneId, "DNSSEC signing to be disabled", func(status *route53Types.DNSSECStatus, _ []route53Types.KeySigningKey) bool {
+			return isDNSSECNotSigning(status)
+		})
 		if err != nil {
 			return err
 		}
-		if isDNSSECNotSigning(status) {
-			return nil
+	}
+
+	// Key-signing keys must be deactivated before they are deleted.
+	deactivated := false
+	for _, keySigningKey := range keySigningKeys {
+		if aws.ToString(keySigningKey.Status) != "ACTIVE" {
+			continue
+		}
+		if err = o.client.DeactivateKeySigningKey(ctx, hostedZoneId, keySigningKey.Name); err != nil {
+			return err
+		}
+		deactivated = true
+	}
+	if deactivated {
+		keySigningKeys, err = o.waitForDNSSEC(ctx, hostedZoneId, "key-signing keys to be deactivated", func(_ *route53Types.DNSSECStatus, keySigningKeys []route53Types.KeySigningKey) bool {
+			return !slices.ContainsFunc(keySigningKeys, func(k route53Types.KeySigningKey) bool {
+				return aws.ToString(k.Status) == "ACTIVE"
+			})
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, keySigningKey := range keySigningKeys {
+		if err = o.client.DeleteKeySigningKey(ctx, hostedZoneId, keySigningKey.Name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (o *Route53HostedZoneOperator) waitForDNSSEC(
+	ctx context.Context,
+	hostedZoneId *string,
+	description string,
+	done func(*route53Types.DNSSECStatus, []route53Types.KeySigningKey) bool,
+) ([]route53Types.KeySigningKey, error) {
+	for range route53WaitMaxAttempts {
+		status, keySigningKeys, err := o.client.GetDNSSEC(ctx, hostedZoneId)
+		if err != nil {
+			return nil, err
+		}
+		if done(status, keySigningKeys) {
+			return keySigningKeys, nil
 		}
 
 		select {
 		case <-ctx.Done():
-			return &client.ClientError{
+			return nil, &client.ClientError{
 				ResourceName: hostedZoneId,
 				Err:          ctx.Err(),
 			}
@@ -171,9 +212,9 @@ func (o *Route53HostedZoneOperator) disableDNSSEC(ctx context.Context, hostedZon
 		}
 	}
 
-	return &client.ClientError{
+	return nil, &client.ClientError{
 		ResourceName: hostedZoneId,
-		Err:          fmt.Errorf("timed out waiting for DNSSEC signing to be disabled"),
+		Err:          fmt.Errorf("timed out waiting for %s", description),
 	}
 }
 

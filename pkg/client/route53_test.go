@@ -540,22 +540,25 @@ func TestRoute53_DeleteResourceRecordSetProtections(t *testing.T) {
 	}
 }
 
-func TestRoute53_GetDNSSECStatus(t *testing.T) {
+func TestRoute53_GetDNSSEC(t *testing.T) {
 	status := &types.DNSSECStatus{ServeSignature: aws.String("SIGNING")}
+	keySigningKeys := []types.KeySigningKey{{Name: aws.String("ksk"), Status: aws.String("ACTIVE")}}
 
 	cases := []struct {
 		name               string
 		withAPIOptionsFunc func(*middleware.Stack) error
-		want               *types.DNSSECStatus
+		wantStatus         *types.DNSSECStatus
+		wantKeySigningKeys []types.KeySigningKey
 		wantErr            error
 	}{
 		{
-			name:               "get DNSSEC status successfully",
-			withAPIOptionsFunc: route53FinalizeMock("GetDNSSECMock", &route53.GetDNSSECOutput{Status: status}, nil),
-			want:               status,
+			name:               "get DNSSEC successfully",
+			withAPIOptionsFunc: route53FinalizeMock("GetDNSSECMock", &route53.GetDNSSECOutput{Status: status, KeySigningKeys: keySigningKeys}, nil),
+			wantStatus:         status,
+			wantKeySigningKeys: keySigningKeys,
 		},
 		{
-			name:               "get DNSSEC status failure",
+			name:               "get DNSSEC failure",
 			withAPIOptionsFunc: route53FinalizeMock("GetDNSSECErrorMock", &route53.GetDNSSECOutput{}, fmt.Errorf("GetDNSSECError")),
 			wantErr: &ClientError{
 				ResourceName: aws.String("Z0000000000001"),
@@ -569,15 +572,54 @@ func TestRoute53_GetDNSSECStatus(t *testing.T) {
 			ctx := context.Background()
 			route53Client := newRoute53ClientForTest(t, ctx, tt.withAPIOptionsFunc)
 
-			output, err := route53Client.GetDNSSECStatus(ctx, aws.String("Z0000000000001"))
+			gotStatus, gotKeySigningKeys, err := route53Client.GetDNSSEC(ctx, aws.String("Z0000000000001"))
 			if (err != nil) != (tt.wantErr != nil) {
 				t.Fatalf("error = %#v, wantErr %#v", err, tt.wantErr)
 			}
 			if tt.wantErr != nil && err.Error() != tt.wantErr.Error() {
 				t.Fatalf("err = %#v, want %#v", err.Error(), tt.wantErr.Error())
 			}
-			if !reflect.DeepEqual(output, tt.want) {
-				t.Errorf("output = %#v, want %#v", output, tt.want)
+			if !reflect.DeepEqual(gotStatus, tt.wantStatus) || !reflect.DeepEqual(gotKeySigningKeys, tt.wantKeySigningKeys) {
+				t.Errorf("output = %#v %#v, want %#v %#v", gotStatus, gotKeySigningKeys, tt.wantStatus, tt.wantKeySigningKeys)
+			}
+		})
+	}
+}
+
+func TestRoute53_KeySigningKey(t *testing.T) {
+	cases := []struct {
+		name    string
+		call    func(r *Route53) error
+		output  any
+		mockErr error
+		wantErr bool
+	}{
+		{"deactivate key-signing key successfully", func(r *Route53) error {
+			return r.DeactivateKeySigningKey(context.Background(), aws.String("Z1"), aws.String("ksk"))
+		}, &route53.DeactivateKeySigningKeyOutput{}, nil, false},
+		{"deactivate key-signing key successfully when not found", func(r *Route53) error {
+			return r.DeactivateKeySigningKey(context.Background(), aws.String("Z1"), aws.String("ksk"))
+		}, &route53.DeactivateKeySigningKeyOutput{}, &types.NoSuchKeySigningKey{Message: aws.String("not found")}, false},
+		{"deactivate key-signing key failure", func(r *Route53) error {
+			return r.DeactivateKeySigningKey(context.Background(), aws.String("Z1"), aws.String("ksk"))
+		}, &route53.DeactivateKeySigningKeyOutput{}, fmt.Errorf("DeactivateKeySigningKeyError"), true},
+		{"delete key-signing key successfully", func(r *Route53) error {
+			return r.DeleteKeySigningKey(context.Background(), aws.String("Z1"), aws.String("ksk"))
+		}, &route53.DeleteKeySigningKeyOutput{}, nil, false},
+		{"delete key-signing key successfully when not found", func(r *Route53) error {
+			return r.DeleteKeySigningKey(context.Background(), aws.String("Z1"), aws.String("ksk"))
+		}, &route53.DeleteKeySigningKeyOutput{}, &types.NoSuchKeySigningKey{Message: aws.String("not found")}, false},
+		{"delete key-signing key failure", func(r *Route53) error {
+			return r.DeleteKeySigningKey(context.Background(), aws.String("Z1"), aws.String("ksk"))
+		}, &route53.DeleteKeySigningKeyOutput{}, fmt.Errorf("DeleteKeySigningKeyError"), true},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			route53Client := newRoute53ClientForTest(t, context.Background(), route53FinalizeMock("KeySigningKeyMock", tt.output, tt.mockErr))
+			err := tt.call(route53Client)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("error = %#v, wantErr %#v", err, tt.wantErr)
 			}
 		})
 	}
