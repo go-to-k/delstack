@@ -40,6 +40,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 		ec2SubnetOperatorResourcesLength                                int
 		ec2SecurityGroupOperatorResourcesLength                         int
 		ec2VPCEndpointServiceOperatorResourcesLength                    int
+		route53HostedZoneOperatorResourcesLength                        int
 		route53ResolverConfigOperatorResourcesLength                    int
 		s3FilesFileSystemOperatorResourcesLength                        int
 		lambdaFunctionOperatorResourcesLength                           int
@@ -180,6 +181,12 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 						PhysicalResourceId: aws.String("vpc-19"),
 					},
 					{
+						LogicalResourceId:  aws.String("LogicalResourceId21"),
+						ResourceStatus:     "DELETE_FAILED",
+						ResourceType:       aws.String("AWS::Route53::HostedZone"),
+						PhysicalResourceId: aws.String("Z0000000000021"),
+					},
+					{
 						LogicalResourceId:  aws.String("LogicalResourceId20"),
 						ResourceStatus:     "DELETE_FAILED",
 						ResourceType:       aws.String("AWS::S3Files::FileSystem"),
@@ -188,7 +195,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				},
 			},
 			want: want{
-				logicalResourceIdsLength:                                        21,
+				logicalResourceIdsLength:                                        22,
 				unsupportedStackResourcesLength:                                 0,
 				s3BucketOperatorResourcesLength:                                 1,
 				s3DirectoryBucketOperatorResourcesLength:                        1,
@@ -204,6 +211,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ec2SubnetOperatorResourcesLength:                                1,
 				ec2SecurityGroupOperatorResourcesLength:                         1,
 				ec2VPCEndpointServiceOperatorResourcesLength:                    1,
+				route53HostedZoneOperatorResourcesLength:                        1,
 				route53ResolverConfigOperatorResourcesLength:                    1,
 				s3FilesFileSystemOperatorResourcesLength:                        1,
 				lambdaFunctionOperatorResourcesLength:                           1,
@@ -524,6 +532,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 			ec2SubnetOperatorResourcesLength := 0
 			ec2SecurityGroupOperatorResourcesLength := 0
 			ec2VPCEndpointServiceOperatorResourcesLength := 0
+			route53HostedZoneOperatorResourcesLength := 0
 			route53ResolverConfigOperatorResourcesLength := 0
 			s3FilesFileSystemOperatorResourcesLength := 0
 			lambdaFunctionOperatorResourcesLength := 0
@@ -563,6 +572,8 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 					ec2SecurityGroupOperatorResourcesLength += operator.GetResourcesLength()
 				case *EC2VPCEndpointServiceOperator:
 					ec2VPCEndpointServiceOperatorResourcesLength += operator.GetResourcesLength()
+				case *Route53HostedZoneOperator:
+					route53HostedZoneOperatorResourcesLength += operator.GetResourcesLength()
 				case *Route53ResolverConfigOperator:
 					route53ResolverConfigOperatorResourcesLength += operator.GetResourcesLength()
 				case *S3FilesFileSystemOperator:
@@ -596,6 +607,7 @@ func TestOperatorCollection_SetOperatorCollection(t *testing.T) {
 				ec2SubnetOperatorResourcesLength:                                ec2SubnetOperatorResourcesLength,
 				ec2SecurityGroupOperatorResourcesLength:                         ec2SecurityGroupOperatorResourcesLength,
 				ec2VPCEndpointServiceOperatorResourcesLength:                    ec2VPCEndpointServiceOperatorResourcesLength,
+				route53HostedZoneOperatorResourcesLength:                        route53HostedZoneOperatorResourcesLength,
 				route53ResolverConfigOperatorResourcesLength:                    route53ResolverConfigOperatorResourcesLength,
 				s3FilesFileSystemOperatorResourcesLength:                        s3FilesFileSystemOperatorResourcesLength,
 				lambdaFunctionOperatorResourcesLength:                           lambdaFunctionOperatorResourcesLength,
@@ -802,6 +814,15 @@ func TestOperatorCollection_containsResourceType(t *testing.T) {
 				ctx:       context.Background(),
 				stackName: aws.String("test"),
 				resource:  "AWS::EC2::VPCEndpointService",
+			},
+			want: true,
+		},
+		{
+			name: "Route53 Hosted Zone",
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test"),
+				resource:  "AWS::Route53::HostedZone",
 			},
 			want: true,
 		},

@@ -6,10 +6,14 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
+	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fatih/color"
 )
@@ -32,6 +36,11 @@ type DeployStackService struct {
 	ProfileOption string
 	Ctx           context.Context
 	StsClient     *sts.Client
+	CfnClient     *cloudformation.Client
+	Route53Client *route53.Client
+
+	ExternalHostedZoneId   string
+	ExternalHostedZoneName string
 }
 
 // This script allows you to deploy the deletion protection test stack for delstack testing.
@@ -54,9 +63,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Create a hosted zone outside the stack, in which the stack creates record sets
+	color.Green("=== create_external_hosted_zone ===")
+	if err := service.createExternalHostedZone(); err != nil {
+		color.Red("Failed to create external hosted zone: %v", err)
+		os.Exit(1)
+	}
+
 	// Deploy using CDK
 	if err := service.cdkDeploy(); err != nil {
 		color.Red("Failed to deploy: %v", err)
+		os.Exit(1)
+	}
+
+	// Create resource record set protections outside of CFn (CFn does not support them)
+	color.Green("=== protect_hosted_zone_record_sets ===")
+	if err := service.protectHostedZoneRecordSets(); err != nil {
+		color.Red("Failed to protect hosted zone record sets: %v", err)
 		os.Exit(1)
 	}
 
@@ -69,6 +92,9 @@ func main() {
 	color.Yellow("")
 	color.Yellow("To force delete (disable protection and delete), run:")
 	color.Yellow("  delstack -s %s -f", service.CfnStackName)
+	color.Yellow("")
+	color.Yellow("After deleting the stack, delete the external hosted zone created outside the stack:")
+	color.Yellow("  aws route53 delete-hosted-zone --id %s %s", service.ExternalHostedZoneId, service.ProfileOption)
 }
 
 func NewDeployStackService(ctx context.Context, options Options) *DeployStackService {
@@ -108,6 +134,8 @@ func (s *DeployStackService) initAWSClients() error {
 	}
 
 	s.StsClient = sts.NewFromConfig(cfg)
+	s.CfnClient = cloudformation.NewFromConfig(cfg)
+	s.Route53Client = route53.NewFromConfig(cfg)
 
 	// Get account ID
 	stsOutput, err := s.StsClient.GetCallerIdentity(s.Ctx, &sts.GetCallerIdentityInput{})
@@ -128,10 +156,12 @@ func (s *DeployStackService) cdkDeploy() error {
 	}
 
 	cmd := fmt.Sprintf(
-		"cd cdk && cdk deploy --all --require-approval never %s -c PJ_PREFIX=%s -c TERMINATION_PROTECTION=%s",
+		"cd cdk && cdk deploy --all --require-approval never %s -c PJ_PREFIX=%s -c TERMINATION_PROTECTION=%s -c EXTERNAL_HOSTED_ZONE_ID=%s -c EXTERNAL_HOSTED_ZONE_NAME=%s",
 		s.ProfileOption,
 		s.CfnPjPrefix,
 		terminationProtection,
+		s.ExternalHostedZoneId,
+		s.ExternalHostedZoneName,
 	)
 
 	if err := runCommand(cmd); err != nil {
@@ -177,4 +207,90 @@ func parseArgs() Options {
 	}
 
 	return options
+}
+
+func (s *DeployStackService) createExternalHostedZone() error {
+	s.ExternalHostedZoneName = strings.ToLower(s.CfnPjPrefix) + "-external.delstack-e2e.com"
+
+	output, err := s.Route53Client.CreateHostedZone(s.Ctx, &route53.CreateHostedZoneInput{
+		Name:            aws.String(s.ExternalHostedZoneName),
+		CallerReference: aws.String(fmt.Sprintf("delstack-e2e-%d", time.Now().UnixNano())),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create hosted zone %s: %v", s.ExternalHostedZoneName, err)
+	}
+	s.ExternalHostedZoneId = strings.TrimPrefix(aws.ToString(output.HostedZone.Id), "/hostedzone/")
+	fmt.Printf("Created external hosted zone %s (%s)\n", s.ExternalHostedZoneId, s.ExternalHostedZoneName)
+
+	return nil
+}
+
+// Creates a record set outside of CFn and protects it, together with the default NS record at the zone apex.
+// Also protects the record sets that the stack creates in the external hosted zone.
+func (s *DeployStackService) protectHostedZoneRecordSets() error {
+	output, err := s.CfnClient.DescribeStackResources(s.Ctx, &cloudformation.DescribeStackResourcesInput{
+		StackName: aws.String(s.CfnStackName),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to describe stack resources: %v", err)
+	}
+
+	if _, err := s.Route53Client.CreateResourceRecordSetProtections(s.Ctx, &route53.CreateResourceRecordSetProtectionsInput{
+		HostedZoneId: aws.String(s.ExternalHostedZoneId),
+		Protections: []route53types.ResourceRecordSetProtectionConfig{
+			{RecordName: aws.String("external-a." + s.ExternalHostedZoneName), RecordType: route53types.RRTypeA},
+			{RecordName: aws.String("external-b." + s.ExternalHostedZoneName), RecordType: route53types.RRTypeTxt},
+		},
+	}); err != nil {
+		return fmt.Errorf("failed to create record set protections in external hosted zone %s: %v", s.ExternalHostedZoneId, err)
+	}
+	fmt.Printf("Protected record sets of the stack in external hosted zone %s\n", s.ExternalHostedZoneId)
+
+	for _, resource := range output.StackResources {
+		if aws.ToString(resource.ResourceType) != "AWS::Route53::HostedZone" {
+			continue
+		}
+
+		hostedZoneId := resource.PhysicalResourceId
+		hostedZone, err := s.Route53Client.GetHostedZone(s.Ctx, &route53.GetHostedZoneInput{
+			Id: hostedZoneId,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to get hosted zone %s: %v", aws.ToString(hostedZoneId), err)
+		}
+		zoneName := aws.ToString(hostedZone.HostedZone.Name)
+		protectedName := "protected." + zoneName
+
+		if _, err := s.Route53Client.ChangeResourceRecordSets(s.Ctx, &route53.ChangeResourceRecordSetsInput{
+			HostedZoneId: hostedZoneId,
+			ChangeBatch: &route53types.ChangeBatch{
+				Changes: []route53types.Change{
+					{
+						Action: route53types.ChangeActionCreate,
+						ResourceRecordSet: &route53types.ResourceRecordSet{
+							Name:            aws.String(protectedName),
+							Type:            route53types.RRTypeA,
+							TTL:             aws.Int64(300),
+							ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("192.0.2.1")}},
+						},
+					},
+				},
+			},
+		}); err != nil {
+			return fmt.Errorf("failed to create record set in hosted zone %s: %v", aws.ToString(hostedZoneId), err)
+		}
+
+		if _, err := s.Route53Client.CreateResourceRecordSetProtections(s.Ctx, &route53.CreateResourceRecordSetProtectionsInput{
+			HostedZoneId: hostedZoneId,
+			Protections: []route53types.ResourceRecordSetProtectionConfig{
+				{RecordName: aws.String(protectedName), RecordType: route53types.RRTypeA},
+				{RecordName: aws.String(zoneName), RecordType: route53types.RRTypeNs},
+			},
+		}); err != nil {
+			return fmt.Errorf("failed to create record set protections in hosted zone %s: %v", aws.ToString(hostedZoneId), err)
+		}
+		fmt.Printf("Protected record sets in hosted zone %s (%s)\n", aws.ToString(hostedZoneId), zoneName)
+	}
+
+	return nil
 }

@@ -28,6 +28,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
+	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3tables"
@@ -67,6 +69,7 @@ type DeployStackService struct {
 	BackupClient    *backup.Client
 	AthenaClient    *athena.Client
 	EC2Client       *ec2.Client
+	Route53Client   *route53.Client
 }
 
 // This script allows you to deploy the stack for delstack testing.
@@ -181,6 +184,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Create record sets in the hosted zone outside of CFn to trigger DELETE_FAILED
+	color.Green("=== create_hosted_zone_record_sets ===")
+	if err := service.createHostedZoneRecordSets(service.CfnStackName); err != nil {
+		color.Red("Failed to create hosted zone record sets: %v", err)
+		os.Exit(1)
+	}
+
+	// Enable DNSSEC signing outside of CFn to trigger DELETE_FAILED of the hosted zone
+	color.Green("=== enable_hosted_zone_dnssec ===")
+	if err := service.enableHostedZoneDNSSEC(service.CfnStackName); err != nil {
+		color.Red("Failed to enable hosted zone DNSSEC: %v", err)
+		os.Exit(1)
+	}
+
 	color.Yellow("\n=== Optional: Manual steps for full IAM User deletion testing ===")
 	color.Yellow("The following dependencies cannot be created programmatically and must be attached manually if needed:")
 	color.Yellow("  - Virtual MFA device: Requires TOTP code generation (use AWS Console > IAM > User > Security credentials > Assign MFA device)")
@@ -252,6 +269,7 @@ func (s *DeployStackService) initAWSClients() error {
 	s.BackupClient = backup.NewFromConfig(cfg)
 	s.AthenaClient = athena.NewFromConfig(cfg)
 	s.EC2Client = ec2.NewFromConfig(cfg)
+	s.Route53Client = route53.NewFromConfig(cfg)
 
 	// Get account ID
 	stsOutput, err := s.StsClient.GetCallerIdentity(s.Ctx, &sts.GetCallerIdentityInput{})
@@ -1531,6 +1549,111 @@ func (s *DeployStackService) deleteResolverConfigVpc(stackName string) error {
 		}
 		fmt.Printf("Deleted VPC %s of resolver config %s\n", vpcId, resource["LogicalResourceId"])
 	}
+
+	return nil
+}
+
+func (s *DeployStackService) createHostedZoneRecordSets(stackName string) error {
+	resources, _, err := s.getStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	for _, resource := range resources {
+		if resource["ResourceType"] != "AWS::Route53::HostedZone" {
+			continue
+		}
+
+		hostedZoneId := resource["PhysicalResourceId"]
+		hostedZone, err := s.Route53Client.GetHostedZone(s.Ctx, &route53.GetHostedZoneInput{
+			Id: aws.String(hostedZoneId),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to get hosted zone %s: %v", hostedZoneId, err)
+		}
+		zoneName := *hostedZone.HostedZone.Name
+
+		newChange := func(name string, recordType route53types.RRType, value string) route53types.Change {
+			return route53types.Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String(name),
+					Type:            recordType,
+					TTL:             aws.Int64(300),
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String(value)}},
+				},
+			}
+		}
+
+		changes := []route53types.Change{
+			// A non-default record at the zone apex
+			newChange(zoneName, route53types.RRTypeTxt, "\"delstack-e2e\""),
+			// A subdomain delegation, which is an NS record but not a default one
+			newChange("sub."+zoneName, route53types.RRTypeNs, "ns-1.awsdns-00.com."),
+			newChange("cname."+zoneName, route53types.RRTypeCname, "www."+zoneName),
+		}
+		// More than the page size (300) of ListResourceRecordSets to cover pagination
+		for i := range 310 {
+			changes = append(changes, newChange(fmt.Sprintf("a%d.%s", i, zoneName), route53types.RRTypeA, "192.0.2.1"))
+		}
+
+		if _, err := s.Route53Client.ChangeResourceRecordSets(s.Ctx, &route53.ChangeResourceRecordSetsInput{
+			HostedZoneId: aws.String(hostedZoneId),
+			ChangeBatch: &route53types.ChangeBatch{
+				Changes: changes,
+			},
+		}); err != nil {
+			return fmt.Errorf("failed to create record sets in hosted zone %s: %v", hostedZoneId, err)
+		}
+		fmt.Printf("Created %d record sets in hosted zone %s (%s)\n", len(changes), hostedZoneId, zoneName)
+	}
+
+	return nil
+}
+
+func (s *DeployStackService) enableHostedZoneDNSSEC(stackName string) error {
+	resources, _, err := s.getStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	var hostedZoneId, keyId string
+	for _, resource := range resources {
+		switch resource["ResourceType"] {
+		case "AWS::Route53::HostedZone":
+			hostedZoneId = resource["PhysicalResourceId"]
+		case "AWS::KMS::Key":
+			if strings.HasPrefix(resource["LogicalResourceId"], "HostedZoneDNSSECKey") {
+				keyId = resource["PhysicalResourceId"]
+			}
+		}
+	}
+	if hostedZoneId == "" || keyId == "" {
+		return fmt.Errorf("hosted zone or KMS key for DNSSEC not found in stack %s", stackName)
+	}
+
+	kskOutput, err := s.Route53Client.CreateKeySigningKey(s.Ctx, &route53.CreateKeySigningKeyInput{
+		CallerReference:         aws.String(fmt.Sprintf("delstack-e2e-%d", time.Now().UnixNano())),
+		HostedZoneId:            aws.String(hostedZoneId),
+		KeyManagementServiceArn: aws.String(fmt.Sprintf("arn:aws:kms:%s:%s:key/%s", region, s.AccountID, keyId)),
+		Name:                    aws.String("delstack_e2e_ksk"),
+		Status:                  aws.String("ACTIVE"),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create key-signing key in hosted zone %s: %v", hostedZoneId, err)
+	}
+	if err := route53.NewResourceRecordSetsChangedWaiter(s.Route53Client).Wait(s.Ctx, &route53.GetChangeInput{
+		Id: kskOutput.ChangeInfo.Id,
+	}, 5*time.Minute); err != nil {
+		return fmt.Errorf("failed to wait for key-signing key creation in hosted zone %s: %v", hostedZoneId, err)
+	}
+
+	if _, err := s.Route53Client.EnableHostedZoneDNSSEC(s.Ctx, &route53.EnableHostedZoneDNSSECInput{
+		HostedZoneId: aws.String(hostedZoneId),
+	}); err != nil {
+		return fmt.Errorf("failed to enable DNSSEC signing in hosted zone %s: %v", hostedZoneId, err)
+	}
+	fmt.Printf("Enabled DNSSEC signing in hosted zone %s\n", hostedZoneId)
 
 	return nil
 }

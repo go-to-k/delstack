@@ -3,6 +3,7 @@ package preprocessor
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -14,6 +15,8 @@ import (
 )
 
 var _ IPreprocessor = (*DeletionProtectionRemover)(nil)
+
+const route53MaxProtectionsPerRequest = 100
 
 type protectedResource struct {
 	resourceType       string
@@ -28,6 +31,7 @@ type DeletionProtectionRemover struct {
 	cognitoClient client.ICognito
 	logsClient    client.ICloudWatchLogs
 	elbv2Client   client.IELBV2
+	route53Client client.IRoute53
 }
 
 func NewDeletionProtectionRemover(
@@ -37,6 +41,7 @@ func NewDeletionProtectionRemover(
 	cognitoClient client.ICognito,
 	logsClient client.ICloudWatchLogs,
 	elbv2Client client.IELBV2,
+	route53Client client.IRoute53,
 ) *DeletionProtectionRemover {
 	return &DeletionProtectionRemover{
 		forceMode:     forceMode,
@@ -45,6 +50,7 @@ func NewDeletionProtectionRemover(
 		cognitoClient: cognitoClient,
 		logsClient:    logsClient,
 		elbv2Client:   elbv2Client,
+		route53Client: route53Client,
 	}
 }
 
@@ -117,6 +123,19 @@ func (r *DeletionProtectionRemover) checkProtection(ctx context.Context, resourc
 		return r.logsClient.CheckLogGroupDeletionProtection(ctx, physicalId)
 	case resourcetype.Elbv2LoadBalancer:
 		return r.elbv2Client.CheckLoadBalancerDeletionProtection(ctx, physicalId)
+	case resourcetype.Route53HostedZone:
+		protections, err := r.route53Client.ListResourceRecordSetProtections(ctx, physicalId)
+		if err != nil {
+			// The API is new, so many least-privilege policies do not allow it yet. Do not block
+			// deletions that worked before; if protections exist, CloudFormation deletion fails instead.
+			if client.IsAccessDeniedError(err) {
+				io.Logger.Warn().Msgf("Skipped checking resource record set protections for %s (%s) due to missing permission: %v",
+					aws.ToString(resource.LogicalResourceId), aws.ToString(physicalId), err)
+				return false, nil
+			}
+			return false, err
+		}
+		return len(protections) > 0, nil
 	default:
 		return false, nil
 	}
@@ -168,9 +187,26 @@ func (r *DeletionProtectionRemover) disableProtection(ctx context.Context, pr pr
 		return r.logsClient.DisableLogGroupDeletionProtection(ctx, aws.String(pr.physicalResourceId))
 	case resourcetype.Elbv2LoadBalancer:
 		return r.elbv2Client.DisableLoadBalancerDeletionProtection(ctx, aws.String(pr.physicalResourceId))
+	case resourcetype.Route53HostedZone:
+		return r.deleteResourceRecordSetProtections(ctx, aws.String(pr.physicalResourceId))
 	default:
 		return nil
 	}
+}
+
+// Route 53 resource record set protections block both deleting the protected record sets and the hosted zone itself.
+func (r *DeletionProtectionRemover) deleteResourceRecordSetProtections(ctx context.Context, hostedZoneId *string) error {
+	protections, err := r.route53Client.ListResourceRecordSetProtections(ctx, hostedZoneId)
+	if err != nil {
+		return err
+	}
+
+	for chunk := range slices.Chunk(protections, route53MaxProtectionsPerRequest) {
+		if err := r.route53Client.DeleteResourceRecordSetProtections(ctx, hostedZoneId, chunk); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *DeletionProtectionRemover) isTargetResourceType(resourceType string) bool {
@@ -180,7 +216,8 @@ func (r *DeletionProtectionRemover) isTargetResourceType(resourceType string) bo
 		resourcetype.RdsDBCluster,
 		resourcetype.CognitoUserPool,
 		resourcetype.LogsLogGroup,
-		resourcetype.Elbv2LoadBalancer:
+		resourcetype.Elbv2LoadBalancer,
+		resourcetype.Route53HostedZone:
 		return true
 	default:
 		return false

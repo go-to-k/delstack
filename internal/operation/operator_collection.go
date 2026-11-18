@@ -56,6 +56,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	ec2SubnetOperator := c.operatorFactory.CreateEC2SubnetOperator()
 	ec2SecurityGroupOperator := c.operatorFactory.CreateEC2SecurityGroupOperator()
 	ec2VPCEndpointServiceOperator := c.operatorFactory.CreateEC2VPCEndpointServiceOperator()
+	route53HostedZoneOperator := c.operatorFactory.CreateRoute53HostedZoneOperator()
 	route53ResolverConfigOperator := c.operatorFactory.CreateRoute53ResolverConfigOperator()
 	s3FilesFileSystemOperator := c.operatorFactory.CreateS3FilesFileSystemOperator()
 	lambdaFunctionOperator := c.operatorFactory.CreateLambdaFunctionOperator()
@@ -102,6 +103,8 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 				ec2SecurityGroupOperator.AddResource(&resource)
 			case resourcetype.EC2VPCEndpointService:
 				ec2VPCEndpointServiceOperator.AddResource(&resource)
+			case resourcetype.Route53HostedZone:
+				route53HostedZoneOperator.AddResource(&resource)
 			case resourcetype.Route53ResolverConfig:
 				route53ResolverConfigOperator.AddResource(&resource)
 			case resourcetype.S3FilesFileSystem:
@@ -136,6 +139,7 @@ func (c *OperatorCollection) SetOperatorCollection(stackName *string, stackResou
 	c.operators = append(c.operators, ec2SubnetOperator)
 	c.operators = append(c.operators, ec2SecurityGroupOperator)
 	c.operators = append(c.operators, ec2VPCEndpointServiceOperator)
+	c.operators = append(c.operators, route53HostedZoneOperator)
 	c.operators = append(c.operators, route53ResolverConfigOperator)
 	c.operators = append(c.operators, s3FilesFileSystemOperator)
 	c.operators = append(c.operators, lambdaFunctionOperator)
@@ -193,6 +197,7 @@ func (c *OperatorCollection) RaiseUnsupportedResourceError() error {
 		{resourcetype.EC2Subnet, "EC2 Subnets blocked by orphan AWS Lambda VPC ENIs left in `available` state after the function was deleted."},
 		{resourcetype.EC2SecurityGroup, "EC2 SecurityGroups blocked by orphan AWS Lambda VPC ENIs left in `available` state after the function was deleted."},
 		{resourcetype.EC2VPCEndpointService, "VPC Endpoint Services (AWS PrivateLink or Gateway Load Balancer) blocked by consumer endpoint connections in `Available` or `PendingAcceptance` state."},
+		{resourcetype.Route53HostedZone, "Route 53 Hosted Zones, including zones containing resource record sets created outside the stack."},
 		{resourcetype.Route53ResolverConfig, "Route 53 Resolver Configs, including configs whose VPC was already deleted outside the stack."},
 		{resourcetype.S3FilesFileSystem, "S3 Files File Systems, including file systems with data pending export to the S3 bucket."},
 		{resourcetype.LambdaFunction, "Lambda Functions, including Lambda@Edge functions with replicas still being cleaned up by AWS. Waits for AWS to finish removing edge replicas."},

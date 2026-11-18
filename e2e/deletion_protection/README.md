@@ -18,6 +18,8 @@ This script creates a CloudFormation stack (with **TerminationProtection enabled
 - Cognito UserPool with deletion protection active (`DeletionProtection: ACTIVE`)
 - ELBv2 Application Load Balancer with deletion protection enabled
 - CloudWatch LogGroup with deletion protection enabled
+- Route 53 HostedZone with resource record set protections (a record set created outside of CFn and the default NS record) created via SDK
+- Route 53 RecordSet / RecordSetGroup in a hosted zone created outside of the stack via SDK, with resource record set protections created via SDK (the external hosted zone must be deleted manually after the test; `deploy.go` prints the command)
 - VPC with public subnet (shared by EC2, RDS, and ELBv2)
 
 ```bash

@@ -26,17 +26,20 @@ const (
 
 // For Force Deletion and Preprocessors
 const (
-	LambdaFunction = "AWS::Lambda::Function"
+	LambdaFunction    = "AWS::Lambda::Function"
+	Route53HostedZone = "AWS::Route53::HostedZone"
 )
 
 // For Deletion Protection Check
 const (
-	Ec2Instance       = "AWS::EC2::Instance"
-	RdsDBInstance     = "AWS::RDS::DBInstance"
-	RdsDBCluster      = "AWS::RDS::DBCluster"
-	CognitoUserPool   = "AWS::Cognito::UserPool"
-	LogsLogGroup      = "AWS::Logs::LogGroup"
-	Elbv2LoadBalancer = "AWS::ElasticLoadBalancingV2::LoadBalancer"
+	Route53RecordSet      = "AWS::Route53::RecordSet"
+	Route53RecordSetGroup = "AWS::Route53::RecordSetGroup"
+	Ec2Instance           = "AWS::EC2::Instance"
+	RdsDBInstance         = "AWS::RDS::DBInstance"
+	RdsDBCluster          = "AWS::RDS::DBCluster"
+	CognitoUserPool       = "AWS::Cognito::UserPool"
+	LogsLogGroup          = "AWS::Logs::LogGroup"
+	Elbv2LoadBalancer     = "AWS::ElasticLoadBalancingV2::LoadBalancer"
 )
 
 var ResourceTypes = []string{
@@ -54,6 +57,7 @@ var ResourceTypes = []string{
 	EC2Subnet,
 	EC2SecurityGroup,
 	EC2VPCEndpointService,
+	Route53HostedZone,
 	Route53ResolverConfig,
 	S3FilesFileSystem,
 	CognitoUserPoolUICustomizationAttachment,

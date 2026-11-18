@@ -1,6 +1,11 @@
 package client
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+
+	"github.com/aws/smithy-go"
+)
 
 var _ error = (*ClientError)(nil)
 
@@ -22,4 +27,14 @@ func (e *ClientError) Error() string {
 
 func (e *ClientError) Unwrap() error {
 	return e.Err
+}
+
+// IsAccessDeniedError reports whether the error is caused by missing IAM permissions.
+func IsAccessDeniedError(err error) bool {
+	var apiErr smithy.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	code := apiErr.ErrorCode()
+	return code == "AccessDenied" || code == "AccessDeniedException"
 }

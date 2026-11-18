@@ -42,6 +42,7 @@ func NewTestStack(scope constructs.Construct, id string, props *TestStackProps) 
 	resource.NewBackup(stack, props.PjPrefix+"-Root")
 	resource.NewAthena(stack, props.PjPrefix+"-Root")
 	resource.NewRoute53ResolverConfig(stack)
+	resource.NewRoute53HostedZone(stack, props.PjPrefix+"-Root")
 
 	nest.NewChildStack(stack, "Child", &nest.ChildStackProps{
 		PjPrefix: props.PjPrefix,
