@@ -191,6 +191,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Enable DNSSEC signing outside of CFn to trigger DELETE_FAILED of the hosted zone
+	color.Green("=== enable_hosted_zone_dnssec ===")
+	if err := service.enableHostedZoneDNSSEC(service.CfnStackName); err != nil {
+		color.Red("Failed to enable hosted zone DNSSEC: %v", err)
+		os.Exit(1)
+	}
+
 	color.Yellow("\n=== Optional: Manual steps for full IAM User deletion testing ===")
 	color.Yellow("The following dependencies cannot be created programmatically and must be attached manually if needed:")
 	color.Yellow("  - Virtual MFA device: Requires TOTP code generation (use AWS Console > IAM > User > Security credentials > Assign MFA device)")
@@ -1600,6 +1607,47 @@ func (s *DeployStackService) createHostedZoneRecordSets(stackName string) error 
 		}
 		fmt.Printf("Created %d record sets in hosted zone %s (%s)\n", len(changes), hostedZoneId, zoneName)
 	}
+
+	return nil
+}
+
+func (s *DeployStackService) enableHostedZoneDNSSEC(stackName string) error {
+	resources, _, err := s.getStackResources(stackName)
+	if err != nil {
+		return err
+	}
+
+	var hostedZoneId, keyId string
+	for _, resource := range resources {
+		switch resource["ResourceType"] {
+		case "AWS::Route53::HostedZone":
+			hostedZoneId = resource["PhysicalResourceId"]
+		case "AWS::KMS::Key":
+			if strings.HasPrefix(resource["LogicalResourceId"], "HostedZoneDNSSECKey") {
+				keyId = resource["PhysicalResourceId"]
+			}
+		}
+	}
+	if hostedZoneId == "" || keyId == "" {
+		return fmt.Errorf("hosted zone or KMS key for DNSSEC not found in stack %s", stackName)
+	}
+
+	if _, err := s.Route53Client.CreateKeySigningKey(s.Ctx, &route53.CreateKeySigningKeyInput{
+		CallerReference:         aws.String(fmt.Sprintf("delstack-e2e-%d", time.Now().UnixNano())),
+		HostedZoneId:            aws.String(hostedZoneId),
+		KeyManagementServiceArn: aws.String(fmt.Sprintf("arn:aws:kms:%s:%s:key/%s", region, s.AccountID, keyId)),
+		Name:                    aws.String("delstack_e2e_ksk"),
+		Status:                  aws.String("ACTIVE"),
+	}); err != nil {
+		return fmt.Errorf("failed to create key-signing key in hosted zone %s: %v", hostedZoneId, err)
+	}
+
+	if _, err := s.Route53Client.EnableHostedZoneDNSSEC(s.Ctx, &route53.EnableHostedZoneDNSSECInput{
+		HostedZoneId: aws.String(hostedZoneId),
+	}); err != nil {
+		return fmt.Errorf("failed to enable DNSSEC signing in hosted zone %s: %v", hostedZoneId, err)
+	}
+	fmt.Printf("Enabled DNSSEC signing in hosted zone %s\n", hostedZoneId)
 
 	return nil
 }

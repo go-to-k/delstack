@@ -539,3 +539,86 @@ func TestRoute53_DeleteResourceRecordSetProtections(t *testing.T) {
 		})
 	}
 }
+
+func TestRoute53_GetDNSSECStatus(t *testing.T) {
+	status := &types.DNSSECStatus{ServeSignature: aws.String("SIGNING")}
+
+	cases := []struct {
+		name               string
+		withAPIOptionsFunc func(*middleware.Stack) error
+		want               *types.DNSSECStatus
+		wantErr            error
+	}{
+		{
+			name:               "get DNSSEC status successfully",
+			withAPIOptionsFunc: route53FinalizeMock("GetDNSSECMock", &route53.GetDNSSECOutput{Status: status}, nil),
+			want:               status,
+		},
+		{
+			name:               "get DNSSEC status failure",
+			withAPIOptionsFunc: route53FinalizeMock("GetDNSSECErrorMock", &route53.GetDNSSECOutput{}, fmt.Errorf("GetDNSSECError")),
+			wantErr: &ClientError{
+				ResourceName: aws.String("Z0000000000001"),
+				Err:          fmt.Errorf("operation error Route 53: GetDNSSEC, GetDNSSECError"),
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			route53Client := newRoute53ClientForTest(t, ctx, tt.withAPIOptionsFunc)
+
+			output, err := route53Client.GetDNSSECStatus(ctx, aws.String("Z0000000000001"))
+			if (err != nil) != (tt.wantErr != nil) {
+				t.Fatalf("error = %#v, wantErr %#v", err, tt.wantErr)
+			}
+			if tt.wantErr != nil && err.Error() != tt.wantErr.Error() {
+				t.Fatalf("err = %#v, want %#v", err.Error(), tt.wantErr.Error())
+			}
+			if !reflect.DeepEqual(output, tt.want) {
+				t.Errorf("output = %#v, want %#v", output, tt.want)
+			}
+		})
+	}
+}
+
+func TestRoute53_DisableHostedZoneDNSSEC(t *testing.T) {
+	cases := []struct {
+		name               string
+		withAPIOptionsFunc func(*middleware.Stack) error
+		wantErr            error
+	}{
+		{
+			name:               "disable hosted zone DNSSEC successfully",
+			withAPIOptionsFunc: route53FinalizeMock("DisableHostedZoneDNSSECMock", &route53.DisableHostedZoneDNSSECOutput{}, nil),
+		},
+		{
+			name:               "disable hosted zone DNSSEC successfully when DNSSEC not found",
+			withAPIOptionsFunc: route53FinalizeMock("DisableHostedZoneDNSSECNotFoundMock", &route53.DisableHostedZoneDNSSECOutput{}, &types.DNSSECNotFound{Message: aws.String("not found")}),
+		},
+		{
+			name:               "disable hosted zone DNSSEC failure",
+			withAPIOptionsFunc: route53FinalizeMock("DisableHostedZoneDNSSECErrorMock", &route53.DisableHostedZoneDNSSECOutput{}, fmt.Errorf("DisableHostedZoneDNSSECError")),
+			wantErr: &ClientError{
+				ResourceName: aws.String("Z0000000000001"),
+				Err:          fmt.Errorf("operation error Route 53: DisableHostedZoneDNSSEC, DisableHostedZoneDNSSECError"),
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			route53Client := newRoute53ClientForTest(t, ctx, tt.withAPIOptionsFunc)
+
+			err := route53Client.DisableHostedZoneDNSSEC(ctx, aws.String("Z0000000000001"))
+			if (err != nil) != (tt.wantErr != nil) {
+				t.Fatalf("error = %#v, wantErr %#v", err, tt.wantErr)
+			}
+			if tt.wantErr != nil && err.Error() != tt.wantErr.Error() {
+				t.Fatalf("err = %#v, want %#v", err.Error(), tt.wantErr.Error())
+			}
+		})
+	}
+}

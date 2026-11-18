@@ -37,6 +37,12 @@ func NewDeletionProtectionTestStack(scope constructs.Construct, id string, props
 	// Create Route 53 HostedZone (resource record set protections are created by deploy.go)
 	resource.NewHostedZone(stack, id)
 
+	// Create record sets in a hosted zone outside the stack (created by deploy.go)
+	if hostedZoneId, ok := stack.Node().TryGetContext(jsii.String("EXTERNAL_HOSTED_ZONE_ID")).(string); ok && hostedZoneId != "" {
+		hostedZoneName := stack.Node().TryGetContext(jsii.String("EXTERNAL_HOSTED_ZONE_NAME")).(string)
+		resource.NewExternalHostedZoneRecordSets(stack, hostedZoneId, hostedZoneName)
+	}
+
 	return stack
 }
 

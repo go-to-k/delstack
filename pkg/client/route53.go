@@ -4,6 +4,9 @@ package client
 import (
 	"context"
 	"errors"
+	"strings"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
 
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
@@ -17,6 +20,9 @@ type IRoute53 interface {
 	DeleteTrafficPolicyInstance(ctx context.Context, trafficPolicyInstanceId *string) error
 	ListResourceRecordSetProtections(ctx context.Context, hostedZoneId *string) ([]types.ResourceRecordSetProtection, error)
 	DeleteResourceRecordSetProtections(ctx context.Context, hostedZoneId *string, protections []types.ResourceRecordSetProtection) error
+	GetDNSSECStatus(ctx context.Context, hostedZoneId *string) (*types.DNSSECStatus, error)
+	DisableHostedZoneDNSSEC(ctx context.Context, hostedZoneId *string) error
+	ListHostedZonesByName(ctx context.Context, dnsName *string) ([]types.HostedZone, error)
 }
 
 var _ IRoute53 = (*Route53)(nil)
@@ -197,4 +203,64 @@ func (r *Route53) DeleteResourceRecordSetProtections(ctx context.Context, hosted
 		}
 	}
 	return nil
+}
+
+func (r *Route53) GetDNSSECStatus(ctx context.Context, hostedZoneId *string) (*types.DNSSECStatus, error) {
+	input := &route53.GetDNSSECInput{
+		HostedZoneId: hostedZoneId,
+	}
+
+	output, err := r.client.GetDNSSEC(ctx, input)
+	if err != nil {
+		return nil, &ClientError{
+			ResourceName: hostedZoneId,
+			Err:          err,
+		}
+	}
+	return output.Status, nil
+}
+
+// DisableHostedZoneDNSSEC succeeds without doing anything when DNSSEC signing is not enabled.
+func (r *Route53) DisableHostedZoneDNSSEC(ctx context.Context, hostedZoneId *string) error {
+	input := &route53.DisableHostedZoneDNSSECInput{
+		HostedZoneId: hostedZoneId,
+	}
+
+	_, err := r.client.DisableHostedZoneDNSSEC(ctx, input)
+	if err != nil {
+		var notFound *types.DNSSECNotFound
+		if errors.As(err, &notFound) {
+			return nil
+		}
+		return &ClientError{
+			ResourceName: hostedZoneId,
+			Err:          err,
+		}
+	}
+	return nil
+}
+
+// ListHostedZonesByName returns the hosted zones whose name is exactly the specified DNS name.
+func (r *Route53) ListHostedZonesByName(ctx context.Context, dnsName *string) ([]types.HostedZone, error) {
+	input := &route53.ListHostedZonesByNameInput{
+		DNSName: dnsName,
+	}
+
+	output, err := r.client.ListHostedZonesByName(ctx, input)
+	if err != nil {
+		return nil, &ClientError{
+			ResourceName: dnsName,
+			Err:          err,
+		}
+	}
+
+	// Hosted zones are sorted by name starting from the specified name, so stop at the first other name.
+	hostedZones := []types.HostedZone{}
+	for _, hostedZone := range output.HostedZones {
+		if !strings.EqualFold(strings.TrimSuffix(aws.ToString(hostedZone.Name), "."), strings.TrimSuffix(aws.ToString(dnsName), ".")) {
+			break
+		}
+		hostedZones = append(hostedZones, hostedZone)
+	}
+	return hostedZones, nil
 }

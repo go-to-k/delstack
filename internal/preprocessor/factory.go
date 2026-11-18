@@ -28,10 +28,17 @@ func NewRecursivePreprocessorFromConfig(config aws.Config, forceMode bool) *Recu
 	)
 
 	lambdaVPCDetacher := newLambdaVPCDetacherFromConfig(config)
-	protectionRemover := newDeletionProtectionRemoverFromConfig(config, forceMode)
+	sdkRoute53Client := route53.NewFromConfig(config, func(o *route53.Options) {
+		o.RetryMaxAttempts = operation.SDKRetryMaxAttempts
+		o.RetryMode = aws.RetryModeStandard
+	})
+	route53Client := client.NewRoute53(sdkRoute53Client)
+
+	protectionRemover := newDeletionProtectionRemoverFromConfig(config, forceMode, route53Client)
+	recordSetProtectionRemover := NewRoute53RecordSetProtectionRemover(forceMode, cfnClient, route53Client)
 
 	composite := NewCompositePreprocessor(
-		[]IPreprocessor{protectionRemover},
+		[]IPreprocessor{protectionRemover, recordSetProtectionRemover},
 		[]IPreprocessor{lambdaVPCDetacher},
 	)
 
@@ -59,7 +66,7 @@ func newLambdaVPCDetacherFromConfig(config aws.Config) *LambdaVPCDetacher {
 	)
 }
 
-func newDeletionProtectionRemoverFromConfig(config aws.Config, forceMode bool) *DeletionProtectionRemover {
+func newDeletionProtectionRemoverFromConfig(config aws.Config, forceMode bool, route53Client client.IRoute53) *DeletionProtectionRemover {
 	sdkEC2Client := ec2.NewFromConfig(config, func(o *ec2.Options) {
 		o.RetryMaxAttempts = operation.SDKRetryMaxAttempts
 		o.RetryMode = aws.RetryModeStandard
@@ -85,11 +92,6 @@ func newDeletionProtectionRemoverFromConfig(config aws.Config, forceMode bool) *
 		o.RetryMode = aws.RetryModeStandard
 	})
 
-	sdkRoute53Client := route53.NewFromConfig(config, func(o *route53.Options) {
-		o.RetryMaxAttempts = operation.SDKRetryMaxAttempts
-		o.RetryMode = aws.RetryModeStandard
-	})
-
 	return NewDeletionProtectionRemover(
 		forceMode,
 		client.NewEC2Client(sdkEC2Client),
@@ -97,6 +99,6 @@ func newDeletionProtectionRemoverFromConfig(config aws.Config, forceMode bool) *
 		client.NewCognito(sdkCognitoClient),
 		client.NewCloudWatchLogs(sdkLogsClient),
 		client.NewELBV2(sdkELBV2Client),
-		client.NewRoute53(sdkRoute53Client),
+		route53Client,
 	)
 }

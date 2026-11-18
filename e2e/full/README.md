@@ -24,7 +24,7 @@ This script creates a CloudFormation stack containing various resources that typ
 - AWS Backup vaults with recovery points
 - Athena WorkGroups with named queries and prepared statements
 - Route 53 Resolver Configs whose VPC is deleted outside of CFn via SDK (issue #682)
-- Route 53 Hosted Zones with record sets created outside of CFn via SDK
+- Route 53 Hosted Zones with record sets created and DNSSEC signing enabled outside of CFn via SDK
 - And more
 
 ```bash

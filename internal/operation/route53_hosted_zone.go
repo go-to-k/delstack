@@ -25,23 +25,23 @@ const (
 )
 
 const (
-	route53TrafficPolicyWaitMaxAttempts = 60
-	route53TrafficPolicyWaitInterval    = 5 * time.Second
+	route53WaitMaxAttempts = 60
+	route53WaitInterval    = 5 * time.Second
 )
 
 var _ IOperator = (*Route53HostedZoneOperator)(nil)
 
 type Route53HostedZoneOperator struct {
-	client                    client.IRoute53
-	resources                 []*types.StackResourceSummary
-	trafficPolicyWaitInterval time.Duration
+	client       client.IRoute53
+	resources    []*types.StackResourceSummary
+	waitInterval time.Duration
 }
 
 func NewRoute53HostedZoneOperator(client client.IRoute53) *Route53HostedZoneOperator {
 	return &Route53HostedZoneOperator{
-		client:                    client,
-		resources:                 []*types.StackResourceSummary{},
-		trafficPolicyWaitInterval: route53TrafficPolicyWaitInterval,
+		client:       client,
+		resources:    []*types.StackResourceSummary{},
+		waitInterval: route53WaitInterval,
 	}
 }
 
@@ -81,6 +81,13 @@ func (o *Route53HostedZoneOperator) DeleteRoute53HostedZone(ctx context.Context,
 		return nil
 	}
 	hostedZoneName := aws.ToString(hostedZone.Name)
+
+	// DNSSEC is not supported for private hosted zones.
+	if hostedZone.Config == nil || !hostedZone.Config.PrivateZone {
+		if err = o.disableDNSSEC(ctx, hostedZoneId); err != nil {
+			return err
+		}
+	}
 
 	recordSets, err := o.client.ListResourceRecordSets(ctx, hostedZoneId)
 	if err != nil {
@@ -124,8 +131,51 @@ func (o *Route53HostedZoneOperator) DeleteRoute53HostedZone(ctx context.Context,
 	return o.client.DeleteHostedZone(ctx, hostedZoneId)
 }
 
+// A hosted zone with DNSSEC signing enabled cannot be deleted.
+func (o *Route53HostedZoneOperator) disableDNSSEC(ctx context.Context, hostedZoneId *string) error {
+	status, err := o.client.GetDNSSECStatus(ctx, hostedZoneId)
+	if err != nil {
+		return err
+	}
+	if isDNSSECNotSigning(status) {
+		return nil
+	}
+
+	if err := o.client.DisableHostedZoneDNSSEC(ctx, hostedZoneId); err != nil {
+		return err
+	}
+
+	for range route53WaitMaxAttempts {
+		status, err := o.client.GetDNSSECStatus(ctx, hostedZoneId)
+		if err != nil {
+			return err
+		}
+		if isDNSSECNotSigning(status) {
+			return nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return &client.ClientError{
+				ResourceName: hostedZoneId,
+				Err:          ctx.Err(),
+			}
+		case <-time.After(o.waitInterval):
+		}
+	}
+
+	return &client.ClientError{
+		ResourceName: hostedZoneId,
+		Err:          fmt.Errorf("timed out waiting for DNSSEC signing to be disabled"),
+	}
+}
+
+func isDNSSECNotSigning(status *route53Types.DNSSECStatus) bool {
+	return status == nil || aws.ToString(status.ServeSignature) == "NOT_SIGNING"
+}
+
 func (o *Route53HostedZoneOperator) waitForTrafficPolicyRecordSetsDeleted(ctx context.Context, hostedZoneId *string) ([]route53Types.ResourceRecordSet, error) {
-	for range route53TrafficPolicyWaitMaxAttempts {
+	for range route53WaitMaxAttempts {
 		recordSets, err := o.client.ListResourceRecordSets(ctx, hostedZoneId)
 		if err != nil {
 			return nil, err
@@ -140,7 +190,7 @@ func (o *Route53HostedZoneOperator) waitForTrafficPolicyRecordSetsDeleted(ctx co
 				ResourceName: hostedZoneId,
 				Err:          ctx.Err(),
 			}
-		case <-time.After(o.trafficPolicyWaitInterval):
+		case <-time.After(o.waitInterval):
 		}
 	}
 

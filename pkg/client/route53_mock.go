@@ -96,6 +96,35 @@ func (mr *MockIRoute53MockRecorder) DeleteTrafficPolicyInstance(ctx, trafficPoli
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTrafficPolicyInstance", reflect.TypeOf((*MockIRoute53)(nil).DeleteTrafficPolicyInstance), ctx, trafficPolicyInstanceId)
 }
 
+// DisableHostedZoneDNSSEC mocks base method.
+func (m *MockIRoute53) DisableHostedZoneDNSSEC(ctx context.Context, hostedZoneId *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DisableHostedZoneDNSSEC", ctx, hostedZoneId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DisableHostedZoneDNSSEC indicates an expected call of DisableHostedZoneDNSSEC.
+func (mr *MockIRoute53MockRecorder) DisableHostedZoneDNSSEC(ctx, hostedZoneId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableHostedZoneDNSSEC", reflect.TypeOf((*MockIRoute53)(nil).DisableHostedZoneDNSSEC), ctx, hostedZoneId)
+}
+
+// GetDNSSECStatus mocks base method.
+func (m *MockIRoute53) GetDNSSECStatus(ctx context.Context, hostedZoneId *string) (*types.DNSSECStatus, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDNSSECStatus", ctx, hostedZoneId)
+	ret0, _ := ret[0].(*types.DNSSECStatus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDNSSECStatus indicates an expected call of GetDNSSECStatus.
+func (mr *MockIRoute53MockRecorder) GetDNSSECStatus(ctx, hostedZoneId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDNSSECStatus", reflect.TypeOf((*MockIRoute53)(nil).GetDNSSECStatus), ctx, hostedZoneId)
+}
+
 // GetHostedZone mocks base method.
 func (m *MockIRoute53) GetHostedZone(ctx context.Context, hostedZoneId *string) (*types.HostedZone, bool, error) {
 	m.ctrl.T.Helper()
@@ -110,6 +139,21 @@ func (m *MockIRoute53) GetHostedZone(ctx context.Context, hostedZoneId *string) 
 func (mr *MockIRoute53MockRecorder) GetHostedZone(ctx, hostedZoneId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHostedZone", reflect.TypeOf((*MockIRoute53)(nil).GetHostedZone), ctx, hostedZoneId)
+}
+
+// ListHostedZonesByName mocks base method.
+func (m *MockIRoute53) ListHostedZonesByName(ctx context.Context, dnsName *string) ([]types.HostedZone, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListHostedZonesByName", ctx, dnsName)
+	ret0, _ := ret[0].([]types.HostedZone)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListHostedZonesByName indicates an expected call of ListHostedZonesByName.
+func (mr *MockIRoute53MockRecorder) ListHostedZonesByName(ctx, dnsName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListHostedZonesByName", reflect.TypeOf((*MockIRoute53)(nil).ListHostedZonesByName), ctx, dnsName)
 }
 
 // ListResourceRecordSetProtections mocks base method.
