@@ -213,6 +213,25 @@ func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "delete hosted zone failure for list resource record sets errors while waiting for traffic policy instances",
+			args: args{
+				ctx:          context.Background(),
+				hostedZoneId: aws.String("Z0000000000001"),
+			},
+			prepareMockFn: func(m *client.MockIRoute53) {
+				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(hostedZone, true, nil)
+				gomock.InOrder(
+					m.EXPECT().ListResourceRecordSets(gomock.Any(), aws.String("Z0000000000001")).Return(
+						[]types.ResourceRecordSet{soa, ns, trafficPolicyA}, nil,
+					),
+					m.EXPECT().DeleteTrafficPolicyInstance(gomock.Any(), aws.String("tpi-1")).Return(nil),
+					m.EXPECT().ListResourceRecordSets(gomock.Any(), aws.String("Z0000000000001")).Return(nil, fmt.Errorf("ListResourceRecordSetsError")),
+				)
+			},
+			want:    fmt.Errorf("ListResourceRecordSetsError"),
+			wantErr: true,
+		},
+		{
 			name: "delete hosted zone failure for traffic policy record sets not deleted in time",
 			args: args{
 				ctx:          context.Background(),
@@ -411,7 +430,7 @@ func TestRoute53HostedZoneOperator_DeleteResourcesForRoute53HostedZone(t *testin
 	}
 }
 
-func TestRoute53HostedZoneOperator_ChunkRecordSetsForChangeBatch(t *testing.T) {
+func Test_chunkRecordSetsForChangeBatch(t *testing.T) {
 	newRecordSet := func(name string, values ...string) types.ResourceRecordSet {
 		records := []types.ResourceRecord{}
 		for _, v := range values {
@@ -478,7 +497,7 @@ func TestRoute53HostedZoneOperator_ChunkRecordSetsForChangeBatch(t *testing.T) {
 	}
 }
 
-func TestRoute53HostedZoneOperator_DeleteRoute53HostedZoneCanceledWhileWaiting(t *testing.T) {
+func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone_CanceledWhileWaiting(t *testing.T) {
 	io.NewLogger(false)
 
 	ctx, cancel := context.WithCancel(context.Background())

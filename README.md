@@ -173,7 +173,7 @@ Checks for resource-level deletion protection before attempting stack deletion.
 |  AWS::ElasticLoadBalancingV2::LoadBalancer  |
 |  AWS::Route53::HostedZone (resource record set protections)  |
 
-> **Note**: Checking `AWS::Route53::HostedZone` requires the `route53:ListResourceRecordSetProtections` permission (and `route53:DeleteResourceRecordSetProtections` with `-f`). If the check fails, the hosted zone is treated as protected.
+> **Note**: Checking `AWS::Route53::HostedZone` requires the `route53:ListResourceRecordSetProtections` permission (and `route53:DeleteResourceRecordSetProtections` with `-f`). Without the list permission, the check is skipped with a warning (if protections exist, the CloudFormation deletion fails instead). If the check fails for other reasons, the hosted zone is treated as protected.
 
 ### Performance Optimization
 

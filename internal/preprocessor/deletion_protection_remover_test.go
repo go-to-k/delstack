@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	route53Types "github.com/aws/aws-sdk-go-v2/service/route53/types"
+	"github.com/aws/smithy-go"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/pkg/client"
 	"github.com/rs/zerolog"
@@ -464,6 +465,22 @@ func TestDeletionProtectionRemover_Preprocess(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "DeletionProtectionError",
+		},
+		{
+			name:      "route53 hosted zone with record set protections check access denied is skipped",
+			forceMode: false,
+			args: args{
+				ctx:       context.Background(),
+				stackName: aws.String("test-stack"),
+				resources: hostedZoneResources,
+			},
+			setup: func(m mocks) {
+				m.route53.EXPECT().ListResourceRecordSetProtections(gomock.Any(), aws.String("Z0000000000001")).Return(nil, &client.ClientError{
+					ResourceName: aws.String("Z0000000000001"),
+					Err:          &smithy.GenericAPIError{Code: "AccessDenied", Message: "not authorized"},
+				})
+			},
+			wantErr: false,
 		},
 		{
 			name:      "route53 hosted zone with record set protections with force mode",

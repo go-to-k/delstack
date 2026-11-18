@@ -109,7 +109,7 @@ func (o *Route53HostedZoneOperator) DeleteRoute53HostedZone(ctx context.Context,
 		nonDefaultRecordSets = append(nonDefaultRecordSets, recordSet)
 	}
 
-	// Delete alias records first in case they target other record sets in the same zone.
+	// Delete alias records first in case they target other record sets in the same zone and the deletion spans multiple batches.
 	slices.SortStableFunc(nonDefaultRecordSets, func(a, b route53Types.ResourceRecordSet) int {
 		return cmp.Compare(aliasSortKey(a), aliasSortKey(b))
 	})

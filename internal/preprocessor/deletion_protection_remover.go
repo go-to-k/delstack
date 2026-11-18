@@ -2,6 +2,7 @@ package preprocessor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	"github.com/aws/smithy-go"
 	"github.com/go-to-k/delstack/internal/io"
 	"github.com/go-to-k/delstack/internal/resourcetype"
 	"github.com/go-to-k/delstack/pkg/client"
@@ -126,6 +128,13 @@ func (r *DeletionProtectionRemover) checkProtection(ctx context.Context, resourc
 	case resourcetype.Route53HostedZone:
 		protections, err := r.route53Client.ListResourceRecordSetProtections(ctx, physicalId)
 		if err != nil {
+			// The API is new, so many least-privilege policies do not allow it yet. Do not block
+			// deletions that worked before; if protections exist, CloudFormation deletion fails instead.
+			if isAccessDenied(err) {
+				io.Logger.Warn().Msgf("Skipped checking resource record set protections for %s (%s) due to missing permission: %v",
+					aws.ToString(resource.LogicalResourceId), aws.ToString(physicalId), err)
+				return false, nil
+			}
 			return false, err
 		}
 		return len(protections) > 0, nil
@@ -200,6 +209,15 @@ func (r *DeletionProtectionRemover) deleteResourceRecordSetProtections(ctx conte
 		}
 	}
 	return nil
+}
+
+func isAccessDenied(err error) bool {
+	var apiErr smithy.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	code := apiErr.ErrorCode()
+	return code == "AccessDenied" || code == "AccessDeniedException"
 }
 
 func (r *DeletionProtectionRemover) isTargetResourceType(resourceType string) bool {
