@@ -157,10 +157,10 @@ func (o *Route53HostedZoneOperator) cleanupDNSSEC(ctx context.Context, hostedZon
 		}
 	}
 
-	// Key-signing keys must be deactivated before they are deleted.
+	// Key-signing keys must be deactivated (INACTIVE) before they are deleted. Ones in DELETING are being deleted already.
 	deactivated := false
 	for _, keySigningKey := range keySigningKeys {
-		if aws.ToString(keySigningKey.Status) != "ACTIVE" {
+		if status := aws.ToString(keySigningKey.Status); status == "INACTIVE" || status == "DELETING" {
 			continue
 		}
 		if err = o.client.DeactivateKeySigningKey(ctx, hostedZoneId, keySigningKey.Name); err != nil {
@@ -171,7 +171,8 @@ func (o *Route53HostedZoneOperator) cleanupDNSSEC(ctx context.Context, hostedZon
 	if deactivated {
 		keySigningKeys, err = o.waitForDNSSEC(ctx, hostedZoneId, "key-signing keys to be deactivated", func(_ *route53Types.DNSSECStatus, keySigningKeys []route53Types.KeySigningKey) bool {
 			return !slices.ContainsFunc(keySigningKeys, func(k route53Types.KeySigningKey) bool {
-				return aws.ToString(k.Status) == "ACTIVE"
+				status := aws.ToString(k.Status)
+				return status != "INACTIVE" && status != "DELETING"
 			})
 		})
 		if err != nil {
@@ -179,12 +180,21 @@ func (o *Route53HostedZoneOperator) cleanupDNSSEC(ctx context.Context, hostedZon
 		}
 	}
 
+	if len(keySigningKeys) == 0 {
+		return nil
+	}
 	for _, keySigningKey := range keySigningKeys {
+		if aws.ToString(keySigningKey.Status) != "INACTIVE" {
+			continue
+		}
 		if err = o.client.DeleteKeySigningKey(ctx, hostedZoneId, keySigningKey.Name); err != nil {
 			return err
 		}
 	}
-	return nil
+	_, err = o.waitForDNSSEC(ctx, hostedZoneId, "key-signing keys to be deleted", func(_ *route53Types.DNSSECStatus, keySigningKeys []route53Types.KeySigningKey) bool {
+		return len(keySigningKeys) == 0
+	})
+	return err
 }
 
 func (o *Route53HostedZoneOperator) waitForDNSSEC(

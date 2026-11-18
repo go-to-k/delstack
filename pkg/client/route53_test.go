@@ -673,6 +673,7 @@ func TestRoute53_ListResourceRecordSetsByNameAndType(t *testing.T) {
 	cases := []struct {
 		name               string
 		withAPIOptionsFunc func(*middleware.Stack) error
+		wildcard           bool
 		want               []types.ResourceRecordSet
 		wantErr            bool
 	}{
@@ -693,6 +694,43 @@ func TestRoute53_ListResourceRecordSetsByNameAndType(t *testing.T) {
 			},
 		},
 		{
+			name: "list wildcard record sets across pages",
+			withAPIOptionsFunc: func() func(*middleware.Stack) error {
+				calls := 0
+				return func(stack *middleware.Stack) error {
+					return stack.Finalize.Add(
+						middleware.FinalizeMiddlewareFunc(
+							"ListWildcardRecordSetsMock",
+							func(context.Context, middleware.FinalizeInput, middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+								calls++
+								if calls == 1 {
+									return middleware.FinalizeOutput{Result: &route53.ListResourceRecordSetsOutput{
+										ResourceRecordSets:   []types.ResourceRecordSet{recordSet(`\052.example.com.`, types.RRTypeA, "one")},
+										IsTruncated:          true,
+										NextRecordName:       aws.String(`\052.example.com.`),
+										NextRecordType:       types.RRTypeA,
+										NextRecordIdentifier: aws.String("two"),
+									}}, middleware.Metadata{}, nil
+								}
+								return middleware.FinalizeOutput{Result: &route53.ListResourceRecordSetsOutput{
+									ResourceRecordSets: []types.ResourceRecordSet{
+										recordSet(`\052.example.com.`, types.RRTypeA, "two"),
+										recordSet("www.example.com.", types.RRTypeA, "one"),
+									},
+								}}, middleware.Metadata{}, nil
+							},
+						),
+						middleware.Before,
+					)
+				}
+			}(),
+			wildcard: true,
+			want: []types.ResourceRecordSet{
+				recordSet(`\052.example.com.`, types.RRTypeA, "one"),
+				recordSet(`\052.example.com.`, types.RRTypeA, "two"),
+			},
+		},
+		{
 			name:               "list record sets failure",
 			withAPIOptionsFunc: route53FinalizeMock("ListResourceRecordSetsByNameAndTypeErrorMock", &route53.ListResourceRecordSetsOutput{}, fmt.Errorf("ListResourceRecordSetsError")),
 			wantErr:            true,
@@ -704,7 +742,11 @@ func TestRoute53_ListResourceRecordSetsByNameAndType(t *testing.T) {
 			ctx := context.Background()
 			route53Client := newRoute53ClientForTest(t, ctx, tt.withAPIOptionsFunc)
 
-			output, err := route53Client.ListResourceRecordSetsByNameAndType(ctx, aws.String("Z0000000000001"), aws.String("WWW.example.com"), types.RRTypeA)
+			name := "WWW.example.com"
+			if tt.wildcard {
+				name = "*.example.com."
+			}
+			output, err := route53Client.ListResourceRecordSetsByNameAndType(ctx, aws.String("Z0000000000001"), aws.String(name), types.RRTypeA)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("error = %#v, wantErr %#v", err, tt.wantErr)
 			}

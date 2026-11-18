@@ -331,6 +331,7 @@ func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone(t *testing.T) {
 					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{deactivatedKsk, inactiveKsk}, nil),
 					m.EXPECT().DeleteKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk_active")).Return(nil),
 					m.EXPECT().DeleteKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk_inactive")).Return(nil),
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{}, nil),
 					m.EXPECT().ListResourceRecordSets(gomock.Any(), aws.String("Z0000000000001")).Return([]types.ResourceRecordSet{soa, ns}, nil),
 					m.EXPECT().DeleteHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(nil),
 				)
@@ -349,12 +350,57 @@ func TestRoute53HostedZoneOperator_DeleteRoute53HostedZone(t *testing.T) {
 				gomock.InOrder(
 					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{{Name: aws.String("ksk"), Status: aws.String("INACTIVE")}}, nil),
 					m.EXPECT().DeleteKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk")).Return(nil),
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{{Name: aws.String("ksk"), Status: aws.String("DELETING")}}, nil),
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{}, nil),
 					m.EXPECT().ListResourceRecordSets(gomock.Any(), aws.String("Z0000000000001")).Return([]types.ResourceRecordSet{soa, ns}, nil),
 					m.EXPECT().DeleteHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(nil),
 				)
 			},
 			want:    nil,
 			wantErr: false,
+		},
+		{
+			name: "delete hosted zone successfully with key-signing keys in deleting and action needed status",
+			args: args{
+				ctx:          context.Background(),
+				hostedZoneId: aws.String("Z0000000000001"),
+			},
+			prepareMockFn: func(m *client.MockIRoute53) {
+				deletingKsk := types.KeySigningKey{Name: aws.String("ksk_deleting"), Status: aws.String("DELETING")}
+				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
+				gomock.InOrder(
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{
+						deletingKsk,
+						{Name: aws.String("ksk_action_needed"), Status: aws.String("ACTION_NEEDED")},
+					}, nil),
+					m.EXPECT().DeactivateKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk_action_needed")).Return(nil),
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{
+						deletingKsk,
+						{Name: aws.String("ksk_action_needed"), Status: aws.String("INACTIVE")},
+					}, nil),
+					m.EXPECT().DeleteKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk_action_needed")).Return(nil),
+					m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, []types.KeySigningKey{}, nil),
+					m.EXPECT().ListResourceRecordSets(gomock.Any(), aws.String("Z0000000000001")).Return([]types.ResourceRecordSet{soa, ns}, nil),
+					m.EXPECT().DeleteHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(nil),
+				)
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "delete hosted zone failure for key-signing keys not deactivated in time",
+			args: args{
+				ctx:          context.Background(),
+				hostedZoneId: aws.String("Z0000000000001"),
+			},
+			prepareMockFn: func(m *client.MockIRoute53) {
+				activeKsk := []types.KeySigningKey{{Name: aws.String("ksk"), Status: aws.String("ACTIVE")}}
+				m.EXPECT().GetHostedZone(gomock.Any(), aws.String("Z0000000000001")).Return(publicHostedZone, true, nil)
+				m.EXPECT().GetDNSSEC(gomock.Any(), aws.String("Z0000000000001")).Return(notSigning, activeKsk, nil).Times(1 + route53WaitMaxAttempts)
+				m.EXPECT().DeactivateKeySigningKey(gomock.Any(), aws.String("Z0000000000001"), aws.String("ksk")).Return(nil)
+			},
+			want:    fmt.Errorf("[resource Z0000000000001] timed out waiting for key-signing keys to be deactivated"),
+			wantErr: true,
 		},
 		{
 			name: "delete hosted zone failure for deactivate key-signing key errors",

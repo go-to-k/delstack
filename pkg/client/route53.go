@@ -317,7 +317,7 @@ func (r *Route53) ListResourceRecordSetsByNameAndType(ctx context.Context, hoste
 
 	paginator := route53.NewListResourceRecordSetsPaginator(r.client, &route53.ListResourceRecordSetsInput{
 		HostedZoneId:    hostedZoneId,
-		StartRecordName: name,
+		StartRecordName: aws.String(strings.ReplaceAll(aws.ToString(name), "*", `\052`)),
 		StartRecordType: recordType,
 	})
 	for paginator.HasMorePages() {
@@ -330,7 +330,7 @@ func (r *Route53) ListResourceRecordSetsByNameAndType(ctx context.Context, hoste
 		}
 		// Record sets are sorted by name and type starting from the specified ones, so stop at the first other one.
 		for _, recordSet := range output.ResourceRecordSets {
-			if !strings.EqualFold(strings.TrimSuffix(aws.ToString(recordSet.Name), "."), strings.TrimSuffix(aws.ToString(name), ".")) || recordSet.Type != recordType {
+			if canonicalRecordName(aws.ToString(recordSet.Name)) != canonicalRecordName(aws.ToString(name)) || recordSet.Type != recordType {
 				return recordSets, nil
 			}
 			recordSets = append(recordSets, recordSet)
@@ -338,4 +338,9 @@ func (r *Route53) ListResourceRecordSetsByNameAndType(ctx context.Context, hoste
 	}
 
 	return recordSets, nil
+}
+
+// Route 53 returns names in lowercase with a trailing dot, and "*" escaped as "\052".
+func canonicalRecordName(name string) string {
+	return strings.ToLower(strings.ReplaceAll(strings.TrimSuffix(name, "."), `\052`, "*"))
 }
